@@ -1,0 +1,6 @@
+{
+  "parent": "crazyphone:displaysettings/crazyphone",
+  "textures": {
+    "layer0": "crazyphone:item/crazyphone"
+  }
+}

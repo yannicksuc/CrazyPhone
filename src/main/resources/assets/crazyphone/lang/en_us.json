@@ -1,0 +1,84 @@
+{
+  "itemGroup.crazyphone": "CrazyPhone",
+  "block.crazyphone.example_block": "Example Block",
+  "item.crazyphone.example_item": "Example Item",
+
+  "item_group.crazyphone.crazy_phone_tab": "CrazyPhone",
+
+  "item.crazyphone.crazy_phone": "Crazy Phone",
+
+  "message.crazyphone.image_upload_success": "✅ The image was successfully uploaded to the CrazyPhone.",
+  "message.crazyphone.image_upload_failed": "❌ Failed to upload the image to the CrazyPhone.",
+
+  "gui.crazyphone.crazyphone_home_screen.button_photo": "Photo",
+  "gui.crazyphone.crazyphone_home_screen.button_contacts": "Contacts",
+  "gui.crazyphone.crazyphone_home_screen.button_albums": "Albums",
+  "gui.crazyphone.crazyphone_home_screen.button_verrouiller": "Lock",
+  "gui.crazyphone.crazyphone_home_screen.tooltip_back": "Go back",
+  "gui.crazyphone.crazyphone_home_screen.tooltip_home": "Go to the home screen",
+  "gui.crazyphone.crazyphone_home_screen.tooltip_lock": "Lock the phone",
+
+  "gui.crazyphone.crazy_phone_sign_in_screen.label_mot_de_passe": "Password:",
+  "gui.crazyphone.crazy_phone_sign_in_screen.label_connexion": "Login",
+  "gui.crazyphone.crazy_phone_sign_in_screen.password": "1234",
+  "gui.crazyphone.crazy_phone_sign_in_screen.button_deverrouiller": "Unlock",
+  "gui.crazyphone.crazy_phone_sign_in_screen.tooltip_deverrouiller": "Unlock the phone",
+
+  "gui.crazyphone.crazy_phone_password_screen.title": "Registration",
+  "gui.crazyphone.crazy_phone_password_screen.label_mot_de_passe": "Password:",
+  "gui.crazyphone.crazy_phone_password_screen.uuid": "",
+  "gui.crazyphone.crazy_phone_password_screen.number": "",
+  "gui.crazyphone.crazy_phone_password_screen.password": "1234",
+  "gui.crazyphone.crazy_phone_password_screen.label_3630": "3630",
+  "gui.crazyphone.crazy_phone_password_screen.label_numero_associe_au_telephone": "Number:",
+  "gui.crazyphone.crazy_phone_password_screen.label_nom": "Name:",
+  "gui.crazyphone.crazy_phone_password_screen.name": "Steve",
+  "gui.crazyphone.crazy_phone_password_screen.button_valider": "Validate",
+  "gui.crazyphone.crazy_phone_password_screen.tooltip_valider": "Register this phone number",
+  "gui.crazyphone.crazy_phone_password_screen.button_empty": "",
+  "gui.crazyphone.crazy_phone_password_screen.tooltip_reset": "Clear the form",
+
+  "gui.crazyphone.crazy_phone_contacts_screen.title": "Contacts",
+  "gui.crazyphone.crazy_phone_contacts_screen.button_retour": "Back",
+  "gui.crazyphone.crazy_phone_contacts_screen.tooltip_add_contact": "Add a contact",
+  "gui.crazyphone.crazy_phone_contacts_screen.tooltip_open_contact": "Open this contact",
+
+  "gui.crazyphone.crazy_phone_contact_info_screen.title": "Contact",
+  "gui.crazyphone.crazy_phone_contact_info_screen.number": "666",
+  "gui.crazyphone.crazy_phone_contact_info_screen.label_numero": "Number",
+  "gui.crazyphone.crazy_phone_contact_info_screen.label_empty": "",
+  "gui.crazyphone.crazy_phone_contact_info_screen.button_ajouter": "Add",
+  "gui.crazyphone.crazy_phone_contact_info_screen.tooltip_ajouter": "Add this contact",
+
+  "gui.crazyphone.crazy_phone_mayor_candidate_screen.button_vote": "Vote",
+  "gui.crazyphone.crazy_phone_mayor_candidate_screen.tooltip_vote": "Cast your vote for this candidate",
+
+  "gui.crazyphone.crazy_phone_mayors_candidates_list.title": "Mayor candidates",
+
+  "gui.crazyphone.crazy_phone_conversation.message": "Write a message...",
+  "gui.crazyphone.crazy_phone_conversation.button_envoyer": ">",
+  "gui.crazyphone.crazy_phone_conversation.click_to_zoom": "Click to zoom on the image",
+  "gui.crazyphone.crazy_phone_conversation.tooltip_send_image": "Send an image",
+  "gui.crazyphone.crazy_phone_conversation.tooltip_send_message": "Send the message",
+
+  "gui.crazyphone.crazy_phone_pictures_screen.button_delete": "Delete",
+  "gui.crazyphone.crazy_phone_pictures_screen.button_retour": "Back",
+  "gui.crazyphone.crazy_phone_pictures_screen.button_del": "Del",
+  "gui.crazyphone.crazy_phone_pictures_screen.button_add_album": "Add to albums",
+  "gui.crazyphone.crazy_phone_pictures_screen.tooltip_add_album": "Save this image into one of your albums",
+  "gui.crazyphone.crazy_phone_pictures_screen.button_take": "Take",
+  "gui.crazyphone.crazy_phone_pictures_screen.tooltip_back": "Return to the previous page (Esc)",
+  "gui.crazyphone.crazy_phone_pictures_screen.tooltip_select_image": "Left-click to select an image",
+  "gui.crazyphone.crazy_phone_pictures_screen.tooltip_take": "Gives you this image",
+  "gui.crazyphone.crazy_phone_pictures_screen.tooltip_image_actions": "Left-click: select · Right-click: zoom in",
+  "gui.crazyphone.crazy_phone_pictures_screen.tooltip_delete_selected": "Delete the selected images",
+  "gui.crazyphone.crazy_phone_pictures_screen.tooltip_take_selected": "Give the selected images to your inventory",
+  "gui.crazyphone.crazy_phone_pictures_screen.tooltip_send_selected": "Send the selected images in this conversation",
+  "gui.crazyphone.crazy_phone_picture_folders_screen.tooltip_open_album": "Open this album",
+  "gui.crazyphone.crazy_phone_pictures_screen.button_send": "Send",
+
+  "gui.crazyphone.crazy_phone_picture_folders_screen.title": "Albums",
+  "gui.crazyphone.crazy_phone_picture_folders_screen.button_retour": "Back",
+
+  "gui.crazyphone.crazy_phone_default_screen.button_oui": "yes"
+}
