@@ -34,6 +34,9 @@ public class MessageWidget extends AbstractWidget {
     private final WrappedTextWidget wrappedText;
     private final boolean isSender;
     private final ItemStack icon;
+    /** True for a system event entry (rename / icon change / member excluded / admin reassigned) - no
+     * sender head floats beside it, and it isn't offset left/right like a normal chat bubble. */
+    private final boolean isSystem;
     private int scrollPosition;
     private int adjustedY;
     boolean showIcon = true;
@@ -43,17 +46,22 @@ public class MessageWidget extends AbstractWidget {
     MessageDisplayManager manager;
 
     public MessageWidget(WrappedTextWidget wrappedText, boolean isSender, ItemStack icon, int scrollPosition, @Nullable ItemStack image, MessageDisplayManager messageDisplayManager) {
+        this(wrappedText, isSender, icon, scrollPosition, image, messageDisplayManager, false);
+    }
+
+    public MessageWidget(WrappedTextWidget wrappedText, boolean isSender, ItemStack icon, int scrollPosition, @Nullable ItemStack image, MessageDisplayManager messageDisplayManager, boolean isSystem) {
         super(wrappedText.getX(), wrappedText.getY(), wrappedText.getWidth(), wrappedText.getHeight(), wrappedText.getMessage());
         this.wrappedText = wrappedText;
         this.isSender = isSender;
         this.icon = icon;
+        this.isSystem = isSystem;
         this.scrollPosition = scrollPosition;
         this.manager = messageDisplayManager;
         if (image != null && !image.isEmpty()) {
             this.image = image;
             initImageScaling();
         }
-        adjustPosition(this.getX() + (isSender ? 0 : 15));
+        adjustPosition(this.getX() + (isSystem || isSender ? 0 : 15));
     }
 
     public void setScrollPosition(int scrollPosition) {
@@ -82,13 +90,13 @@ public class MessageWidget extends AbstractWidget {
                 int itemY = wrappedText.getY() + wrappedText.getHeight() - 16;
         if (!image.isEmpty())
             renderImage(guiGraphics, mouseX, mouseY);
-        if (showIcon)
+        if (showIcon && !isSystem)
             guiGraphics.renderItem(icon, itemX, itemY);
      }
 
     /** Head icon hit box, matching the position computed in {@link #renderItemHead}. Used by the screen to show a name/number tooltip on hover. */
     public boolean isHeadHovered(double mouseX, double mouseY) {
-        if (!showIcon)
+        if (!showIcon || isSystem)
             return false;
         int itemX = isSender ? wrappedText.getX() + wrappedText.getWidth() : wrappedText.getX() - 16;
         int itemY = wrappedText.getY() + wrappedText.getHeight() - 16;

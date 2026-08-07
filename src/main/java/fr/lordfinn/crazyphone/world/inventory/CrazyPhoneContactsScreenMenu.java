@@ -1,7 +1,6 @@
 
 package fr.lordfinn.crazyphone.world.inventory;
 
-import net.neoforged.neoforge.items.SlotItemHandler;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.ResolvableProfile;
 import net.minecraft.world.inventory.Slot;
@@ -24,29 +23,48 @@ import com.mojang.authlib.properties.Property;
 import com.mojang.authlib.properties.PropertyMap;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 
+/**
+ * Favorites/contacts/groups are all rendered and hit-tested manually by CrazyPhoneContactsScreenScreen
+ * (like the group icons always were) rather than through real vanilla Slots - the grid is scrollable and
+ * arranged into sections, and Slot#x/y are final, so there's no way to reposition a real Slot once the
+ * section layout or scroll offset changes.
+ */
 public class CrazyPhoneContactsScreenMenu extends CrazyPhoneDefaultScreenMenu {
     private static final String CONTACT_TEXTURE = "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvZWRmZmYxYjNjNWQ4NWZlM2NkZDU2NTY4NjliYWEwZWFkZTVlNTNhY2E5ZDU2MTQyNzY0OGNjNzJmNWUyNWE5In19fQ==";
 
-    private final Map<Integer, Slot> customSlots = new HashMap<>();
-    private final int slotWidth = SLOT_PITCH;
-    private final int slotHeight = SLOT_PITCH;
+    private final List<Contact> favorites = new ArrayList<>();
     private final List<Contact> contacts = new ArrayList<>();
+    private final List<GroupInfo> groups = new ArrayList<>();
+
+    public List<Contact> getFavorites() {
+        return favorites;
+    }
 
     public List<Contact> getContacts() {
         return contacts;
     }
 
-    public CrazyPhoneContactsScreenMenu(int id, Inventory inv, FriendlyByteBuf extraData) {
-        super(ModMenus.CRAZY_PHONE_CONTACTS_SCREEN.get(), id, inv, extraData);
-        parseContactsFromBuffer(extraData);
-        updateInventorySlots();
+    public List<GroupInfo> getGroups() {
+        return groups;
     }
 
-    private void parseContactsFromBuffer(FriendlyByteBuf extraData) {
+    /** A group conversation entry as shown in the Contacts screen: its conversation id, custom
+     * name/icon (empty = unset, falls back to member names / cycling heads), the current admin's number,
+     * and the OTHER participants (not the viewing player) - reused to build a cycling member-head icon
+     * when no custom icon is set. */
+    public record GroupInfo(String conversationId, String name, ItemStack icon, String admin, List<Contact> members) {}
+
+    public CrazyPhoneContactsScreenMenu(int id, Inventory inv, FriendlyByteBuf extraData) {
+        super(ModMenus.CRAZY_PHONE_CONTACTS_SCREEN.get(), id, inv, extraData);
+        parseContactsFromBuffer(extraData, favorites);
+        parseContactsFromBuffer(extraData, contacts);
+        parseGroupsFromBuffer(extraData);
+    }
+
+    private void parseContactsFromBuffer(FriendlyByteBuf extraData, List<Contact> into) {
         int contactsSize = extraData.readInt();
         for (int i = 0; i < contactsSize; i++) {
             String number = extraData.readUtf();
@@ -62,66 +80,45 @@ public class CrazyPhoneContactsScreenMenu extends CrazyPhoneDefaultScreenMenu {
                 contact.setSkin(skin);
             }
 
-            contacts.add(contact);
+            into.add(contact);
         }
     }
 
-    private void updateInventorySlots() {
-        clearSlots();
-        addContactHeads();
-    }
+    private void parseGroupsFromBuffer(FriendlyByteBuf extraData) {
+        int groupsSize = extraData.readInt();
+        for (int i = 0; i < groupsSize; i++) {
+            String conversationId = extraData.readUtf();
+            String groupName = extraData.readUtf();
+            ItemStack icon = CrazyPhoneHelper.decodeItemStack(this.world, extraData.readNbt());
+            String admin = extraData.readUtf();
+            int membersSize = extraData.readInt();
+            List<Contact> members = new ArrayList<>();
+            for (int j = 0; j < membersSize; j++) {
+                String number = extraData.readUtf();
+                String name = extraData.readUtf();
+                String uuid = extraData.readUtf();
+                String skin = extraData.readUtf();
 
-    private void clearSlots() {
-        for (int i = 0; i < 48; i++) {
-            this.internal.extractItem(i + 48, 64, false); // Clear the slot
-        }
-        customSlots.clear();
-    }
-
-    private void addContactHeads() {
-        int startX = HEADER_CONTENT_START_X;
-        int startY = HEADER_CONTENT_START_Y;
-        int slotIndex = 0;
-
-        for (int i = 0; i < contacts.size(); i++) {
-            int x = startX + (i % GRID_COLUMNS) * slotWidth;
-            int y = startY + (i / GRID_COLUMNS) * slotHeight;
-
-			Slot slot = createSlot(slotIndex + 48, x, y, contacts.get(i));
-            this.customSlots.put(slotIndex, this.addSlot(slot));
-
-			ItemStack item = CrazyPhoneHelper.createContactHead(contacts.get(i));
-			this.internal.insertItem(slotIndex + 48, item, false);
-            slotIndex++;
+                Contact member = new Contact(number, name);
+                if (!uuid.isEmpty()) {
+                    member.setUuid(uuid);
+                }
+                if (!skin.isEmpty()) {
+                    member.setSkin(skin);
+                }
+                members.add(member);
+            }
+            groups.add(new GroupInfo(conversationId, groupName, icon, admin, members));
         }
     }
 
-    private Slot createSlot(int index, int x, int y, Contact contact) {
-        return new SlotItemHandler(this.internal, index, x, y) {
-            @Override
-            public boolean mayPickup(Player player) {
-                return false;
-            }
+    /** A fixed identity for the "add contact" head's synthetic GameProfile - a random UUID here would
+     * make every single menu-open construct an unrecognized-to-the-client profile, forcing a fresh async
+     * skin-texture resolution (and showing an unresolved placeholder) every time instead of letting the
+     * client reuse whatever it already resolved for this same profile earlier in the session. */
+    private static final UUID ADD_CONTACT_HEAD_PROFILE_ID = UUID.nameUUIDFromBytes("crazyphone:add_contact_head".getBytes());
 
-            @Override
-            public boolean mayPlace(ItemStack stack) {
-                return false;
-            }
-
-            @Override
-            public void onTake(Player player, ItemStack stack) {
-                super.onTake(player, stack);
-            }
-
-            @Override
-            public void set(ItemStack stack) {
-                // Prevent external stack setting
-            }
-        };
-    }
-
-    /** Icon for the "add contact" button, now relocated to the top-right of the header banner (see
-     * CrazyPhoneContactsScreenScreen) instead of being a slot among the contact heads. */
+    /** Icon for the "add contact" tile, shown as the first entry of the Contacts section. */
     public static ItemStack createAddContactHead() {
         ItemStack head = new ItemStack(net.minecraft.world.item.Items.PLAYER_HEAD);
         MutableComponent displayName = Component.translatable("gui.crazyphone.crazy_phone_contacts_screen.tooltip_add_contact")
@@ -129,7 +126,7 @@ public class CrazyPhoneContactsScreenMenu extends CrazyPhoneDefaultScreenMenu {
 
         head.set(DataComponents.CUSTOM_NAME, displayName);
 
-        GameProfile profile = new GameProfile(UUID.randomUUID(), "CustomHead");
+        GameProfile profile = new GameProfile(ADD_CONTACT_HEAD_PROFILE_ID, "CustomHead");
         PropertyMap properties = profile.getProperties();
         properties.put("textures", new Property("textures", CONTACT_TEXTURE));
         ResolvableProfile resolvableProfile = new ResolvableProfile(profile);
@@ -150,19 +147,6 @@ public class CrazyPhoneContactsScreenMenu extends CrazyPhoneDefaultScreenMenu {
 
     @Override
     public Map<Integer, Slot> get() {
-        return customSlots;
-    }
-
-    public void addContact(Contact contact) {
-        contacts.add(contact);
-        updateInventorySlots();
-    }
-
-    public void removeContact(int index) {
-        if (index >= 0 && index < contacts.size()) {
-            contacts.remove(index);
-            updateInventorySlots();
-        }
+        return customSlots; // always empty - nothing in this menu uses real Slots, see class javadoc
     }
 }
-

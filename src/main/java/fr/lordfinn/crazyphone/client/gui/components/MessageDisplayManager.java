@@ -17,6 +17,9 @@ public class MessageDisplayManager {
     private final int x;
     private final int y;
     private final int width;
+    /** Width used for a system-event entry instead of {@link #width} - spans (nearly) the full feed area
+     * since it isn't a left/right-aligned chat bubble with head-icon clearance to leave room for. */
+    private final int fullWidth;
     private final float scale;
     private int scrollOffset = 0;
     private int PADDING = 5;
@@ -28,9 +31,14 @@ public class MessageDisplayManager {
     public record MessageEntry(MessageData data, MessageWidget widget) {}
 
     public MessageDisplayManager(int x, int y, int width, float scale, List<Contact> contacts, String ownerNumber) {
+        this(x, y, width, width + 15, scale, contacts, ownerNumber);
+    }
+
+    public MessageDisplayManager(int x, int y, int width, int fullWidth, float scale, List<Contact> contacts, String ownerNumber) {
         this.x = x;
         this.y = y;
         this.width = width;
+        this.fullWidth = fullWidth;
         this.scale = scale;
         this.contacts = contacts;
         this.ownerNumber = ownerNumber;
@@ -86,7 +94,12 @@ public class MessageDisplayManager {
         resetPositions();
     }
 
+    private static final int SYSTEM_BACKGROUND_COLOR = 0xCCFFF3B0; // light yellow
+
     public MessageEntry addMessage(MessageData newMessage) {
+        if (newMessage.isSystem())
+            return addSystemMessage(newMessage);
+
         boolean isSender = ownerNumber.equals(newMessage.getSender());
         WrappedTextWidget wrapped = new WrappedTextWidget(
             Minecraft.getInstance().font,
@@ -102,6 +115,27 @@ public class MessageDisplayManager {
         if (icon == null)
             icon = new ItemStack(Items.PLAYER_HEAD);
         MessageWidget widget = new MessageWidget(wrapped, isSender, icon, 0, newMessage.getImage(), this);
+        MessageEntry entry = new MessageEntry(newMessage, widget);
+        messageEntries.add(0, entry);
+        resetPositions();
+        return entry;
+    }
+
+    private MessageEntry addSystemMessage(MessageData newMessage) {
+        WrappedTextWidget wrapped = new WrappedTextWidget(
+            Minecraft.getInstance().font,
+            x,
+            0, // temp y, updated in render
+            fullWidth,
+            newMessage.getSystemText(),
+            scale,
+            0xff000000,
+            SYSTEM_BACKGROUND_COLOR,
+            3, 3, 4, 3,
+            newMessage.getSystemIcon()
+        );
+        MessageWidget widget = new MessageWidget(wrapped, false, ItemStack.EMPTY, 0, null, this, true);
+        widget.setShowIcon(false);
         MessageEntry entry = new MessageEntry(newMessage, widget);
         messageEntries.add(0, entry);
         resetPositions();

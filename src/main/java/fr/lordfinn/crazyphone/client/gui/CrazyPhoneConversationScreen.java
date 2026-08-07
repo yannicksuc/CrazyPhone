@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.function.BiConsumer;
 
 import fr.lordfinn.crazyphone.client.ConversationClientCache;
+import fr.lordfinn.crazyphone.client.CursorEffects;
 import fr.lordfinn.crazyphone.client.ConversationClientCache.ConversationPage;
 import fr.lordfinn.crazyphone.client.gui.components.MessageData;
 import fr.lordfinn.crazyphone.client.gui.components.MessageDisplayManager;
@@ -58,6 +59,13 @@ import org.lwjgl.glfw.GLFW;
  */
 public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<CrazyPhoneConversationMenu> {
     private final static HashMap<String, Object> guistate = CrazyPhoneConversationMenu.guistate;
+    /** Top-right corner of the header banner, same position/size convention as the contacts screen's
+     * add-contact icon - only shown for group conversations. */
+    private static final int GROUP_SETTINGS_ICON_X = 100;
+    private static final int GROUP_SETTINGS_ICON_Y = 9;
+    private final ItemStack groupSettingsIcon = CrazyPhoneConversationMenu.createGroupSettingsIcon();
+    private final Component groupSettingsTooltip = Component.translatable("gui.crazyphone.crazy_phone_conversation.tooltip_group_settings")
+            .withStyle(style -> style.withColor(ChatFormatting.GOLD).withBold(true));
     private EditBox message;
     private Button button_envoyer;
     private ImageButton imagebutton_crazyphoneaddimage;
@@ -94,7 +102,16 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
         this.renderBackground(guiGraphics, mouseX, mouseY, partialTicks);
         super.render(guiGraphics, mouseX, mouseY, partialTicks);
         this.renderBanner(guiGraphics);
+        if (menu.isGroup())
+            renderGroupSettingsIcon(guiGraphics, mouseX, mouseY);
         renderMessageWidget(guiGraphics, mouseX, mouseY, partialTicks);
+        // Tooltip only, deferred until after the message feed: the feed's own (opaque) content renders
+        // right after the icon in normal flow and, since the tooltip pops up below the cursor, overlapped
+        // and painted over it - the box's thin border could survive at the edges while the text underneath
+        // got covered, which is exactly the "wide box, no text" look this was producing.
+        if (menu.isGroup() && isHoveringGroupSettingsIcon(mouseX, mouseY)) {
+            guiGraphics.renderComponentTooltip(this.font, List.of(groupSettingsTooltip), mouseX, mouseY);
+        }
         // Drawn again here, after the message feed: button_envoyer/imagebutton_crazyphoneaddimage sit at
         // the bottom-right corner of the message crop zone (y 144-173, crop ends at 158) as a deliberate
         // floating overlay, but the standard renderable pass (inside super.render() above) draws them
@@ -175,11 +192,33 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
                 .filter(contact -> !contact.getNumber().equals(ownerNumber))
                 .toList();
 
-        ItemStack contactHead = otherContacts.isEmpty()
-                ? ItemStack.EMPTY
-                : CrazyPhoneHelper.createContactHead(otherContacts.get(0));
+        ItemStack contactHead = resolveHeaderIcon(otherContacts);
         String names = otherContacts.stream().map(Contact::getName).collect(java.util.stream.Collectors.joining(", "));
-        renderHeader(guiGraphics, contactHead, Component.literal(names));
+        String title = (menu.isGroup() && !menu.getGroupName().isEmpty()) ? menu.getGroupName() : names;
+        renderHeader(guiGraphics, contactHead, Component.literal(title));
+    }
+
+    private ItemStack resolveHeaderIcon(List<Contact> otherContacts) {
+        if (menu.isGroup() && !menu.getGroupIcon().isEmpty())
+            return menu.getGroupIcon();
+        return otherContacts.isEmpty() ? ItemStack.EMPTY : CrazyPhoneHelper.createContactHead(otherContacts.get(0));
+    }
+
+    private void renderGroupSettingsIcon(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+        int iconX = this.leftPos + GROUP_SETTINGS_ICON_X;
+        int iconY = this.topPos + GROUP_SETTINGS_ICON_Y;
+        boolean hovered = isHoveringGroupSettingsIcon(mouseX, mouseY);
+        if (hovered) {
+            CursorEffects.requestPointerCursor();
+            guiGraphics.fill(iconX, iconY, iconX + 16, iconY + 16, 0x80FFFFFF);
+        }
+        guiGraphics.renderItem(groupSettingsIcon, iconX, iconY);
+    }
+
+    private boolean isHoveringGroupSettingsIcon(double mouseX, double mouseY) {
+        int iconX = this.leftPos + GROUP_SETTINGS_ICON_X;
+        int iconY = this.topPos + GROUP_SETTINGS_ICON_Y;
+        return mouseX >= iconX && mouseX < iconX + 16 && mouseY >= iconY && mouseY < iconY + 16;
     }
 
     private void updateButtonVisibility(int mouseX, int mouseY) {
@@ -231,7 +270,11 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
 
     private void initializeTextAndMessageWidget() {
         String ownerNumber = GetCrazyPhoneNumberFromMainHandProcedure.execute(this.menu.entity, null);
-        messageManager = new MessageDisplayManager(this.leftPos + 7, this.topPos + 158, 93, 0.75f,
+        // fullWidth is deliberately capped to fit inside the phone's own 122px-wide frame (not the
+        // message feed's scissor rect, which extends to leftPos+200 - well past the phone's right edge,
+        // a pre-existing harmless quirk that only mattered once something this wide tried to use it): a
+        // system message spanning past x=122 rendered outside the visible phone background entirely.
+        messageManager = new MessageDisplayManager(this.leftPos + 7, this.topPos + 158, 93, 108, 0.75f,
                 this.menu.getContacts(), ownerNumber);
 
         // Replay whatever pages have already come back from the server (survives resize, which rebuilds
@@ -384,6 +427,13 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
             return true;
         }
 
+        if (button == 0 && menu.isGroup() && isHoveringGroupSettingsIcon(mouseX, mouseY)) {
+            HashMap<String, String> textstate = getEditBoxAndCheckBoxValues();
+            PacketDistributor.sendToServer(new CrazyPhoneConversationButtonMessage(2, x, y, z, textstate));
+            CrazyPhoneConversationButtonMessage.handleButtonAction(entity, 2, x, y, z, textstate);
+            return true;
+        }
+
         if (!imagebutton_crazyphoneaddimage.visible && isWithinMessageCropZone((int) mouseX, (int) mouseY))
             for (MessageEntry entry : messageManager.getMessages()) {
                 if (entry.widget().mouseClicked(mouseX, mouseY, button)) {
@@ -419,13 +469,13 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
     public void addMessage(String senderName, MessageData newMessageData) {
         String ownerNumber = GetCrazyPhoneNumberFromMainHandProcedure.execute(this.menu.entity, null);
 
-        // Skip if the message is from the owner
-        if (newMessageData.getSender().equals(ownerNumber)) {
+        // Skip if the message is from the owner (system events have no real sender, never skipped here)
+        if (!newMessageData.isSystem() && newMessageData.getSender().equals(ownerNumber)) {
             return;
         }
 
-        // Check if the sender is in the contacts
-        boolean isKnownContact = this.menu.getContacts().stream()
+        // Check if the sender is in the contacts (system events aren't "sent" by a contact at all)
+        boolean isKnownContact = newMessageData.isSystem() || this.menu.getContacts().stream()
             .anyMatch(contact -> contact.getNumber().equals(newMessageData.getSender()));
 
         if (!isKnownContact) {

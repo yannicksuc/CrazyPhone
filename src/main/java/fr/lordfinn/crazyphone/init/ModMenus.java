@@ -30,7 +30,9 @@ import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneMayorCandidateScreenMenu
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneConversationMenu;
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneContactsScreenMenu;
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneContactInfoScreenMenu;
+import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneGroupSettingsScreenMenu;
 import fr.lordfinn.crazyphone.Crazyphone;
+import org.jetbrains.annotations.NotNull;
 
 // Menu type entries are added below as each screen/menu pair is ported.
 @EventBusSubscriber
@@ -51,6 +53,8 @@ public class ModMenus {
 			() -> IMenuTypeExtension.create(CrazyPhoneMayorsCandidatesListMenu::new));
 	public static final DeferredHolder<MenuType<?>, MenuType<CrazyPhoneMayorCandidateScreenMenu>> CRAZY_PHONE_MAYOR_CANDIDATE_SCREEN = REGISTRY.register("crazy_phone_mayor_candidate_screen",
 			() -> IMenuTypeExtension.create(CrazyPhoneMayorCandidateScreenMenu::new));
+	public static final DeferredHolder<MenuType<?>, MenuType<CrazyPhoneGroupSettingsScreenMenu>> CRAZY_PHONE_GROUP_SETTINGS_SCREEN = REGISTRY.register("crazy_phone_group_settings_screen",
+			() -> IMenuTypeExtension.create(CrazyPhoneGroupSettingsScreenMenu::new));
 
 	/** Always targeted at one player - a textbox value belongs to whoever is looking at that screen, never broadcast it. */
 	public static void setText(String boxname, String value, ServerPlayer player) {
@@ -69,7 +73,7 @@ public class ModMenus {
 		});
 
 		@Override
-		public Type<GuiSyncMessage> type() {
+		public @NotNull Type<GuiSyncMessage> type() {
 			return TYPE;
 		}
 

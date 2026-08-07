@@ -8,6 +8,7 @@ import net.neoforged.neoforge.common.util.INBTSerializable;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import fr.lordfinn.crazyphone.network.PlayerPhoneStateSyncPacket;
+import org.jetbrains.annotations.NotNull;
 
 /** Small per-player UI state (which phone screen is open and its navigation history). Cheap, per-player, synced as-is - not part of the crash fix. */
 public class PlayerPhoneState implements INBTSerializable<CompoundTag> {
@@ -15,7 +16,7 @@ public class PlayerPhoneState implements INBTSerializable<CompoundTag> {
     public String crazyPhoneScreenHistory = "";
 
     @Override
-    public CompoundTag serializeNBT(HolderLookup.Provider lookupProvider) {
+    public CompoundTag serializeNBT(HolderLookup.@NotNull Provider lookupProvider) {
         CompoundTag nbt = new CompoundTag();
         nbt.putString("currentCrazyPhoneScreenOpened", currentCrazyPhoneScreenOpened);
         nbt.putString("crazyPhoneScreenHistory", crazyPhoneScreenHistory);
@@ -23,7 +24,7 @@ public class PlayerPhoneState implements INBTSerializable<CompoundTag> {
     }
 
     @Override
-    public void deserializeNBT(HolderLookup.Provider lookupProvider, CompoundTag nbt) {
+    public void deserializeNBT(HolderLookup.@NotNull Provider lookupProvider, CompoundTag nbt) {
         currentCrazyPhoneScreenOpened = nbt.getString("currentCrazyPhoneScreenOpened");
         crazyPhoneScreenHistory = nbt.getString("crazyPhoneScreenHistory");
     }

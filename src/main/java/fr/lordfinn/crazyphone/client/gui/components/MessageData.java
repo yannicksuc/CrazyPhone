@@ -1,5 +1,6 @@
 package fr.lordfinn.crazyphone.client.gui.components;
 
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 
 public class MessageData {
@@ -7,12 +8,18 @@ public class MessageData {
     private final String message;
     private final String sender;
     private final ItemStack image;
+    private final boolean system;
+    private final Component systemText;
+    private final ItemStack systemIcon;
 
     public MessageData(int timecode, String message, String sender) {
         this.timecode = timecode;
         this.message = message;
         this.sender = sender;
         this.image = ItemStack.EMPTY;
+        this.system = false;
+        this.systemText = null;
+        this.systemIcon = ItemStack.EMPTY;
     }
 
     public MessageData(int timecode, String message, String sender, ItemStack stack) {
@@ -20,6 +27,25 @@ public class MessageData {
         this.message = message;
         this.sender = sender;
         this.image = stack;
+        this.system = false;
+        this.systemText = null;
+        this.systemIcon = ItemStack.EMPTY;
+    }
+
+    private MessageData(int timecode, Component systemText, ItemStack systemIcon) {
+        this.timecode = timecode;
+        this.message = "";
+        this.sender = "";
+        this.image = ItemStack.EMPTY;
+        this.system = true;
+        this.systemText = systemText;
+        this.systemIcon = systemIcon;
+    }
+
+    /** A system event (rename / icon change / member excluded / admin reassigned) - not sent by anyone,
+     * rendered full-width with no sender head, see {@link MessageDisplayManager#addMessage}. */
+    public static MessageData system(int timecode, Component text, ItemStack icon) {
+        return new MessageData(timecode, text, icon);
     }
 
     public int getTimecode() {
@@ -36,5 +62,17 @@ public class MessageData {
 
     public ItemStack getImage() {
         return image;
+    }
+
+    public boolean isSystem() {
+        return system;
+    }
+
+    public Component getSystemText() {
+        return systemText;
+    }
+
+    public ItemStack getSystemIcon() {
+        return systemIcon;
     }
 }

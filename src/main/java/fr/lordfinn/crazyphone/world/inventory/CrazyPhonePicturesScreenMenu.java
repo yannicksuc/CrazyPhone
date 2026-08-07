@@ -3,12 +3,14 @@ package fr.lordfinn.crazyphone.world.inventory;
 
 import net.neoforged.neoforge.items.SlotItemHandler;
 import net.neoforged.neoforge.items.IItemHandlerModifiable;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.network.FriendlyByteBuf;
 import fr.lordfinn.crazyphone.init.ModMenus;
+import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
 import fr.lordfinn.crazyphone.utils.ScreenMenuUtils;
 
 import de.maxhenkel.camera.inventory.AlbumInventory;
@@ -30,11 +32,16 @@ public class CrazyPhonePicturesScreenMenu extends CrazyPhoneDefaultScreenMenu {
 	public CrazyPhonePicturesScreenMenu(int id, Inventory inv, FriendlyByteBuf extraData) {
 		super(ModMenus.CRAZY_PHONE_PICTURES_SCREEN.get(), id, inv, extraData);
 
-		if (this.internal != null && extraData != null && extraData.readableBytes() > 0) {
+		if (extraData != null && extraData.readableBytes() > 0) {
 			albumId = extraData.readInt();
-			if (albumId >= 0 && albumId < this.internal.getSlots()) {
-				ItemStack album = this.internal.getStackInSlot(albumId);
-				this.albumStack = album;
+			// The album ItemStack is transmitted whole (see ScreenMenuUtils#openPhoneAlbumMenu) rather than
+			// re-read from this client's own copy of the held phone item's capability - that copy can still
+			// be a tick or two stale right after a photo is taken (its sync packet racing the menu-open
+			// packet), which used to make a freshly taken photo invisible until the album was reopened.
+			CompoundTag albumTag = extraData.readNbt();
+			ItemStack album = CrazyPhoneHelper.decodeItemStack(this.world, albumTag != null ? albumTag : new CompoundTag());
+			this.albumStack = album;
+			if (!album.isEmpty()) {
 				AlbumInventory pictures = new AlbumInventory(entity.registryAccess(), album);
 				this.internal = new AlbumInventoryItemHandler(pictures);
 
@@ -71,7 +78,7 @@ public class CrazyPhonePicturesScreenMenu extends CrazyPhoneDefaultScreenMenu {
 					}
 				}
 			} else {
-				LoggerFactory.getLogger("crazyphone").warn("Invalid slotId: " + albumId + ", handler has " + this.internal.getSlots() + " slots");
+				LoggerFactory.getLogger("crazyphone").warn("Invalid albumId: " + albumId + " - no album data transmitted");
 			}
 
 		}

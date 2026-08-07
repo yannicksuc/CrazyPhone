@@ -41,10 +41,13 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtAccounter;
 import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.ComponentSerialization;
 import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.nbt.NbtOps;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
@@ -55,6 +58,9 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.item.component.ResolvableProfile;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelAccessor;
+import net.minecraft.resources.RegistryOps;
+import java.util.concurrent.ThreadLocalRandom;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.IItemHandlerModifiable;
@@ -131,6 +137,15 @@ public class CrazyPhoneHelper {
                 Arrays.asList(recipientNumber, GetCrazyPhoneNumberFromMainHandProcedure.execute(entity, null)));
     }
 
+    /** Same as {@link #getConversationNumber(String, Entity)} but for a group: any number of other
+     * participants plus the caller's own number, sorted and joined the same way - the id doesn't care
+     * how many numbers go in, so a 2-party DM and an N-party group use the exact same scheme. */
+    public static String getConversationNumber(List<String> otherNumbers, Entity entity) {
+        List<String> all = new ArrayList<>(otherNumbers);
+        all.add(GetCrazyPhoneNumberFromMainHandProcedure.execute(entity, null));
+        return getConversationNumber(all);
+    }
+
     public static String getConversationNumber(String numberA, String numberB) {
         return getConversationNumber(Arrays.asList(numberA, numberB));
     }
@@ -161,6 +176,20 @@ public class CrazyPhoneHelper {
         return Component.literal(name == null ? "Inconnu" : name).withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD)
                 .append(Component.literal(" • ").withStyle(ChatFormatting.WHITE))
                 .append(Component.literal(number == null ? "" : number).withStyle(ChatFormatting.GRAY));
+    }
+
+    /**
+     * Same layout as {@link #formatContactDisplayName} ("Name • detail") so a group entry reads
+     * consistently with an individual contact, but in cyan instead of gold to tell the two apart at a
+     * glance, and with the literal word "Group" (translated) standing in for the phone number.
+     */
+    public static MutableComponent formatGroupDisplayName(String customName, List<Contact> members) {
+        String names = (customName != null && !customName.isEmpty())
+                ? customName
+                : members.stream().map(Contact::getName).collect(java.util.stream.Collectors.joining(","));
+        return Component.literal(names).withStyle(ChatFormatting.AQUA, ChatFormatting.BOLD)
+                .append(Component.literal(" • ").withStyle(ChatFormatting.WHITE))
+                .append(Component.translatable("gui.crazyphone.crazy_phone_contacts_screen.label_group").withStyle(ChatFormatting.GRAY));
     }
 
     public static ItemStack createContactHead(Contact contact) {
@@ -204,8 +233,71 @@ public class CrazyPhoneHelper {
         synchronized (messageLock) {
             CompoundTag messageTag = createMessageTag(senderNumber, message, timestampInMinutes, image);
             ConversationSavedData.get(world).appendMessage(conversationId, messageTag);
-            List<String> numbers = getNumbersFromConversationId(conversationId);
+            List<String> numbers = getGroupMembers(world, conversationId);
             notifyContacts(world, messageTag, numbers, senderNumber, message, timestampInMinutes, conversationId);
+        }
+    }
+
+    /** The timecode of the most recent message in a conversation, or 0 if it has none yet - used to sort
+     * the contacts/groups grid by recency (most recently active conversation first). */
+    public static int getLastMessageTimecode(LevelAccessor world, String conversationId) {
+        List<CompoundTag> last = ConversationSavedData.get(world).getPage(conversationId, 0, 1);
+        return last.isEmpty() ? 0 : last.get(0).getInt("timecode");
+    }
+
+    /** Toggles whether {@code number} is favorited for {@code owner} - favorited contacts are pinned in
+     * their own section above the rest of the contacts grid. Marks the registry dirty but does not sync;
+     * callers refresh the requesting player's own contacts menu afterward. */
+    public static void toggleFavorite(LevelAccessor world, String owner, String number) {
+        PhoneRegistrySavedData registry = PhoneRegistrySavedData.get(world);
+        ListTag numbers = registry.favorites.get(owner) instanceof ListTag list ? list.copy() : new ListTag();
+        boolean removed = numbers.removeIf(t -> t instanceof StringTag s && s.getAsString().equals(number));
+        if (!removed)
+            numbers.add(StringTag.valueOf(number));
+        registry.favorites.put(owner, numbers);
+        registry.setDirty();
+    }
+
+    /** The set of contact numbers {@code owner} has favorited. */
+    public static Set<String> getFavoriteNumbers(LevelAccessor world, String owner) {
+        Set<String> result = new java.util.HashSet<>();
+        if (PhoneRegistrySavedData.get(world).favorites.get(owner) instanceof ListTag list) {
+            for (Tag t : list)
+                if (t instanceof StringTag s)
+                    result.add(s.getAsString());
+        }
+        return result;
+    }
+
+    /**
+     * Appends a system event (rename / icon change / member excluded / admin reassigned) to the
+     * conversation feed - not sent by anyone, so it carries no sender contact head, just an optional
+     * leading icon and styled text (kept as a real {@link Component}, not flattened to a plain string
+     * server-side, so it still localizes correctly for whichever client renders it).
+     */
+    public static void addSystemMessage(Level world, String conversationId, Component text, @Nullable ItemStack icon) {
+        synchronized (messageLock) {
+            int timestampInMinutes = (int) (Instant.now().getEpochSecond() / 60);
+            CompoundTag messageTag = createSystemMessageTag(text, icon, timestampInMinutes);
+            ConversationSavedData.get(world).appendMessage(conversationId, messageTag);
+            notifySystemMessage(world, conversationId, messageTag);
+        }
+    }
+
+    private static void notifySystemMessage(Level world, String conversationId, CompoundTag messageTag) {
+        MinecraftServer server = world.getServer();
+        if (server == null)
+            return;
+        PhoneRegistrySavedData registry = PhoneRegistrySavedData.get(world);
+        for (String number : getGroupMembers(world, conversationId)) {
+            Contact receiver = getContact(world, number);
+            if (receiver == null || receiver.getUuid() == null)
+                continue;
+            ServerPlayer receiverPlayer = server.getPlayerList().getPlayer(UUID.fromString(receiver.getUuid()));
+            if (receiverPlayer != null) {
+                PacketDistributor.sendToPlayer(receiverPlayer, new CrazyPhoneNewMessageNotificationPacket(messageTag, ""));
+            }
+            addNotificationBadge(registry, number, conversationId, receiverPlayer);
         }
     }
 
@@ -221,6 +313,18 @@ public class CrazyPhoneHelper {
                 CompoundTag data = imageDataToCompoundTag(imageData);
                 tag.put("image", data);
             }
+        }
+        return tag;
+    }
+
+    private static CompoundTag createSystemMessageTag(Component text, @Nullable ItemStack icon, int timestampInMinutes) {
+        CompoundTag tag = new CompoundTag();
+        tag.putBoolean("system", true);
+        tag.putInt("timecode", timestampInMinutes);
+        tag.put("systemText", ComponentSerialization.CODEC.encodeStart(NbtOps.INSTANCE, text).getOrThrow());
+        if (icon != null && !icon.isEmpty()) {
+            ResourceLocation id = BuiltInRegistries.ITEM.getKey(icon.getItem());
+            tag.putString("systemIcon", id.toString());
         }
         return tag;
     }
@@ -265,6 +369,13 @@ public class CrazyPhoneHelper {
         if (sender == null || server == null)
             return;
 
+        // Defensive: a group conversation is normally already registered for every participant at
+        // creation time (see CrazyPhoneContactsScreenButtonMessage buttonID 2), but this keeps every
+        // participant's "groups" list correct even if that step was somehow missed. No-ops for a plain
+        // 1:1 conversation and for a group whose metadata already exists (see createGroup).
+        createGroup(world, conversationId, numbers, senderNumber);
+
+        PhoneRegistrySavedData registry = PhoneRegistrySavedData.get(world);
         for (String receiverNumber : numbers) {
             if (receiverNumber.equals(senderNumber))
                 continue;
@@ -278,37 +389,7 @@ public class CrazyPhoneHelper {
                 PacketDistributor.sendToPlayer(receiverPlayer, new CrazyPhoneNewMessageNotificationPacket(messageTag,sender.getName()));
             }
 
-            PhoneRegistrySavedData registry = PhoneRegistrySavedData.get(world);
-            CompoundTag phonesTag = registry.phones;
-
-            Tag receiverPhone = phonesTag.get(receiverNumber);
-            if (receiverPhone instanceof CompoundTag receiverPhoneCompoundTag) {
-                // Récupération ou création de la liste des notifications
-                Tag notificationstag = receiverPhoneCompoundTag.get("notifications");
-                ListTag notifications = (notificationstag instanceof ListTag listTag) ? listTag : new ListTag();
-
-                // Vérifie si conversationId est déjà présent
-                boolean alreadyExists = false;
-                for (Tag tag : notifications) {
-                    if (tag instanceof StringTag stringTag && stringTag.getAsString().equals(conversationId)) {
-                        alreadyExists = true;
-                        break;
-                    }
-                }
-
-                // Ajout si pas encore présent
-                if (!alreadyExists) {
-                    notifications.add(StringTag.valueOf(conversationId));
-                    receiverPhoneCompoundTag.put("notifications", notifications);
-                    phonesTag.put(receiverNumber, receiverPhoneCompoundTag);
-                    // Only the receiver's own notification badge changed - sync just to them if they're
-                    // online (still persisted to disk either way via setDirty, so it's there next login).
-                    if (receiverPlayer != null)
-                        registry.syncTo(receiverPlayer);
-                    else
-                        registry.setDirty();
-                }
-            }
+            addNotificationBadge(registry, receiverNumber, conversationId, receiverPlayer);
 
             ListTag contactsOfReceiver = CrazyPhoneGetContactsProcedure.execute(world, receiverNumber);
             boolean hasContact = false;
@@ -323,6 +404,291 @@ public class CrazyPhoneHelper {
                 CrazyPhoneAddContactToPhoneProcedure.execute(world, senderNumber, receiverNumber);
             }
         }
+    }
+
+    /** Adds {@code conversationId} to {@code receiverNumber}'s unread-notifications list if it isn't
+     * already there, and syncs just that receiver (if online) - shared by both normal and system messages. */
+    private static void addNotificationBadge(PhoneRegistrySavedData registry, String receiverNumber, String conversationId, @Nullable ServerPlayer receiverPlayer) {
+        Tag receiverPhone = registry.phones.get(receiverNumber);
+        if (!(receiverPhone instanceof CompoundTag receiverPhoneCompoundTag))
+            return;
+
+        Tag notificationstag = receiverPhoneCompoundTag.get("notifications");
+        ListTag notifications = (notificationstag instanceof ListTag listTag) ? listTag : new ListTag();
+
+        for (Tag tag : notifications) {
+            if (tag instanceof StringTag stringTag && stringTag.getAsString().equals(conversationId))
+                return;
+        }
+
+        notifications.add(StringTag.valueOf(conversationId));
+        receiverPhoneCompoundTag.put("notifications", notifications);
+        registry.phones.put(receiverNumber, receiverPhoneCompoundTag);
+        if (receiverPlayer != null)
+            registry.syncTo(receiverPlayer);
+        else
+            registry.setDirty();
+    }
+
+    /** A group conversation's metadata: custom name/icon (empty item = unset, client falls back to
+     * defaults), the current admin's number, and the LIVE member list - unlike the conversationId (which
+     * stays fixed for the conversation's lifetime), members can shrink via {@link #excludeGroupMember}. */
+    public record GroupMeta(String name, ItemStack icon, String admin, List<String> members) {}
+
+    public static GroupMeta getGroupMeta(LevelAccessor world, String conversationId) {
+        Tag raw = PhoneRegistrySavedData.get(world).groupMeta.get(conversationId);
+        if (!(raw instanceof CompoundTag tag))
+            return new GroupMeta("", ItemStack.EMPTY, "", getNumbersFromConversationId(conversationId));
+        return new GroupMeta(tag.getString("name"), decodeItemStack(world, tag.getCompound("icon")), tag.getString("admin"), readMembers(tag));
+    }
+
+    /**
+     * Encodes a full {@link ItemStack} (item id AND every data component - custom name, enchantments,
+     * anything else) to NBT for storage/transmission, using the given accessor's own registry access.
+     * Returns an empty {@link CompoundTag} for {@link ItemStack#isEmpty()} (the "no icon set" sentinel -
+     * {@link #decodeItemStack} recognizes it the same way, short-circuiting before ever touching the
+     * codec, so an empty stack never actually round-trips through it).
+     */
+    public static CompoundTag encodeItemStack(LevelAccessor world, ItemStack stack) {
+        if (stack == null || stack.isEmpty())
+            return new CompoundTag();
+        RegistryOps<Tag> ops = world.registryAccess().createSerializationContext(NbtOps.INSTANCE);
+        Tag encoded = ItemStack.CODEC.encodeStart(ops, stack).result().orElse(null);
+        return encoded instanceof CompoundTag compound ? compound : new CompoundTag();
+    }
+
+    /** The inverse of {@link #encodeItemStack} - an empty/absent tag decodes back to {@link ItemStack#EMPTY}. */
+    public static ItemStack decodeItemStack(LevelAccessor world, CompoundTag tag) {
+        if (tag == null || tag.isEmpty())
+            return ItemStack.EMPTY;
+        RegistryOps<Tag> ops = world.registryAccess().createSerializationContext(NbtOps.INSTANCE);
+        return ItemStack.CODEC.parse(ops, tag).result().orElse(ItemStack.EMPTY);
+    }
+
+    /** Whether {@code conversationId} IS a group - i.e. {@link #createGroup} was ever called for it -
+     * regardless of how many members currently remain. A group that's shrunk to 2 (or even 1) people via
+     * exclusion is still that group, not a plain 1:1: its id is a random token (see
+     * {@link #generateGroupConversationId}), completely unrelated to whatever a real 1:1 conversation id
+     * between any of its members would be, so there's no ambiguity to resolve either way. */
+    public static boolean hasGroupMeta(LevelAccessor world, String conversationId) {
+        return PhoneRegistrySavedData.get(world).groupMeta.get(conversationId) instanceof CompoundTag;
+    }
+
+    /**
+     * A fresh, random id for a new group conversation - deliberately NOT derived from the members' phone
+     * numbers the way a 1:1 conversation id is. Two people can only ever have one 1:1 conversation
+     * together, so deriving that id from their sorted numbers is correct and lets either side "find" it
+     * independently; a group has no such constraint - a player must be able to create several distinct
+     * groups that happen to share the exact same membership (e.g. two different "trip planning" chats
+     * with the same three friends), and a numbers-derived id would collide them into a single
+     * conversation. The "group-" prefix also makes the id visually unmistakable from a 1:1 id (which is
+     * always dot-joined numbers), as a defensive backstop against anything that might otherwise try to
+     * parse it as one.
+     */
+    public static String generateGroupConversationId() {
+        return "group-" + UUID.randomUUID();
+    }
+
+    /** The conversation's current, live participant list: a group's {@code groupMeta.members} if it has
+     * one (which shrinks as people are excluded), otherwise the numbers baked into the conversationId
+     * itself (a plain 1:1, or a group that hasn't been created via {@link #createGroup} yet). Every
+     * permission check and message-routing call site should resolve participants through this, not
+     * {@link #getNumbersFromConversationId} directly, so an excluded member loses access immediately. */
+    public static List<String> getGroupMembers(LevelAccessor world, String conversationId) {
+        Tag raw = PhoneRegistrySavedData.get(world).groupMeta.get(conversationId);
+        if (raw instanceof CompoundTag tag) {
+            List<String> members = readMembers(tag);
+            if (!members.isEmpty())
+                return members;
+        }
+        return getNumbersFromConversationId(conversationId);
+    }
+
+    private static List<String> readMembers(CompoundTag groupMetaTag) {
+        List<String> members = new ArrayList<>();
+        if (groupMetaTag.get("members") instanceof ListTag list) {
+            for (Tag t : list)
+                if (t instanceof StringTag s)
+                    members.add(s.getAsString());
+        }
+        return members;
+    }
+
+    /** Resolves a group's current members to full {@link Contact} records (name/uuid/skin), for rendering
+     * heads and names in the contacts grid / group settings screen. */
+    public static List<Contact> getGroupMemberContacts(Level world, String conversationId) {
+        List<Contact> contacts = new ArrayList<>();
+        for (String number : getGroupMembers(world, conversationId)) {
+            Contact contact = getContact(world, number);
+            if (contact != null)
+                contacts.add(contact);
+        }
+        return contacts;
+    }
+
+    /**
+     * Creates {@code conversationId}'s group metadata the first time it's seen (idempotent - a no-op if
+     * it already exists, so this is safe to call defensively on every message too) and makes sure every
+     * given member's phone lists it under "groups" so it shows up in their Contacts screen. A no-op for a
+     * plain 1:1 conversation (fewer than 3 members) - those are identified by the other person's contact
+     * entry, not a separate group entry.
+     */
+    public static void createGroup(Level world, String conversationId, List<String> members, String adminNumber) {
+        if (members.size() < 3)
+            return;
+
+        PhoneRegistrySavedData registry = PhoneRegistrySavedData.get(world);
+        if (!(registry.groupMeta.get(conversationId) instanceof CompoundTag)) {
+            CompoundTag meta = new CompoundTag();
+            meta.putString("name", "");
+            meta.put("icon", new CompoundTag());
+            meta.putString("admin", adminNumber == null ? "" : adminNumber);
+            ListTag membersTag = new ListTag();
+            for (String number : members)
+                membersTag.add(StringTag.valueOf(number));
+            meta.put("members", membersTag);
+            registry.groupMeta.put(conversationId, meta);
+            registry.setDirty();
+        }
+
+        syncGroupMembership(world, conversationId, getGroupMembers(world, conversationId));
+    }
+
+    /** Makes sure every given member's phone registry entry lists {@code conversationId} under "groups". */
+    private static void syncGroupMembership(Level world, String conversationId, List<String> members) {
+        PhoneRegistrySavedData registry = PhoneRegistrySavedData.get(world);
+        CompoundTag phonesTag = registry.phones;
+
+        for (String number : members) {
+            if (!(phonesTag.get(number) instanceof CompoundTag phoneCompoundTag))
+                continue;
+
+            Tag groupsTag = phoneCompoundTag.get("groups");
+            ListTag groups = (groupsTag instanceof ListTag listTag) ? listTag : new ListTag();
+
+            boolean alreadyMember = false;
+            for (Tag tag : groups) {
+                if (tag instanceof StringTag stringTag && stringTag.getAsString().equals(conversationId)) {
+                    alreadyMember = true;
+                    break;
+                }
+            }
+            if (alreadyMember)
+                continue;
+
+            groups.add(StringTag.valueOf(conversationId));
+            phoneCompoundTag.put("groups", groups);
+            phonesTag.put(number, phoneCompoundTag);
+            syncToMemberIfOnline(world, registry, number);
+        }
+    }
+
+    private static void syncToMemberIfOnline(Level world, PhoneRegistrySavedData registry, String number) {
+        MinecraftServer server = world.getServer();
+        ServerPlayer memberPlayer = null;
+        Contact memberContact = getContact(world, number);
+        if (server != null && memberContact != null && memberContact.getUuid() != null) {
+            memberPlayer = server.getPlayerList().getPlayer(UUID.fromString(memberContact.getUuid()));
+        }
+        if (memberPlayer != null)
+            registry.syncTo(memberPlayer);
+        else
+            registry.setDirty();
+    }
+
+    public static void renameGroup(Level world, String conversationId, String newName) {
+        PhoneRegistrySavedData registry = PhoneRegistrySavedData.get(world);
+        if (!(registry.groupMeta.get(conversationId) instanceof CompoundTag meta))
+            return;
+        meta.putString("name", newName == null ? "" : newName);
+        registry.groupMeta.put(conversationId, meta);
+        syncGroupMetaToMembers(world, conversationId);
+    }
+
+    public static void setGroupIcon(Level world, String conversationId, ItemStack icon) {
+        PhoneRegistrySavedData registry = PhoneRegistrySavedData.get(world);
+        if (!(registry.groupMeta.get(conversationId) instanceof CompoundTag meta))
+            return;
+        meta.put("icon", encodeItemStack(world, icon));
+        registry.groupMeta.put(conversationId, meta);
+        syncGroupMetaToMembers(world, conversationId);
+    }
+
+    private static void syncGroupMetaToMembers(Level world, String conversationId) {
+        PhoneRegistrySavedData registry = PhoneRegistrySavedData.get(world);
+        for (String number : getGroupMembers(world, conversationId))
+            syncToMemberIfOnline(world, registry, number);
+    }
+
+    /**
+     * Removes {@code memberNumber} from {@code conversationId}'s live membership and from their own
+     * "groups" list (so it disappears from their Contacts screen - their message history access is also
+     * gated on live membership, see the ownership checks in ConversationRequestPacket /
+     * CrazyPhoneConversationButtonMessage). If the excluded member was the admin, a random remaining
+     * member is promoted. Returns the new admin's number if one was (re)assigned, or null if the admin
+     * didn't change (including "no members left to promote").
+     */
+    @Nullable
+    public static String excludeGroupMember(Level world, String conversationId, String memberNumber) {
+        PhoneRegistrySavedData registry = PhoneRegistrySavedData.get(world);
+        if (!(registry.groupMeta.get(conversationId) instanceof CompoundTag meta))
+            return null;
+
+        List<String> remaining = new ArrayList<>();
+        for (String number : readMembers(meta))
+            if (!number.equals(memberNumber))
+                remaining.add(number);
+
+        ListTag updatedMembers = new ListTag();
+        for (String number : remaining)
+            updatedMembers.add(StringTag.valueOf(number));
+        meta.put("members", updatedMembers);
+
+        String newAdmin = null;
+        if (meta.getString("admin").equals(memberNumber) && !remaining.isEmpty()) {
+            newAdmin = remaining.get(ThreadLocalRandom.current().nextInt(remaining.size()));
+            meta.putString("admin", newAdmin);
+        }
+        registry.groupMeta.put(conversationId, meta);
+
+        if (registry.phones.get(memberNumber) instanceof CompoundTag phoneTag && phoneTag.get("groups") instanceof ListTag groups) {
+            ListTag updatedGroups = new ListTag();
+            for (Tag t : groups) {
+                if (!(t instanceof StringTag s) || !s.getAsString().equals(conversationId))
+                    updatedGroups.add(t);
+            }
+            phoneTag.put("groups", updatedGroups);
+            registry.phones.put(memberNumber, phoneTag);
+        }
+
+        syncToMemberIfOnline(world, registry, memberNumber);
+        for (String number : remaining)
+            syncToMemberIfOnline(world, registry, number);
+        return newAdmin;
+    }
+
+    /** Adds {@code memberNumber} to {@code conversationId}'s live membership (a no-op if they're already
+     * in it) and registers the group under their own "groups" list so it shows up in their Contacts
+     * screen - the mirror image of {@link #excludeGroupMember}. */
+    public static void addGroupMember(Level world, String conversationId, String memberNumber) {
+        PhoneRegistrySavedData registry = PhoneRegistrySavedData.get(world);
+        if (!(registry.groupMeta.get(conversationId) instanceof CompoundTag meta))
+            return;
+
+        List<String> members = readMembers(meta);
+        if (members.contains(memberNumber))
+            return;
+
+        ListTag updatedMembers = new ListTag();
+        for (String number : members)
+            updatedMembers.add(StringTag.valueOf(number));
+        updatedMembers.add(StringTag.valueOf(memberNumber));
+        meta.put("members", updatedMembers);
+        registry.groupMeta.put(conversationId, meta);
+
+        syncGroupMembership(world, conversationId, List.of(memberNumber));
+        for (String number : members)
+            syncToMemberIfOnline(world, registry, number);
     }
 
     public static List<MessageData> getMessagesFromBuf(RegistryFriendlyByteBuf buffer) {
@@ -347,6 +713,21 @@ public class CrazyPhoneHelper {
 
     public static @Nullable MessageData getMessageFromTag(CompoundTag messageTag) {
         if (messageTag == null) return null;
+
+        if (messageTag.getBoolean("system")) {
+            int timecode = messageTag.getInt("timecode");
+            Component text = messageTag.contains("systemText")
+                    ? ComponentSerialization.CODEC.parse(NbtOps.INSTANCE, messageTag.get("systemText")).result().orElse(Component.empty())
+                    : Component.empty();
+            ItemStack icon = ItemStack.EMPTY;
+            if (messageTag.contains("systemIcon", Tag.TAG_STRING)) {
+                ResourceLocation id = ResourceLocation.tryParse(messageTag.getString("systemIcon"));
+                if (id != null && BuiltInRegistries.ITEM.containsKey(id)) {
+                    icon = new ItemStack(BuiltInRegistries.ITEM.get(id));
+                }
+            }
+            return MessageData.system(timecode, text, icon);
+        }
 
         String value = messageTag.getString("value");
         String sender = messageTag.getString("sender");

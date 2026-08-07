@@ -10,6 +10,7 @@ import net.minecraft.world.level.saveddata.SavedData;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import fr.lordfinn.crazyphone.network.PhoneRegistrySyncPacket;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Bounded, always-synced phone state: one entry per registered phone/contact/mayor record.
@@ -28,6 +29,17 @@ public class PhoneRegistrySavedData extends SavedData {
     public CompoundTag lastMayorVoteTimestamps = new CompoundTag();
     public boolean isMayorVotingOn = false;
     public boolean isMayorElectionOn = false;
+    /** Group conversation metadata, keyed by conversationId: {@code {name, icon, admin, members: [numbers...]}}.
+     * {@code members} is the authoritative, live membership list for a group - unlike a 1:1 conversation,
+     * a group's conversationId (sorted-joined participant numbers) stays fixed for the life of the
+     * conversation even after someone is excluded, so membership can't be re-derived from the id alone
+     * once exclusion is possible. Bounded by group count, so it's safe alongside the rest of this
+     * always-synced registry. */
+    public CompoundTag groupMeta = new CompoundTag();
+    /** Favorited contact numbers, keyed by owner phone number -> ListTag of favorited numbers. A subset
+     * of that owner's {@code contacts} list, shown pinned in their own section above the rest of the
+     * contacts grid. Bounded by contact count, so it's safe alongside the rest of this always-synced registry. */
+    public CompoundTag favorites = new CompoundTag();
 
     public static PhoneRegistrySavedData load(CompoundTag tag, HolderLookup.Provider lookupProvider) {
         PhoneRegistrySavedData data = new PhoneRegistrySavedData();
@@ -43,10 +55,12 @@ public class PhoneRegistrySavedData extends SavedData {
         this.lastMayorVoteTimestamps = nbt.get("lastMayorVoteTimestamps") instanceof CompoundTag t ? t : new CompoundTag();
         this.isMayorVotingOn = nbt.getBoolean("isMayorVotingOn");
         this.isMayorElectionOn = nbt.getBoolean("isMayorElectionOn");
+        this.groupMeta = nbt.get("groupMeta") instanceof CompoundTag t ? t : new CompoundTag();
+        this.favorites = nbt.get("favorites") instanceof CompoundTag t ? t : new CompoundTag();
     }
 
     @Override
-    public CompoundTag save(CompoundTag nbt, HolderLookup.Provider lookupProvider) {
+    public @NotNull CompoundTag save(CompoundTag nbt, HolderLookup.@NotNull Provider lookupProvider) {
         nbt.put("phones", this.phones);
         nbt.put("contacts", this.contacts);
         nbt.put("mayorVotes", this.mayorVotes);
@@ -54,6 +68,8 @@ public class PhoneRegistrySavedData extends SavedData {
         nbt.put("lastMayorVoteTimestamps", this.lastMayorVoteTimestamps);
         nbt.putBoolean("isMayorVotingOn", isMayorVotingOn);
         nbt.putBoolean("isMayorElectionOn", isMayorElectionOn);
+        nbt.put("groupMeta", this.groupMeta);
+        nbt.put("favorites", this.favorites);
         return nbt;
     }
 

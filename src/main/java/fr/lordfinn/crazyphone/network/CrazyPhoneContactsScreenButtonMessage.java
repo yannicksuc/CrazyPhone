@@ -21,10 +21,15 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneContactInfoScreenMenu;
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneContactsScreenMenu;
+import fr.lordfinn.crazyphone.procedures.CrazyPhoneRemoveContactFromPhoneProcedure;
+import fr.lordfinn.crazyphone.procedures.GetCrazyPhoneNumberFromMainHandProcedure;
 import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
 import fr.lordfinn.crazyphone.utils.ScreenMenuUtils;
 import fr.lordfinn.crazyphone.Crazyphone;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 
@@ -93,6 +98,83 @@ public record CrazyPhoneContactsScreenButtonMessage(int buttonID, int x, int y, 
 			String conversationNumber = CrazyPhoneHelper.getConversationNumber(textstate.get("contactNumber"), entity);
 			ScreenMenuUtils.openPhoneConversationMenu(entity, InteractionHand.MAIN_HAND, conversationNumber);
 		}
+		else if (buttonID == 2) { // Create a group conversation with the selected contacts
+			if (world.isClientSide()) {
+				SoundEvent sound = BuiltInRegistries.SOUND_EVENT.get(ResourceLocation.parse("minecraft:ui.button.click"));
+				if (sound != null) {
+					entity.playNotifySound(sound, SoundSource.PLAYERS, 0.2f, 1.0f);
+				}
+			}
+			List<String> otherNumbers = parseSelectedNumbers(textstate.get("selectedNumbers"));
+			if (otherNumbers.size() < 2)
+				return; // a "group" needs at least 2 other people - fewer is just the regular 1:1 conversation
+			String creatorNumber = GetCrazyPhoneNumberFromMainHandProcedure.execute(entity, null);
+			List<String> members = new ArrayList<>(otherNumbers);
+			members.add(creatorNumber);
+			// A fresh random id, NOT derived from the members' numbers like a 1:1 conversation's id is -
+			// otherwise creating a second group with the exact same people would collide onto the first
+			// group's conversation instead of starting an independent one.
+			String conversationId = CrazyPhoneHelper.generateGroupConversationId();
+			// Register the group for every participant right away (not just the creator, and not only
+			// once someone happens to send the first message) so it shows up in everyone's Contacts screen.
+			// The creator becomes the initial admin.
+			CrazyPhoneHelper.createGroup(world, conversationId, members, creatorNumber);
+			ScreenMenuUtils.openPhoneConversationMenu(entity, InteractionHand.MAIN_HAND, conversationId);
+		}
+		else if (buttonID == 3) { // Remove the selected contacts
+			if (world.isClientSide()) {
+				SoundEvent sound = BuiltInRegistries.SOUND_EVENT.get(ResourceLocation.parse("minecraft:ui.button.click"));
+				if (sound != null) {
+					entity.playNotifySound(sound, SoundSource.PLAYERS, 0.2f, 1.0f);
+				}
+			}
+			List<String> selectedNumbers = parseSelectedNumbers(textstate.get("selectedNumbers"));
+			if (selectedNumbers.isEmpty())
+				return;
+			String owner = GetCrazyPhoneNumberFromMainHandProcedure.execute(entity, null);
+			if (owner.isEmpty())
+				return;
+			for (String number : selectedNumbers) {
+				CrazyPhoneRemoveContactFromPhoneProcedure.execute(world, number, owner);
+			}
+			ScreenMenuUtils.openPhoneContactsMenu(entity, InteractionHand.MAIN_HAND);
+		}
+		else if (buttonID == 5) { // Toggle favorite status for the selected contacts
+			if (world.isClientSide()) {
+				SoundEvent sound = BuiltInRegistries.SOUND_EVENT.get(ResourceLocation.parse("minecraft:ui.button.click"));
+				if (sound != null) {
+					entity.playNotifySound(sound, SoundSource.PLAYERS, 0.2f, 1.0f);
+				}
+			}
+			List<String> selectedNumbers = parseSelectedNumbers(textstate.get("selectedNumbers"));
+			if (selectedNumbers.isEmpty())
+				return;
+			String owner = GetCrazyPhoneNumberFromMainHandProcedure.execute(entity, null);
+			if (owner.isEmpty())
+				return;
+			for (String number : selectedNumbers) {
+				CrazyPhoneHelper.toggleFavorite(world, owner, number);
+			}
+			ScreenMenuUtils.openPhoneContactsMenu(entity, InteractionHand.MAIN_HAND);
+		}
+		else if (buttonID == 4) { // Open an already-known group conversation directly
+			if (world.isClientSide()) {
+				SoundEvent sound = BuiltInRegistries.SOUND_EVENT.get(ResourceLocation.parse("minecraft:ui.button.click"));
+				if (sound != null) {
+					entity.playNotifySound(sound, SoundSource.PLAYERS, 0.2f, 1.0f);
+				}
+			}
+			String conversationId = textstate.get("conversationId");
+			if (conversationId == null || conversationId.isEmpty())
+				return;
+			ScreenMenuUtils.openPhoneConversationMenu(entity, InteractionHand.MAIN_HAND, conversationId);
+		}
+	}
+
+	private static List<String> parseSelectedNumbers(String csv) {
+		if (csv == null || csv.isEmpty())
+			return List.of();
+		return Arrays.asList(csv.split(","));
 	}
 
 	private static void writeTextState(HashMap<String, String> map, RegistryFriendlyByteBuf buffer) {

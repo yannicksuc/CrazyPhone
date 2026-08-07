@@ -6,6 +6,7 @@ import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.gui.Font;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
+import net.minecraft.world.item.ItemStack;
 
 import java.util.List;
 
@@ -20,18 +21,30 @@ public class WrappedTextWidget extends AbstractWidget {
     private final int paddingRight;
     private final int paddingTop;
     private final int paddingBottom;
+    /** Optional icon drawn at the left edge, inside the bubble (used by system messages) - reserves an
+     * extra 18px of left padding for the text so it doesn't overlap. EMPTY (default) draws nothing. */
+    private final ItemStack leadingIcon;
 
     private int minHeight = 0;
 
     public WrappedTextWidget(Font font, int x, int y, int width, Component message,
                              float textScale, int textColor, int backgroundColor,
                              int paddingLeft, int paddingRight, int paddingTop, int paddingBottom) {
+        this(font, x, y, width, message, textScale, textColor, backgroundColor,
+                paddingLeft, paddingRight, paddingTop, paddingBottom, ItemStack.EMPTY);
+    }
+
+    public WrappedTextWidget(Font font, int x, int y, int width, Component message,
+                             float textScale, int textColor, int backgroundColor,
+                             int paddingLeft, int paddingRight, int paddingTop, int paddingBottom,
+                             ItemStack leadingIcon) {
         super(x, y, width, 0, message); // Height 0 for now, we'll set correct height below
         this.font = font;
         this.textScale = textScale;
         this.textColor = textColor;
         this.backgroundColor = backgroundColor;
-        this.paddingLeft = paddingLeft;
+        this.leadingIcon = leadingIcon == null ? ItemStack.EMPTY : leadingIcon;
+        this.paddingLeft = paddingLeft + (this.leadingIcon.isEmpty() ? 0 : 18);
         this.paddingRight = paddingRight;
         this.paddingTop = paddingTop;
         this.paddingBottom = paddingBottom;
@@ -50,7 +63,7 @@ public class WrappedTextWidget extends AbstractWidget {
         int effectiveWidth = (int)((width - paddingLeft - paddingRight) / textScale);
         List<FormattedCharSequence> lines = font.split(getMessage(), effectiveWidth);
         int textHeight = Math.round(Math.max(1, lines.size()) * font.lineHeight * textScale) + paddingTop + paddingBottom;
-        return Math.max(minHeight, textHeight);
+        return Math.max(Math.max(minHeight, leadingIcon.isEmpty() ? 0 : 18), textHeight);
     }
 
     /**
@@ -80,16 +93,25 @@ public class WrappedTextWidget extends AbstractWidget {
 
         guiGraphics.fill(renderX, renderY, renderX + renderWidth, renderY + renderHeight, backgroundColor);
 
+        if (!leadingIcon.isEmpty()) {
+            int iconY = renderY + (renderHeight - 16) / 2;
+            guiGraphics.renderItem(leadingIcon, renderX + 2, iconY);
+        }
+
+        List<FormattedCharSequence> lines = font.split(getMessage(), (int) ((width - paddingLeft - paddingRight) / textScale));
+        // Vertically centers the text block within the box - matters when the box is taller than the text
+        // needs (e.g. a leading icon forcing a minimum height for a single short line), where anchoring at
+        // paddingTop alone left the text pinned to the top with empty space below it.
+        int textBlockHeight = Math.round(lines.size() * font.lineHeight * textScale);
+        int textStartY = renderY + Math.max(paddingTop, (renderHeight - textBlockHeight) / 2);
+
         guiGraphics.pose().pushPose();
         guiGraphics.pose().scale(textScale, textScale, 1.0F);
 
-        List<FormattedCharSequence> lines = font.split(getMessage(), (int) ((width - paddingLeft - paddingRight) / textScale));
         for (int i = 0; i < lines.size(); i++) {
             FormattedCharSequence line = lines.get(i);
-            int lineY = (int) ((getY() + paddingTop) / textScale) + i * font.lineHeight;
-            if (lineY + font.lineHeight > renderY / textScale && lineY < (renderY + renderHeight) / textScale) {
-                guiGraphics.drawString(font, line, (int) ((getX() + paddingLeft) / textScale), lineY, textColor, false);
-            }
+            int lineY = (int) (textStartY / textScale) + i * font.lineHeight;
+            guiGraphics.drawString(font, line, (int) ((getX() + paddingLeft) / textScale), lineY, textColor, false);
         }
 
         guiGraphics.pose().popPose();

@@ -97,10 +97,11 @@ public record CrazyPhoneConversationButtonMessage(int buttonID, int x, int y, in
 			// conversation history grew, so it is intentionally NOT reintroduced here.
 			if (!world.isClientSide()) {
 				// senderNumber comes from the phone actually held by the connected player, but
-				// conversationId is client-supplied - without checking that senderNumber is really one of
-				// its two participants, a modified client could inject a message into a conversation
-				// between two other players and have both of them notified as if it were legitimate.
-				if (senderNumber.isEmpty() || !CrazyPhoneHelper.getNumbersFromConversationId(conversationId).contains(senderNumber))
+				// conversationId is client-supplied - without checking that senderNumber is really a
+				// current participant (checked live, not just the numbers baked into the id, so an
+				// excluded group member loses write access immediately) a modified client could inject a
+				// message into a conversation it has no business being in.
+				if (senderNumber.isEmpty() || !CrazyPhoneHelper.getGroupMembers(world, conversationId).contains(senderNumber))
 					return;
 				CrazyPhoneHelper.addMessage(world, conversationId, senderNumber, message, timestampInMinutes, null);
 			} else {
@@ -115,6 +116,11 @@ public record CrazyPhoneConversationButtonMessage(int buttonID, int x, int y, in
 			// round trip, no menu reopen, no cursor jump.
 		} else if (buttonID == 1) {
 			ScreenMenuUtils.openPhoneCustomMenu(entity, InteractionHand.MAIN_HAND, CrazyPhonePictureFoldersScreenMenu.class);
+		} else if (buttonID == 2) {
+			String conversationId = textstate.containsKey("conversationId") ? textstate.get("conversationId") : "";
+			if (conversationId.isEmpty())
+				return;
+			ScreenMenuUtils.openGroupSettingsMenu(entity, InteractionHand.MAIN_HAND, conversationId);
 		}
 	}
 

@@ -64,18 +64,21 @@ public record CrazyPhoneNewMessageNotificationPacket(
                 Minecraft mc = Minecraft.getInstance();
                 if (mc.player == null) return;
                 MessageData message = CrazyPhoneHelper.getMessageFromTag(messagePacket.messageTag);
+                if (message == null) return;
 
-                // Afficher la notification
-                mc.player.sendSystemMessage(Component.literal("📨 Nouveau message reçu de ")
-                    .withStyle(style -> style.withColor(0x55FFFF).withItalic(true))
-                    .append(Component.literal(messagePacket.senderName)
-                        .withStyle(style -> style.withBold(true).withColor(0x00FF55)))
-                );
+                // System events (group renamed/icon changed/member excluded/admin reassigned) aren't
+                // "a message received from someone" - they get their own in-feed entry, not this toast.
+                if (!message.isSystem()) {
+                    mc.player.sendSystemMessage(Component.literal("📨 Nouveau message reçu de ")
+                        .withStyle(style -> style.withColor(0x55FFFF).withItalic(true))
+                        .append(Component.literal(messagePacket.senderName)
+                            .withStyle(style -> style.withBold(true).withColor(0x00FF55)))
+                    );
 
-                // Son
-                SoundEvent sound = BuiltInRegistries.SOUND_EVENT.get(ResourceLocation.parse("block.note_block.pling"));
-                if (sound != null) {
-                    mc.player.playNotifySound(sound, SoundSource.PLAYERS, 0.6f, 1.0f);
+                    SoundEvent sound = BuiltInRegistries.SOUND_EVENT.get(ResourceLocation.parse("block.note_block.pling"));
+                    if (sound != null) {
+                        mc.player.playNotifySound(sound, SoundSource.PLAYERS, 0.6f, 1.0f);
+                    }
                 }
                 // Mise à jour de l'écran s'il est ouvert
                 if (mc.screen instanceof CrazyPhoneConversationScreen screen) {

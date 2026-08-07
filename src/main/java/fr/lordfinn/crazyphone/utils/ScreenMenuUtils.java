@@ -3,15 +3,18 @@ package fr.lordfinn.crazyphone.utils;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
 import io.netty.buffer.Unpooled;
 import fr.lordfinn.crazyphone.data.PhoneAttachmentTypes;
 import fr.lordfinn.crazyphone.data.PhoneRegistrySavedData;
 import fr.lordfinn.crazyphone.data.PlayerPhoneState;
 import fr.lordfinn.crazyphone.procedures.CrazyPhoneGetContactsProcedure;
+import fr.lordfinn.crazyphone.procedures.CrazyPhoneGetGroupsProcedure;
 import fr.lordfinn.crazyphone.procedures.GetCrazyPhoneNumberFromMainHandProcedure;
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneContactsScreenMenu;
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneConversationMenu;
+import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneGroupSettingsScreenMenu;
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneMayorCandidateScreenMenu;
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneMayorsCandidatesListMenu;
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhonePasswordScreenMenu;
@@ -29,8 +32,11 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.MenuProvider;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.item.ItemStack;
+import net.neoforged.neoforge.items.IItemHandlerModifiable;
 import net.neoforged.neoforge.network.connection.ConnectionType;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.server.level.ServerPlayer;
@@ -90,6 +96,8 @@ public class ScreenMenuUtils {
                 openPhoneContactsMenu(player, hand);
             case "crazyphone:crazy_phone_conversation" ->
                 openPhoneConversationMenu(player, hand, screenData);
+            case "crazyphone:crazy_phone_group_settings_screen" ->
+                openGroupSettingsMenu(player, hand, screenData);
             case "crazyphone:crazy_phone_mayors_candidates_list" ->
                 openPhoneCustomMenu(player, hand, CrazyPhoneMayorsCandidatesListMenu.class);
             default ->
@@ -264,7 +272,30 @@ public class ScreenMenuUtils {
     public static void openPhoneContactsMenu(Player player, InteractionHand hand) {
         if (player instanceof ServerPlayer) {
             String ownerNumber = GetCrazyPhoneNumberFromMainHandProcedure.execute(player, null);
-            ListTag contacts = CrazyPhoneGetContactsProcedure.execute(player.level(), ownerNumber);
+            Level world = player.level();
+            ListTag allContactsTag = CrazyPhoneGetContactsProcedure.execute(world, ownerNumber);
+            ListTag groupsTag = CrazyPhoneGetGroupsProcedure.execute(world, ownerNumber);
+            Set<String> favoriteNumbers = CrazyPhoneHelper.getFavoriteNumbers(world, ownerNumber);
+
+            List<CompoundTag> favorites = new ArrayList<>();
+            List<CompoundTag> contacts = new ArrayList<>();
+            for (Tag t : allContactsTag) {
+                if (!(t instanceof CompoundTag compound))
+                    continue;
+                (favoriteNumbers.contains(compound.getString("number")) ? favorites : contacts).add(compound);
+            }
+            List<CompoundTag> groups = new ArrayList<>();
+            for (Tag t : groupsTag) {
+                if (t instanceof CompoundTag compound)
+                    groups.add(compound);
+            }
+
+            // Most recently active conversation first, within each section - contacts/groups that have
+            // never been messaged sort to the bottom (timecode 0), favorites always stay their own section
+            // above the rest regardless of recency.
+            sortByRecency(favorites, world, ownerNumber, false);
+            sortByRecency(contacts, world, ownerNumber, false);
+            sortByRecency(groups, world, ownerNumber, true);
 
             player.openMenu(new MenuProvider() {
                 @Override
@@ -275,7 +306,7 @@ public class ScreenMenuUtils {
                 @Override
                 public AbstractContainerMenu createMenu(int id, Inventory inventory, Player player) {
                     FriendlyByteBuf packetBuffer = new FriendlyByteBuf(Unpooled.buffer());
-                    populateBufferWithMenuData(packetBuffer, player, hand, contacts);
+                    populateBufferWithMenuData(packetBuffer, player, hand, favorites, contacts, groups);
 
                     try {
                         return new CrazyPhoneContactsScreenMenu(id, inventory, packetBuffer);
@@ -283,23 +314,31 @@ public class ScreenMenuUtils {
                         throw new RuntimeException("Failed to create menu instance", e);
                     }
                 }
-            }, buf -> populateBufferWithMenuData(buf, player, hand, contacts));
+            }, buf -> populateBufferWithMenuData(buf, player, hand, favorites, contacts, groups));
         }
     }
 
-    private static void populateBufferWithMenuData(FriendlyByteBuf buf, Player player, InteractionHand hand,
-            ListTag contacts) {
-        buf.writeBlockPos(player.blockPosition());
-        buf.writeByte(0); // Always Main Hand
-        serializeContactsToBuffer(buf, contacts);
+    private static void sortByRecency(List<CompoundTag> entries, Level world, String ownerNumber, boolean isGroup) {
+        entries.sort((a, b) -> {
+            String idA = isGroup ? a.getString("conversationId") : CrazyPhoneHelper.getConversationNumber(a.getString("number"), ownerNumber);
+            String idB = isGroup ? b.getString("conversationId") : CrazyPhoneHelper.getConversationNumber(b.getString("number"), ownerNumber);
+            return Integer.compare(CrazyPhoneHelper.getLastMessageTimecode(world, idB), CrazyPhoneHelper.getLastMessageTimecode(world, idA));
+        });
     }
 
-    private static void serializeContactsToBuffer(FriendlyByteBuf buf, ListTag contacts) {
+    private static void populateBufferWithMenuData(FriendlyByteBuf buf, Player player, InteractionHand hand,
+            List<CompoundTag> favorites, List<CompoundTag> contacts, List<CompoundTag> groups) {
+        buf.writeBlockPos(player.blockPosition());
+        buf.writeByte(0); // Always Main Hand
+        serializeContactsToBuffer(buf, favorites);
+        serializeContactsToBuffer(buf, contacts);
+        serializeGroupsToBuffer(buf, groups);
+    }
+
+    private static void serializeContactsToBuffer(FriendlyByteBuf buf, List<CompoundTag> contacts) {
         buf.writeInt(contacts.size());
-        for (Tag contact : contacts) {
-            if (contact instanceof CompoundTag compoundTag) {
-                serializeContactDetails(buf, compoundTag);
-            }
+        for (CompoundTag contact : contacts) {
+            serializeContactDetails(buf, contact);
         }
     }
 
@@ -315,6 +354,89 @@ public class ScreenMenuUtils {
         buf.writeUtf(skin);
     }
 
+    private static void serializeGroupsToBuffer(FriendlyByteBuf buf, List<CompoundTag> groups) {
+        buf.writeInt(groups.size());
+        for (CompoundTag groupCompound : groups) {
+            buf.writeUtf(groupCompound.getString("conversationId"));
+            buf.writeUtf(groupCompound.getString("name"));
+            buf.writeNbt(groupCompound.getCompound("icon"));
+            buf.writeUtf(groupCompound.getString("admin"));
+            ListTag members = groupCompound.getList("members", CompoundTag.TAG_COMPOUND);
+            buf.writeInt(members.size());
+            for (Tag member : members) {
+                if (member instanceof CompoundTag memberCompound) {
+                    serializeContactDetails(buf, memberCompound);
+                }
+            }
+        }
+    }
+
+    /** Opens the group settings screen for {@code conversationId}: current name/icon/admin plus every
+     * current member (including the viewer, so the screen can tell who they are relative to the admin). */
+    public static void openGroupSettingsMenu(Player player, InteractionHand hand, String conversationId) {
+        if (player instanceof ServerPlayer) {
+            player.openMenu(new MenuProvider() {
+                @Override
+                public Component getDisplayName() {
+                    return Component.translatable("item.crazyphone.crazy_phone");
+                }
+
+                @Override
+                public AbstractContainerMenu createMenu(int id, Inventory inventory, Player player) {
+                    FriendlyByteBuf packetBuffer = new FriendlyByteBuf(Unpooled.buffer());
+                    populateBufferWithGroupSettingsData(packetBuffer, player, conversationId);
+
+                    try {
+                        return new CrazyPhoneGroupSettingsScreenMenu(id, inventory, packetBuffer);
+                    } catch (Exception e) {
+                        throw new RuntimeException("Failed to create menu instance", e);
+                    }
+                }
+            }, buf -> populateBufferWithGroupSettingsData(buf, player, conversationId));
+        }
+    }
+
+    private static void populateBufferWithGroupSettingsData(FriendlyByteBuf buf, Player player, String conversationId) {
+        buf.writeBlockPos(player.blockPosition());
+        buf.writeByte(0); // Always Main Hand
+        CrazyPhoneHelper.GroupMeta meta = CrazyPhoneHelper.getGroupMeta(player.level(), conversationId);
+        buf.writeUtf(conversationId);
+        buf.writeUtf(meta.name());
+        buf.writeNbt(CrazyPhoneHelper.encodeItemStack(player.level(), meta.icon()));
+        buf.writeUtf(meta.admin());
+        List<Contact> members = CrazyPhoneHelper.getGroupMemberContacts(player.level(), conversationId);
+        buf.writeInt(members.size());
+        for (Contact contact : members) {
+            buf.writeUtf(contact.getNumber());
+            buf.writeUtf(contact.getName());
+            buf.writeUtf(contact.getUuid() == null ? "" : contact.getUuid());
+            buf.writeUtf(contact.getSkin() == null ? "" : contact.getSkin());
+        }
+
+        // Viewer's own contacts who AREN'T already in the group - shown in the settings screen as
+        // "invite to group" rows, so members can be added without leaving the screen.
+        String viewerNumber = GetCrazyPhoneNumberFromMainHandProcedure.execute(player, null);
+        ListTag viewerContacts = CrazyPhoneGetContactsProcedure.execute(player.level(), viewerNumber);
+        List<Contact> invitable = new ArrayList<>();
+        for (Tag contactTag : viewerContacts) {
+            if (!(contactTag instanceof CompoundTag compoundTag))
+                continue;
+            String number = compoundTag.getString("number");
+            if (members.stream().anyMatch(m -> m.getNumber().equals(number)))
+                continue;
+            invitable.add(new Contact(number, compoundTag.getString("name"),
+                    compoundTag.contains("skin", CompoundTag.TAG_STRING) ? compoundTag.getString("skin") : "",
+                    compoundTag.contains("uuid", CompoundTag.TAG_STRING) ? compoundTag.getString("uuid") : ""));
+        }
+        buf.writeInt(invitable.size());
+        for (Contact contact : invitable) {
+            buf.writeUtf(contact.getNumber());
+            buf.writeUtf(contact.getName());
+            buf.writeUtf(contact.getUuid() == null ? "" : contact.getUuid());
+            buf.writeUtf(contact.getSkin() == null ? "" : contact.getSkin());
+        }
+    }
+
     public static void openPhoneAlbumMenu(Player player, InteractionHand hand, int albumId) {
         if (player instanceof ServerPlayer serverPlayer) {
 
@@ -322,6 +444,14 @@ public class ScreenMenuUtils {
             if (sound != null) {
                 serverPlayer.playNotifySound(sound, SoundSource.PLAYERS, 0.7f, 1.2f);
             }
+
+            // Resolved fresh from the server's own copy of the held phone right now, then transmitted whole
+            // (see CrazyPhonePicturesScreenMenu) - the client's own local copy of that item can still be a
+            // tick or two behind a photo that was just taken, which used to make it invisible until the
+            // album was reopened a second time.
+            IItemHandlerModifiable handler = CrazyPhoneHelper.getPhoneItemHandler(player);
+            ItemStack album = CrazyPhoneHelper.getAlbumFromPhoneHandler(handler, albumId);
+            CompoundTag albumTag = CrazyPhoneHelper.encodeItemStack(player.level(), album);
 
             player.openMenu(new MenuProvider() {
                 @Override
@@ -335,6 +465,7 @@ public class ScreenMenuUtils {
                     packetBuffer.writeBlockPos(player.blockPosition());
                     packetBuffer.writeByte(hand == InteractionHand.MAIN_HAND ? 0 : 1);
                     packetBuffer.writeInt(albumId);
+                    packetBuffer.writeNbt(albumTag);
 
                     try {
                         return new CrazyPhonePicturesScreenMenu(id, inventory, packetBuffer);
@@ -346,6 +477,7 @@ public class ScreenMenuUtils {
                 buf.writeBlockPos(player.blockPosition());
                 buf.writeByte(0); // Always Main Hand
                 buf.writeInt(albumId);
+                buf.writeNbt(albumTag);
             });
         }
     }
@@ -415,6 +547,24 @@ public class ScreenMenuUtils {
 
         writePlayerAndConversationInfo(packetBuffer, player, conversationId);
         writeParticipantsToBuffer(packetBuffer, player, conversationId);
+        writeGroupMetaToBuffer(packetBuffer, player, conversationId);
+    }
+
+    /** Whether this conversation IS a group (was ever created as one via createGroup) plus its custom
+     * name/icon/admin, so the conversation screen can show the group's display name/icon in its header
+     * and the settings cog icon only where it applies. Deliberately NOT based on the current live member
+     * count: a group that's been excluded down to 2 (or even 1) people is still that same group - its
+     * conversationId is a completely different id from the real 1:1 conversation between whichever people
+     * happen to remain, and it must keep its identity (name, icon, settings access) rather than silently
+     * degrading into looking like an ordinary 1:1 chat. Empty name/icon means "unset" - the client falls
+     * back to member names / cycling heads, same convention as the contacts screen's group entries. */
+    private static void writeGroupMetaToBuffer(RegistryFriendlyByteBuf buffer, Player player, String conversationId) {
+        boolean isGroup = CrazyPhoneHelper.hasGroupMeta(player.level(), conversationId);
+        CrazyPhoneHelper.GroupMeta meta = CrazyPhoneHelper.getGroupMeta(player.level(), conversationId);
+        buffer.writeBoolean(isGroup);
+        buffer.writeUtf(meta.name());
+        buffer.writeNbt(CrazyPhoneHelper.encodeItemStack(player.level(), meta.icon()));
+        buffer.writeUtf(meta.admin());
     }
 
     private static void writePlayerAndConversationInfo(RegistryFriendlyByteBuf buffer, Player player, String conversationId) {
@@ -424,7 +574,7 @@ public class ScreenMenuUtils {
     }
 
     private static void writeParticipantsToBuffer(RegistryFriendlyByteBuf buffer, Player player, String conversationId) {
-        List<String> participantNumbers = CrazyPhoneHelper.getNumbersFromConversationId(conversationId);
+        List<String> participantNumbers = CrazyPhoneHelper.getGroupMembers(player.level(), conversationId);
         List<Contact> participants = new ArrayList<>();
 
         for (String number : participantNumbers) {

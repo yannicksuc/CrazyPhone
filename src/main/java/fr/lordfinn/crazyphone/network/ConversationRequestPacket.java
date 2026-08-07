@@ -50,11 +50,14 @@ public record ConversationRequestPacket(String conversationId, int skipFromEnd) 
         context.enqueueWork(() -> {
             if (!(context.player() instanceof ServerPlayer player))
                 return;
-            // Conversation ids are just the two participants' numbers sorted and joined, and every phone
+            // Conversation ids are just the participants' numbers sorted and joined, and every phone
             // number is publicly visible via the phone registry sync - without this check any player could
-            // request any other pair's conversation id and read their private message history.
+            // request any other conversation id and read its private message history. Checked against the
+            // LIVE membership (getGroupMembers), not the numbers baked into the id itself: a group member
+            // excluded via the settings screen must lose read access immediately even though the
+            // conversationId (and its already-sent history) doesn't change.
             String requesterNumber = GetCrazyPhoneNumberFromMainHandProcedure.execute(player, null);
-            if (requesterNumber.isEmpty() || !CrazyPhoneHelper.getNumbersFromConversationId(message.conversationId).contains(requesterNumber))
+            if (requesterNumber.isEmpty() || !CrazyPhoneHelper.getGroupMembers(player.level(), message.conversationId).contains(requesterNumber))
                 return;
             ConversationSavedData conversations = ConversationSavedData.get(player.level());
             int limit = Config.maxMessagesSentPerRequest;
