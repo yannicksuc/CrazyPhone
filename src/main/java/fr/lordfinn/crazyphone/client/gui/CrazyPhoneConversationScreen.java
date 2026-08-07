@@ -99,7 +99,6 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
     @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
         updateButtonVisibility(mouseX, mouseY);
-        this.renderBackground(guiGraphics, mouseX, mouseY, partialTicks);
         super.render(guiGraphics, mouseX, mouseY, partialTicks);
         this.renderBanner(guiGraphics);
         if (menu.isGroup())

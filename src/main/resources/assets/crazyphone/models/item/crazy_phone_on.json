@@ -2,11 +2,8 @@
 	"format_version": "1.21.11",
 	"credit": "Made with Blockbench",
 	"textures": {
-		"layer0": "crazyphone:item/crazyphone_off"
+		"layer0": "crazyphone:item/crazyphone"
 	},
-	"overrides": [
-		{"predicate": {"crazyphone:screen_on": 1}, "model": "crazyphone:item/crazy_phone_on"}
-	],
 	"elements": [
 		{
 			"from": [6, 0, 7.5],

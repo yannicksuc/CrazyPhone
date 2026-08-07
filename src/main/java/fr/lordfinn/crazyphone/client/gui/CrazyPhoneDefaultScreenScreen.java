@@ -86,6 +86,19 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 		this.renderTooltip(guiGraphics, mouseX, mouseY);
 	}
 
+	/** A much lighter dim than vanilla's default (AbstractContainerScreen#renderBackground normally fills a
+	 * gradient at roughly 75-82% opacity via renderTransparentBackground - see Screen#renderTransparentBackground)
+	 * - the phone is meant to be checked while still keeping an eye on your surroundings, not a full-screen
+	 * menu that blacks out the world behind it. AbstractContainerScreen's own renderBackground is ALSO
+	 * where {@link #renderBg} normally gets invoked from, so an override that doesn't call it itself
+	 * silently drops the phone's own background image - that's the one call that actually matters here,
+	 * not just the dim color. */
+	@Override
+	public void renderBackground(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+		guiGraphics.fill(0, 0, this.width, this.height, 0x50000000);
+		this.renderBg(guiGraphics, partialTick, mouseX, mouseY);
+	}
+
 	@Override
 	protected void renderBg(GuiGraphics guiGraphics, float partialTicks, int gx, int gy) {
 		RenderSystem.setShaderColor(1, 1, 1, 1);

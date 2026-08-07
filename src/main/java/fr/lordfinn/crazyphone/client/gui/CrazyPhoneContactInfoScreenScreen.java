@@ -85,7 +85,6 @@ public class CrazyPhoneContactInfoScreenScreen extends CrazyPhoneDefaultScreenSc
 
 	@Override
 	public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
-		this.renderBackground(guiGraphics, mouseX, mouseY, partialTicks);
 		super.render(guiGraphics, mouseX, mouseY, partialTicks);
 		renderHeader(guiGraphics, resolveHeaderIcon(),
 				Component.translatable("gui.crazyphone.crazy_phone_contact_info_screen.title"));
