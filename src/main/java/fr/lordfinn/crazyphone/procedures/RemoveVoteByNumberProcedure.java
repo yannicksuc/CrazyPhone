@@ -29,8 +29,10 @@ public class RemoveVoteByNumberProcedure {
 		if (votes.contains(numberStr)) {
 			votes.remove(numberStr);
 
+			// mayorVotes is never read client-side (only by /phoneshowvotes, server-side), so this only
+			// needs a disk-persistence mark, not a broadcast of the whole registry to every online player.
 			PhoneRegistrySavedData.get(world).mayorVotes = votes;
-			PhoneRegistrySavedData.get(world).syncToAll(world);
+			PhoneRegistrySavedData.get(world).setDirty();
 
 			if (entity instanceof Player player) {
 				player.displayClientMessage(

@@ -142,7 +142,6 @@ Photos are taken with (and rendered through) [Camera](https://github.com/henkelm
 |---|---|---|
 | Minecraft | `1.21.1` | Runtime |
 | [NeoForge](https://neoforged.net/) | `21.1.248+` | Runtime |
-| [GeckoLib](https://github.com/bernie-g/geckolib) | `4.7.5.1` | Runtime, resolved automatically from Maven |
 | [Camera by Max Henkel](https://github.com/henkelmax/camera) | `1.21.1-1.0.21` | Runtime **and** build, see below |
 
 > [!IMPORTANT]
@@ -153,7 +152,7 @@ Photos are taken with (and rendered through) [Camera](https://github.com/henkelm
 ## 🎮 Installation (players / server admins)
 
 1. Install [NeoForge `21.1.248`](https://neoforged.net/) or newer for Minecraft `1.21.1`.
-2. Download and install **[Camera](https://github.com/henkelmax/camera)** and **GeckoLib** into your `mods/` folder. CrazyPhone will not load without them.
+2. Download and install **[Camera](https://github.com/henkelmax/camera)** into your `mods/` folder. CrazyPhone will not load without it.
 3. Drop the built `crazyphone-*.jar` into `mods/` alongside them.
 4. Launch the game, craft/obtain a Crazy Phone, and register a number.
 
@@ -265,7 +264,7 @@ src/main/java/fr/lordfinn/crazyphone/
 ├── command/          /phone* admin & gameplay commands
 ├── data/              SavedData + player attachments (the crash fix lives here)
 ├── init/               Item/menu/screen/tab registration
-├── item/               The Crazy Phone item, its GeckoLib model & inventory capability
+├── item/               The Crazy Phone item, its vanilla item model & inventory capability
 ├── mixin/             Integration points into the Camera mod
 ├── network/           Client-server packets
 ├── procedures/        Ported gameplay logic (1:1 from the original mod, adapted to the new data layer)
@@ -278,7 +277,6 @@ src/main/java/fr/lordfinn/crazyphone/
 ## 🙏 Credits
 
 - **[Camera](https://github.com/henkelmax/camera)** by [Max Henkel](https://github.com/henkelmax): the photography engine CrazyPhone builds its camera/album features on top of.
-- **[GeckoLib](https://github.com/bernie-g/geckolib)**: item model & animation library.
 - Original `crazythings` project: source of the feature set and assets this mod ports and rebuilds.
 
 ## 📄 License

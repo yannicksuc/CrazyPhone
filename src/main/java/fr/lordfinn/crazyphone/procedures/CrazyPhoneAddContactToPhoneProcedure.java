@@ -25,8 +25,12 @@ public class CrazyPhoneAddContactToPhoneProcedure {
 		}
 		if (!alreadyPresent) {
 			numbers.addTag(0, StringTag.valueOf(contact));
-			PhoneRegistrySavedData.get(world).contacts.put(owner, numbers);
+			PhoneRegistrySavedData registry = PhoneRegistrySavedData.get(world);
+			registry.contacts.put(owner, numbers);
+			// Only the owner's own client ever reads this list, and only via a fresh server-side fetch
+			// (CrazyPhoneGetContactsProcedure) whenever they open the Contacts screen - never from a
+			// locally-synced copy - so this only needs a disk-persistence mark, not a network broadcast.
+			registry.setDirty();
 		}
-		PhoneRegistrySavedData.get(world).syncToAll(world);
 	}
 }

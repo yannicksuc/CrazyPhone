@@ -119,6 +119,12 @@ public record CrazyPhoneContactsScreenButtonMessage(int buttonID, int x, int y, 
 			// once someone happens to send the first message) so it shows up in everyone's Contacts screen.
 			// The creator becomes the initial admin.
 			CrazyPhoneHelper.createGroup(world, conversationId, members, creatorNumber);
+
+			var creatorContact = CrazyPhoneHelper.getContact(world, creatorNumber);
+			String creatorName = creatorContact != null ? creatorContact.getName() : creatorNumber;
+			for (String otherNumber : otherNumbers)
+				CrazyPhoneHelper.notifyGroupAddition(world, otherNumber, "Groupe", creatorName);
+
 			ScreenMenuUtils.openPhoneConversationMenu(entity, InteractionHand.MAIN_HAND, conversationId);
 		}
 		else if (buttonID == 3) { // Remove the selected contacts

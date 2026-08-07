@@ -11,13 +11,6 @@ group = mod_group_id
 
 repositories {
     mavenLocal()
-    maven {
-        name = 'GeckoLib'
-        url 'https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/'
-        content {
-            includeGroup("software.bernie.geckolib")
-        }
-    }
 }
 
 base {
@@ -114,7 +107,6 @@ sourceSets.main.resources { srcDir 'src/generated/resources' }
 
 
 dependencies {
-    implementation "software.bernie.geckolib:geckolib-neoforge-1.21.1:${geckolib_version}"
     implementation files('libs/camera-neoforge-1.21.1-1.0.21.jar')
 }
 

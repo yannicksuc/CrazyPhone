@@ -136,6 +136,7 @@ public record CrazyPhoneGroupSettingsButtonMessage(int buttonID, int x, int y, i
 		if (addedCsv.isEmpty())
 			return;
 
+		String groupLabel = groupLabel(world, conversationId);
 		for (String target : addedCsv.split(",")) {
 			if (target.isEmpty())
 				continue;
@@ -145,7 +146,18 @@ public record CrazyPhoneGroupSettingsButtonMessage(int buttonID, int x, int y, i
 			CrazyPhoneHelper.addGroupMember(world, conversationId, target);
 			Component text = Component.translatable("gui.crazyphone.crazy_phone_group_settings.system_added", requesterName, contactName(world, target));
 			CrazyPhoneHelper.addSystemMessage(world, conversationId, text, new ItemStack(Items.PLAYER_HEAD));
+			CrazyPhoneHelper.notifyGroupAddition(world, target, groupLabel, requesterName);
 		}
+	}
+
+	/** The group's custom name if set, otherwise a generic fallback - used for the "you were added to X"
+	 * notification, which needs a single readable label regardless of whether the group's been named yet.
+	 * Hardcoded French, like the sibling {@link fr.lordfinn.crazyphone.network.CrazyPhoneNewMessageNotificationPacket}
+	 * notification it mirrors - a Component wouldn't resolve to translated text server-side anyway (no lang
+	 * files loaded there), and that packet's toast text isn't run through the lang files either. */
+	private static String groupLabel(Level world, String conversationId) {
+		String name = CrazyPhoneHelper.getGroupMeta(world, conversationId).name();
+		return (name != null && !name.isEmpty()) ? name : "Groupe";
 	}
 
 	/** Returns whether the requester excluded themselves (so the caller knows to send them back to
@@ -157,6 +169,7 @@ public record CrazyPhoneGroupSettingsButtonMessage(int buttonID, int x, int y, i
 
 		boolean selfExcluded = false;
 		String admin = CrazyPhoneHelper.getGroupMeta(world, conversationId).admin();
+		String groupLabel = groupLabel(world, conversationId);
 		for (String target : excludedCsv.split(",")) {
 			if (target.isEmpty())
 				continue;
@@ -173,6 +186,9 @@ public record CrazyPhoneGroupSettingsButtonMessage(int buttonID, int x, int y, i
 					? Component.translatable("gui.crazyphone.crazy_phone_group_settings.system_left", targetName)
 					: Component.translatable("gui.crazyphone.crazy_phone_group_settings.system_removed", requesterName, targetName);
 			CrazyPhoneHelper.addSystemMessage(world, conversationId, text, new ItemStack(Items.PLAYER_HEAD));
+
+			if (!isSelf)
+				CrazyPhoneHelper.notifyGroupRemoval(world, target, groupLabel, requesterName);
 
 			if (newAdmin != null) {
 				Component adminText = Component.translatable("gui.crazyphone.crazy_phone_group_settings.system_new_admin", contactName(world, newAdmin));

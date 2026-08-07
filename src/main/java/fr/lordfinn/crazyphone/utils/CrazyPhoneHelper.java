@@ -30,6 +30,7 @@ import fr.lordfinn.crazyphone.client.gui.components.MessageData;
 import fr.lordfinn.crazyphone.data.ConversationSavedData;
 import fr.lordfinn.crazyphone.data.PhoneRegistrySavedData;
 import fr.lordfinn.crazyphone.item.CrazyPhoneItem;
+import fr.lordfinn.crazyphone.network.CrazyPhoneGroupMembershipNotificationPacket;
 import fr.lordfinn.crazyphone.network.CrazyPhoneNewMessageNotificationPacket;
 import fr.lordfinn.crazyphone.procedures.CrazyPhoneAddContactToPhoneProcedure;
 import fr.lordfinn.crazyphone.procedures.CrazyPhoneGetContactsProcedure;
@@ -548,15 +549,18 @@ public class CrazyPhoneHelper {
                 membersTag.add(StringTag.valueOf(number));
             meta.put("members", membersTag);
             registry.groupMeta.put(conversationId, meta);
-            registry.setDirty();
         }
 
-        syncGroupMembership(world, conversationId, getGroupMembers(world, conversationId));
+        addToGroupsList(registry, conversationId, getGroupMembers(world, conversationId));
+        registry.setDirty();
     }
 
-    /** Makes sure every given member's phone registry entry lists {@code conversationId} under "groups". */
-    private static void syncGroupMembership(Level world, String conversationId, List<String> members) {
-        PhoneRegistrySavedData registry = PhoneRegistrySavedData.get(world);
+    /** Makes sure every given member's phone registry entry lists {@code conversationId} under "groups" -
+     * this (like {@code groupMeta} itself) is pure server-side bookkeeping: {@link CrazyPhoneGetGroupsProcedure}
+     * re-reads it fresh from the world every time a client opens the Contacts or group settings screen, no
+     * client ever reads it from its own locally-synced registry copy, so none of the group-mutating methods
+     * below need to sync anything over the network - a disk-persistence mark is enough. */
+    private static void addToGroupsList(PhoneRegistrySavedData registry, String conversationId, List<String> members) {
         CompoundTag phonesTag = registry.phones;
 
         for (String number : members) {
@@ -579,21 +583,32 @@ public class CrazyPhoneHelper {
             groups.add(StringTag.valueOf(conversationId));
             phoneCompoundTag.put("groups", groups);
             phonesTag.put(number, phoneCompoundTag);
-            syncToMemberIfOnline(world, registry, number);
         }
     }
 
-    private static void syncToMemberIfOnline(Level world, PhoneRegistrySavedData registry, String number) {
+    /** Tells {@code memberNumber} (if currently online) that {@code actorName} just added them to a group,
+     * the same "toast + sound" notification style as a new message - a targeted send, never a broadcast. */
+    public static void notifyGroupAddition(Level world, String memberNumber, String groupLabel, String actorName) {
+        sendGroupMembershipNotification(world, memberNumber, groupLabel, actorName, true);
+    }
+
+    /** Tells {@code memberNumber} (if currently online) that {@code actorName} just removed them from a
+     * group - only meant for an admin excluding someone else; a voluntary leave doesn't need this, the
+     * leaver already knows. */
+    public static void notifyGroupRemoval(Level world, String memberNumber, String groupLabel, String actorName) {
+        sendGroupMembershipNotification(world, memberNumber, groupLabel, actorName, false);
+    }
+
+    private static void sendGroupMembershipNotification(Level world, String memberNumber, String groupLabel, String actorName, boolean added) {
         MinecraftServer server = world.getServer();
-        ServerPlayer memberPlayer = null;
-        Contact memberContact = getContact(world, number);
-        if (server != null && memberContact != null && memberContact.getUuid() != null) {
-            memberPlayer = server.getPlayerList().getPlayer(UUID.fromString(memberContact.getUuid()));
-        }
+        if (server == null)
+            return;
+        Contact memberContact = getContact(world, memberNumber);
+        if (memberContact == null || memberContact.getUuid() == null)
+            return;
+        ServerPlayer memberPlayer = server.getPlayerList().getPlayer(UUID.fromString(memberContact.getUuid()));
         if (memberPlayer != null)
-            registry.syncTo(memberPlayer);
-        else
-            registry.setDirty();
+            PacketDistributor.sendToPlayer(memberPlayer, new CrazyPhoneGroupMembershipNotificationPacket(groupLabel, actorName, added));
     }
 
     public static void renameGroup(Level world, String conversationId, String newName) {
@@ -602,7 +617,7 @@ public class CrazyPhoneHelper {
             return;
         meta.putString("name", newName == null ? "" : newName);
         registry.groupMeta.put(conversationId, meta);
-        syncGroupMetaToMembers(world, conversationId);
+        registry.setDirty();
     }
 
     public static void setGroupIcon(Level world, String conversationId, ItemStack icon) {
@@ -611,13 +626,7 @@ public class CrazyPhoneHelper {
             return;
         meta.put("icon", encodeItemStack(world, icon));
         registry.groupMeta.put(conversationId, meta);
-        syncGroupMetaToMembers(world, conversationId);
-    }
-
-    private static void syncGroupMetaToMembers(Level world, String conversationId) {
-        PhoneRegistrySavedData registry = PhoneRegistrySavedData.get(world);
-        for (String number : getGroupMembers(world, conversationId))
-            syncToMemberIfOnline(world, registry, number);
+        registry.setDirty();
     }
 
     /**
@@ -661,9 +670,7 @@ public class CrazyPhoneHelper {
             registry.phones.put(memberNumber, phoneTag);
         }
 
-        syncToMemberIfOnline(world, registry, memberNumber);
-        for (String number : remaining)
-            syncToMemberIfOnline(world, registry, number);
+        registry.setDirty();
         return newAdmin;
     }
 
@@ -686,9 +693,8 @@ public class CrazyPhoneHelper {
         meta.put("members", updatedMembers);
         registry.groupMeta.put(conversationId, meta);
 
-        syncGroupMembership(world, conversationId, List.of(memberNumber));
-        for (String number : members)
-            syncToMemberIfOnline(world, registry, number);
+        addToGroupsList(registry, conversationId, List.of(memberNumber));
+        registry.setDirty();
     }
 
     public static List<MessageData> getMessagesFromBuf(RegistryFriendlyByteBuf buffer) {

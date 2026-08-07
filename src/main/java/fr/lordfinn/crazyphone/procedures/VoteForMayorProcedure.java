@@ -99,10 +99,12 @@ public class VoteForMayorProcedure {
 			}
 			world.getServer().getPlayerList().broadcastSystemMessage(broadcastMessage.withStyle(ChatFormatting.AQUA), false);
 
-			// Enregistrement du vote
+			// Enregistrement du vote - mayorVotes/lastMayorVoteTimestamps are never read client-side (only
+			// by /phoneshowvotes, server-side), so this only needs a disk-persistence mark, not a
+			// broadcast of the whole registry to every online player on every single vote cast.
 			PhoneRegistrySavedData.get(world).mayorVotes.put(myNumber, StringTag.valueOf(numberStr));
 			voteTimestamps.putLong(myNumber, currentTime);
-			PhoneRegistrySavedData.get(world).syncToAll(world);
+			PhoneRegistrySavedData.get(world).setDirty();
 
 			if (entity instanceof ServerPlayer _player) {
 				_player.displayClientMessage(

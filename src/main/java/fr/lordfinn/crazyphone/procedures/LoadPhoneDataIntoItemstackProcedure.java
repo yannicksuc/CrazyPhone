@@ -26,7 +26,8 @@ public class LoadPhoneDataIntoItemstackProcedure {
         updateItemStackTag(itemstack, "skin", phoneData.getString("skin"));
         updateItemStackTag(itemstack, "number", phoneNumber);
 
-        PhoneRegistrySavedData.get(world).syncToAll(world);
+        // This only reads the registry (into the itemstack's own data), it never mutates it - broadcasting
+        // an unchanged registry to every online player here was pure waste.
         itemstack.set(DataComponents.CUSTOM_NAME,
                 Component.literal(("CrazyPhone de " + phoneData.getString("name"))));
     }

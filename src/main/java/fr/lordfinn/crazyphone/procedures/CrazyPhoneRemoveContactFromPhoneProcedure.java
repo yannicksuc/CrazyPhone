@@ -10,10 +10,14 @@ public class CrazyPhoneRemoveContactFromPhoneProcedure {
 	public static void execute(LevelAccessor world, String contact, String owner) {
 		if (contact == null || owner == null)
 			return;
-		ListTag numbers = (PhoneRegistrySavedData.get(world).contacts.get(owner)) instanceof ListTag _listTag ? _listTag.copy() : new ListTag();
+		PhoneRegistrySavedData registry = PhoneRegistrySavedData.get(world);
+		ListTag numbers = (registry.contacts.get(owner)) instanceof ListTag _listTag ? _listTag.copy() : new ListTag();
 		// Removes every matching entry (not just the last one found) in case duplicates ever exist.
 		boolean removedAny = numbers.removeIf(tag -> tag instanceof StringTag stringTag && contact.equals(stringTag.getAsString()));
-		if (removedAny)
-			PhoneRegistrySavedData.get(world).contacts.put(owner, numbers);
+		if (removedAny) {
+			registry.contacts.put(owner, numbers);
+			// No network sync needed - see CrazyPhoneAddContactToPhoneProcedure.
+			registry.setDirty();
+		}
 	}
 }

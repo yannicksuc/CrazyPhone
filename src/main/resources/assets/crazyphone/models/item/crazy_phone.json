@@ -1,6 +1,66 @@
 {
-  "parent": "crazyphone:displaysettings/crazyphone",
-  "textures": {
-    "layer0": "crazyphone:item/crazyphone"
-  }
+	"format_version": "1.21.11",
+	"credit": "Made with Blockbench",
+	"textures": {
+		"layer0": "crazyphone:item/crazyphone"
+	},
+	"elements": [
+		{
+			"from": [6, 0, 7.5],
+			"to": [10, 8, 8.5],
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 4, 8]},
+			"faces": {
+				"north": {"uv": [0, 4, 4, 11.5], "texture": "#layer0"},
+				"east": {"uv": [9, 4, 10, 11.5], "texture": "#layer0"},
+				"south": {"uv": [5, 4, 9, 11.5], "texture": "#layer0"},
+				"west": {"uv": [4, 4, 5, 11.5], "texture": "#layer0"},
+				"up": {"uv": [0, 3, 4, 4], "texture": "#layer0"},
+				"down": {"uv": [4, 3, 8, 4], "texture": "#layer0"}
+			}
+		}
+	],
+	"display": {
+		"thirdperson_righthand": {
+			"rotation": [31, -19, 0],
+			"translation": [0, 5.75, 4.5],
+			"scale": [0.9, 0.9, 0.9]
+		},
+		"thirdperson_lefthand": {
+			"rotation": [31, -19, 0],
+			"translation": [0, 5.75, 4.5],
+			"scale": [0.9, 0.9, 0.9]
+		},
+		"firstperson_righthand": {
+			"rotation": [-17, -41, -10],
+			"translation": [2, 7.5, -0.75],
+			"scale": [1.1, 1.1, 1.1]
+		},
+		"firstperson_lefthand": {
+			"rotation": [-17, -41, -10],
+			"translation": [2, 7.5, -0.75],
+			"scale": [1.1, 1.1, 1.1]
+		},
+		"ground": {
+			"translation": [0, 5.5, 0]
+		},
+		"gui": {
+			"rotation": [17, -20, 0],
+			"translation": [0, 6.75, 0],
+			"scale": [1.75, 1.75, 1.75]
+		},
+		"head": {
+			"rotation": [0, -180, 0],
+			"translation": [0, 16, -5.75],
+			"scale": [4, 4, 4]
+		},
+		"fixed": {
+			"rotation": [0, -180, 0],
+			"translation": [0, 8, 0],
+			"scale": [2, 2, 2]
+		},
+		"on_shelf": {
+			"translation": [0, -0.25, 0],
+			"scale": [1.9, 1.9, 1.9]
+		}
+	}
 }
