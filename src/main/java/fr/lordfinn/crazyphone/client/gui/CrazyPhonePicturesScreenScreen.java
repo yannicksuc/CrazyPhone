@@ -1,22 +1,17 @@
 package fr.lordfinn.crazyphone.client.gui;
 
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.items.IItemHandlerModifiable;
 import net.neoforged.neoforge.network.PacketDistributor;
 
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
-import net.minecraft.sounds.SoundSource;
 import net.minecraft.network.chat.Component;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
-import net.minecraft.client.resources.sounds.SoundInstance;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.Minecraft;
 
@@ -33,14 +28,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 
 import de.maxhenkel.camera.Main;
-import de.maxhenkel.camera.gui.AlbumScreen;
 import de.maxhenkel.camera.items.AlbumItem;
-import de.maxhenkel.camera.items.ImageItem;
 
 public class CrazyPhonePicturesScreenScreen extends CrazyPhoneDefaultScreenScreen<CrazyPhonePicturesScreenMenu> {
 	private final static HashMap<String, Object> guistate = CrazyPhonePicturesScreenMenu.guistate;

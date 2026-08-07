@@ -32,8 +32,8 @@ public class CrazyPhoneContactsScreenMenu extends CrazyPhoneDefaultScreenMenu {
     private static final String CONTACT_TEXTURE = "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvZWRmZmYxYjNjNWQ4NWZlM2NkZDU2NTY4NjliYWEwZWFkZTVlNTNhY2E5ZDU2MTQyNzY0OGNjNzJmNWUyNWE5In19fQ==";
 
     private final Map<Integer, Slot> customSlots = new HashMap<>();
-    private final int slotWidth = 18;
-    private final int slotHeight = 18;
+    private final int slotWidth = SLOT_PITCH;
+    private final int slotHeight = SLOT_PITCH;
     private final List<Contact> contacts = new ArrayList<>();
 
     public List<Contact> getContacts() {
@@ -84,8 +84,8 @@ public class CrazyPhoneContactsScreenMenu extends CrazyPhoneDefaultScreenMenu {
         int slotIndex = 0;
 
         for (int i = 0; i < contacts.size(); i++) {
-            int x = startX + (i % 6) * slotWidth;
-            int y = startY + (i / 6) * slotHeight;
+            int x = startX + (i % GRID_COLUMNS) * slotWidth;
+            int y = startY + (i / GRID_COLUMNS) * slotHeight;
 
 			Slot slot = createSlot(slotIndex + 48, x, y, contacts.get(i));
             this.customSlots.put(slotIndex, this.addSlot(slot));
@@ -111,7 +111,6 @@ public class CrazyPhoneContactsScreenMenu extends CrazyPhoneDefaultScreenMenu {
             @Override
             public void onTake(Player player, ItemStack stack) {
                 super.onTake(player, stack);
-                //handleSlotClick(getSlotIndex());
             }
 
             @Override
@@ -147,11 +146,6 @@ public class CrazyPhoneContactsScreenMenu extends CrazyPhoneDefaultScreenMenu {
     @Override
     public ItemStack quickMoveStack(Player playerIn, int index) {
         return ItemStack.EMPTY; // Disallow quick move
-    }
-
-    @Override
-    public void removed(Player playerIn) {
-        super.removed(playerIn);
     }
 
     @Override

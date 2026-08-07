@@ -32,8 +32,6 @@ import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneContactsScreenMenu;
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneContactInfoScreenMenu;
 import fr.lordfinn.crazyphone.Crazyphone;
 
-import javax.annotation.Nullable;
-
 // Menu type entries are added below as each screen/menu pair is ported.
 @EventBusSubscriber
 public class ModMenus {
@@ -54,12 +52,9 @@ public class ModMenus {
 	public static final DeferredHolder<MenuType<?>, MenuType<CrazyPhoneMayorCandidateScreenMenu>> CRAZY_PHONE_MAYOR_CANDIDATE_SCREEN = REGISTRY.register("crazy_phone_mayor_candidate_screen",
 			() -> IMenuTypeExtension.create(CrazyPhoneMayorCandidateScreenMenu::new));
 
-	public static void setText(String boxname, String value, @Nullable ServerPlayer player) {
-		if (player != null) {
-			PacketDistributor.sendToPlayer(player, new GuiSyncMessage(boxname, value));
-		} else {
-			PacketDistributor.sendToAllPlayers(new GuiSyncMessage(boxname, value));
-		}
+	/** Always targeted at one player - a textbox value belongs to whoever is looking at that screen, never broadcast it. */
+	public static void setText(String boxname, String value, ServerPlayer player) {
+		PacketDistributor.sendToPlayer(player, new GuiSyncMessage(boxname, value));
 	}
 
 	public static record GuiSyncMessage(String editbox, String value) implements CustomPacketPayload {

@@ -19,8 +19,8 @@ import java.util.*;
 
 public class CrazyPhoneMayorsCandidatesListScreen extends CrazyPhoneDefaultScreenScreen<CrazyPhoneMayorsCandidatesListMenu> {
 	private final static HashMap<String, Object> guistate = CrazyPhoneMayorsCandidatesListMenu.guistate;
-	private static final int SLOT_WIDTH = 18;
-	private static final int SLOT_HEIGHT = 18;
+	private static final int SLOT_WIDTH = fr.lordfinn.crazyphone.world.inventory.CrazyPhoneDefaultScreenMenu.SLOT_PITCH;
+	private static final int SLOT_HEIGHT = fr.lordfinn.crazyphone.world.inventory.CrazyPhoneDefaultScreenMenu.SLOT_PITCH;
 
 	private final List<RenderSlot> renderSlots = new ArrayList<>();
 
@@ -54,8 +54,8 @@ public class CrazyPhoneMayorsCandidatesListScreen extends CrazyPhoneDefaultScree
 
 			ItemStack head = CrazyPhoneHelper.createContactHead(contact);
 
-			int x = startX + (i % 6) * SLOT_WIDTH;
-			int y = startY + (i / 6) * SLOT_HEIGHT;
+			int x = startX + (i % fr.lordfinn.crazyphone.world.inventory.CrazyPhoneDefaultScreenMenu.GRID_COLUMNS) * SLOT_WIDTH;
+			int y = startY + (i / fr.lordfinn.crazyphone.world.inventory.CrazyPhoneDefaultScreenMenu.GRID_COLUMNS) * SLOT_HEIGHT;
 			renderSlots.add(new RenderSlot(x, y, head));
 		}
 	}
@@ -113,10 +113,5 @@ public class CrazyPhoneMayorsCandidatesListScreen extends CrazyPhoneDefaultScree
 			this.y = y;
 			this.stack = stack;
 		}
-	}
-
-	@Override
-	public void init() {
-		super.init();
 	}
 }

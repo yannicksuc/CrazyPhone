@@ -5,15 +5,14 @@ import java.util.HashMap;
 import java.util.Map;
 
 import fr.lordfinn.crazyphone.Crazyphone;
-import fr.lordfinn.crazyphone.procedures.CrayPhoneTakePhotoProcedure;
-import fr.lordfinn.crazyphone.procedures.CrazyPhoneOnpenPictureFoldersScreenProcedure;
+import fr.lordfinn.crazyphone.procedures.CrazyPhoneTakePhotoProcedure;
+import fr.lordfinn.crazyphone.procedures.CrazyPhoneOpenPictureFoldersScreenProcedure;
 import fr.lordfinn.crazyphone.utils.ScreenMenuUtils;
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneMayorsCandidatesListMenu;
 import fr.lordfinn.crazyphone.world.inventory.CrazyphoneHomeScreenMenu;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.ComponentSerialization;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.PacketFlow;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -73,10 +72,10 @@ public record CrazyphoneHomeScreenButtonMessage(int buttonID, int x, int y, int 
 			return;
 		if (buttonID == 0) {
 
-			CrayPhoneTakePhotoProcedure.execute(world, entity);
+			CrazyPhoneTakePhotoProcedure.execute(world, entity);
 		}
 		if (buttonID == 1) {
-			CrazyPhoneOnpenPictureFoldersScreenProcedure.execute(world, x, y, z, entity);
+			CrazyPhoneOpenPictureFoldersScreenProcedure.execute(world, x, y, z, entity);
 		}
 		if (buttonID == 2) {
 			ScreenMenuUtils.openPhoneContactsMenu(entity, InteractionHand.MAIN_HAND);
@@ -89,8 +88,8 @@ public record CrazyphoneHomeScreenButtonMessage(int buttonID, int x, int y, int 
 	private static void writeTextState(HashMap<String, String> map, RegistryFriendlyByteBuf buffer) {
 		buffer.writeInt(map.size());
 		for (Map.Entry<String, String> entry : map.entrySet()) {
-			writeComponent(buffer, Component.literal(entry.getKey()));
-			writeComponent(buffer, Component.literal(entry.getValue()));
+			buffer.writeUtf(entry.getKey());
+			buffer.writeUtf(entry.getValue());
 		}
 	}
 
@@ -98,19 +97,11 @@ public record CrazyphoneHomeScreenButtonMessage(int buttonID, int x, int y, int 
 		int size = buffer.readInt();
 		HashMap<String, String> map = new HashMap<>();
 		for (int i = 0; i < size; i++) {
-			String key = readComponent(buffer).getString();
-			String value = readComponent(buffer).getString();
+			String key = buffer.readUtf();
+			String value = buffer.readUtf();
 			map.put(key, value);
 		}
 		return map;
-	}
-
-	private static Component readComponent(RegistryFriendlyByteBuf buffer) {
-		return ComponentSerialization.TRUSTED_STREAM_CODEC.decode(buffer);
-	}
-
-	private static void writeComponent(RegistryFriendlyByteBuf buffer, Component component) {
-		ComponentSerialization.TRUSTED_STREAM_CODEC.encode(buffer, component);
 	}
 
 	@SubscribeEvent

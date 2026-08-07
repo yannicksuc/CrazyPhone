@@ -20,7 +20,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 
-public class CrayPhoneTakePhotoProcedure {
+public class CrazyPhoneTakePhotoProcedure {
     public static void execute(LevelAccessor world, Entity entity) {
         if (!(entity instanceof Player playerIn)) return;
         if (!(world instanceof Level worldIn)) return;

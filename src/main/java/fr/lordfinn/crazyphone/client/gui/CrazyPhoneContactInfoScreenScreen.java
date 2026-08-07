@@ -36,7 +36,7 @@ public class CrazyPhoneContactInfoScreenScreen extends CrazyPhoneDefaultScreenSc
 	EditBox number;
 	Button button_ajouter;
 
-    private static final String[] defaultNames = {"Steve", "Asksan"};
+    private static final String[] defaultNames = {"Steve", "Alex"};
     private static final UUID[] defaultUUIDs = {
         UUID.fromString("792d387e-73d9-4906-9e6f-b8a84c887043"), // Steve
         UUID.fromString("2d5111f6-77fb-4a25-ba72-b6c6648ec801")  // Alex
@@ -100,9 +100,6 @@ public class CrazyPhoneContactInfoScreenScreen extends CrazyPhoneDefaultScreenSc
 		try {
 			// Try to create a RemotePlayer with the given name and UUID
 			this.profile = new GameProfile(uuid, name);
-			/*if (!isConnected)
-				profile = CrazyPhoneContactInfoScreenScreen.applySkinToProfile(profile, uuid.toString());*/
-			//TODO Make offline skins work
         	SkinManager skinManager = Minecraft.getInstance().getSkinManager();
       	  	CompletableFuture<PlayerSkin> skinFuture = skinManager.getOrLoad(profile);
 

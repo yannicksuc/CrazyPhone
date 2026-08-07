@@ -169,20 +169,6 @@ public class ScreenMenuUtils {
         player.setData(PhoneAttachmentTypes.PLAYER_PHONE_STATE, playerData);
     }
 
-    public static void debugPrintScreenHistory(Player player) {
-        PlayerPhoneState playerData = player.getData(PhoneAttachmentTypes.PLAYER_PHONE_STATE);
-        String historyString = playerData.crazyPhoneScreenHistory;
-
-        List<String> history = getScreenHistory(historyString);
-
-        System.out.println("=== CRAZY PHONE SCREEN HISTORY ===");
-        for (int i = 0; i < history.size(); i++) {
-            System.out.println("[" + i + "] " + history.get(i));
-        }
-        System.out.println("Current screen: " + playerData.currentCrazyPhoneScreenOpened);
-        System.out.println("==================================");
-    }
-
     public static void resetToHomeScreen(Player player) {
         PlayerPhoneState playerData = player.getData(PhoneAttachmentTypes.PLAYER_PHONE_STATE);
 
@@ -373,7 +359,7 @@ public class ScreenMenuUtils {
      * its own first page after opening via fr.lordfinn.crazyphone.network.ConversationRequestPacket.
      */
     public static void openPhoneConversationMenu(Player player, InteractionHand hand, String conversationId) {
-            if (player instanceof ServerPlayer) {
+            if (player instanceof ServerPlayer serverPlayer) {
 
                 String playerNumber = GetCrazyPhoneNumberFromMainHandProcedure.execute(player, null);
 
@@ -396,7 +382,8 @@ public class ScreenMenuUtils {
                     if (updatedNotifications.size() != notifications.size()) {
                         phoneCompoundTag.put("notifications", updatedNotifications);
                         phonesTag.put(playerNumber, phoneCompoundTag);
-                        registry.syncToAll(player.level());
+                        // Only this player's own notification badge changed - no one else needs the update.
+                        registry.syncTo(serverPlayer);
                     }
                 }
 

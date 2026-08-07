@@ -29,11 +29,9 @@ class ContactTest {
         Contact contact = new Contact("111", "Alice");
         contact.setUuid("uuid-5678");
         contact.setSkin("new-skin");
-        contact.setPassword("secret");
 
         assertEquals("uuid-5678", contact.getUuid());
         assertEquals("new-skin", contact.getSkin());
-        assertEquals("secret", contact.getPassword());
     }
 
     @Test

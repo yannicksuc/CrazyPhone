@@ -15,7 +15,6 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.network.protocol.PacketFlow;
 import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.chat.ComponentSerialization;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.core.BlockPos;
@@ -97,6 +96,12 @@ public record CrazyPhoneConversationButtonMessage(int buttonID, int x, int y, in
 			// that unbounded full broadcast was the root cause of the server crashing on login as
 			// conversation history grew, so it is intentionally NOT reintroduced here.
 			if (!world.isClientSide()) {
+				// senderNumber comes from the phone actually held by the connected player, but
+				// conversationId is client-supplied - without checking that senderNumber is really one of
+				// its two participants, a modified client could inject a message into a conversation
+				// between two other players and have both of them notified as if it were legitimate.
+				if (senderNumber.isEmpty() || !CrazyPhoneHelper.getNumbersFromConversationId(conversationId).contains(senderNumber))
+					return;
 				CrazyPhoneHelper.addMessage(world, conversationId, senderNumber, message, timestampInMinutes, null);
 			} else {
 				entity.playNotifySound(SoundEvents.WIND_CHARGE_THROW, SoundSource.NEUTRAL, 1, 1);
@@ -116,8 +121,8 @@ public record CrazyPhoneConversationButtonMessage(int buttonID, int x, int y, in
 	private static void writeTextState(HashMap<String, String> map, RegistryFriendlyByteBuf buffer) {
 		buffer.writeInt(map.size());
 		for (Map.Entry<String, String> entry : map.entrySet()) {
-			writeComponent(buffer, Component.literal(entry.getKey()));
-			writeComponent(buffer, Component.literal(entry.getValue()));
+			buffer.writeUtf(entry.getKey());
+			buffer.writeUtf(entry.getValue());
 		}
 	}
 
@@ -125,19 +130,11 @@ public record CrazyPhoneConversationButtonMessage(int buttonID, int x, int y, in
 		int size = buffer.readInt();
 		HashMap<String, String> map = new HashMap<>();
 		for (int i = 0; i < size; i++) {
-			String key = readComponent(buffer).getString();
-			String value = readComponent(buffer).getString();
+			String key = buffer.readUtf();
+			String value = buffer.readUtf();
 			map.put(key, value);
 		}
 		return map;
-	}
-
-	private static Component readComponent(RegistryFriendlyByteBuf buffer) {
-		return ComponentSerialization.TRUSTED_STREAM_CODEC.decode(buffer);
-	}
-
-	private static void writeComponent(RegistryFriendlyByteBuf buffer, Component component) {
-		ComponentSerialization.TRUSTED_STREAM_CODEC.encode(buffer, component);
 	}
 
 	@SubscribeEvent

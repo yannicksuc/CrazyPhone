@@ -27,7 +27,13 @@ public class VoteForMayorProcedure {
 			return InteractionResult.PASS;
 
 		String numberStr = new java.text.DecimalFormat("###").format(Math.round(DoubleArgumentType.getDouble(arguments, "phoneNumber")));
-		String myNumber = ResetCrazyPhoneNumberFromMainHandProcedure.execute(entity);
+		// Read-only lookup of the number already registered to the held phone - NOT
+		// ResetCrazyPhoneNumberFromMainHandProcedure, which fabricates a brand new random number (and
+		// writes it onto whatever's held) whenever the item isn't a set-up phone. Using that mutating
+		// helper here let anyone holding no phone (or any random item) vote under a fresh fake number every
+		// time, bypassing both the "must own a registered phone" requirement and the vote cooldown below
+		// (which keys off myNumber, so a new random number each call never collides with a previous one).
+		String myNumber = GetCrazyPhoneNumberFromMainHandProcedure.execute(entity, null);
 
 		if (myNumber.isEmpty() || numberStr.isEmpty()) {
 			return InteractionResult.PASS;

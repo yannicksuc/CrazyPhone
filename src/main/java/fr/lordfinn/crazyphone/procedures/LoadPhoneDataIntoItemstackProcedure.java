@@ -7,7 +7,6 @@ import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.LivingEntity;
 import fr.lordfinn.crazyphone.data.PhoneRegistrySavedData;
 
 public class LoadPhoneDataIntoItemstackProcedure {

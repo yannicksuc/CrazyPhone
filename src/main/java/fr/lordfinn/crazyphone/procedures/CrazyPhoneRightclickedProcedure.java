@@ -38,7 +38,7 @@ public class CrazyPhoneRightclickedProcedure {
 					}
 				}
 			} else {
-				CrayPhoneTakePhotoProcedure.execute(world, entity);
+				CrazyPhoneTakePhotoProcedure.execute(world, entity);
 			}
 		}
 	}

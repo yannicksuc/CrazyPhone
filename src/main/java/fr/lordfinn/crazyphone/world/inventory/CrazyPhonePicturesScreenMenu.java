@@ -21,8 +21,8 @@ import org.slf4j.LoggerFactory;
 public class CrazyPhonePicturesScreenMenu extends CrazyPhoneDefaultScreenMenu {
 	public static final HashMap<String, Object> guistate = new HashMap<>();
 	private final Map<Integer, Slot> customSlots = new HashMap<>();
-	private final int slotWidth = 18;
-	private final int slotHeight = 18;
+	private final int slotWidth = SLOT_PITCH;
+	private final int slotHeight = SLOT_PITCH;
 	public int albumId = 0;
 	/** The album ItemStack itself (icon + custom name), exposed so the screen can show it in its page header. */
 	public ItemStack albumStack = ItemStack.EMPTY;
@@ -45,7 +45,7 @@ public class CrazyPhonePicturesScreenMenu extends CrazyPhoneDefaultScreenMenu {
 
 				int slotIndex = 0;
 				for (int row = 0; row < 7; row++) {
-					for (int col = 0; col < 6; col++) {
+					for (int col = 0; col < GRID_COLUMNS; col++) {
 						int x = startX + col * slotWidth;
 						int y = startY + row * slotHeight;
 						final int index = slotIndex;

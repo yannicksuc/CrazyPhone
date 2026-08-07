@@ -45,9 +45,15 @@ public class RegisterNewPhoneFromFormProcedure {
             }
         }
 
+        // Refuse to overwrite an existing registration - CrazyPhoneGetInitialFormValidationMessageProcedure
+        // already blocks this from the normal UI flow, but this is the actual write path so it must not
+        // trust that gate alone (a modified client could invoke registration directly).
+        String targetNumber = textstate.containsKey("textin:number") ? (String) textstate.get("textin:number") : "";
+        if (IsPhoneInUseProcedure.execute(world, targetNumber))
+            return;
+
         // Add the phone data to the world's registry
-        PhoneRegistrySavedData.get(world).phones.put(
-            textstate.containsKey("textin:number") ? (String) textstate.get("textin:number") : "", phone);
+        PhoneRegistrySavedData.get(world).phones.put(targetNumber, phone);
 
         // Update itemstack with name and number from GUI state again
         updateItemStackTag(itemstack, textstate, "textin:number", "number");

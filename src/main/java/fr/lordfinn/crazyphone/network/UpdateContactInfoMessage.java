@@ -9,8 +9,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.network.protocol.PacketFlow;
 import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.ComponentSerialization;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 
@@ -27,14 +25,14 @@ public record UpdateContactInfoMessage(String name, String uuid, String number) 
     public static final StreamCodec<RegistryFriendlyByteBuf, UpdateContactInfoMessage> STREAM_CODEC =
         StreamCodec.of(
             (RegistryFriendlyByteBuf buffer, UpdateContactInfoMessage message) -> {
-                writeComponent(buffer, Component.literal(message.name));
-                writeComponent(buffer, Component.literal(message.uuid));
-                writeComponent(buffer, Component.literal(message.number));
+                buffer.writeUtf(message.name);
+                buffer.writeUtf(message.uuid);
+                buffer.writeUtf(message.number);
             },
             (RegistryFriendlyByteBuf buffer) -> new UpdateContactInfoMessage(
-                readComponent(buffer).getString(),
-                readComponent(buffer).getString(),
-                readComponent(buffer).getString()
+                buffer.readUtf(),
+                buffer.readUtf(),
+                buffer.readUtf()
             )
         );
 
@@ -52,14 +50,6 @@ public record UpdateContactInfoMessage(String name, String uuid, String number) 
                 }
             });
         }
-    }
-
-    private static Component readComponent(RegistryFriendlyByteBuf buffer) {
-        return ComponentSerialization.TRUSTED_STREAM_CODEC.decode(buffer);
-    }
-
-    private static void writeComponent(RegistryFriendlyByteBuf buffer, Component component) {
-        ComponentSerialization.TRUSTED_STREAM_CODEC.encode(buffer, component);
     }
 
     @SubscribeEvent

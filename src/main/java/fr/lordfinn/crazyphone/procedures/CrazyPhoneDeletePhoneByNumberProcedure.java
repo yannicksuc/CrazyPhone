@@ -1,7 +1,6 @@
 package fr.lordfinn.crazyphone.procedures;
 
 import net.minecraft.world.level.LevelAccessor;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;

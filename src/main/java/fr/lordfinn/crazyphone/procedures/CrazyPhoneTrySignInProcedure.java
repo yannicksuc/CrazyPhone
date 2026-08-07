@@ -3,7 +3,7 @@ package fr.lordfinn.crazyphone.procedures;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.entity.LivingEntity;
+import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.nbt.StringTag;
@@ -19,13 +19,13 @@ public class CrazyPhoneTrySignInProcedure {
 		if (entity == null || guistate == null)
 			return InteractionResult.PASS;
 		CompoundTag phoneData;
-		if (IsPhoneSetupProcedure.execute(entity instanceof LivingEntity _livEnt ? _livEnt.getMainHandItem() : ItemStack.EMPTY)) {
+		if (IsPhoneSetupProcedure.execute(CrazyPhoneHelper.getMainHandItemOrEmpty(entity))) {
 			phoneData = (PhoneRegistrySavedData.get(world).phones.get(GetCrazyPhoneNumberFromMainHandProcedure.execute(entity, guistate))) instanceof CompoundTag _compoundTag ? _compoundTag.copy() : new CompoundTag();
 			if (!(phoneData == null) && (guistate.containsKey("textin:password") ? (String) guistate.get("textin:password") : "").equals((phoneData.get("password")) instanceof StringTag _stringTag ? _stringTag.getAsString() : "")) {
 				{
 					final String _tagName = "isOpen";
 					final boolean _tagValue = true;
-					CustomData.update(DataComponents.CUSTOM_DATA, (entity instanceof LivingEntity _livEnt ? _livEnt.getMainHandItem() : ItemStack.EMPTY), tag -> tag.putBoolean(_tagName, _tagValue));
+					CustomData.update(DataComponents.CUSTOM_DATA, (CrazyPhoneHelper.getMainHandItemOrEmpty(entity)), tag -> tag.putBoolean(_tagName, _tagValue));
 				}
 				CrazyPhoneOnUseProcedure.execute(world, x, y, z, entity);
 				return InteractionResult.SUCCESS;
@@ -34,7 +34,7 @@ public class CrazyPhoneTrySignInProcedure {
 		{
 			final String _tagName = "isOpen";
 			final boolean _tagValue = false;
-			CustomData.update(DataComponents.CUSTOM_DATA, (entity instanceof LivingEntity _livEnt ? _livEnt.getMainHandItem() : ItemStack.EMPTY), tag -> tag.putBoolean(_tagName, _tagValue));
+			CustomData.update(DataComponents.CUSTOM_DATA, (CrazyPhoneHelper.getMainHandItemOrEmpty(entity)), tag -> tag.putBoolean(_tagName, _tagValue));
 		}
 		return InteractionResult.FAIL;
 	}

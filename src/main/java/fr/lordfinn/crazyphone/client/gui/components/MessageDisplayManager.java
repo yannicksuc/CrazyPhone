@@ -108,10 +108,6 @@ public class MessageDisplayManager {
         return entry;
     }
 
-    public void clearMessages() {
-        messageEntries.clear();
-    }
-
     public int getTotalHeight() {
         return this.totalHeight;
     }

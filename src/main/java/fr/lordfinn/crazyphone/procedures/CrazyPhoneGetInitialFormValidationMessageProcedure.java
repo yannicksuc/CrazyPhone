@@ -2,7 +2,7 @@ package fr.lordfinn.crazyphone.procedures;
 
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.entity.LivingEntity;
+import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
 import net.minecraft.world.entity.Entity;
 
 import java.util.HashMap;
@@ -11,8 +11,8 @@ public class CrazyPhoneGetInitialFormValidationMessageProcedure {
 	public static String execute(LevelAccessor world, Entity entity, HashMap guistate) {
 		if (entity == null || guistate == null || guistate.isEmpty())
 			return "";
-		if (IsPhoneItemStackInUseProcedure.execute(world, entity instanceof LivingEntity _livEnt ? _livEnt.getMainHandItem() : ItemStack.EMPTY)) {
-			if (IsPhoneSetupProcedure.execute(entity instanceof LivingEntity _livEnt ? _livEnt.getMainHandItem() : ItemStack.EMPTY)) {
+		if (IsPhoneItemStackInUseProcedure.execute(world, CrazyPhoneHelper.getMainHandItemOrEmpty(entity))) {
+			if (IsPhoneSetupProcedure.execute(CrazyPhoneHelper.getMainHandItemOrEmpty(entity))) {
 				return "Téléphone configuré!";
 			}
 			return "Numero déja utilisé";
@@ -22,6 +22,12 @@ public class CrazyPhoneGetInitialFormValidationMessageProcedure {
 			return "Nom trop long";
 		} else if ((guistate.containsKey("textin:password") ? (String) guistate.get("textin:password") : "").isEmpty()) {
 			return "Mot de passe requis";
+		} else if (IsPhoneInUseProcedure.execute(world, guistate.containsKey("textin:number") ? (String) guistate.get("textin:number") : "")) {
+			// The item's OWN number tag is still empty at this point (checked above), so this is a
+			// different, already-registered phone's number being typed into the form - without this
+			// check the registration below would silently overwrite that phone's registry entry
+			// (contacts, password, uuid) with this player's, a number hijack.
+			return "Numéro déjà pris";
 		}
 		return "Ok!";
 	}

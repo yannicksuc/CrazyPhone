@@ -13,7 +13,6 @@ import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.ImageButton;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.Minecraft;
 import net.minecraft.world.item.ItemStack;
 
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneDefaultScreenMenu;
@@ -77,11 +76,7 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 	}
 
 	public static HashMap<String, String> getEditBoxAndCheckBoxValues() {
-		HashMap<String, String> textstate = new HashMap<>();
-		if (Minecraft.getInstance().screen instanceof CrazyPhoneDefaultScreenScreen sc) {
-
-		}
-		return textstate;
+		return new HashMap<>();
 	}
 
 	@Override
@@ -153,12 +148,10 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 				new WidgetSprites(ResourceLocation.parse("crazyphone:textures/screens/crazyphone-back.png"),
 						ResourceLocation.parse("crazyphone:textures/screens/crazyphone-back-hover.png")),
 				e -> {
-					if (true) {
-						PacketDistributor.sendToServer(
-								new CrazyPhoneDefaultScreenButtonMessage(0, x, y, z, getEditBoxAndCheckBoxValues()));
-						CrazyPhoneDefaultScreenButtonMessage.handleButtonAction(entity, 0, x, y, z,
-								getEditBoxAndCheckBoxValues());
-					}
+					PacketDistributor.sendToServer(
+							new CrazyPhoneDefaultScreenButtonMessage(0, x, y, z, getEditBoxAndCheckBoxValues()));
+					CrazyPhoneDefaultScreenButtonMessage.handleButtonAction(entity, 0, x, y, z,
+							getEditBoxAndCheckBoxValues());
 				}) {
 			@Override
 			public void renderWidget(GuiGraphics guiGraphics, int x, int y, float partialTicks) {
@@ -174,12 +167,10 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 				new WidgetSprites(ResourceLocation.parse("crazyphone:textures/screens/crazyphone-home.png"),
 						ResourceLocation.parse("crazyphone:textures/screens/crazyphone-home-hover.png")),
 				e -> {
-					if (true) {
-						PacketDistributor.sendToServer(
-								new CrazyPhoneDefaultScreenButtonMessage(1, x, y, z, getEditBoxAndCheckBoxValues()));
-						CrazyPhoneDefaultScreenButtonMessage.handleButtonAction(entity, 1, x, y, z,
-								getEditBoxAndCheckBoxValues());
-					}
+					PacketDistributor.sendToServer(
+							new CrazyPhoneDefaultScreenButtonMessage(1, x, y, z, getEditBoxAndCheckBoxValues()));
+					CrazyPhoneDefaultScreenButtonMessage.handleButtonAction(entity, 1, x, y, z,
+							getEditBoxAndCheckBoxValues());
 				}) {
 			@Override
 			public void renderWidget(GuiGraphics guiGraphics, int x, int y, float partialTicks) {
@@ -195,12 +186,10 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 				new WidgetSprites(ResourceLocation.parse("crazyphone:textures/screens/crazyphone-lock.png"),
 						ResourceLocation.parse("crazyphone:textures/screens/crazyphone-lock-hover.png")),
 				e -> {
-					if (true) {
-						PacketDistributor.sendToServer(
-								new CrazyPhoneDefaultScreenButtonMessage(2, x, y, z, getEditBoxAndCheckBoxValues()));
-						CrazyPhoneDefaultScreenButtonMessage.handleButtonAction(entity, 2, x, y, z,
-								getEditBoxAndCheckBoxValues());
-					}
+					PacketDistributor.sendToServer(
+							new CrazyPhoneDefaultScreenButtonMessage(2, x, y, z, getEditBoxAndCheckBoxValues()));
+					CrazyPhoneDefaultScreenButtonMessage.handleButtonAction(entity, 2, x, y, z,
+							getEditBoxAndCheckBoxValues());
 				}) {
 			@Override
 			public void renderWidget(GuiGraphics guiGraphics, int x, int y, float partialTicks) {

@@ -28,11 +28,6 @@ public class CrazyPhoneMayorsCandidatesListMenu extends CrazyPhoneDefaultScreenM
 	}
 
 	@Override
-	public void removed(Player playerIn) {
-		super.removed(playerIn);
-	}
-
-	@Override
 	public Map<Integer, Slot> get() {
 		return customSlots;
 	}

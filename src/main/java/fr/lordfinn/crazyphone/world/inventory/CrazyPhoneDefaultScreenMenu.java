@@ -1,14 +1,12 @@
 
 package fr.lordfinn.crazyphone.world.inventory;
 
-import net.neoforged.neoforge.items.wrapper.InvWrapper;
 import net.neoforged.neoforge.items.ItemStackHandler;
 import net.neoforged.neoforge.items.IItemHandlerModifiable;
 import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.capabilities.Capabilities;
 
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraft.world.level.block.entity.BaseContainerBlockEntity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.inventory.Slot;
@@ -37,6 +35,10 @@ abstract public class CrazyPhoneDefaultScreenMenu extends AbstractContainerMenu 
 	/** Item grids start their first column here so they end up symmetrically padded (matches the phone
 	 * background's width) and their first item lines up with the header's icon (CrazyPhoneDefaultScreenScreen#renderHeader). */
 	public static final int HEADER_CONTENT_START_X = 8;
+	/** Standard slot cell pitch (16px item + 1px gap each side) shared by every item grid in the phone UI. */
+	public static final int SLOT_PITCH = 18;
+	/** Standard column count shared by every item grid in the phone UI. */
+	public static final int GRID_COLUMNS = 6;
 	public final static HashMap<String, Object> guistate = new HashMap<>();
 	public final Level world;
 	public final Player entity;

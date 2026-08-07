@@ -1,7 +1,7 @@
 package fr.lordfinn.crazyphone.procedures;
 
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.entity.LivingEntity;
+import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.client.gui.components.EditBox;
 
@@ -14,8 +14,8 @@ public class GetCrazyPhoneNumberFromMainHandProcedure {
 		if (entity == null)
 			return "";
 		String number = "";
-		if ((entity instanceof LivingEntity _livEnt ? _livEnt.getMainHandItem() : ItemStack.EMPTY).getItem() == ModItems.CRAZY_PHONE.get()) {
-			number = GetCrazyPhoneNumberProcedure.execute(entity instanceof LivingEntity _livEnt ? _livEnt.getMainHandItem() : ItemStack.EMPTY);
+		if ((CrazyPhoneHelper.getMainHandItemOrEmpty(entity)).getItem() == ModItems.CRAZY_PHONE.get()) {
+			number = GetCrazyPhoneNumberProcedure.execute(CrazyPhoneHelper.getMainHandItemOrEmpty(entity));
 			if (guistate != null && guistate.get("text:number") instanceof EditBox _tf)
 				_tf.setValue(number);
 			return number;

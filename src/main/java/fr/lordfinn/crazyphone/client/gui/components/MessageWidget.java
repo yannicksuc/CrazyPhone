@@ -27,8 +27,6 @@ import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
 
 public class MessageWidget extends AbstractWidget {
     private static final float HOVER_GROW_SCALE = 1.04f;
@@ -129,11 +127,6 @@ public class MessageWidget extends AbstractWidget {
         if (button == 0) {
             CameraModHelper.openImage(image);
         }
-    }
-
-    @OnlyIn(Dist.CLIENT)
-    private void openClientGui(ItemStack stack) {
-      Minecraft.getInstance().setScreen(new ImageScreen(stack));
     }
 
     @Override

@@ -53,27 +53,11 @@ public class SmallTextEditBox extends EditBox {
     @Override
     public void onClick(double mouseX, double mouseY) {
         // Adjust the click position to account for scaling
-//        int w = this.getWidth();
-//        int h = this.getHeight();
-//        this.setWidth((int)(w * SCALE_FACTOR));
-//        this.setHeight((int)(h * SCALE_FACTOR));
         super.onClick((mouseX - this.getX())*(1/SCALE_FACTOR) + this.getX(), (mouseY - this.getY())*(1/SCALE_FACTOR) + this.getY());
-//        this.setWidth(w);
-//        this.setHeight(h);
     }
 
     @Override
     public void onRelease(double mouseX, double mouseY) {
         super.onRelease((mouseX - this.getX())*(1/SCALE_FACTOR) + this.getX(), (mouseY - this.getY())*(1/SCALE_FACTOR) + this.getY());
-    }
-
-    @Override
-    public boolean charTyped(char codePoint, int modifiers) {
-        return super.charTyped(codePoint, modifiers);
-    }
-
-    @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        return super.keyPressed(keyCode, scanCode, modifiers);
     }
 }

@@ -19,6 +19,8 @@ import net.minecraft.server.level.ServerPlayer;
 import fr.lordfinn.crazyphone.Config;
 import fr.lordfinn.crazyphone.Crazyphone;
 import fr.lordfinn.crazyphone.data.ConversationSavedData;
+import fr.lordfinn.crazyphone.procedures.GetCrazyPhoneNumberFromMainHandProcedure;
+import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
 
 import java.util.List;
 
@@ -47,6 +49,12 @@ public record ConversationRequestPacket(String conversationId, int skipFromEnd) 
             return;
         context.enqueueWork(() -> {
             if (!(context.player() instanceof ServerPlayer player))
+                return;
+            // Conversation ids are just the two participants' numbers sorted and joined, and every phone
+            // number is publicly visible via the phone registry sync - without this check any player could
+            // request any other pair's conversation id and read their private message history.
+            String requesterNumber = GetCrazyPhoneNumberFromMainHandProcedure.execute(player, null);
+            if (requesterNumber.isEmpty() || !CrazyPhoneHelper.getNumbersFromConversationId(message.conversationId).contains(requesterNumber))
                 return;
             ConversationSavedData conversations = ConversationSavedData.get(player.level());
             int limit = Config.maxMessagesSentPerRequest;

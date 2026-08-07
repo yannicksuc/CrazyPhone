@@ -49,6 +49,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
@@ -61,9 +62,17 @@ import net.neoforged.neoforge.network.PacketDistributor;
 
 public class CrazyPhoneHelper {
 
+    /** The item in entity's main hand, or ItemStack.EMPTY for a non-living entity (e.g. a fake player) or none held. */
+    public static ItemStack getMainHandItemOrEmpty(Entity entity) {
+        return entity instanceof LivingEntity livingEntity ? livingEntity.getMainHandItem() : ItemStack.EMPTY;
+    }
+
     public static void deleteSlotsFromAlbum(AlbumInventory inventory, Set<Integer> slots) {
+        // slots ultimately comes from a client-supplied CSV (CrazyPhonePicturesScreenButtonMessage) - never
+        // trust it to already be in range.
         for (int slot : slots) {
-            inventory.setItem(slot, ItemStack.EMPTY);
+            if (slot >= 0 && slot < inventory.getContainerSize())
+                inventory.setItem(slot, ItemStack.EMPTY);
         }
     }
 
@@ -244,8 +253,9 @@ public class CrazyPhoneHelper {
      * Notifies the other participant(s) of {@code conversationId} that a new message arrived. Only ever
      * targets those specific participants: a direct {@link PacketDistributor#sendToPlayer} for the message
      * content itself, and (if the receiver's notification list actually changed) a
-     * {@link PhoneRegistrySavedData#syncToAll} for the small/bounded phones registry - never a broadcast of
-     * the message or conversation history to every online player.
+     * {@link PhoneRegistrySavedData#syncTo} to just that receiver for the small/bounded phones registry -
+     * never a broadcast of the message, the registry, or conversation history to every online player, since
+     * no one else's phone/contacts state actually changed.
      */
     public static void notifyContacts(Level world, CompoundTag messageTag, List<String> numbers, String senderNumber, String message,
             int timestampInMinutes, String conversationId) {
@@ -291,8 +301,12 @@ public class CrazyPhoneHelper {
                     notifications.add(StringTag.valueOf(conversationId));
                     receiverPhoneCompoundTag.put("notifications", notifications);
                     phonesTag.put(receiverNumber, receiverPhoneCompoundTag);
-                    // Bounded registry sync only (phones/contacts/mayor state) - never the conversation itself.
-                    registry.syncToAll(world);
+                    // Only the receiver's own notification badge changed - sync just to them if they're
+                    // online (still persisted to disk either way via setDirty, so it's there next login).
+                    if (receiverPlayer != null)
+                        registry.syncTo(receiverPlayer);
+                    else
+                        registry.setDirty();
                 }
             }
 
@@ -416,6 +430,8 @@ public class CrazyPhoneHelper {
         AlbumInventory inventory = new AlbumInventory(world.registryAccess(), albumStack);
 
         for (int slot : slotsToCopy) {
+            if (slot < 0 || slot >= inventory.getContainerSize())
+                continue;
             ItemStack itemToCopy = inventory.getItem(slot).copy();
 
             if (itemToCopy.isEmpty())
@@ -441,6 +457,8 @@ public class CrazyPhoneHelper {
 		int timestampInMinutes = (int) (Instant.now().getEpochSecond() / 60);
 
         for (int slot : selectedSlots) {
+            if (slot < 0 || slot >= inventory.getContainerSize())
+                continue;
             ItemStack imageToSend = inventory.getItem(slot).copy();
 
             if (imageToSend.isEmpty())

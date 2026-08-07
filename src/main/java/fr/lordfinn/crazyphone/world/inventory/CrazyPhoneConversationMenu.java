@@ -31,7 +31,6 @@ public class CrazyPhoneConversationMenu extends CrazyPhoneDefaultScreenMenu {
             conversationId = extraData.readUtf();
         contacts = CrazyPhoneHelper.getContactsFromBuf(extraData);
         ScreenMenuUtils.addDataToCurrentPage(entity, conversationId);
-        //ScreenMenuUtils.debugPrintScreenHistory(entity);
     }
 
     public List<Contact> getContacts() {

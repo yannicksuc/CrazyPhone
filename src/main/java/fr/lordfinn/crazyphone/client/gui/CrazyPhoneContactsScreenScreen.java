@@ -150,9 +150,4 @@ public class CrazyPhoneContactsScreenScreen extends CrazyPhoneDefaultScreenScree
 		super.renderSlot(guiGraphics, slot);
 		guiGraphics.pose().popPose();
 	}
-
-	@Override
-	public void init() {
-		super.init();
-	}
 }

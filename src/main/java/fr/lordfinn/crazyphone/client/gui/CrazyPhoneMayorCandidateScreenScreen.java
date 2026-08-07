@@ -65,16 +65,12 @@ public class CrazyPhoneMayorCandidateScreenScreen extends CrazyPhoneDefaultScree
 		Tag potentialImage = PhoneRegistrySavedData.get(world).mayorsCandidates.get(mayorNumber);
         if (potentialImage instanceof CompoundTag) {
             candidatePosterData = ImageData.fromImageTag((CompoundTag) potentialImage);
-			System.err.println(candidatePosterData);
         }
 		this.imageWidth = 0;
 		this.imageHeight = 0;
 
 		candidateHead = CrazyPhoneHelper.createContactHead(mayorCandidate);
 
-		// Add vote button
-		//String currentPlayerNumber = GetCrazyPhoneNumberFromMainHandProcedure.execute(this.menu.entity, null);
-		//boolean hasVoted = PhoneRegistrySavedData.get(world).mayorVotes.contains(currentPlayerNumber);
 		boolean votingOpen = PhoneRegistrySavedData.get(world).isMayorVotingOn;
 
 		voteButton = Button.builder(Component.translatable("gui.crazyphone.crazy_phone_mayor_candidate_screen.button_vote"), b -> {
@@ -83,7 +79,7 @@ public class CrazyPhoneMayorCandidateScreenScreen extends CrazyPhoneDefaultScree
 				.tooltip(net.minecraft.client.gui.components.Tooltip.create(
 						Component.translatable("gui.crazyphone.crazy_phone_mayor_candidate_screen.tooltip_vote")))
 				.build();
-		voteButton.active = votingOpen;// && !hasVoted;
+		voteButton.active = votingOpen;
 
 		this.addRenderableWidget(voteButton);
 	}

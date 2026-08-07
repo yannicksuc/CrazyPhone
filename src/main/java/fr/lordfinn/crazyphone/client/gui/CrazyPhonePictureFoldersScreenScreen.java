@@ -6,7 +6,6 @@ import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.network.chat.Component;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhonePictureFoldersScreenMenu;
@@ -25,11 +24,7 @@ public class CrazyPhonePictureFoldersScreenScreen extends CrazyPhoneDefaultScree
 	}
 
 	public static HashMap<String, String> getEditBoxAndCheckBoxValues() {
-		HashMap<String, String> textstate = new HashMap<>();
-		if (Minecraft.getInstance().screen instanceof CrazyPhonePictureFoldersScreenScreen sc) {
-
-		}
-		return textstate;
+		return new HashMap<>();
 	}
 
 	public HashMap<String, Object> getWidgets() {

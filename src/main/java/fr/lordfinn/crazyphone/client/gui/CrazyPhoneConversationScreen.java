@@ -220,13 +220,6 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
     }
 
     @Override
-    public void resize(Minecraft minecraft, int width, int height) {
-        // String messageValue = message.getValue();
-        super.resize(minecraft, width, height);
-        // message.setValue(messageValue);
-    }
-
-    @Override
     public void init() {
         super.init();
         initializeButtons();
@@ -370,10 +363,8 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
                 new WidgetSprites(ResourceLocation.parse("crazyphone:textures/screens/crazyphone-add-image.png"),
                         ResourceLocation.parse("crazyphone:textures/screens/crazyphone-add-hover.png")),
                 e -> {
-                    if (true) {
-                        PacketDistributor.sendToServer(new CrazyPhoneConversationButtonMessage(1, x, y, z, getEditBoxAndCheckBoxValues()));
-                        CrazyPhoneConversationButtonMessage.handleButtonAction(entity, 1, x, y, z, getEditBoxAndCheckBoxValues());
-                    }
+                    PacketDistributor.sendToServer(new CrazyPhoneConversationButtonMessage(1, x, y, z, getEditBoxAndCheckBoxValues()));
+                    CrazyPhoneConversationButtonMessage.handleButtonAction(entity, 1, x, y, z, getEditBoxAndCheckBoxValues());
                 }) {
             @Override
             public void renderWidget(GuiGraphics guiGraphics, int x, int y, float partialTicks) {

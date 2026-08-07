@@ -17,10 +17,11 @@ public class CrazyPhoneGetContactsProcedure {
 		Tag tmp_element;
 		CompoundTag contact;
 		contacts = new ListTag();
-		if (PhoneRegistrySavedData.get(world).contacts.isEmpty()) {
-			PhoneRegistrySavedData.get(world).contacts = new CompoundTag();
-			PhoneRegistrySavedData.get(world).syncToAll(world);
-		}
+		// contacts is already a fresh CompoundTag by construction (PhoneRegistrySavedData's field
+		// initializer / read()), so it's never null and this get() never needs "repairing" - a previous
+		// version reset it and broadcast the registry to every online player here, which fired on every
+		// call while contacts was empty (e.g. the entire life of a fresh world) since this is a plain
+		// getter invoked from hot paths like every menu open and every message notification.
 		tmp_element = PhoneRegistrySavedData.get(world).contacts.get(owner);
 		if (tmp_element == null) {
 			return contacts;

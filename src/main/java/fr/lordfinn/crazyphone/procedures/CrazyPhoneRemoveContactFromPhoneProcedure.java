@@ -1,7 +1,6 @@
 package fr.lordfinn.crazyphone.procedures;
 
 import net.minecraft.world.level.LevelAccessor;
-import net.minecraft.nbt.Tag;
 import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.ListTag;
 
@@ -11,23 +10,10 @@ public class CrazyPhoneRemoveContactFromPhoneProcedure {
 	public static void execute(LevelAccessor world, String contact, String owner) {
 		if (contact == null || owner == null)
 			return;
-		ListTag numbers;
-		double indexToRemove = 0;
-		double i = 0;
-		numbers = (PhoneRegistrySavedData.get(world).contacts.get(owner)) instanceof ListTag _listTag ? _listTag.copy() : new ListTag();
-		indexToRemove = -1;
-		i = 0;
-		if (!numbers.isEmpty()) {
-			for (Tag dataelementiterator : numbers) {
-				if ((contact).equals(dataelementiterator instanceof StringTag _stringTag ? _stringTag.getAsString() : "")) {
-					indexToRemove = i;
-				}
-				i = i + 1;
-			}
-		}
-		if (indexToRemove > -1) {
-			numbers.remove((int) indexToRemove);
+		ListTag numbers = (PhoneRegistrySavedData.get(world).contacts.get(owner)) instanceof ListTag _listTag ? _listTag.copy() : new ListTag();
+		// Removes every matching entry (not just the last one found) in case duplicates ever exist.
+		boolean removedAny = numbers.removeIf(tag -> tag instanceof StringTag stringTag && contact.equals(stringTag.getAsString()));
+		if (removedAny)
 			PhoneRegistrySavedData.get(world).contacts.put(owner, numbers);
-		}
 	}
 }

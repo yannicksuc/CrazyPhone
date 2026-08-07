@@ -94,7 +94,6 @@ public class CameraModHelper {
             ItemStack newAlbum = new ItemStack(Main.ALBUM.get());
             if (tryAddImageToAlbum(player, newAlbum, imageStack)) {
                 handler.setStackInSlot(slot, newAlbum);
-                sendUpdate(player, held);
                 return true;
             }
             continue;
@@ -104,7 +103,6 @@ public class CameraModHelper {
         if (slotStack.getItem() instanceof AlbumItem) {
             if (tryAddImageToAlbum(player, slotStack, imageStack)) {
                 handler.setStackInSlot(slot, slotStack);
-                sendUpdate(player, held);
                 return true;
             }
         }
@@ -113,16 +111,6 @@ public class CameraModHelper {
     return false;
     }
 
-    private static void sendUpdate(ServerPlayer player, ItemStack held) {
-        // slotIndex ici = index dans le CrazyPhone, pas dans l'inventaire joueur
-        //player.getInventory().setItem(player.getInventory().selected, held.copy());
-    /*player.connection.send(new ClientboundContainerSetSlotPacket(
-        0, // inventory window ID pour l’inventaire classique
-        player.containerMenu.getStateId(),
-        player.getInventory().selected, // index dans l’inventaire
-        held
-    ));*/
-    }
     private static boolean tryAddImageToAlbum(ServerPlayer player, ItemStack albumStack, ItemStack imageStack) {
         AlbumInventory inventory = new AlbumInventory(player.level().registryAccess(), albumStack);
 

@@ -20,8 +20,8 @@ import java.util.Map;
 public class CrazyPhonePictureFoldersScreenMenu extends CrazyPhoneDefaultScreenMenu {
 	public static final HashMap<String, Object> guistate = new HashMap<>();
 	private final Map<Integer, Slot> customSlots = new HashMap<>();
-	private final int slotWidth = 18;
-	private final int slotHeight = 18;
+	private final int slotWidth = SLOT_PITCH;
+	private final int slotHeight = SLOT_PITCH;
 
 
 	public CrazyPhonePictureFoldersScreenMenu(int id, Inventory inv, FriendlyByteBuf extraData) {
@@ -33,7 +33,7 @@ public class CrazyPhonePictureFoldersScreenMenu extends CrazyPhoneDefaultScreenM
 
 		int slotIndex = 0;
 		for (int row = 0; row < 8; row++) {
-			for (int col = 0; col < 6; col++) {
+			for (int col = 0; col < GRID_COLUMNS; col++) {
 				int x = startX + col * slotWidth;
 				int y = startY + row * slotHeight;
 				final int index = slotIndex;
@@ -68,8 +68,8 @@ public class CrazyPhonePictureFoldersScreenMenu extends CrazyPhoneDefaultScreenM
 
 	public void handleSlotClick(int slotIndex) {
 		if ((entity instanceof LivingEntity _livEnt ? _livEnt.getMainHandItem() : ItemStack.EMPTY).getCapability(Capabilities.ItemHandler.ITEM, null) instanceof IItemHandlerModifiable itemHandler) {
-			if (entity instanceof ServerPlayer severplayer) {
-				ScreenMenuUtils.openPhoneAlbumMenu(severplayer, InteractionHand.MAIN_HAND, slotIndex);
+			if (entity instanceof ServerPlayer serverPlayer) {
+				ScreenMenuUtils.openPhoneAlbumMenu(serverPlayer, InteractionHand.MAIN_HAND, slotIndex);
 			}
 		}
 	}
@@ -82,11 +82,6 @@ public class CrazyPhonePictureFoldersScreenMenu extends CrazyPhoneDefaultScreenM
 	@Override
 	public ItemStack quickMoveStack(Player playerIn, int index) {
 		return ItemStack.EMPTY; // Disallow quick move
-	}
-
-	@Override
-	public void removed(Player playerIn) {
-		super.removed(playerIn);
 	}
 
 	@Override

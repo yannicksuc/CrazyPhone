@@ -14,7 +14,6 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.network.protocol.PacketFlow;
 import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.chat.ComponentSerialization;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.core.BlockPos;
@@ -79,7 +78,6 @@ public record CrazyPhoneMayorsCandidatesButtonMessage(int buttonID, int x, int y
 					entity.playNotifySound(sound, SoundSource.PLAYERS, 0.2f, 1.0f);
 				}
 				String candidateNumber = textstate.get("candidateNumber");
-				System.err.println(candidateNumber);
 				ScreenMenuUtils.openPhoneMayorCandidateMenu(entity, candidateNumber);
 			}
 		}
@@ -88,8 +86,8 @@ public record CrazyPhoneMayorsCandidatesButtonMessage(int buttonID, int x, int y
 	private static void writeTextState(HashMap<String, String> map, RegistryFriendlyByteBuf buffer) {
 		buffer.writeInt(map.size());
 		for (Map.Entry<String, String> entry : map.entrySet()) {
-			writeComponent(buffer, Component.literal(entry.getKey()));
-			writeComponent(buffer, Component.literal(entry.getValue()));
+			buffer.writeUtf(entry.getKey());
+			buffer.writeUtf(entry.getValue());
 		}
 	}
 
@@ -97,19 +95,11 @@ public record CrazyPhoneMayorsCandidatesButtonMessage(int buttonID, int x, int y
 		int size = buffer.readInt();
 		HashMap<String, String> map = new HashMap<>();
 		for (int i = 0; i < size; i++) {
-			String key = readComponent(buffer).getString();
-			String value = readComponent(buffer).getString();
+			String key = buffer.readUtf();
+			String value = buffer.readUtf();
 			map.put(key, value);
 		}
 		return map;
-	}
-
-	private static Component readComponent(RegistryFriendlyByteBuf buffer) {
-		return ComponentSerialization.TRUSTED_STREAM_CODEC.decode(buffer);
-	}
-
-	private static void writeComponent(RegistryFriendlyByteBuf buffer, Component component) {
-		ComponentSerialization.TRUSTED_STREAM_CODEC.encode(buffer, component);
 	}
 
 	@SubscribeEvent

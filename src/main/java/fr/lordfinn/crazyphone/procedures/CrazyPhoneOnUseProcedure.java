@@ -3,7 +3,7 @@ package fr.lordfinn.crazyphone.procedures;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.entity.LivingEntity;
+import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
 import de.maxhenkel.camera.items.ImageItem;
 import fr.lordfinn.crazyphone.utils.CameraModHelper;
 import net.minecraft.ChatFormatting;
@@ -17,9 +17,9 @@ public class CrazyPhoneOnUseProcedure {
 			return;
 		if (entity instanceof Player _player)
 			_player.closeContainer();
-		if (!IsPhoneSetupProcedure.execute(entity instanceof LivingEntity _livEnt ? _livEnt.getMainHandItem() : ItemStack.EMPTY)) {
+		if (!IsPhoneSetupProcedure.execute(CrazyPhoneHelper.getMainHandItemOrEmpty(entity))) {
 			CrazyPhoneOpenPasswordScreenProcedure.execute(world, x, y, z, entity);
-		} else if (IsPhoneOpenProcedure.execute(entity instanceof LivingEntity _livEnt ? _livEnt.getMainHandItem() : ItemStack.EMPTY)) {
+		} else if (IsPhoneOpenProcedure.execute(CrazyPhoneHelper.getMainHandItemOrEmpty(entity))) {
 			if (entity instanceof ServerPlayer player) {
 				ItemStack offhandStack = player.getOffhandItem();
 

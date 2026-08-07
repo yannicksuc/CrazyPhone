@@ -2,7 +2,6 @@ package fr.lordfinn.crazyphone.client.gui;
 
 import net.neoforged.neoforge.network.PacketDistributor;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.ImageButton;
 import net.minecraft.network.chat.Component;
@@ -23,11 +22,7 @@ public class CrazyphoneHomeScreenScreen extends CrazyPhoneDefaultScreenScreen<Cr
     }
 
     public static HashMap<String, String> getEditBoxAndCheckBoxValues() {
-        HashMap<String, String> textstate = new HashMap<>();
-        if (Minecraft.getInstance().screen instanceof CrazyphoneHomeScreenScreen sc) {
-            // Placeholder for collecting edit box and checkbox states if needed
-        }
-        return textstate;
+        return new HashMap<>();
     }
 
     @Override
