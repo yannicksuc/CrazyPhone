@@ -42,8 +42,9 @@
 
 </td><td width="33%" valign="top">
 
-### 💬 Contacts & messaging
-- Contact list with add/open actions
+### 💬 Messaging
+- Contacts, favorites, and groups, sorted by recent activity, in one scrollable screen
+- Group conversations with their own settings: rename, custom icon, member invite/exclude, admin
 - Real-time text conversations
 - Send photos straight from your albums
 - Read-notification badges
@@ -100,12 +101,12 @@
 </details>
 
 <details open>
-<summary><b>Contacts</b></summary>
+<summary><b>Messaging (contacts, favorites &amp; groups)</b></summary>
 <br>
 
-| Contacts | Viewing / adding a contact |
+| Messaging | Adding a contact |
 |:---:|:---:|
-| ![Contacts](docs/screenshots/menu-contacts.png) | ![Contact](docs/screenshots/menu-add-contact.png) |
+| ![Messaging](docs/screenshots/menu-contacts.png) | ![Adding a contact](docs/screenshots/menu-add-contact.png) |
 
 </details>
 

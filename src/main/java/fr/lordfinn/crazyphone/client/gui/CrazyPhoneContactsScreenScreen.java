@@ -455,18 +455,7 @@ public class CrazyPhoneContactsScreenScreen extends CrazyPhoneDefaultScreenScree
 			CursorEffects.requestPointerCursor();
 
 		ItemStack head = CrazyPhoneHelper.createContactHead(person);
-		if (hovered) {
-			int centerX = iconX + 8;
-			int centerY = iconY + 8;
-			guiGraphics.pose().pushPose();
-			guiGraphics.pose().translate(centerX, centerY, 0);
-			guiGraphics.pose().scale(HEAD_HOVER_GROW_SCALE, HEAD_HOVER_GROW_SCALE, 1.0f);
-			guiGraphics.pose().translate(-centerX, -centerY, 0);
-			guiGraphics.renderItem(head, iconX, iconY);
-			guiGraphics.pose().popPose();
-		} else {
-			guiGraphics.renderItem(head, iconX, iconY);
-		}
+		renderIconScaled(guiGraphics, iconX, iconY, head, hovered ? HEAD_HOVER_GROW_SCALE : 1.0f);
 
 		// Exact match against this contact's own 1:1 conversation id - a plain .contains(number) check
 		// previously lit this badge up for group conversations too, since a group id like
@@ -480,6 +469,21 @@ public class CrazyPhoneContactsScreenScreen extends CrazyPhoneDefaultScreenScree
 		return hovered;
 	}
 
+	/** Draws a single 16x16 icon scaled around its own center - scale 1.0f is a plain unscaled draw, used
+	 * for both the "shrink to match other icons" correction (add-contact tile) and the "grow while
+	 * hovered" effect (contact/favorite heads, the add-contact tile, group icons), which stack by just
+	 * multiplying the two scale factors together. */
+	private void renderIconScaled(GuiGraphics guiGraphics, int iconX, int iconY, ItemStack stack, float scale) {
+		int centerX = iconX + 8;
+		int centerY = iconY + 8;
+		guiGraphics.pose().pushPose();
+		guiGraphics.pose().translate(centerX, centerY, 0);
+		guiGraphics.pose().scale(scale, scale, 1.0f);
+		guiGraphics.pose().translate(-centerX, -centerY, 0);
+		guiGraphics.renderItem(stack, iconX, iconY);
+		guiGraphics.pose().popPose();
+	}
+
 	/** The "add contact" tile - always the first cell of the contacts section. Returns whether hovered. */
 	private boolean renderAddContactTile(GuiGraphics guiGraphics, int mouseX, int mouseY) {
 		int[] pos = posAt(layout.contactsItemsY, 0);
@@ -491,14 +495,8 @@ public class CrazyPhoneContactsScreenScreen extends CrazyPhoneDefaultScreenScree
 			guiGraphics.fill(iconX, iconY, iconX + 16, iconY + 16, 0x80FFFFFF);
 		}
 
-		int centerX = iconX + 8;
-		int centerY = iconY + 8;
-		guiGraphics.pose().pushPose();
-		guiGraphics.pose().translate(centerX, centerY, 0);
-		guiGraphics.pose().scale(ADD_CONTACT_ICON_SCALE, ADD_CONTACT_ICON_SCALE, 1.0f);
-		guiGraphics.pose().translate(-centerX, -centerY, 0);
-		guiGraphics.renderItem(addContactIcon, iconX, iconY);
-		guiGraphics.pose().popPose();
+		float scale = ADD_CONTACT_ICON_SCALE * (hovered ? HEAD_HOVER_GROW_SCALE : 1.0f);
+		renderIconScaled(guiGraphics, iconX, iconY, addContactIcon, scale);
 
 		return hovered;
 	}
@@ -531,7 +529,7 @@ public class CrazyPhoneContactsScreenScreen extends CrazyPhoneDefaultScreenScree
 			}
 
 			ItemStack icon = resolveGroupIcon(group, members, time);
-			guiGraphics.renderItem(icon, iconX, iconY);
+			renderIconScaled(guiGraphics, iconX, iconY, icon, hovered ? HEAD_HOVER_GROW_SCALE : 1.0f);
 
 			if (pendingNotifications != null && pendingNotifications.contains(group.conversationId())) {
 				guiGraphics.blit(NOTIFICATION_IMAGE, iconX, iconY, 0, 0, 18, 18, 18, 18);

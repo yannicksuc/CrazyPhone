@@ -33,6 +33,14 @@ import com.mojang.authlib.GameProfile;
 
 public class CrazyPhoneContactInfoScreenScreen extends CrazyPhoneDefaultScreenScreen<CrazyPhoneContactInfoScreenMenu> {
 	private final static HashMap<String, Object> guistate = CrazyPhoneContactInfoScreenMenu.guistate;
+	/** Same 8px side margin and 106px-wide full-width button used elsewhere (e.g. the pictures screen's
+	 * send-mode button_send) - NOT the item grid's own width (108px, one pixel per side wider). */
+	private static final int CONTENT_X = 8;
+	private static final int CONTENT_WIDTH = 106;
+	private static final int LABEL_Y = 130;
+	private static final int INPUT_Y = 140;
+	/** Same button row y as the contacts screen's action buttons / group settings' Validate button. */
+	private static final int BUTTON_Y = 158;
 	EditBox number;
 	Button button_ajouter;
 
@@ -63,17 +71,30 @@ public class CrazyPhoneContactInfoScreenScreen extends CrazyPhoneDefaultScreenSc
 		return guistate;
 	}
 
+	/** The header icon mirrors whichever skin is currently shown by the 3D preview below it, instead of a
+	 * generic Steve head - same ResolvableProfile mechanism the 3D preview's own skin lookup already uses,
+	 * so it resolves to the same texture once loaded. */
+	private ItemStack resolveHeaderIcon() {
+		ItemStack head = new ItemStack(net.minecraft.world.item.Items.PLAYER_HEAD);
+		if (profile != null) {
+			head.set(net.minecraft.core.component.DataComponents.PROFILE,
+					new net.minecraft.world.item.component.ResolvableProfile(profile));
+		}
+		return head;
+	}
+
 	@Override
 	public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
 		this.renderBackground(guiGraphics, mouseX, mouseY, partialTicks);
 		super.render(guiGraphics, mouseX, mouseY, partialTicks);
-		renderHeader(guiGraphics, new ItemStack(net.minecraft.world.item.Items.PLAYER_HEAD),
+		renderHeader(guiGraphics, resolveHeaderIcon(),
 				Component.translatable("gui.crazyphone.crazy_phone_contact_info_screen.title"));
 		number.render(guiGraphics, mouseX, mouseY, partialTicks);
 		if (fakePlayer instanceof LivingEntity livingEntity) {
-			// Scale/position nudged slightly down and smaller than the original 137/50 so the model clears
-			// the page header added above it instead of poking through/behind it.
-			this.renderEntityInInventoryFollowsAngle(guiGraphics, this.leftPos + 61, this.topPos + 141, 46,
+			// Centered in the space between the header and the number field/button, matching every other
+			// screen's 8px side margins and giving the preview its own clear band instead of overlapping
+			// the label/input below it.
+			this.renderEntityInInventoryFollowsAngle(guiGraphics, this.leftPos + 61, this.topPos + 118, 40,
 				(float) Math.atan((this.leftPos + 85 - mouseX) / 40.0),
 				(float) Math.atan((this.topPos + 35 - mouseY) / 40.0), livingEntity);
 		}
@@ -124,13 +145,13 @@ public class CrazyPhoneContactInfoScreenScreen extends CrazyPhoneDefaultScreenSc
 
 	@Override
 	protected void renderLabels(GuiGraphics guiGraphics, int mouseX, int mouseY) {
-		guiGraphics.drawString(this.font, Component.translatable("gui.crazyphone.crazy_phone_contact_info_screen.label_numero"), 10, 144, -12829636, false);
+		guiGraphics.drawString(this.font, Component.translatable("gui.crazyphone.crazy_phone_contact_info_screen.label_numero"), CONTENT_X, LABEL_Y, 0xFF3C3C3C, false);
 	}
 
 	@Override
 	public void init() {
 		super.init();
-		number = new EditBox(this.font, this.leftPos + 10, this.topPos + 157, 53, 18, Component.translatable("gui.crazyphone.crazy_phone_contact_info_screen.number")) {
+		number = new EditBox(this.font, this.leftPos + CONTENT_X, this.topPos + INPUT_Y, CONTENT_WIDTH, 14, Component.translatable("gui.crazyphone.crazy_phone_contact_info_screen.number")) {
 			@Override
 			public void insertText(String text) {
 				super.insertText(text);
@@ -157,7 +178,7 @@ public class CrazyPhoneContactInfoScreenScreen extends CrazyPhoneDefaultScreenSc
 		button_ajouter = Button.builder(Component.translatable("gui.crazyphone.crazy_phone_contact_info_screen.button_ajouter"), e -> {
 			PacketDistributor.sendToServer(new CrazyPhoneContactInfoScreenButtonMessage(0, x, y, z, getEditBoxAndCheckBoxValues()));
 			CrazyPhoneContactInfoScreenButtonMessage.handleButtonAction(entity, 0, x, y, z, getEditBoxAndCheckBoxValues());
-		}).bounds(this.leftPos + 67, this.topPos + 156, 46, 20)
+		}).bounds(this.leftPos + CONTENT_X, this.topPos + BUTTON_Y, CONTENT_WIDTH, 14)
 				.tooltip(net.minecraft.client.gui.components.Tooltip.create(
 						Component.translatable("gui.crazyphone.crazy_phone_contact_info_screen.tooltip_ajouter")))
 				.build();
