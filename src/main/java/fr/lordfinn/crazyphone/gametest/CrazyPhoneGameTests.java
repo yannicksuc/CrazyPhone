@@ -243,6 +243,52 @@ public class CrazyPhoneGameTests {
         helper.succeed();
     }
 
+    /** Full lifecycle of the level-4 (op-only) mayor candidate/vote-clear commands, dispatched through the
+     * real command tree with the SERVER's own console CommandSourceStack (permission level 4) rather than the
+     * mock player's own (which defaults to level 0, same as any un-opped player, and would be rejected by
+     * these commands' {@code requires(s -> s.hasPermission(4))} gate) - covers
+     * CrazyPhoneAddNewMayorCandidateProcedure and CrazyPhoneRemoveMayorCandidateProcedure, neither of which
+     * had any coverage before, plus RemoveVoteByNumberProcedure (the "votes clear" admin command, distinct
+     * from a voter's own vote being blocked/overwritten). Candidate add/remove both call
+     * PhoneRegistrySavedData#syncToAll, which broadcasts to every connected player - including the mock
+     * voter's handshake-less connection - hence ignoringMockConnectionPacketLimits around those two. */
+    @GameTest(template = "platform", batch = "mayorCandidateAndVoteClearLifecycle")
+    public static void mayorCandidateAndVoteClear_viaRealCommands_manageFullLifecycle(GameTestHelper helper) {
+        resetRegistry(helper);
+        ServerPlayer voter = makeTestPlayer(helper);
+        ItemStack voterPhone = freshCrazyPhone();
+        CustomData.update(DataComponents.CUSTOM_DATA, voterPhone, tag -> {
+            tag.putString("name", "Voter");
+            tag.putString("number", "555");
+        });
+        voter.getInventory().setItem(0, voterPhone);
+        voter.getInventory().selected = 0;
+
+        PhoneRegistrySavedData registry = PhoneRegistrySavedData.get(helper.getLevel());
+        registry.phones.put("555", new CompoundTag());
+        registry.phones.put("666", new CompoundTag());
+        registry.isMayorVotingOn = true;
+
+        CommandSourceStack console = helper.getLevel().getServer().createCommandSourceStack();
+
+        ignoringMockConnectionPacketLimits(() ->
+                helper.getLevel().getServer().getCommands().performPrefixedCommand(console, "crazyphone mayor candidate add 666"));
+        helper.assertTrue(registry.mayorsCandidates.contains("666"), "candidate add must register the candidate");
+
+        helper.getLevel().getServer().getCommands().performPrefixedCommand(voter.createCommandSourceStack(), "crazyphone mayor vote 666");
+        helper.assertValueEqual(votedFor(registry, "555"), "666", "vote must be recorded before it's cleared");
+
+        ignoringMockConnectionPacketLimits(() ->
+                helper.getLevel().getServer().getCommands().performPrefixedCommand(console, "crazyphone mayor votes clear 555"));
+        helper.assertTrue(!registry.mayorVotes.contains("555"), "votes clear must remove the recorded vote");
+
+        ignoringMockConnectionPacketLimits(() ->
+                helper.getLevel().getServer().getCommands().performPrefixedCommand(console, "crazyphone mayor candidate remove 666"));
+        helper.assertTrue(!registry.mayorsCandidates.contains("666"), "candidate remove must unregister the candidate");
+
+        helper.succeed();
+    }
+
     /** Sanity check on the test helper itself: the phone actually held resolves to the number that was
      * stamped on it - if this ever fails, every other GameTest here that seeds a phone via CustomData is
      * suspect too. */
