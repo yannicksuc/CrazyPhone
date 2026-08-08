@@ -1,6 +1,7 @@
 package fr.lordfinn.crazyphone.data;
 
 import net.minecraft.core.HolderLookup;
+import net.minecraft.nbt.ByteArrayTag;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
@@ -12,6 +13,8 @@ import fr.lordfinn.crazyphone.Config;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
+import javax.annotation.Nullable;
 
 /**
  * Per-conversation message history. Unlike {@link PhoneRegistrySavedData}, this is NEVER broadcast
@@ -28,17 +31,43 @@ public class ConversationSavedData extends SavedData {
     public static final String DATA_NAME = "crazyphone_conversations";
 
     public CompoundTag conversations = new CompoundTag();
+    /** voiceMessageId (string) -> {bytes: raw 16-bit PCM, conversationId} - kept separate from the message
+     * tag itself, same "lightweight metadata in the message, heavy payload fetched on demand" shape as
+     * image messages. Never sent wholesale; only ever read one entry at a time, on an explicit play click. */
+    public CompoundTag voiceAudio = new CompoundTag();
 
     public static ConversationSavedData load(CompoundTag tag, HolderLookup.Provider lookupProvider) {
         ConversationSavedData data = new ConversationSavedData();
         data.conversations = tag.get("conversations") instanceof CompoundTag t ? t : new CompoundTag();
+        data.voiceAudio = tag.get("voiceAudio") instanceof CompoundTag t ? t : new CompoundTag();
         return data;
     }
 
     @Override
     public CompoundTag save(CompoundTag nbt, HolderLookup.Provider lookupProvider) {
         nbt.put("conversations", this.conversations);
+        nbt.put("voiceAudio", this.voiceAudio);
         return nbt;
+    }
+
+    public void storeVoiceAudio(UUID voiceId, String conversationId, byte[] pcm) {
+        CompoundTag entry = new CompoundTag();
+        entry.putString("conversationId", conversationId);
+        entry.put("bytes", new ByteArrayTag(pcm));
+        voiceAudio.put(voiceId.toString(), entry);
+        setDirty();
+    }
+
+    /** Null if the id doesn't exist (evicted, or never existed) - the caller must not trust a
+     * client-supplied conversationId, only the one stored here at upload time. */
+    public @Nullable VoiceAudioEntry getVoiceAudio(UUID voiceId) {
+        if (!(voiceAudio.get(voiceId.toString()) instanceof CompoundTag entry))
+            return null;
+        byte[] bytes = entry.get("bytes") instanceof ByteArrayTag tag ? tag.getAsByteArray() : new byte[0];
+        return new VoiceAudioEntry(entry.getString("conversationId"), bytes);
+    }
+
+    public record VoiceAudioEntry(String conversationId, byte[] bytes) {
     }
 
     public static ConversationSavedData get(LevelAccessor world) {
@@ -69,6 +98,7 @@ public class ConversationSavedData extends SavedData {
 
     private void trim(ListTag messages) {
         while (messages.size() > Config.maxStoredMessagesPerConversation) {
+            evictVoiceAudioIfPresent(messages.getCompound(0));
             messages.remove(0);
         }
         int imageCount = 0;
@@ -81,6 +111,27 @@ public class ConversationSavedData extends SavedData {
                 messages.remove(i);
             }
         }
+        // Voice audio is the heaviest payload this history stores - capped separately from the general
+        // message count, same shape as the image cap above. An evicted message's audio blob is removed in
+        // lockstep here or it leaks on disk forever, defeating the entire point of capping this history.
+        int voiceCount = 0;
+        for (int i = messages.size() - 1; i >= 0; i--) {
+            CompoundTag message = messages.getCompound(i);
+            if (!message.contains("voice"))
+                continue;
+            voiceCount++;
+            if (voiceCount > Config.maxVoiceMessagesStoredPerConversation) {
+                evictVoiceAudioIfPresent(message);
+                messages.remove(i);
+            }
+        }
+    }
+
+    private void evictVoiceAudioIfPresent(CompoundTag message) {
+        if (!(message.get("voice") instanceof CompoundTag voiceTag))
+            return;
+        UUID voiceId = new UUID(voiceTag.getLong("voice_id_most"), voiceTag.getLong("voice_id_least"));
+        voiceAudio.remove(voiceId.toString());
     }
 
     /** Returns up to {@code limit} of the most recent messages, oldest-first, starting {@code skipFromEnd} messages back from the newest (for "load more" pagination). */

@@ -239,6 +239,36 @@ public class CrazyPhoneHelper {
         }
     }
 
+    /**
+     * Appends a voice message: mirrors {@link #addMessage} but stores the audio bytes separately in
+     * {@link ConversationSavedData#voiceAudio} (like the image-message pattern - only lightweight metadata,
+     * id + duration, is embedded in the message tag itself) and notifies contacts the same way. The audio
+     * is never sent to anyone here - only fetched later, on demand, when a recipient clicks play.
+     */
+    public static void addVoiceMessage(Level world, String conversationId, String senderNumber, UUID voiceId, byte[] audioPcm,
+                                        int durationTicks, byte[] envelope, int timestampInMinutes) {
+        synchronized (messageLock) {
+            ConversationSavedData data = ConversationSavedData.get(world);
+            data.storeVoiceAudio(voiceId, conversationId, audioPcm);
+
+            CompoundTag voiceTag = new CompoundTag();
+            voiceTag.putLong("voice_id_most", voiceId.getMostSignificantBits());
+            voiceTag.putLong("voice_id_least", voiceId.getLeastSignificantBits());
+            voiceTag.putInt("voice_duration_ticks", durationTicks);
+            voiceTag.put("voice_envelope", new net.minecraft.nbt.ByteArrayTag(envelope));
+
+            CompoundTag messageTag = new CompoundTag();
+            messageTag.putString("sender", senderNumber);
+            messageTag.putString("value", "");
+            messageTag.putInt("timecode", timestampInMinutes);
+            messageTag.put("voice", voiceTag);
+
+            data.appendMessage(conversationId, messageTag);
+            List<String> numbers = getGroupMembers(world, conversationId);
+            notifyContacts(world, messageTag, numbers, senderNumber, "🎤", timestampInMinutes, conversationId);
+        }
+    }
+
     /** The timecode of the most recent message in a conversation, or 0 if it has none yet - used to sort
      * the contacts/groups grid by recency (most recently active conversation first). */
     public static int getLastMessageTimecode(LevelAccessor world, String conversationId) {
@@ -738,6 +768,13 @@ public class CrazyPhoneHelper {
         String value = messageTag.getString("value");
         String sender = messageTag.getString("sender");
         int timecode = messageTag.getInt("timecode");
+
+        if (messageTag.contains("voice", Tag.TAG_COMPOUND)) {
+            CompoundTag voiceTag = messageTag.getCompound("voice");
+            UUID voiceId = new UUID(voiceTag.getLong("voice_id_most"), voiceTag.getLong("voice_id_least"));
+            byte[] envelope = voiceTag.get("voice_envelope") instanceof net.minecraft.nbt.ByteArrayTag tag ? tag.getAsByteArray() : new byte[0];
+            return MessageData.voice(timecode, sender, voiceId, voiceTag.getInt("voice_duration_ticks"), envelope);
+        }
 
         ItemStack stack = ItemStack.EMPTY;
         if (messageTag.contains("image", Tag.TAG_COMPOUND)) {

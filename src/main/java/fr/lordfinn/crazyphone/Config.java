@@ -33,6 +33,16 @@ public class Config {
             .comment("Whether the mayor election/voting feature (accessible from the phone) is enabled.")
             .define("mayorElectionFeatureEnabled", true);
 
+    // Optional Simple Voice Chat integration (calls + voice messages) - see fr.lordfinn.crazyphone.voicechat.
+
+    private static final ModConfigSpec.IntValue ALONE_IN_CALL_KICK_SECONDS = BUILDER
+            .comment("How long a call stays open with only one participant left before that participant is automatically removed from it.")
+            .defineInRange("aloneInCallKickSeconds", 5, 1, 60);
+
+    private static final ModConfigSpec.IntValue MAX_VOICE_MESSAGES_STORED_PER_CONVERSATION = BUILDER
+            .comment("Maximum number of voice messages (with their audio) kept on disk per conversation - voice audio is the heaviest payload, capped separately from text/image messages.")
+            .defineInRange("maxVoiceMessagesStoredPerConversation", 30, 5, 500);
+
     static final ModConfigSpec SPEC = BUILDER.build();
 
     public static int maxStoredMessagesPerConversation;
@@ -40,6 +50,8 @@ public class Config {
     public static int maxImagesStoredPerConversation;
     public static int maxAlbumSlotsPerPhone;
     public static boolean mayorElectionFeatureEnabled;
+    public static int aloneInCallKickSeconds;
+    public static int maxVoiceMessagesStoredPerConversation;
 
     @SubscribeEvent
     static void onLoad(final ModConfigEvent event) {
@@ -48,5 +60,7 @@ public class Config {
         maxImagesStoredPerConversation = MAX_IMAGES_STORED_PER_CONVERSATION.get();
         maxAlbumSlotsPerPhone = MAX_ALBUM_SLOTS_PER_PHONE.get();
         mayorElectionFeatureEnabled = MAYOR_ELECTION_FEATURE_ENABLED.get();
+        aloneInCallKickSeconds = ALONE_IN_CALL_KICK_SECONDS.get();
+        maxVoiceMessagesStoredPerConversation = MAX_VOICE_MESSAGES_STORED_PER_CONVERSATION.get();
     }
 }

@@ -101,20 +101,30 @@ public class MessageDisplayManager {
             return addSystemMessage(newMessage);
 
         boolean isSender = ownerNumber.equals(newMessage.getSender());
+        // Empty text: WrappedTextWidget treats a blank message as "no background" (used for image messages,
+        // which draw their own content edge-to-edge) - a voice message still wants the normal colored
+        // chat-bubble background though, just with custom content (play icon/time/waveform/speed) drawn
+        // over it by MessageWidget instead of wrapped text, so its background is forced on explicitly
+        // regardless of the (blank) placeholder text.
+        String bubbleText = newMessage.isVoice() ? "" : newMessage.getMessage();
+        boolean transparentBackground = bubbleText.isBlank() && !newMessage.isVoice();
         WrappedTextWidget wrapped = new WrappedTextWidget(
             Minecraft.getInstance().font,
             x,
             0, // temp y, updated in render
             width,
-            Component.literal(newMessage.getMessage()),
+            Component.literal(bubbleText),
             scale,
             (!isSender ? 0xff000000 : 0xffffffff),
-            (newMessage.getMessage().isBlank() ? 0x00ffffff : (!isSender ? 0xccfafafa : 0xcc0084ff))
+            (transparentBackground ? 0x00ffffff : (!isSender ? 0xccfafafa : 0xcc0084ff))
         );
+        if (newMessage.isVoice())
+            wrapped.setMinHeight(14); // even - the waveform bars center on bubbleH/2 with no rounding remainder
         ItemStack icon = icons.get(newMessage.getSender());
         if (icon == null)
             icon = new ItemStack(Items.PLAYER_HEAD);
-        MessageWidget widget = new MessageWidget(wrapped, isSender, icon, 0, newMessage.getImage(), this);
+        MessageWidget widget = new MessageWidget(wrapped, isSender, icon, 0, newMessage.getImage(), this, false,
+                newMessage.getVoiceId(), newMessage.getVoiceDurationTicks(), newMessage.getVoiceEnvelope());
         MessageEntry entry = new MessageEntry(newMessage, widget);
         messageEntries.add(0, entry);
         resetPositions();

@@ -79,6 +79,18 @@ versionRange = "[1.0.19,)"
 ordering = "AFTER"
 side = "BOTH"
 
+# Optional: powers the phone's voice-call and voice-message features when installed. The mod loads and
+# works fully without it - see fr.lordfinn.crazyphone.voicechat.VoicechatIntegration.
+# NOTE: SVC reports its own mod version as "<mc_version>-<mod_version>" (e.g. "1.21.1-2.6.21"), not a bare
+# semver - mirror the Camera dependency's low, permissive floor below rather than pinning a high major like
+# "[2.0.0,)", which reads that string as major version 1 and always fails the range check.
+[[dependencies."${mod_id}"]]
+modId = "voicechat"
+type = "optional"
+versionRange = "[1.0.0,)"
+ordering = "AFTER"
+side = "BOTH"
+
 # Features are specific properties of the game environment, that you may want to declare you require. This example declares
 # that your mod requires GL version 3.2 or higher. Other features will be added. They are side aware so declaring this won't
 # stop your mod loading on the server for example.

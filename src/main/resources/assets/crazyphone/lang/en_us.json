@@ -72,6 +72,17 @@
   "gui.crazyphone.crazy_phone_conversation.tooltip_send_image": "Send an image",
   "gui.crazyphone.crazy_phone_conversation.tooltip_send_message": "Send the message",
   "gui.crazyphone.crazy_phone_conversation.tooltip_group_settings": "Group settings",
+  "gui.crazyphone.crazy_phone_conversation.tooltip_call": "Call",
+  "gui.crazyphone.crazy_phone_conversation.tooltip_reopen_call": "Reopen the call",
+  "gui.crazyphone.crazy_phone_conversation.tooltip_send_voice_message": "Send a voice message",
+  "gui.crazyphone.crazy_phone_conversation.button_voice_trash": "🗑",
+  "gui.crazyphone.crazy_phone_conversation.button_voice_pause": "⏸",
+
+  "gui.crazyphone.crazy_phone_calling_screen.title": "Calling...",
+  "gui.crazyphone.crazy_phone_calling_screen.button_cancel": "Cancel",
+
+  "gui.crazyphone.crazy_phone_in_call_screen.title": "In call",
+  "gui.crazyphone.crazy_phone_in_call_screen.button_hangup": "Hang up",
 
   "gui.crazyphone.crazy_phone_group_settings.title": "Group settings",
   "gui.crazyphone.crazy_phone_group_settings.label_group_name": "Group name",

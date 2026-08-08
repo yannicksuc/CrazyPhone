@@ -15,6 +15,10 @@ import fr.lordfinn.crazyphone.procedures.GetCrazyPhoneNumberFromMainHandProcedur
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneContactsScreenMenu;
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneConversationMenu;
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneGroupSettingsScreenMenu;
+import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneCallingScreenMenu;
+import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneInCallScreenMenu;
+import fr.lordfinn.crazyphone.voicechat.CallRegistry;
+import java.util.UUID;
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneMayorCandidateScreenMenu;
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneMayorsCandidatesListMenu;
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhonePasswordScreenMenu;
@@ -100,6 +104,10 @@ public class ScreenMenuUtils {
                 openGroupSettingsMenu(player, hand, screenData);
             case "crazyphone:crazy_phone_mayors_candidates_list" ->
                 openPhoneCustomMenu(player, hand, CrazyPhoneMayorsCandidatesListMenu.class);
+            case "crazyphone:crazy_phone_calling_screen", "crazyphone:crazy_phone_in_call_screen" -> {
+                if (player instanceof ServerPlayer serverPlayer)
+                    openCallScreenForPlayer(serverPlayer);
+            }
             default ->
             	LoggerFactory.getLogger("crazyphone").warn("Unknown screen ID: " + screenId);
         }
@@ -591,5 +599,92 @@ public class ScreenMenuUtils {
             buffer.writeUtf(contact.uuid);
             buffer.writeUtf(contact.skin);
         }
+    }
+
+    /**
+     * Opens whichever call screen matches this player's current state in {@link CallRegistry} - the
+     * Calling screen if they're the initiator and nobody has answered yet, the InCall screen otherwise. No-op
+     * if they aren't in a call at all. This is the single entry point for every "show me the call screen"
+     * trigger: the lock-bypass hook in CrazyPhoneOnUseProcedure, the conversation screen's call icon
+     * reopening an active call, and the Calling screen asking to be swapped for the InCall screen once
+     * answered.
+     */
+    public static void openCallScreenForPlayer(ServerPlayer player) {
+        CallRegistry.CallSession session = CallRegistry.getSessionFor(player.getUUID()).orElse(null);
+        if (session == null)
+            return;
+        String displayTitle = buildCallDisplayTitle(player, session);
+        boolean isInitiatorStillAlone = player.getUUID().equals(session.initiator) && session.participants.size() == 1;
+        if (isInitiatorStillAlone) {
+            openCallingMenu(player, session.conversationId, session.callId, displayTitle);
+        } else {
+            openInCallMenu(player, session.conversationId, session.callId, displayTitle);
+        }
+    }
+
+    private static String buildCallDisplayTitle(Player viewer, CallRegistry.CallSession session) {
+        String viewerNumber = GetCrazyPhoneNumberFromMainHandProcedure.execute(viewer, null);
+        List<String> otherNumbers = CrazyPhoneHelper.getGroupMembers(viewer.level(), session.conversationId).stream()
+                .filter(number -> !number.equals(viewerNumber))
+                .toList();
+        List<String> names = new ArrayList<>();
+        for (String number : otherNumbers) {
+            Contact contact = CrazyPhoneHelper.getContact(viewer.level(), number);
+            if (contact != null)
+                names.add(contact.getName());
+        }
+        return String.join(", ", names);
+    }
+
+    private static void openCallingMenu(Player player, String conversationId, UUID callId, String displayTitle) {
+        if (player instanceof ServerPlayer) {
+            player.openMenu(new MenuProvider() {
+                @Override
+                public Component getDisplayName() {
+                    return Component.translatable("item.crazyphone.crazy_phone");
+                }
+
+                @Override
+                public AbstractContainerMenu createMenu(int id, Inventory inventory, Player player) {
+                    FriendlyByteBuf packetBuffer = new FriendlyByteBuf(Unpooled.buffer());
+                    populateCallScreenBuffer(packetBuffer, player, conversationId, callId, displayTitle);
+                    try {
+                        return new CrazyPhoneCallingScreenMenu(id, inventory, packetBuffer);
+                    } catch (Exception e) {
+                        throw new RuntimeException("Failed to create menu instance", e);
+                    }
+                }
+            }, buf -> populateCallScreenBuffer(buf, player, conversationId, callId, displayTitle));
+        }
+    }
+
+    private static void openInCallMenu(Player player, String conversationId, UUID callId, String displayTitle) {
+        if (player instanceof ServerPlayer) {
+            player.openMenu(new MenuProvider() {
+                @Override
+                public Component getDisplayName() {
+                    return Component.translatable("item.crazyphone.crazy_phone");
+                }
+
+                @Override
+                public AbstractContainerMenu createMenu(int id, Inventory inventory, Player player) {
+                    FriendlyByteBuf packetBuffer = new FriendlyByteBuf(Unpooled.buffer());
+                    populateCallScreenBuffer(packetBuffer, player, conversationId, callId, displayTitle);
+                    try {
+                        return new CrazyPhoneInCallScreenMenu(id, inventory, packetBuffer);
+                    } catch (Exception e) {
+                        throw new RuntimeException("Failed to create menu instance", e);
+                    }
+                }
+            }, buf -> populateCallScreenBuffer(buf, player, conversationId, callId, displayTitle));
+        }
+    }
+
+    private static void populateCallScreenBuffer(FriendlyByteBuf buf, Player player, String conversationId, UUID callId, String displayTitle) {
+        buf.writeBlockPos(player.blockPosition());
+        buf.writeByte(0); // Always Main Hand
+        buf.writeUtf(conversationId);
+        buf.writeUUID(callId);
+        buf.writeUtf(displayTitle);
     }
 }

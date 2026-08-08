@@ -75,6 +75,12 @@ public class WrappedTextWidget extends AbstractWidget {
         this.height = calculateHeight();
     }
 
+    /** The scale this bubble's own text renders at - read by MessageWidget so custom-drawn content (e.g.
+     * the voice message widget) can match the surrounding chat text's size instead of drawing at 1:1. */
+    public float getTextScale() {
+        return textScale;
+    }
+
     /**
      * Update message and recalculate height to respect minHeight.
      */

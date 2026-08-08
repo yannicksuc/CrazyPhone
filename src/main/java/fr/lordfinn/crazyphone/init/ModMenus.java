@@ -31,6 +31,8 @@ import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneConversationMenu;
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneContactsScreenMenu;
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneContactInfoScreenMenu;
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneGroupSettingsScreenMenu;
+import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneCallingScreenMenu;
+import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneInCallScreenMenu;
 import fr.lordfinn.crazyphone.Crazyphone;
 import org.jetbrains.annotations.NotNull;
 
@@ -55,6 +57,10 @@ public class ModMenus {
 			() -> IMenuTypeExtension.create(CrazyPhoneMayorCandidateScreenMenu::new));
 	public static final DeferredHolder<MenuType<?>, MenuType<CrazyPhoneGroupSettingsScreenMenu>> CRAZY_PHONE_GROUP_SETTINGS_SCREEN = REGISTRY.register("crazy_phone_group_settings_screen",
 			() -> IMenuTypeExtension.create(CrazyPhoneGroupSettingsScreenMenu::new));
+	public static final DeferredHolder<MenuType<?>, MenuType<CrazyPhoneCallingScreenMenu>> CRAZY_PHONE_CALLING_SCREEN = REGISTRY.register("crazy_phone_calling_screen",
+			() -> IMenuTypeExtension.create(CrazyPhoneCallingScreenMenu::new));
+	public static final DeferredHolder<MenuType<?>, MenuType<CrazyPhoneInCallScreenMenu>> CRAZY_PHONE_IN_CALL_SCREEN = REGISTRY.register("crazy_phone_in_call_screen",
+			() -> IMenuTypeExtension.create(CrazyPhoneInCallScreenMenu::new));
 
 	/** Always targeted at one player - a textbox value belongs to whoever is looking at that screen, never broadcast it. */
 	public static void setText(String boxname, String value, ServerPlayer player) {

@@ -22,6 +22,8 @@ import fr.lordfinn.crazyphone.client.gui.CrazyPhoneConversationScreen;
 import fr.lordfinn.crazyphone.client.gui.CrazyPhoneContactsScreenScreen;
 import fr.lordfinn.crazyphone.client.gui.CrazyPhoneContactInfoScreenScreen;
 import fr.lordfinn.crazyphone.client.gui.CrazyPhoneGroupSettingsScreenScreen;
+import fr.lordfinn.crazyphone.client.gui.CrazyPhoneCallingScreenScreen;
+import fr.lordfinn.crazyphone.client.gui.CrazyPhoneInCallScreenScreen;
 
 import java.util.HashMap;
 
@@ -53,6 +55,8 @@ public class ModScreens {
 		event.register(ModMenus.CRAZY_PHONE_MAYORS_CANDIDATES_LIST.get(), CrazyPhoneMayorsCandidatesListScreen::new);
 		event.register(ModMenus.CRAZY_PHONE_MAYOR_CANDIDATE_SCREEN.get(), CrazyPhoneMayorCandidateScreenScreen::new);
 		event.register(ModMenus.CRAZY_PHONE_GROUP_SETTINGS_SCREEN.get(), CrazyPhoneGroupSettingsScreenScreen::new);
+		event.register(ModMenus.CRAZY_PHONE_CALLING_SCREEN.get(), CrazyPhoneCallingScreenScreen::new);
+		event.register(ModMenus.CRAZY_PHONE_IN_CALL_SCREEN.get(), CrazyPhoneInCallScreenScreen::new);
 	}
 
 	public static void handleTextBoxMessage(GuiSyncMessage message) {
