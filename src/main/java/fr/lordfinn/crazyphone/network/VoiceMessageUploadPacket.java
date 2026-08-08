@@ -16,6 +16,7 @@ import net.minecraft.world.level.Level;
 
 import fr.lordfinn.crazyphone.Config;
 import fr.lordfinn.crazyphone.Crazyphone;
+import fr.lordfinn.crazyphone.FeatureFlag;
 import fr.lordfinn.crazyphone.procedures.GetCrazyPhoneNumberFromMainHandProcedure;
 import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
 import fr.lordfinn.crazyphone.voicechat.VoicechatIntegration;
@@ -70,6 +71,8 @@ public record VoiceMessageUploadPacket(String conversationId, UUID voiceId, byte
             return;
         context.enqueueWork(() -> {
             if (!(context.player() instanceof ServerPlayer player) || !VoicechatIntegration.isAvailable())
+                return;
+            if (!FeatureFlag.VOICE_MESSAGES.isEnabledFor(player))
                 return;
             if (message.audioPcm.length == 0)
                 return;

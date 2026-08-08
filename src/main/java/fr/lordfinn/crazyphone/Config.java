@@ -33,6 +33,26 @@ public class Config {
             .comment("Whether the mayor election/voting feature (accessible from the phone) is enabled.")
             .define("mayorElectionFeatureEnabled", true);
 
+    // Per-feature global switches - see fr.lordfinn.crazyphone.FeatureFlag. Each also has a matching
+    // permission node (crazyphone.feature.<name>) for per-player/per-group restriction on top of this
+    // global on/off; both can be changed live with /crazyphone feature, not just at startup.
+
+    private static final ModConfigSpec.BooleanValue CALLS_FEATURE_ENABLED = BUILDER
+            .comment("Whether voice calls are enabled. Has no effect if Simple Voice Chat isn't installed or voicechatIntegrationEnabled is false.")
+            .define("callsFeatureEnabled", true);
+
+    private static final ModConfigSpec.BooleanValue VOICE_MESSAGES_FEATURE_ENABLED = BUILDER
+            .comment("Whether recording and sending voice messages is enabled. Has no effect if Simple Voice Chat isn't installed or voicechatIntegrationEnabled is false.")
+            .define("voiceMessagesFeatureEnabled", true);
+
+    private static final ModConfigSpec.BooleanValue IMAGES_FEATURE_ENABLED = BUILDER
+            .comment("Whether sending images from the phone's album into a conversation is enabled.")
+            .define("imagesFeatureEnabled", true);
+
+    private static final ModConfigSpec.BooleanValue CAMERA_FEATURE_ENABLED = BUILDER
+            .comment("Whether inserting a photo taken with the Camera mod into the phone's album is enabled.")
+            .define("cameraFeatureEnabled", true);
+
     // Optional Simple Voice Chat integration (calls + voice messages) - see fr.lordfinn.crazyphone.voicechat.
 
     private static final ModConfigSpec.BooleanValue VOICECHAT_INTEGRATION_ENABLED = BUILDER
@@ -62,6 +82,10 @@ public class Config {
     public static int maxImagesStoredPerConversation;
     public static int maxAlbumSlotsPerPhone;
     public static boolean mayorElectionFeatureEnabled;
+    public static boolean callsFeatureEnabled;
+    public static boolean voiceMessagesFeatureEnabled;
+    public static boolean imagesFeatureEnabled;
+    public static boolean cameraFeatureEnabled;
     public static boolean voicechatIntegrationEnabled;
     public static int callRingTimeoutSeconds;
     public static int aloneInCallKickSeconds;
@@ -75,10 +99,38 @@ public class Config {
         maxImagesStoredPerConversation = MAX_IMAGES_STORED_PER_CONVERSATION.get();
         maxAlbumSlotsPerPhone = MAX_ALBUM_SLOTS_PER_PHONE.get();
         mayorElectionFeatureEnabled = MAYOR_ELECTION_FEATURE_ENABLED.get();
+        callsFeatureEnabled = CALLS_FEATURE_ENABLED.get();
+        voiceMessagesFeatureEnabled = VOICE_MESSAGES_FEATURE_ENABLED.get();
+        imagesFeatureEnabled = IMAGES_FEATURE_ENABLED.get();
+        cameraFeatureEnabled = CAMERA_FEATURE_ENABLED.get();
         voicechatIntegrationEnabled = VOICECHAT_INTEGRATION_ENABLED.get();
         callRingTimeoutSeconds = CALL_RING_TIMEOUT_SECONDS.get();
         aloneInCallKickSeconds = ALONE_IN_CALL_KICK_SECONDS.get();
         maxVoiceMessagesStoredPerConversation = MAX_VOICE_MESSAGES_STORED_PER_CONVERSATION.get();
         maxVoiceMessageRecordingSeconds = MAX_VOICE_MESSAGE_RECORDING_SECONDS.get();
+    }
+
+    /** Setters for the 5 toggleable-features below, used by /crazyphone feature to change them at runtime
+     * (not just at startup) - ConfigValue#set() both updates the live value used everywhere above (Config.
+     * onLoad re-fires on the resulting reload) and persists it to the TOML file, so a runtime toggle
+     * survives a restart the same as hand-editing the config would. */
+    public static void setMayorElectionFeatureEnabled(boolean enabled) {
+        MAYOR_ELECTION_FEATURE_ENABLED.set(enabled);
+    }
+
+    public static void setCallsFeatureEnabled(boolean enabled) {
+        CALLS_FEATURE_ENABLED.set(enabled);
+    }
+
+    public static void setVoiceMessagesFeatureEnabled(boolean enabled) {
+        VOICE_MESSAGES_FEATURE_ENABLED.set(enabled);
+    }
+
+    public static void setImagesFeatureEnabled(boolean enabled) {
+        IMAGES_FEATURE_ENABLED.set(enabled);
+    }
+
+    public static void setCameraFeatureEnabled(boolean enabled) {
+        CAMERA_FEATURE_ENABLED.set(enabled);
     }
 }

@@ -1,9 +1,10 @@
 package fr.lordfinn.crazyphone.procedures;
 
-import com.mojang.brigadier.arguments.DoubleArgumentType;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import net.minecraft.commands.CommandSourceStack;
 
+import fr.lordfinn.crazyphone.FeatureFlag;
 import fr.lordfinn.crazyphone.data.PhoneRegistrySavedData;
 import fr.lordfinn.crazyphone.utils.Contact;
 import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
@@ -25,8 +26,10 @@ public class VoteForMayorProcedure {
 	public static InteractionResult execute(LevelAccessor world, CommandContext<CommandSourceStack> arguments, Entity entity) {
 		if (entity == null || world.isClientSide())
 			return InteractionResult.PASS;
+		if (entity instanceof ServerPlayer player && !FeatureFlag.MAYOR_VOTING.isEnabledFor(player))
+			return InteractionResult.PASS;
 
-		String numberStr = new java.text.DecimalFormat("###").format(Math.round(DoubleArgumentType.getDouble(arguments, "phoneNumber")));
+		String numberStr = String.valueOf(IntegerArgumentType.getInteger(arguments, "phoneNumber"));
 		// Read-only lookup of the number already registered to the held phone - NOT
 		// ResetCrazyPhoneNumberFromMainHandProcedure, which fabricates a brand new random number (and
 		// writes it onto whatever's held) whenever the item isn't a set-up phone. Using that mutating
@@ -100,7 +103,7 @@ public class VoteForMayorProcedure {
 			world.getServer().getPlayerList().broadcastSystemMessage(broadcastMessage.withStyle(ChatFormatting.AQUA), false);
 
 			// Enregistrement du vote - mayorVotes/lastMayorVoteTimestamps are never read client-side (only
-			// by /phoneshowvotes, server-side), so this only needs a disk-persistence mark, not a
+			// by /crazyphone mayor votes show, server-side), so this only needs a disk-persistence mark, not a
 			// broadcast of the whole registry to every online player on every single vote cast.
 			PhoneRegistrySavedData.get(world).mayorVotes.put(myNumber, StringTag.valueOf(numberStr));
 			voteTimestamps.putLong(myNumber, currentTime);

@@ -9,27 +9,23 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.Entity;
 
 import com.mojang.brigadier.context.CommandContext;
-import com.mojang.brigadier.arguments.DoubleArgumentType;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import net.minecraft.commands.CommandSourceStack;
 
 import fr.lordfinn.crazyphone.data.PhoneRegistrySavedData;
-
-import java.text.DecimalFormat;
 
 public class RemoveVoteByNumberProcedure {
 	public static void execute(Level world, CommandContext<CommandSourceStack> arguments, Entity entity) {
 		if (!(world instanceof ServerLevel)) return;
 
-		String numberStr = new DecimalFormat("###").format(
-			Math.round(DoubleArgumentType.getDouble(arguments, "phoneNumber"))
-		);
+		String numberStr = String.valueOf(IntegerArgumentType.getInteger(arguments, "phoneNumber"));
 
 		CompoundTag votes = PhoneRegistrySavedData.get(world).mayorVotes;
 
 		if (votes.contains(numberStr)) {
 			votes.remove(numberStr);
 
-			// mayorVotes is never read client-side (only by /phoneshowvotes, server-side), so this only
+			// mayorVotes is never read client-side (only by /crazyphone mayor votes show, server-side), so this only
 			// needs a disk-persistence mark, not a broadcast of the whole registry to every online player.
 			PhoneRegistrySavedData.get(world).mayorVotes = votes;
 			PhoneRegistrySavedData.get(world).setDirty();

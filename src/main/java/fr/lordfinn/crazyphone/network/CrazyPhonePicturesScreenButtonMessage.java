@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Set;
 
 import fr.lordfinn.crazyphone.Crazyphone;
+import fr.lordfinn.crazyphone.FeatureFlag;
 import fr.lordfinn.crazyphone.data.PhoneAttachmentTypes;
 import fr.lordfinn.crazyphone.data.PlayerPhoneState;
 import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
@@ -20,6 +21,7 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.PacketFlow;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
@@ -87,6 +89,8 @@ public record CrazyPhonePicturesScreenButtonMessage(int buttonID, int x, int y, 
 		} else if (buttonID == 1) {
 			CrazyPhoneHelper.takeSelectedAlbumSlotsFromHeldPhone(entity, world, selectedSlots, albumId);
 		} else if (buttonID == 2) {
+			if (entity instanceof ServerPlayer serverPlayer && !FeatureFlag.IMAGES.isEnabledFor(serverPlayer))
+				return;
 			PlayerPhoneState playerData = entity.getData(PhoneAttachmentTypes.PLAYER_PHONE_STATE);
 			List<String> screenHistory = ScreenMenuUtils.getScreenHistory(playerData.crazyPhoneScreenHistory);
 			if (screenHistory.size() >= 3) {

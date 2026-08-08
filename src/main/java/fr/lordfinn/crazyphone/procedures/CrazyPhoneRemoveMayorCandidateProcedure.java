@@ -6,7 +6,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.network.chat.Component;
 
 import fr.lordfinn.crazyphone.data.PhoneRegistrySavedData;
-import com.mojang.brigadier.arguments.DoubleArgumentType;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import net.minecraft.commands.CommandSourceStack;
 
@@ -14,7 +14,7 @@ public class CrazyPhoneRemoveMayorCandidateProcedure {
 	public static void execute(LevelAccessor world, CommandContext<CommandSourceStack> arguments, Entity entity) {
 		if (entity == null)
 			return;
-		String numberStr = new java.text.DecimalFormat("###").format(Math.round(DoubleArgumentType.getDouble(arguments, "phoneNumber")));
+		String numberStr = String.valueOf(IntegerArgumentType.getInteger(arguments, "phoneNumber"));
 		if (PhoneRegistrySavedData.get(world).mayorsCandidates.contains(numberStr)) {
 			PhoneRegistrySavedData.get(world).mayorsCandidates.remove(numberStr);
 			PhoneRegistrySavedData.get(world).syncToAll(world);

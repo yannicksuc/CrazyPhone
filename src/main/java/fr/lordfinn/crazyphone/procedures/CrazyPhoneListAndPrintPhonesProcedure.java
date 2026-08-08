@@ -172,7 +172,7 @@ public class CrazyPhoneListAndPrintPhonesProcedure {
 						.withBold(true)
 						.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
 								Component.literal("Cliquez pour prendre ce téléphone")))
-						.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/phoneGive " + number))));
+						.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/crazyphone give " + number))));
 
 		// Séparateur
 		msg.append(Component.literal(" ").withStyle(ChatFormatting.GRAY));
@@ -184,7 +184,7 @@ public class CrazyPhoneListAndPrintPhonesProcedure {
 						.withBold(true)
 						.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
 								Component.literal("Cliquez pour supprimer ce téléphone")))
-						.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/phoneDelete " + number))));
+						.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/crazyphone delete " + number))));
 
 		return msg;
 	}

@@ -3,6 +3,7 @@ package fr.lordfinn.crazyphone.procedures;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.entity.player.Player;
+import fr.lordfinn.crazyphone.FeatureFlag;
 import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
 import de.maxhenkel.camera.items.ImageItem;
 import fr.lordfinn.crazyphone.utils.CameraModHelper;
@@ -40,7 +41,8 @@ public class CrazyPhoneOnUseProcedure {
 			if (entity instanceof ServerPlayer player) {
 				ItemStack offhandStack = player.getOffhandItem();
 
-				if (offhandStack != null && !offhandStack.isEmpty() && offhandStack.getItem() instanceof ImageItem) {
+				if (offhandStack != null && !offhandStack.isEmpty() && offhandStack.getItem() instanceof ImageItem
+						&& FeatureFlag.CAMERA.isEnabledFor(player)) {
 					boolean result = CameraModHelper.tryInsertImageIntoCrazyPhone(player, offhandStack);
 					if (result) {
 						player.displayClientMessage(

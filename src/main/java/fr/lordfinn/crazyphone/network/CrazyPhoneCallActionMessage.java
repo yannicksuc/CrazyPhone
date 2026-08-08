@@ -15,6 +15,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
 
 import fr.lordfinn.crazyphone.Crazyphone;
+import fr.lordfinn.crazyphone.FeatureFlag;
 import fr.lordfinn.crazyphone.procedures.GetCrazyPhoneNumberFromMainHandProcedure;
 import fr.lordfinn.crazyphone.utils.Contact;
 import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
@@ -70,6 +71,11 @@ public record CrazyPhoneCallActionMessage(int action, String conversationId) imp
 
     public static void handleAction(ServerPlayer player, int action, String conversationId) {
         if (!VoicechatIntegration.isAvailable())
+            return;
+        // Only gated for the two actions that create NEW call involvement - hanging up or reopening a call
+        // a player is already on should keep working even if the feature (or their permission for it) gets
+        // turned off mid-game, same as any other "let people leave, don't strand them" consideration.
+        if ((action == START_CALL || action == ANSWER) && !FeatureFlag.CALLS.isEnabledFor(player))
             return;
         switch (action) {
             case START_CALL -> startCall(player, conversationId);
