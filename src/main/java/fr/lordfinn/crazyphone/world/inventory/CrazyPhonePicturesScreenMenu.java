@@ -22,15 +22,20 @@ import org.slf4j.LoggerFactory;
 
 public class CrazyPhonePicturesScreenMenu extends CrazyPhoneDefaultScreenMenu {
 	public static final HashMap<String, Object> guistate = new HashMap<>();
+	/** Instagram-feed style: 3 wide, big enough for a real cropped photo thumbnail instead of a 16x16 item
+	 * icon - deliberately NOT the shared GRID_COLUMNS/SLOT_PITCH every other grid in this mod uses, since
+	 * those are sized for item icons. 34px thumbnail + 1px gap each side = 36px pitch, and 3*36=108 lines up
+	 * with the exact same total content width every other 6-column/18px-pitch grid already uses. */
+	public static final int ALBUM_COLUMNS = 3;
+	public static final int THUMB_SIZE = 34;
+	public static final int THUMB_PITCH = 36;
 	/** One screen's worth of rows - matches the fixed grid built below. Album slots beyond this are reached
 	 * by scrolling (see AlbumInventoryItemHandler#scrollBy), not by a second network fetch: the album's
 	 * whole picture list is the same small, fixed-size vanilla container a shulker box or bundle already
 	 * uses (AlbumInventory.SIZE, 54 slots - already synced whole by the same MenuProvider mechanism vanilla
 	 * uses for those), so there's nothing to page over the network here, only a visible-window to scroll. */
-	private static final int VISIBLE_ROWS = 7;
+	private static final int VISIBLE_ROWS = 3;
 	private final Map<Integer, Slot> customSlots = new HashMap<>();
-	private final int slotWidth = SLOT_PITCH;
-	private final int slotHeight = SLOT_PITCH;
 	public int albumId = 0;
 	/** The album ItemStack itself (icon + custom name), exposed so the screen can show it in its page header. */
 	public ItemStack albumStack = ItemStack.EMPTY;
@@ -53,19 +58,21 @@ public class CrazyPhonePicturesScreenMenu extends CrazyPhoneDefaultScreenMenu {
 				this.albumHandler = new AlbumInventoryItemHandler(pictures);
 				this.internal = albumHandler;
 
-				// 6x7 visible grid - one row shorter than the folders list to leave room for the action
-				// buttons (Del/Prendre/Envoyer) below the grid, on top of the header's own space at the top.
-				// The album itself holds up to AlbumInventory.SIZE (54) pictures - reaching the ones past
-				// what fits on screen is done by scrolling (see scrollAlbumBy), which just shifts which
-				// underlying slots these same fixed Slot objects show, not by rebuilding them.
+				// 3x3 visible grid of big square thumbnails, leaving room below for the action buttons
+				// (Del/Prendre/Envoyer) on top of the header's own space at the top. The album itself holds
+				// up to AlbumInventory.SIZE (54) pictures - reaching the ones past what fits on screen is
+				// done by scrolling (see scrollAlbumBy), which just shifts which underlying slots these same
+				// fixed Slot objects show, not by rebuilding them. Slots here are position bookkeeping only
+				// (mayPickup/mayPlace/set are all no-ops below) - the screen draws its own cropped thumbnail
+				// per slot instead of the vanilla 16x16 item-icon render, see CrazyPhonePicturesScreenScreen.
 				int startX = HEADER_CONTENT_START_X;
-				int startY = HEADER_CONTENT_START_Y;
+				int startY = HEADER_CONTENT_START_Y + 2;
 
 				int slotIndex = 0;
 				for (int row = 0; row < VISIBLE_ROWS; row++) {
-					for (int col = 0; col < GRID_COLUMNS; col++) {
-						int x = startX + col * slotWidth;
-						int y = startY + row * slotHeight;
+					for (int col = 0; col < ALBUM_COLUMNS; col++) {
+						int x = startX + col * THUMB_PITCH;
+						int y = startY + row * THUMB_PITCH;
 						final int index = slotIndex;
 
 						Slot slot = new SlotItemHandler(internal, index, x, y) {
@@ -129,7 +136,7 @@ public class CrazyPhonePicturesScreenMenu extends CrazyPhoneDefaultScreenMenu {
 	 * (e.g. the zoom-viewer's "ignore empty slots" index math) must reason about the album's actual
 	 * storage rather than the currently-scrolled visible window. */
 	public int absoluteAlbumIndex(int visibleIndex) {
-		return albumHandler == null ? visibleIndex : albumHandler.rowOffset * GRID_COLUMNS + visibleIndex;
+		return albumHandler == null ? visibleIndex : albumHandler.rowOffset * ALBUM_COLUMNS + visibleIndex;
 	}
 
 	/** Unlike {@link #internal}'s own getStackInSlot (which is scroll-shifted, for grid rendering), this
@@ -149,7 +156,7 @@ public class CrazyPhonePicturesScreenMenu extends CrazyPhoneDefaultScreenMenu {
 		}
 
 		private boolean scrollBy(int deltaRows) {
-			int totalRows = (albumInventory.getContainerSize() + GRID_COLUMNS - 1) / GRID_COLUMNS;
+			int totalRows = (albumInventory.getContainerSize() + ALBUM_COLUMNS - 1) / ALBUM_COLUMNS;
 			int maxOffset = Math.max(0, totalRows - VISIBLE_ROWS);
 			int newOffset = Math.max(0, Math.min(maxOffset, rowOffset + deltaRows));
 			if (newOffset == rowOffset)
@@ -165,7 +172,7 @@ public class CrazyPhonePicturesScreenMenu extends CrazyPhoneDefaultScreenMenu {
 
 		@Override
 		public ItemStack getStackInSlot(int slot) {
-			int realIndex = rowOffset * GRID_COLUMNS + slot;
+			int realIndex = rowOffset * ALBUM_COLUMNS + slot;
 			return realIndex < albumInventory.getContainerSize() ? albumInventory.getItem(realIndex) : ItemStack.EMPTY;
 		}
 
