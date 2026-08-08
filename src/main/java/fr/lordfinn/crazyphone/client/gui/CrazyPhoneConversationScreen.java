@@ -115,6 +115,14 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
     /** Stored so the exact same reference can be passed to both setListener and clearListener. */
     private final BiConsumer<String, ConversationPage> conversationListener = this::onConversationPageReceived;
     private boolean firstPageRequested = false;
+    /** Progressive "load older messages on scroll to top" - mirrors the image/voice-message lazy-fetch
+     * philosophy: only the newest page is ever requested up front, older ones are fetched one at a time as
+     * the player actually scrolls up to them, never the whole history in one shot. Unknown (assumed false)
+     * until the first page's response tells us for sure. */
+    private boolean hasMoreOlderMessages = false;
+    /** Guards against firing a second load-older request while one is already in flight - scrolling
+     * repeatedly at the very top would otherwise spam duplicate requests every single scroll tick. */
+    private boolean loadingOlderMessages = false;
 
     public CrazyPhoneConversationScreen(CrazyPhoneConversationMenu container, Inventory inventory, Component text) {
         super(container, inventory, text);
@@ -484,7 +492,22 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
         else if (scrollPosition > (messageManager.getTotalHeight() - 132))
             scrollPosition = (messageManager.getTotalHeight() - 132);
         messageManager.setScrollOffset(scrollPosition);
+        maybeLoadOlderMessages();
         return true;
+    }
+
+    /** Fires a "load older" request the moment the player scrolls all the way to the top of what's
+     * currently loaded - resetPositions()/setScrollOffset() above don't shift anything already on screen
+     * when the response arrives (the newest message's Y only depends on scrollOffset, not on how many
+     * older entries exist behind it), so the older content just appears further up as the player keeps
+     * scrolling, exactly like any other lazy-loaded chat feed. */
+    private void maybeLoadOlderMessages() {
+        if (loadingOlderMessages || !hasMoreOlderMessages)
+            return;
+        if (messageManager.getTotalHeight() > 132 && scrollPosition < messageManager.getTotalHeight() - 132)
+            return;
+        loadingOlderMessages = true;
+        PacketDistributor.sendToServer(new ConversationRequestPacket(this.menu.getConversationId(), receivedMessages.size()));
     }
 
     @Override
@@ -530,21 +553,45 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
     private void onConversationPageReceived(String conversationId, ConversationPage page) {
         if (!conversationId.equals(this.menu.getConversationId()))
             return;
+
+        List<MessageData> pageData = new ArrayList<>();
         for (CompoundTag messageTag : page.messages()) {
             MessageData data = CrazyPhoneHelper.getMessageFromTag(messageTag);
-            if (data == null)
-                continue;
-            receivedMessages.add(data);
-            if (messageManager != null) {
-                // Deliberately NOT calling addRenderableWidget here: message widgets are rendered by
-                // messageManager.render(guiGraphics) inside the scissor block in renderMessageWidget(), and
-                // clicks are dispatched manually in mouseClicked() below. Registering them as renderable
-                // widgets too made the standard Screen render pass draw them a second time, unclipped -
-                // that's what caused messages to overflow above/below the visible feed area regardless of
-                // scroll position (the scroll math itself was fine).
-                messageManager.addMessage(data);
-            }
+            if (data != null)
+                pageData.add(data);
         }
+
+        if (page.skipFromEnd() == 0) {
+            // The newest page (initial open, or a live re-request) - server returns it oldest-first, and
+            // repeatedly appending each as the new newest-end entry naturally rebuilds the correct order
+            // (see MessageDisplayManager#addMessage), same as the resize-replay loop below does.
+            for (MessageData data : pageData) {
+                receivedMessages.add(data);
+                if (messageManager != null)
+                    // Deliberately NOT calling addRenderableWidget here: message widgets are rendered by
+                    // messageManager.render(guiGraphics) inside the scissor block in renderMessageWidget(),
+                    // and clicks are dispatched manually in mouseClicked() below. Registering them as
+                    // renderable widgets too made the standard Screen render pass draw them a second time,
+                    // unclipped - that's what caused messages to overflow above/below the visible feed area
+                    // regardless of scroll position (the scroll math itself was fine).
+                    messageManager.addMessage(data);
+            }
+        } else {
+            // An older page (scrolled-to-top pagination) - keep receivedMessages in strict global
+            // oldest-to-newest order by prepending the whole page at its front (the page itself already
+            // arrives oldest-first, so a straight prepend preserves that), so a later resize's replay loop
+            // (which always iterates forward and appends-as-newest) still rebuilds the correct final order.
+            receivedMessages.addAll(0, pageData);
+            if (messageManager != null) {
+                // The live widget stack, unlike the replay list above, needs the page fed newest-of-page
+                // first: prependOlderMessage always becomes the new oldest/top-most entry, so feeding it in
+                // reverse is what makes B end up above A when the page (oldest-first) was [A, B].
+                for (int i = pageData.size() - 1; i >= 0; i--)
+                    messageManager.prependOlderMessage(pageData.get(i));
+            }
+            loadingOlderMessages = false;
+        }
+        hasMoreOlderMessages = page.hasMore();
     }
 
     @Override

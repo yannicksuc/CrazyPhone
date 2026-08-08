@@ -111,20 +111,34 @@ public class CrazyPhonePicturesScreenScreen extends CrazyPhoneDefaultScreenScree
 	private void onSlotZoomClick(int index) {
 		IItemHandlerModifiable handler = CrazyPhoneHelper.getPhoneItemHandler(entity);
         ItemStack albumStack = CrazyPhoneHelper.getAlbumFromPhoneHandler (handler,albumId);
-		int alteredIndex = adjustIndexByIgnoringEmptySlots(index);
+		int alteredIndex = adjustIndexByIgnoringEmptySlots(menu.absoluteAlbumIndex(index));
 		CameraModHelper.openAlbum(entity, albumStack, alteredIndex);
 	}
 
-	private int adjustIndexByIgnoringEmptySlots(int originalIndex) {
+	/** {@code absoluteIndex} must already be the album's real slot (see CrazyPhonePicturesScreenMenu#absoluteAlbumIndex)
+	 * - the zoom viewer re-reads the whole album from its own true slot 0 regardless of how the grid here is
+	 * currently scrolled, so this has to count empties over that same absolute range, not the shifted grid. */
+	private int adjustIndexByIgnoringEmptySlots(int absoluteIndex) {
 		int emptySlot = 0;
 
-		for (int i = 0; i < originalIndex; i++) {
-			if (menu.internal.getStackInSlot(i).isEmpty()) {
+		for (int i = 0; i < absoluteIndex; i++) {
+			if (menu.getAbsoluteAlbumStack(i).isEmpty()) {
 				emptySlot++;
 			}
 		}
 
-		return originalIndex - emptySlot;
+		return absoluteIndex - emptySlot;
+	}
+
+	@Override
+	public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+		// One row per notch, same direction convention as vanilla inventory scrolling (up = toward earlier
+		// content) - the album's full picture list already lives client-side in one small, fixed-size
+		// vanilla container (see CrazyPhonePicturesScreenMenu), so this just shifts which of it the fixed
+		// grid slots show, no network round trip involved.
+		if (menu.scrollAlbumBy((int) -Math.signum(scrollY)))
+			return true;
+		return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
 	}
 
 	private boolean isHoveringSlot(Slot slot, double mouseX, double mouseY) {

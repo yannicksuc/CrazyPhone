@@ -99,11 +99,35 @@ public class MessageDisplayManager {
     private static final int CALL_BACKGROUND_COLOR = 0xCCB0D9FF; // light blue - distinct from the system-event yellow
 
     public MessageEntry addMessage(MessageData newMessage) {
-        if (newMessage.isCall())
-            return addCallMessage(newMessage);
-        if (newMessage.isSystem())
-            return addSystemMessage(newMessage);
+        return insert(newMessage, true);
+    }
 
+    /** For "load older messages" pagination (scrolling to the top of the feed): unlike {@link
+     * #addMessage}, which always becomes the newest/bottom-most entry, this becomes the new oldest/top-most
+     * entry instead - the caller (CrazyPhoneConversationScreen) must feed each page's messages in
+     * newest-to-oldest order (the reverse of how the server returns a page) so repeated calls build up the
+     * correct chronological order above whatever was already loaded. */
+    public MessageEntry prependOlderMessage(MessageData olderMessage) {
+        return insert(olderMessage, false);
+    }
+
+    private MessageEntry insert(MessageData newMessage, boolean atNewestEnd) {
+        MessageEntry entry;
+        if (newMessage.isCall())
+            entry = buildCallEntry(newMessage);
+        else if (newMessage.isSystem())
+            entry = buildSystemEntry(newMessage);
+        else
+            entry = buildTextEntry(newMessage);
+        if (atNewestEnd)
+            messageEntries.add(0, entry);
+        else
+            messageEntries.add(entry);
+        resetPositions();
+        return entry;
+    }
+
+    private MessageEntry buildTextEntry(MessageData newMessage) {
         boolean isSender = ownerNumber.equals(newMessage.getSender());
         // Empty text: WrappedTextWidget treats a blank message as "no background" (used for image messages,
         // which draw their own content edge-to-edge) - a voice message still wants the normal colored
@@ -129,13 +153,10 @@ public class MessageDisplayManager {
             icon = new ItemStack(Items.PLAYER_HEAD);
         MessageWidget widget = new MessageWidget(wrapped, isSender, icon, 0, newMessage.getImage(), this, false,
                 newMessage.getVoiceId(), newMessage.getVoiceDurationTicks(), newMessage.getVoiceEnvelope());
-        MessageEntry entry = new MessageEntry(newMessage, widget);
-        messageEntries.add(0, entry);
-        resetPositions();
-        return entry;
+        return new MessageEntry(newMessage, widget);
     }
 
-    private MessageEntry addCallMessage(MessageData newMessage) {
+    private MessageEntry buildCallEntry(MessageData newMessage) {
         WrappedTextWidget wrapped = new WrappedTextWidget(
             Minecraft.getInstance().font,
             x,
@@ -150,13 +171,10 @@ public class MessageDisplayManager {
         );
         MessageWidget widget = new MessageWidget(wrapped, this, newMessage.getCallId(), newMessage.getCallStartMillis(), newMessage.getCallDurationMillis());
         widget.setShowIcon(false);
-        MessageEntry entry = new MessageEntry(newMessage, widget);
-        messageEntries.add(0, entry);
-        resetPositions();
-        return entry;
+        return new MessageEntry(newMessage, widget);
     }
 
-    private MessageEntry addSystemMessage(MessageData newMessage) {
+    private MessageEntry buildSystemEntry(MessageData newMessage) {
         WrappedTextWidget wrapped = new WrappedTextWidget(
             Minecraft.getInstance().font,
             x,
@@ -171,10 +189,7 @@ public class MessageDisplayManager {
         );
         MessageWidget widget = new MessageWidget(wrapped, false, ItemStack.EMPTY, 0, null, this, true);
         widget.setShowIcon(false);
-        MessageEntry entry = new MessageEntry(newMessage, widget);
-        messageEntries.add(0, entry);
-        resetPositions();
-        return entry;
+        return new MessageEntry(newMessage, widget);
     }
 
     public int getTotalHeight() {

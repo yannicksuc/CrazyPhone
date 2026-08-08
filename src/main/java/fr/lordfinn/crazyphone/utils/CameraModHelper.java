@@ -114,7 +114,12 @@ public class CameraModHelper {
     private static boolean tryAddImageToAlbum(ServerPlayer player, ItemStack albumStack, ItemStack imageStack) {
         AlbumInventory inventory = new AlbumInventory(player.level().registryAccess(), albumStack);
 
-        for (int i = 0; i < Config.maxAlbumSlotsPerPhone; i++) {
+        // maxAlbumSlotsPerPhone's config range goes up to 97, but AlbumInventory's own backing storage is a
+        // fixed-size (54-slot) vanilla container (the same NonNullList a shulker box uses) - without this
+        // clamp, a server configured above 54 would throw IndexOutOfBoundsException here the moment someone
+        // tried to fill a slot past the container's real capacity.
+        int limit = Math.min(Config.maxAlbumSlotsPerPhone, inventory.getContainerSize());
+        for (int i = 0; i < limit; i++) {
             if (inventory.getItem(i).isEmpty()) {
                 inventory.setItem(i, imageStack.copy());
                 return true;
