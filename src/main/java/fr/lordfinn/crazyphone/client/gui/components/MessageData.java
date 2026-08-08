@@ -16,6 +16,9 @@ public class MessageData {
     private final UUID voiceId;
     private final int voiceDurationTicks;
     private final byte[] voiceEnvelope;
+    private final UUID callId;
+    private final long callStartMillis;
+    private final long callDurationMillis;
 
     public MessageData(int timecode, String message, String sender) {
         this.timecode = timecode;
@@ -28,6 +31,9 @@ public class MessageData {
         this.voiceId = null;
         this.voiceDurationTicks = 0;
         this.voiceEnvelope = new byte[0];
+        this.callId = null;
+        this.callStartMillis = 0;
+        this.callDurationMillis = -1;
     }
 
     public MessageData(int timecode, String message, String sender, ItemStack stack) {
@@ -41,6 +47,9 @@ public class MessageData {
         this.voiceId = null;
         this.voiceDurationTicks = 0;
         this.voiceEnvelope = new byte[0];
+        this.callId = null;
+        this.callStartMillis = 0;
+        this.callDurationMillis = -1;
     }
 
     private MessageData(int timecode, Component systemText, ItemStack systemIcon) {
@@ -54,6 +63,9 @@ public class MessageData {
         this.voiceId = null;
         this.voiceDurationTicks = 0;
         this.voiceEnvelope = new byte[0];
+        this.callId = null;
+        this.callStartMillis = 0;
+        this.callDurationMillis = -1;
     }
 
     private MessageData(int timecode, String sender, UUID voiceId, int voiceDurationTicks, byte[] voiceEnvelope) {
@@ -67,6 +79,25 @@ public class MessageData {
         this.voiceId = voiceId;
         this.voiceDurationTicks = voiceDurationTicks;
         this.voiceEnvelope = voiceEnvelope;
+        this.callId = null;
+        this.callStartMillis = 0;
+        this.callDurationMillis = -1;
+    }
+
+    private MessageData(int timecode, UUID callId, long callStartMillis, long callDurationMillis) {
+        this.timecode = timecode;
+        this.message = "";
+        this.sender = "";
+        this.image = ItemStack.EMPTY;
+        this.system = false;
+        this.systemText = null;
+        this.systemIcon = ItemStack.EMPTY;
+        this.voiceId = null;
+        this.voiceDurationTicks = 0;
+        this.voiceEnvelope = new byte[0];
+        this.callId = callId;
+        this.callStartMillis = callStartMillis;
+        this.callDurationMillis = callDurationMillis;
     }
 
     /** A system event (rename / icon change / member excluded / admin reassigned) - not sent by anyone,
@@ -82,8 +113,32 @@ public class MessageData {
         return new MessageData(timecode, sender, voiceId, voiceDurationTicks, voiceEnvelope);
     }
 
+    /** A call log entry - posted the moment a call connects and, unlike every other message type, mutated
+     * in place (see CrazyPhoneHelper#finalizeCallMessage) once it ends rather than getting a second entry.
+     * {@code callDurationMillis} is -1 while the call is still ongoing; the widget computes and displays a
+     * live-ticking elapsed time from {@code callStartMillis} in that case (see MessageWidget). */
+    public static MessageData call(int timecode, UUID callId, long callStartMillis, long callDurationMillis) {
+        return new MessageData(timecode, callId, callStartMillis, callDurationMillis);
+    }
+
     public boolean isVoice() {
         return voiceId != null;
+    }
+
+    public boolean isCall() {
+        return callId != null;
+    }
+
+    public UUID getCallId() {
+        return callId;
+    }
+
+    public long getCallStartMillis() {
+        return callStartMillis;
+    }
+
+    public long getCallDurationMillis() {
+        return callDurationMillis;
     }
 
     public UUID getVoiceId() {

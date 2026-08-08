@@ -1,0 +1,14 @@
+{
+  "ringback_tone": {
+    "category": "record",
+    "sounds": [
+      "crazyphone:ringback-tone"
+    ]
+  },
+  "ringtone": {
+    "category": "record",
+    "sounds": [
+      "crazyphone:ringtone"
+    ]
+  }
+}

@@ -17,8 +17,10 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
 
+import fr.lordfinn.crazyphone.client.ClientCallState;
 import fr.lordfinn.crazyphone.client.CursorEffects;
 import fr.lordfinn.crazyphone.data.PhoneRegistrySavedData;
+import fr.lordfinn.crazyphone.network.CrazyPhoneCallStateSyncPacket.State;
 import fr.lordfinn.crazyphone.network.CrazyPhoneContactsScreenButtonMessage;
 import fr.lordfinn.crazyphone.procedures.GetCrazyPhoneNumberFromMainHandProcedure;
 import fr.lordfinn.crazyphone.utils.Contact;
@@ -44,6 +46,7 @@ public class CrazyPhoneContactsScreenScreen extends CrazyPhoneDefaultScreenScree
 	private static final float HEAD_HOVER_GROW_SCALE = 1.15f;
 	private final static HashMap<String, Object> guistate = CrazyPhoneContactsScreenMenu.guistate;
 	private static final ResourceLocation NOTIFICATION_IMAGE = ResourceLocation.parse("crazyphone:textures/screens/crazyphone-notification.png");
+	private static final ResourceLocation IN_CALL_BADGE_IMAGE = ResourceLocation.parse("crazyphone:textures/screens/crazyphone-in-call-badge.png");
 	/** Player heads with a resolved skin profile render as a 3D skull model that visually reads larger
 	 * than other flat icons next to it - scaled down here (matching the add-contact tile) so they read as
 	 * the same size. */
@@ -464,6 +467,13 @@ public class CrazyPhoneContactsScreenScreen extends CrazyPhoneDefaultScreenScree
 		String oneOnOneId = CrazyPhoneHelper.getConversationNumber(person.getNumber(), ownerNumber);
 		if (pendingNotifications != null && pendingNotifications.contains(oneOnOneId)) {
 			guiGraphics.blit(NOTIFICATION_IMAGE, iconX, iconY, 0, 0, 18, 18, 18, 18);
+		}
+
+		// Bottom-left corner, distinct from the top-left unread-message badge above - this contact's own
+		// number has to actually be on the local player's currently ACTIVE call, not just "some call
+		// somewhere", the same per-number gating ClientCallState.numberHasState was built for.
+		if (ClientCallState.numberHasState(person.getNumber(), State.ACTIVE)) {
+			guiGraphics.blit(IN_CALL_BADGE_IMAGE, iconX, iconY + 9, 0, 0, 7, 7, 7, 7);
 		}
 
 		return hovered;

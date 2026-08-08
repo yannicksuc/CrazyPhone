@@ -14,6 +14,7 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
 
+import fr.lordfinn.crazyphone.Config;
 import fr.lordfinn.crazyphone.Crazyphone;
 import fr.lordfinn.crazyphone.procedures.GetCrazyPhoneNumberFromMainHandProcedure;
 import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
@@ -33,6 +34,9 @@ import java.util.UUID;
  */
 public record VoiceMessageUploadPacket(String conversationId, UUID voiceId, byte[] audioPcm, int durationTicks, byte[] envelope) implements CustomPacketPayload {
     private static final Logger LOGGER = LoggerFactory.getLogger("crazyphone");
+
+    /** Matches VoiceMessageRecorder's own capture rate. */
+    private static final int SAMPLE_RATE = 48000;
 
     public static final Type<VoiceMessageUploadPacket> TYPE = new Type<>(
             ResourceLocation.fromNamespaceAndPath(Crazyphone.MODID, "voice_message_upload")
@@ -69,6 +73,16 @@ public record VoiceMessageUploadPacket(String conversationId, UUID voiceId, byte
                 return;
             if (message.audioPcm.length == 0)
                 return;
+
+            // Defense in depth: the client already auto-stops a recording at maxVoiceMessageRecordingSeconds
+            // (CrazyPhoneConversationScreen's render loop), but a modified client could skip that and upload
+            // an arbitrarily long clip - reject anything meaningfully over the cap here too. A few seconds
+            // of slack accounts for the client's own check being per-frame, not sample-exact.
+            long maxSamples = (long) (Config.maxVoiceMessageRecordingSeconds + 2) * SAMPLE_RATE;
+            if (message.audioPcm.length / 2L > maxSamples) {
+                LOGGER.warn("Voice message upload rejected: {} samples exceeds the {}s cap", message.audioPcm.length / 2, Config.maxVoiceMessageRecordingSeconds);
+                return;
+            }
 
             Level world = player.level();
             String senderNumber = GetCrazyPhoneNumberFromMainHandProcedure.execute(player, null);

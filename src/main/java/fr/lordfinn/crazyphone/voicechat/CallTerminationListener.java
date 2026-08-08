@@ -47,6 +47,7 @@ public class CallTerminationListener {
             return;
         sweepInventoryPossession(server);
         sweepAloneParticipants(server);
+        sweepRingTimeouts(server);
     }
 
     private static void sweepInventoryPossession(MinecraftServer server) {
@@ -81,7 +82,12 @@ public class CallTerminationListener {
     private static void sweepAloneParticipants(MinecraftServer server) {
         long currentGameTime = server.overworld().getGameTime();
         for (CallRegistry.CallSession session : CallRegistry.getActiveSessions()) {
-            if (session.participants.size() != 1) {
+            // A call that still has people ringing isn't "alone" in the disconnected sense yet - that's a
+            // still-unanswered call, handled on its own (longer, distinct) timeout by sweepRingTimeouts
+            // below. Applying this kick during ringing used to end nearly every real call before the callee
+            // had a chance to answer, since aloneInCallKickSeconds (5s) is far shorter than a realistic
+            // answer time.
+            if (session.participants.size() != 1 || !session.ringing.isEmpty()) {
                 session.soleParticipantSinceGameTime = -1;
                 continue;
             }
@@ -96,6 +102,19 @@ public class CallTerminationListener {
             } else if (currentGameTime - session.soleParticipantSinceGameTime >= Config.aloneInCallKickSeconds * 20L) {
                 CallRegistry.leave(lastParticipant);
             }
+        }
+    }
+
+    /** A call that's been ringing longer than callRingTimeoutSeconds without being answered is a missed
+     * call, not an indefinite ring - see CallRegistry#expireRinging for what happens to the still-ringing
+     * callees and, if nobody ever answered at all, the call itself. */
+    private static void sweepRingTimeouts(MinecraftServer server) {
+        long currentGameTime = server.overworld().getGameTime();
+        for (CallRegistry.CallSession session : CallRegistry.getActiveSessions()) {
+            if (session.ringing.isEmpty())
+                continue;
+            if (currentGameTime - session.startedAtGameTime >= Config.callRingTimeoutSeconds * 20L)
+                CallRegistry.expireRinging(session, server);
         }
     }
 

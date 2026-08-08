@@ -17,6 +17,7 @@ import net.minecraft.network.FriendlyByteBuf;
 import fr.lordfinn.crazyphone.data.PhoneAttachmentTypes;
 import fr.lordfinn.crazyphone.init.ModItems;
 import fr.lordfinn.crazyphone.init.ModMenus;
+import fr.lordfinn.crazyphone.init.ModSounds;
 import fr.lordfinn.crazyphone.init.ModTabs;
 
 import org.slf4j.Logger;
@@ -35,6 +36,7 @@ public class Crazyphone {
         ModItems.REGISTRY.register(modEventBus);
         ModTabs.REGISTRY.register(modEventBus);
         ModMenus.REGISTRY.register(modEventBus);
+        ModSounds.REGISTRY.register(modEventBus);
         PhoneAttachmentTypes.ATTACHMENT_TYPES.register(modEventBus);
 
         modContainer.registerConfig(ModConfig.Type.COMMON, Config.SPEC);

@@ -35,6 +35,14 @@ public class Config {
 
     // Optional Simple Voice Chat integration (calls + voice messages) - see fr.lordfinn.crazyphone.voicechat.
 
+    private static final ModConfigSpec.BooleanValue VOICECHAT_INTEGRATION_ENABLED = BUILDER
+            .comment("Master switch for the Simple Voice Chat integration (calls + voice messages). Has no effect if Simple Voice Chat itself isn't installed.")
+            .define("voicechatIntegrationEnabled", true);
+
+    private static final ModConfigSpec.IntValue CALL_RING_TIMEOUT_SECONDS = BUILDER
+            .comment("How long a call rings before an unanswered callee is treated as a missed call. Distinct from aloneInCallKickSeconds, which only applies once a call is actually connected.")
+            .defineInRange("callRingTimeoutSeconds", 30, 5, 120);
+
     private static final ModConfigSpec.IntValue ALONE_IN_CALL_KICK_SECONDS = BUILDER
             .comment("How long a call stays open with only one participant left before that participant is automatically removed from it.")
             .defineInRange("aloneInCallKickSeconds", 5, 1, 60);
@@ -43,6 +51,10 @@ public class Config {
             .comment("Maximum number of voice messages (with their audio) kept on disk per conversation - voice audio is the heaviest payload, capped separately from text/image messages.")
             .defineInRange("maxVoiceMessagesStoredPerConversation", 30, 5, 500);
 
+    private static final ModConfigSpec.IntValue MAX_VOICE_MESSAGE_RECORDING_SECONDS = BUILDER
+            .comment("Maximum length of a single voice message recording, in seconds - recording auto-stops once this is reached.")
+            .defineInRange("maxVoiceMessageRecordingSeconds", 60, 5, 600);
+
     static final ModConfigSpec SPEC = BUILDER.build();
 
     public static int maxStoredMessagesPerConversation;
@@ -50,8 +62,11 @@ public class Config {
     public static int maxImagesStoredPerConversation;
     public static int maxAlbumSlotsPerPhone;
     public static boolean mayorElectionFeatureEnabled;
+    public static boolean voicechatIntegrationEnabled;
+    public static int callRingTimeoutSeconds;
     public static int aloneInCallKickSeconds;
     public static int maxVoiceMessagesStoredPerConversation;
+    public static int maxVoiceMessageRecordingSeconds;
 
     @SubscribeEvent
     static void onLoad(final ModConfigEvent event) {
@@ -60,7 +75,10 @@ public class Config {
         maxImagesStoredPerConversation = MAX_IMAGES_STORED_PER_CONVERSATION.get();
         maxAlbumSlotsPerPhone = MAX_ALBUM_SLOTS_PER_PHONE.get();
         mayorElectionFeatureEnabled = MAYOR_ELECTION_FEATURE_ENABLED.get();
+        voicechatIntegrationEnabled = VOICECHAT_INTEGRATION_ENABLED.get();
+        callRingTimeoutSeconds = CALL_RING_TIMEOUT_SECONDS.get();
         aloneInCallKickSeconds = ALONE_IN_CALL_KICK_SECONDS.get();
         maxVoiceMessagesStoredPerConversation = MAX_VOICE_MESSAGES_STORED_PER_CONVERSATION.get();
+        maxVoiceMessageRecordingSeconds = MAX_VOICE_MESSAGE_RECORDING_SECONDS.get();
     }
 }

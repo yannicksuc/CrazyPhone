@@ -134,6 +134,26 @@ public class ConversationSavedData extends SavedData {
         voiceAudio.remove(voiceId.toString());
     }
 
+    /** Finds the most recent message in this conversation whose "call" sub-tag has the given call id and
+     * lets the caller mutate it in place - used to fill in a call's final duration once it ends, without
+     * appending a second "call ended" message. No-op if not found (e.g. already evicted by the history cap). */
+    public void updateCallMessage(String conversationId, UUID callId, java.util.function.Consumer<CompoundTag> mutator) {
+        Tag existing = conversations.get(conversationId);
+        if (!(existing instanceof ListTag messages))
+            return;
+        for (int i = messages.size() - 1; i >= 0; i--) {
+            CompoundTag message = messages.getCompound(i);
+            if (!(message.get("call") instanceof CompoundTag callTag))
+                continue;
+            UUID id = new UUID(callTag.getLong("call_id_most"), callTag.getLong("call_id_least"));
+            if (id.equals(callId)) {
+                mutator.accept(callTag);
+                setDirty();
+                return;
+            }
+        }
+    }
+
     /** Returns up to {@code limit} of the most recent messages, oldest-first, starting {@code skipFromEnd} messages back from the newest (for "load more" pagination). */
     public List<CompoundTag> getPage(String conversationId, int skipFromEnd, int limit) {
         Tag existing = conversations.get(conversationId);

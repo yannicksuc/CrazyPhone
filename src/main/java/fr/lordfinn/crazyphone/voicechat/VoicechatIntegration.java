@@ -2,6 +2,8 @@ package fr.lordfinn.crazyphone.voicechat;
 
 import net.neoforged.fml.ModList;
 
+import fr.lordfinn.crazyphone.Config;
+
 /**
  * The only class outside this package allowed to be referenced when Simple Voice Chat (SVC) may or may not
  * be installed. {@link #isAvailable()} never touches an SVC class, so it's always safe to call. Every other
@@ -22,6 +24,6 @@ public final class VoicechatIntegration {
         if (available == null) {
             available = ModList.get().isLoaded(VOICECHAT_MOD_ID);
         }
-        return available;
+        return available && Config.voicechatIntegrationEnabled;
     }
 }

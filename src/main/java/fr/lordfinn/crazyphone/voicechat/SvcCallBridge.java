@@ -28,6 +28,12 @@ public final class SvcCallBridge {
      * follow-up "pause" click actually stop it (there's no other handle to it once startPlaying() returns,
      * and only one voice message plays at a time per player by construction of the conversation UI). */
     private static final Map<UUID, AudioPlayer> ACTIVE_VOICE_MESSAGE_PLAYBACK = new HashMap<>();
+    /** Every call's Group object, kept from the moment groupBuilder().build() hands it back - NOT re-looked-up
+     * via serverApi.getGroup(id) later. Call groups are created non-persistent (they're session-only, same as
+     * CallRegistry itself), and getGroup(id) on this SVC version returns a non-null Group wrapper around a
+     * null internal reference for a non-persistent group, which then NPEs inside connection.setGroup(group) -
+     * the builder's own returned reference is the only reliably usable handle to it. */
+    private static final Map<UUID, Group> ACTIVE_GROUPS = new HashMap<>();
 
     private SvcCallBridge() {
     }
@@ -54,6 +60,7 @@ public final class SvcCallBridge {
                 .setHidden(true)
                 .setType(Group.Type.ISOLATED)
                 .build();
+        ACTIVE_GROUPS.put(group.getId(), group);
         return group.getId();
     }
 
@@ -62,7 +69,7 @@ public final class SvcCallBridge {
         if (serverApi == null || groupId == null)
             return;
         VoicechatConnection connection = serverApi.getConnectionOf(player.getUUID());
-        Group group = serverApi.getGroup(groupId);
+        Group group = ACTIVE_GROUPS.get(groupId);
         if (connection != null && group != null)
             connection.setGroup(group);
     }
@@ -78,6 +85,7 @@ public final class SvcCallBridge {
     public static void removeGroup(UUID groupId) {
         if (serverApi == null || groupId == null)
             return;
+        ACTIVE_GROUPS.remove(groupId);
         serverApi.removeGroup(groupId);
     }
 

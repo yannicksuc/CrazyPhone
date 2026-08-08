@@ -16,6 +16,7 @@ import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneContactsScreenMenu;
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneConversationMenu;
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneGroupSettingsScreenMenu;
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneCallingScreenMenu;
+import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneIncomingCallScreenMenu;
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneInCallScreenMenu;
 import fr.lordfinn.crazyphone.voicechat.CallRegistry;
 import java.util.UUID;
@@ -104,7 +105,8 @@ public class ScreenMenuUtils {
                 openGroupSettingsMenu(player, hand, screenData);
             case "crazyphone:crazy_phone_mayors_candidates_list" ->
                 openPhoneCustomMenu(player, hand, CrazyPhoneMayorsCandidatesListMenu.class);
-            case "crazyphone:crazy_phone_calling_screen", "crazyphone:crazy_phone_in_call_screen" -> {
+            case "crazyphone:crazy_phone_calling_screen", "crazyphone:crazy_phone_in_call_screen",
+                    "crazyphone:crazy_phone_incoming_call_screen" -> {
                 if (player instanceof ServerPlayer serverPlayer)
                     openCallScreenForPlayer(serverPlayer);
             }
@@ -602,20 +604,27 @@ public class ScreenMenuUtils {
     }
 
     /**
-     * Opens whichever call screen matches this player's current state in {@link CallRegistry} - the
-     * Calling screen if they're the initiator and nobody has answered yet, the InCall screen otherwise. No-op
-     * if they aren't in a call at all. This is the single entry point for every "show me the call screen"
+     * Opens whichever call screen matches this player's current state in {@link CallRegistry}: the
+     * Incoming Call screen if they're themselves still ringing (haven't answered/declined yet), the Calling
+     * screen if they're the initiator waiting for anyone to pick up, the InCall screen otherwise. No-op if
+     * they aren't in a call at all. This is the single entry point for every "show me the call screen"
      * trigger: the lock-bypass hook in CrazyPhoneOnUseProcedure, the conversation screen's call icon
-     * reopening an active call, and the Calling screen asking to be swapped for the InCall screen once
-     * answered.
+     * reopening an active call, the Calling screen asking to be swapped for the InCall screen once answered,
+     * and the Incoming Call screen's own Accept button.
      */
     public static void openCallScreenForPlayer(ServerPlayer player) {
         CallRegistry.CallSession session = CallRegistry.getSessionFor(player.getUUID()).orElse(null);
         if (session == null)
             return;
         String displayTitle = buildCallDisplayTitle(player, session);
-        boolean isInitiatorStillAlone = player.getUUID().equals(session.initiator) && session.participants.size() == 1;
-        if (isInitiatorStillAlone) {
+        if (session.ringing.contains(player.getUUID())) {
+            openIncomingCallMenu(player, session.conversationId, session.callId, displayTitle);
+            return;
+        }
+        // The initiator, still waiting for anyone at all to pick up. The InCall screen (participant list,
+        // working hangup-of-an-active-call UI) would be misleading here since there's no live audio yet.
+        boolean stillWaitingForAnyAnswer = player.getUUID().equals(session.initiator) && session.participants.size() == 1;
+        if (stillWaitingForAnyAnswer) {
             openCallingMenu(player, session.conversationId, session.callId, displayTitle);
         } else {
             openInCallMenu(player, session.conversationId, session.callId, displayTitle);
@@ -650,6 +659,28 @@ public class ScreenMenuUtils {
                     populateCallScreenBuffer(packetBuffer, player, conversationId, callId, displayTitle);
                     try {
                         return new CrazyPhoneCallingScreenMenu(id, inventory, packetBuffer);
+                    } catch (Exception e) {
+                        throw new RuntimeException("Failed to create menu instance", e);
+                    }
+                }
+            }, buf -> populateCallScreenBuffer(buf, player, conversationId, callId, displayTitle));
+        }
+    }
+
+    private static void openIncomingCallMenu(Player player, String conversationId, UUID callId, String displayTitle) {
+        if (player instanceof ServerPlayer) {
+            player.openMenu(new MenuProvider() {
+                @Override
+                public Component getDisplayName() {
+                    return Component.translatable("item.crazyphone.crazy_phone");
+                }
+
+                @Override
+                public AbstractContainerMenu createMenu(int id, Inventory inventory, Player player) {
+                    FriendlyByteBuf packetBuffer = new FriendlyByteBuf(Unpooled.buffer());
+                    populateCallScreenBuffer(packetBuffer, player, conversationId, callId, displayTitle);
+                    try {
+                        return new CrazyPhoneIncomingCallScreenMenu(id, inventory, packetBuffer);
                     } catch (Exception e) {
                         throw new RuntimeException("Failed to create menu instance", e);
                     }

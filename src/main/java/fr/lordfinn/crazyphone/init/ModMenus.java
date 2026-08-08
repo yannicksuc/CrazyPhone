@@ -32,6 +32,7 @@ import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneContactsScreenMenu;
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneContactInfoScreenMenu;
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneGroupSettingsScreenMenu;
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneCallingScreenMenu;
+import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneIncomingCallScreenMenu;
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneInCallScreenMenu;
 import fr.lordfinn.crazyphone.Crazyphone;
 import org.jetbrains.annotations.NotNull;
@@ -61,6 +62,8 @@ public class ModMenus {
 			() -> IMenuTypeExtension.create(CrazyPhoneCallingScreenMenu::new));
 	public static final DeferredHolder<MenuType<?>, MenuType<CrazyPhoneInCallScreenMenu>> CRAZY_PHONE_IN_CALL_SCREEN = REGISTRY.register("crazy_phone_in_call_screen",
 			() -> IMenuTypeExtension.create(CrazyPhoneInCallScreenMenu::new));
+	public static final DeferredHolder<MenuType<?>, MenuType<CrazyPhoneIncomingCallScreenMenu>> CRAZY_PHONE_INCOMING_CALL_SCREEN = REGISTRY.register("crazy_phone_incoming_call_screen",
+			() -> IMenuTypeExtension.create(CrazyPhoneIncomingCallScreenMenu::new));
 
 	/** Always targeted at one player - a textbox value belongs to whoever is looking at that screen, never broadcast it. */
 	public static void setText(String boxname, String value, ServerPlayer player) {

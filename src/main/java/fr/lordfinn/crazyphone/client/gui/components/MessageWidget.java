@@ -18,6 +18,7 @@ import com.mojang.blaze3d.platform.NativeImage;
 import de.maxhenkel.camera.ImageData;
 import de.maxhenkel.camera.TextureCache;
 import de.maxhenkel.camera.gui.ImageScreen;
+import fr.lordfinn.crazyphone.client.ClientCallState;
 import fr.lordfinn.crazyphone.client.CursorEffects;
 import fr.lordfinn.crazyphone.network.VoiceMessageAudioRequestPacket;
 import fr.lordfinn.crazyphone.network.VoiceMessageStopPacket;
@@ -28,8 +29,13 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
+
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 
 public class MessageWidget extends AbstractWidget {
     private static final float HOVER_GROW_SCALE = 1.04f;
@@ -62,17 +68,44 @@ public class MessageWidget extends AbstractWidget {
     private int voicePlayStartTick = 0;
     /** Cached each render so mouseClicked can hit-test the same regions without recomputing font metrics. */
     private int voicePlayIconX, voicePlayIconY, voiceSpeedLabelX, voiceSpeedLabelWidth, voiceLabelY;
+    /** Non-null for a call log entry. Unlike every other message type this one's displayed TEXT changes
+     * after construction: while callDurationMillis is -1 (still ongoing), computeCallText() recomputes it
+     * fresh every render from wall-clock time - see the field javadocs below and WrappedTextWidget, which
+     * re-reads its message fresh each frame too, so this needs no other plumbing to actually animate. */
+    private final java.util.UUID callId;
+    private final long callStartMillis;
+    /** -1 while ongoing. Gets set locally (see computeCallText) the moment this client notices its own call
+     * ended, independent of whatever the server eventually persists - both converge on the same value since
+     * they're measuring the same real-world event, just observed a few ms apart. */
+    private long callDurationMillis;
+    /** Whether ClientCallState was ever observed matching this exact call while active - only a client who
+     * was themselves genuinely on this call should freeze it locally on a state change; a bystander merely
+     * viewing the conversation was never "live" for it and should keep deferring to the server's own value. */
+    private boolean callWasEverMine = false;
+    private static final DateTimeFormatter CALL_TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
 
     public MessageWidget(WrappedTextWidget wrappedText, boolean isSender, ItemStack icon, int scrollPosition, @Nullable ItemStack image, MessageDisplayManager messageDisplayManager) {
-        this(wrappedText, isSender, icon, scrollPosition, image, messageDisplayManager, false, null, 0, null);
+        this(wrappedText, isSender, icon, scrollPosition, image, messageDisplayManager, false, null, 0, null, null, 0, -1);
     }
 
     public MessageWidget(WrappedTextWidget wrappedText, boolean isSender, ItemStack icon, int scrollPosition, @Nullable ItemStack image, MessageDisplayManager messageDisplayManager, boolean isSystem) {
-        this(wrappedText, isSender, icon, scrollPosition, image, messageDisplayManager, isSystem, null, 0, null);
+        this(wrappedText, isSender, icon, scrollPosition, image, messageDisplayManager, isSystem, null, 0, null, null, 0, -1);
     }
 
     public MessageWidget(WrappedTextWidget wrappedText, boolean isSender, ItemStack icon, int scrollPosition, @Nullable ItemStack image, MessageDisplayManager messageDisplayManager, boolean isSystem,
                           @Nullable java.util.UUID voiceId, int voiceDurationTicks, @Nullable byte[] voiceEnvelope) {
+        this(wrappedText, isSender, icon, scrollPosition, image, messageDisplayManager, isSystem, voiceId, voiceDurationTicks, voiceEnvelope, null, 0, -1);
+    }
+
+    /** Call log entry - see the callId/callStartMillis/callDurationMillis field javadocs. */
+    public MessageWidget(WrappedTextWidget wrappedText, MessageDisplayManager messageDisplayManager,
+                          java.util.UUID callId, long callStartMillis, long callDurationMillis) {
+        this(wrappedText, false, ItemStack.EMPTY, 0, null, messageDisplayManager, true, null, 0, null, callId, callStartMillis, callDurationMillis);
+    }
+
+    private MessageWidget(WrappedTextWidget wrappedText, boolean isSender, ItemStack icon, int scrollPosition, @Nullable ItemStack image, MessageDisplayManager messageDisplayManager, boolean isSystem,
+                          @Nullable java.util.UUID voiceId, int voiceDurationTicks, @Nullable byte[] voiceEnvelope,
+                          @Nullable java.util.UUID callId, long callStartMillis, long callDurationMillis) {
         super(wrappedText.getX(), wrappedText.getY(), wrappedText.getWidth(), wrappedText.getHeight(), wrappedText.getMessage());
         this.wrappedText = wrappedText;
         this.isSender = isSender;
@@ -83,6 +116,9 @@ public class MessageWidget extends AbstractWidget {
         this.voiceId = voiceId;
         this.voiceDurationTicks = voiceDurationTicks;
         this.voiceEnvelope = voiceEnvelope == null ? new byte[0] : voiceEnvelope;
+        this.callId = callId;
+        this.callStartMillis = callStartMillis;
+        this.callDurationMillis = callDurationMillis;
         if (image != null && !image.isEmpty()) {
             this.image = image;
             initImageScaling();
@@ -105,10 +141,48 @@ public class MessageWidget extends AbstractWidget {
 
     @Override
     public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
+        if (callId != null)
+            wrappedText.setMessage(computeCallText());
         wrappedText.renderWidget(guiGraphics, mouseX, mouseY, partialTicks);
         if (voiceId != null)
             renderVoiceContent(guiGraphics, mouseX, mouseY);
         renderItemHead(guiGraphics, mouseX, mouseY);
+    }
+
+    /** Recomputed every frame while the call is still ongoing (callDurationMillis == -1) - see the field's
+     * own javadoc and WrappedTextWidget#renderWidget, which re-reads its message fresh each frame too, so
+     * calling setMessage() here each render is all live-ticking needs, no separate animation/tick hook. */
+    private Component computeCallText() {
+        long elapsedMillis;
+        if (callDurationMillis >= 0) {
+            elapsedMillis = callDurationMillis;
+        } else if (ClientCallState.isActiveCall() && callId.equals(ClientCallState.getCallId())) {
+            callWasEverMine = true;
+            elapsedMillis = System.currentTimeMillis() - callStartMillis;
+        } else if (callWasEverMine) {
+            // This client just noticed its own call ended (received the ENDED state sync it already gets
+            // regardless) - freeze here rather than keep ticking. The server independently finalizes the
+            // stored duration around the same real-world moment, so the two values converge.
+            callDurationMillis = System.currentTimeMillis() - callStartMillis;
+            elapsedMillis = callDurationMillis;
+        } else {
+            // Never was this client's own call (a bystander watching someone else's call in a group
+            // conversation, or reopening before the server's finalized value has been (re)fetched) - best
+            // effort: keep ticking from the start time until the real value arrives on the next page load.
+            elapsedMillis = System.currentTimeMillis() - callStartMillis;
+        }
+
+        String time = CALL_TIME_FORMATTER.format(Instant.ofEpochMilli(callStartMillis).atZone(ZoneId.systemDefault()));
+        String duration = formatCallDuration(elapsedMillis);
+        String key = callDurationMillis < 0
+                ? "message.crazyphone.call_in_progress"
+                : "message.crazyphone.call_summary";
+        return Component.translatable(key, time, duration);
+    }
+
+    private static String formatCallDuration(long millis) {
+        long totalSeconds = Math.max(0, millis) / 1000;
+        return String.format("%d:%02d", totalSeconds / 60, totalSeconds % 60);
     }
 
     /** Whether playback should still be showing as "in progress" - simulated from elapsed wall-clock time

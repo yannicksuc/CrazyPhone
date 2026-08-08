@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.function.BiConsumer;
 
+import fr.lordfinn.crazyphone.Config;
 import fr.lordfinn.crazyphone.client.ClientCallState;
 import fr.lordfinn.crazyphone.client.ConversationClientCache;
 import fr.lordfinn.crazyphone.client.CursorEffects;
@@ -143,6 +144,12 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
             button_voicepause.visible = voiceRecordingState == VoiceRecordingState.RECORDING;
             button_voicesend.visible = voiceRecordingState == VoiceRecordingState.REVIEWING;
         }
+        // maxVoiceMessageRecordingSeconds - without this a recording could run indefinitely; reuses the
+        // same stop-and-move-to-REVIEWING branch the pause button itself triggers, so hitting the cap
+        // behaves exactly like the player pausing manually right at that moment.
+        if (voiceRecordingState == VoiceRecordingState.RECORDING
+                && VoiceMessageRecorder.getElapsedSeconds() >= Config.maxVoiceMessageRecordingSeconds)
+            onPauseSendClicked();
         updateButtonVisibility(mouseX, mouseY);
         super.render(guiGraphics, mouseX, mouseY, partialTicks);
         this.renderBanner(guiGraphics);

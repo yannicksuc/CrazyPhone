@@ -19,20 +19,20 @@ public class CrazyPhoneOnUseProcedure {
 			return;
 		if (entity instanceof Player _player)
 			_player.closeContainer();
-		// Using the phone while ringing answers the call; using it while already in one reopens the call
-		// screen directly - even past a password lock, and even if the phone isn't set up yet, since being
-		// in a call takes priority over every other phone state. Runs before any of the normal
-		// setup/lock/home branching below, which is what makes both cases work.
-		if (entity instanceof ServerPlayer serverPlayer) {
-			if (CallRegistry.isRinging(serverPlayer.getUUID())) {
-				CallRegistry.answer(serverPlayer);
-				ScreenMenuUtils.openCallScreenForPlayer(serverPlayer);
-				return;
-			}
-			if (CallRegistry.isParticipant(serverPlayer.getUUID())) {
-				ScreenMenuUtils.openCallScreenForPlayer(serverPlayer);
-				return;
-			}
+		// Using the phone while ringing opens the Incoming Call screen (Accept/Decline - answering is no
+		// longer automatic just from touching the phone); using it while already ringing or in a call
+		// reopens the matching call screen directly - even past a password lock, and even if the phone isn't
+		// set up yet, since being in a call takes priority over every other phone state. Runs before any of
+		// the normal setup/lock/home branching below, which is what makes both cases work.
+		//
+		// CallRegistry tracks calls per PLAYER (a call is one Simple Voice Chat connection, which is
+		// inherently per-player, not per-item), but a phone's NUMBER lives in the item's own NBT - a player
+		// can physically hold several registered phones. Without the isHeldPhoneInThisCall check below,
+		// using ANY of them while the player has an active call anywhere redirected to that call's screen,
+		// even for a completely unrelated number that was never part of it.
+		if (entity instanceof ServerPlayer serverPlayer && isHeldPhoneInThisCall(serverPlayer, world)) {
+			ScreenMenuUtils.openCallScreenForPlayer(serverPlayer);
+			return;
 		}
 		if (!IsPhoneSetupProcedure.execute(CrazyPhoneHelper.getMainHandItemOrEmpty(entity))) {
 			CrazyPhoneOpenPasswordScreenProcedure.execute(world, x, y, z, entity);
@@ -64,5 +64,18 @@ public class CrazyPhoneOnUseProcedure {
 		} else {
 			CrazyPhoneOpenSignInScreenProcedure.execute(world, x, y, z, entity);
 		}
+	}
+
+	/** Whether the phone currently in the player's hand is actually one of the numbers on their active call
+	 * - not just whether the player (as a Minecraft account) happens to have a call going somewhere. A call
+	 * is one Simple Voice Chat connection per player, but a phone's number lives in that specific item's own
+	 * NBT, and a player can hold several registered phones at once; without this check, using ANY of them
+	 * while any one of them was mid-call redirected to that call's screen. */
+	private static boolean isHeldPhoneInThisCall(ServerPlayer player, LevelAccessor world) {
+		CallRegistry.CallSession session = CallRegistry.getSessionFor(player.getUUID()).orElse(null);
+		if (session == null)
+			return false;
+		String heldNumber = GetCrazyPhoneNumberFromMainHandProcedure.execute(player, null);
+		return !heldNumber.isEmpty() && CrazyPhoneHelper.getGroupMembers(world, session.conversationId).contains(heldNumber);
 	}
 }

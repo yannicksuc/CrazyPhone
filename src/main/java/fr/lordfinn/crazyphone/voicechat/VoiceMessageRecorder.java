@@ -193,6 +193,12 @@ public final class VoiceMessageRecorder {
         return recording;
     }
 
+    /** Derived from actual captured sample count, not wall-clock time - stays accurate even if the capture
+     * loop hitches, and is what the recording-length cap (maxVoiceMessageRecordingSeconds) checks against. */
+    public static float getElapsedSeconds() {
+        return totalSamplesRead / (float) SAMPLE_RATE;
+    }
+
     /** Oldest first, newest last - matches left-to-right chronological reading of the waveform bars. */
     public static float[] getRecentLevels() {
         float[] ordered = new float[LEVEL_HISTORY];

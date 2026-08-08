@@ -1,5 +1,6 @@
 package fr.lordfinn.crazyphone.client.gui.components;
 
+import fr.lordfinn.crazyphone.init.ModItems;
 import fr.lordfinn.crazyphone.utils.Contact;
 import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
 import net.minecraft.client.Minecraft;
@@ -95,8 +96,11 @@ public class MessageDisplayManager {
     }
 
     private static final int SYSTEM_BACKGROUND_COLOR = 0xCCFFF3B0; // light yellow
+    private static final int CALL_BACKGROUND_COLOR = 0xCCB0D9FF; // light blue - distinct from the system-event yellow
 
     public MessageEntry addMessage(MessageData newMessage) {
+        if (newMessage.isCall())
+            return addCallMessage(newMessage);
         if (newMessage.isSystem())
             return addSystemMessage(newMessage);
 
@@ -125,6 +129,27 @@ public class MessageDisplayManager {
             icon = new ItemStack(Items.PLAYER_HEAD);
         MessageWidget widget = new MessageWidget(wrapped, isSender, icon, 0, newMessage.getImage(), this, false,
                 newMessage.getVoiceId(), newMessage.getVoiceDurationTicks(), newMessage.getVoiceEnvelope());
+        MessageEntry entry = new MessageEntry(newMessage, widget);
+        messageEntries.add(0, entry);
+        resetPositions();
+        return entry;
+    }
+
+    private MessageEntry addCallMessage(MessageData newMessage) {
+        WrappedTextWidget wrapped = new WrappedTextWidget(
+            Minecraft.getInstance().font,
+            x,
+            0, // temp y, updated in render
+            fullWidth,
+            Component.empty(), // real text is computed live every frame - see MessageWidget#computeCallText
+            scale,
+            0xff000000,
+            CALL_BACKGROUND_COLOR,
+            3, 3, 4, 3,
+            new ItemStack(ModItems.CRAZY_PHONE.get())
+        );
+        MessageWidget widget = new MessageWidget(wrapped, this, newMessage.getCallId(), newMessage.getCallStartMillis(), newMessage.getCallDurationMillis());
+        widget.setShowIcon(false);
         MessageEntry entry = new MessageEntry(newMessage, widget);
         messageEntries.add(0, entry);
         resetPositions();

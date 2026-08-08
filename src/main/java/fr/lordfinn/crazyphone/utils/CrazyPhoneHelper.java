@@ -315,6 +315,41 @@ public class CrazyPhoneHelper {
         }
     }
 
+    /** Posts a "call in progress" chat entry the moment a call actually connects (see
+     * CallRegistry#markConnectedIfFirstTime) - its duration is filled in later, once the call ends, by
+     * {@link #finalizeCallMessage} mutating this same entry rather than appending a second one. Rendered
+     * client-side as a live-ticking banner while ongoing purely from this start timestamp (see
+     * MessageWidget) - no further packets are needed to keep it updating in an already-open conversation. */
+    public static void addCallMessage(Level world, String conversationId, UUID callId, long startEpochMillis) {
+        synchronized (messageLock) {
+            CompoundTag callTag = new CompoundTag();
+            callTag.putLong("call_id_most", callId.getMostSignificantBits());
+            callTag.putLong("call_id_least", callId.getLeastSignificantBits());
+            callTag.putLong("call_start_millis", startEpochMillis);
+            callTag.putLong("call_duration_millis", -1);
+
+            CompoundTag messageTag = new CompoundTag();
+            messageTag.putBoolean("system", true);
+            messageTag.putInt("timecode", (int) (startEpochMillis / 60000));
+            messageTag.put("call", callTag);
+
+            ConversationSavedData.get(world).appendMessage(conversationId, messageTag);
+            notifySystemMessage(world, conversationId, messageTag);
+        }
+    }
+
+    /** Fills in the final duration once a call ends, mutating the same chat entry {@link #addCallMessage}
+     * already posted. No packet is sent for this: the two call participants freeze their own live-ticking
+     * display themselves the moment they receive the call's own ENDED state sync (which they already get
+     * regardless of this), and anyone else just sees the correct value next time this conversation is
+     * loaded or refetched. No-op if the entry was already evicted by the message history cap. */
+    public static void finalizeCallMessage(Level world, String conversationId, UUID callId, long durationMillis) {
+        synchronized (messageLock) {
+            ConversationSavedData.get(world).updateCallMessage(conversationId, callId,
+                    callTag -> callTag.putLong("call_duration_millis", durationMillis));
+        }
+    }
+
     private static void notifySystemMessage(Level world, String conversationId, CompoundTag messageTag) {
         MinecraftServer server = world.getServer();
         if (server == null)
@@ -749,6 +784,14 @@ public class CrazyPhoneHelper {
 
     public static @Nullable MessageData getMessageFromTag(CompoundTag messageTag) {
         if (messageTag == null) return null;
+
+        if (messageTag.get("call") instanceof CompoundTag callTag) {
+            int timecode = messageTag.getInt("timecode");
+            UUID callId = new UUID(callTag.getLong("call_id_most"), callTag.getLong("call_id_least"));
+            long startMillis = callTag.getLong("call_start_millis");
+            long durationMillis = callTag.getLong("call_duration_millis");
+            return MessageData.call(timecode, callId, startMillis, durationMillis);
+        }
 
         if (messageTag.getBoolean("system")) {
             int timecode = messageTag.getInt("timecode");

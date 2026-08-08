@@ -36,6 +36,7 @@ public record CrazyPhoneCallActionMessage(int action, String conversationId) imp
     public static final int START_CALL = 0;
     public static final int HANGUP = 1;
     public static final int OPEN_CALL_SCREEN = 2;
+    public static final int ANSWER = 3;
 
     public static final Type<CrazyPhoneCallActionMessage> TYPE = new Type<>(
             ResourceLocation.fromNamespaceAndPath(Crazyphone.MODID, "call_action")
@@ -74,6 +75,14 @@ public record CrazyPhoneCallActionMessage(int action, String conversationId) imp
             case START_CALL -> startCall(player, conversationId);
             case HANGUP -> CallRegistry.leave(player);
             case OPEN_CALL_SCREEN -> ScreenMenuUtils.openCallScreenForPlayer(player);
+            case ANSWER -> {
+                // The Accept button on the Incoming Call screen - explicit, unlike the old "using the phone
+                // while ringing auto-answers" behavior this replaces (see CrazyPhoneOnUseProcedure), so a
+                // ringing player gets to actually see who's calling and choose, instead of being connected
+                // the instant they touch the phone.
+                CallRegistry.answer(player);
+                ScreenMenuUtils.openCallScreenForPlayer(player);
+            }
             default -> {
             }
         }

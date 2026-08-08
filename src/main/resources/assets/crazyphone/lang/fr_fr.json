@@ -10,6 +10,9 @@
   "message.crazyphone.image_upload_success": "✅ L'image a bien été uploadée dans le CrazyPhone.",
   "message.crazyphone.image_upload_failed": "❌ Échec de l'upload de l'image dans le CrazyPhone.",
 
+  "message.crazyphone.call_in_progress": "📞 Appel en cours — %s · %s",
+  "message.crazyphone.call_summary": "📞 Appel — %s · %s",
+
   "gui.crazyphone.crazyphone_home_screen.button_photo": "Photo",
   "gui.crazyphone.crazyphone_home_screen.button_contacts": "Contacts",
   "gui.crazyphone.crazyphone_home_screen.button_albums": "Albums",
@@ -83,6 +86,10 @@
 
   "gui.crazyphone.crazy_phone_in_call_screen.title": "En appel",
   "gui.crazyphone.crazy_phone_in_call_screen.button_hangup": "Raccrocher",
+
+  "gui.crazyphone.crazy_phone_incoming_call_screen.title": "Appel entrant",
+  "gui.crazyphone.crazy_phone_incoming_call_screen.button_accept": "Accepter",
+  "gui.crazyphone.crazy_phone_incoming_call_screen.button_decline": "Refuser",
 
   "gui.crazyphone.crazy_phone_group_settings.title": "Paramètres du groupe",
   "gui.crazyphone.crazy_phone_group_settings.label_group_name": "Nom du groupe",

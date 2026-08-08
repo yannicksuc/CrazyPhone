@@ -37,6 +37,20 @@ neoForge {
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
         }
 
+        // A second client identity for testing two-player features (calls, group chats) locally: same mod,
+        // its own game directory (so it doesn't fight the main "client" run over options.txt/logs/world
+        // files), logged in as a different offline player so the two are distinct participants rather than
+        // the same "Dev" account twice. The UUID is the standard offline-mode derivation
+        // (UUID.nameUUIDFromBytes("OfflinePlayer:Dev2")) so it's stable across runs, not random each launch.
+        // Run this alongside "client" (open that one's world to LAN), then connect this one via
+        // multiplayer -> Direct Connection -> localhost:<the LAN port it shows>.
+        client2 {
+            client()
+            systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+            gameDirectory = project.file('run-client2')
+            programArguments.addAll '--username', 'Dev2', '--uuid', '21cc3e25-481e-3cfa-8770-c5693a3e93a4'
+        }
+
         server {
             server()
             programArgument '--nogui'
