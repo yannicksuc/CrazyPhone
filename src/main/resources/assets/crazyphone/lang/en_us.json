@@ -9,6 +9,7 @@
 
   "message.crazyphone.image_upload_success": "✅ The image was successfully uploaded to the CrazyPhone.",
   "message.crazyphone.image_upload_failed": "❌ Failed to upload the image to the CrazyPhone.",
+  "message.crazyphone.camera_feature_disabled": "❌ Camera photo insertion is disabled on this server.",
 
   "message.crazyphone.call_in_progress": "📞 Call in progress — %s · %s",
   "message.crazyphone.call_summary": "📞 Call — %s · %s",
@@ -66,6 +67,7 @@
 
   "gui.crazyphone.crazy_phone_mayor_candidate_screen.button_vote": "Vote",
   "gui.crazyphone.crazy_phone_mayor_candidate_screen.tooltip_vote": "Cast your vote for this candidate",
+  "gui.crazyphone.crazy_phone_mayor_candidate_screen.tooltip_vote_disabled": "Mayor voting is disabled on this server",
 
   "gui.crazyphone.crazy_phone_mayors_candidates_list.title": "Mayor candidates",
 
@@ -73,11 +75,14 @@
   "gui.crazyphone.crazy_phone_conversation.button_envoyer": ">",
   "gui.crazyphone.crazy_phone_conversation.click_to_zoom": "Click to zoom on the image",
   "gui.crazyphone.crazy_phone_conversation.tooltip_send_image": "Send an image",
+  "gui.crazyphone.crazy_phone_conversation.tooltip_send_image_disabled": "Sending images is disabled on this server",
   "gui.crazyphone.crazy_phone_conversation.tooltip_send_message": "Send the message",
   "gui.crazyphone.crazy_phone_conversation.tooltip_group_settings": "Group settings",
   "gui.crazyphone.crazy_phone_conversation.tooltip_call": "Call",
+  "gui.crazyphone.crazy_phone_conversation.tooltip_call_disabled": "Voice calls are disabled on this server",
   "gui.crazyphone.crazy_phone_conversation.tooltip_reopen_call": "Reopen the call",
   "gui.crazyphone.crazy_phone_conversation.tooltip_send_voice_message": "Send a voice message",
+  "gui.crazyphone.crazy_phone_conversation.tooltip_send_voice_message_disabled": "Voice messages are disabled on this server",
   "gui.crazyphone.crazy_phone_conversation.button_voice_trash": "🗑",
   "gui.crazyphone.crazy_phone_conversation.button_voice_pause": "⏸",
 

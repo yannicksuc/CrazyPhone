@@ -3,6 +3,7 @@ package fr.lordfinn.crazyphone.item;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.item.ItemProperties;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
 
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -14,6 +15,7 @@ import fr.lordfinn.crazyphone.client.ClientCallState;
 import fr.lordfinn.crazyphone.client.gui.PhoneScreen;
 import fr.lordfinn.crazyphone.init.ModItems;
 import fr.lordfinn.crazyphone.network.CrazyPhoneCallStateSyncPacket.State;
+import fr.lordfinn.crazyphone.procedures.GetCrazyPhoneNumberFromMainHandProcedure;
 import fr.lordfinn.crazyphone.procedures.GetCrazyPhoneNumberProcedure;
 
 /**
@@ -33,12 +35,27 @@ public class CrazyPhoneItemProperties {
             ItemProperties.register(
                     ModItems.CRAZY_PHONE.get(),
                     ResourceLocation.fromNamespaceAndPath(Crazyphone.MODID, "screen_on"),
-                    (stack, level, entity, seed) -> Minecraft.getInstance().screen instanceof PhoneScreen ? 1.0f : 0.0f
+                    (stack, level, entity, seed) -> isTheOpenPhone(stack) ? 1.0f : 0.0f
             );
             registerCallState("calling", State.CALLING);
             registerCallState("called_in", State.RINGING);
             registerCallState("in_call", State.ACTIVE);
         });
+    }
+
+    /** Every phone screen derives "the relevant number" from whatever's in the LOCAL player's main hand
+     * (see GetCrazyPhoneNumberFromMainHandProcedure.execute(this.menu.entity, null), used the same way by
+     * every screen class) - matching that convention here is what makes this specific stack's own number
+     * the one compared, instead of just "is any phone screen open at all", which lit up every registered
+     * phone a player happened to be carrying the moment they opened any one of them. */
+    private static boolean isTheOpenPhone(ItemStack stack) {
+        if (!(Minecraft.getInstance().screen instanceof PhoneScreen))
+            return false;
+        var localPlayer = Minecraft.getInstance().player;
+        if (localPlayer == null)
+            return false;
+        String openNumber = GetCrazyPhoneNumberFromMainHandProcedure.execute(localPlayer, null);
+        return !openNumber.isEmpty() && openNumber.equals(GetCrazyPhoneNumberProcedure.execute(stack));
     }
 
     /** Not just "is the player in a call at all" - a player can physically hold several registered phones

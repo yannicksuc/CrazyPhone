@@ -10,6 +10,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.minecraft.server.level.ServerPlayer;
 
 import fr.lordfinn.crazyphone.Crazyphone;
+import fr.lordfinn.crazyphone.network.FeatureFlagSyncPacket;
 
 import java.util.function.Supplier;
 
@@ -25,6 +26,7 @@ public class PhoneAttachmentTypes {
         if (event.getEntity() instanceof ServerPlayer player) {
             player.getData(PLAYER_PHONE_STATE).syncTo(player);
             PhoneRegistrySavedData.get(player.level()).syncTo(player);
+            FeatureFlagSyncPacket.syncTo(player);
         }
     }
 

@@ -23,6 +23,7 @@ import net.minecraft.world.level.LevelAccessor;
 
 import fr.lordfinn.crazyphone.FeatureFlag;
 import fr.lordfinn.crazyphone.data.PhoneRegistrySavedData;
+import fr.lordfinn.crazyphone.network.FeatureFlagSyncPacket;
 import fr.lordfinn.crazyphone.procedures.CrazyPhoneAddMayorProgramFromMainHandProcedure;
 import fr.lordfinn.crazyphone.procedures.CrazyPhoneAddNewMayorCandidateProcedure;
 import fr.lordfinn.crazyphone.procedures.CrazyPhoneDeletePhoneByNumberProcedure;
@@ -167,6 +168,7 @@ public class ModCommands {
             return 0;
         }
         flag.setGloballyEnabled(enabled);
+        FeatureFlagSyncPacket.syncToAll(arguments.getSource().getServer());
         arguments.getSource().sendSuccess(() -> Component.literal(flag.id + " is now ")
                 .append(Component.literal(enabled ? "enabled" : "disabled").withStyle(enabled ? ChatFormatting.GREEN : ChatFormatting.RED)), true);
         return 1;

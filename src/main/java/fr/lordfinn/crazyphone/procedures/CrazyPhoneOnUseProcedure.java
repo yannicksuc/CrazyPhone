@@ -41,23 +41,31 @@ public class CrazyPhoneOnUseProcedure {
 			if (entity instanceof ServerPlayer player) {
 				ItemStack offhandStack = player.getOffhandItem();
 
-				if (offhandStack != null && !offhandStack.isEmpty() && offhandStack.getItem() instanceof ImageItem
-						&& FeatureFlag.CAMERA.isEnabledFor(player)) {
-					boolean result = CameraModHelper.tryInsertImageIntoCrazyPhone(player, offhandStack);
-					if (result) {
+				if (offhandStack != null && !offhandStack.isEmpty() && offhandStack.getItem() instanceof ImageItem) {
+					if (!FeatureFlag.CAMERA.isEnabledFor(player)) {
 						player.displayClientMessage(
-							Component.translatable("message.crazyphone.image_upload_success")
-								.withStyle(style -> style.withColor(ChatFormatting.GREEN).withBold(true)),
-							true
-						);
-						player.playSound(net.minecraft.sounds.SoundEvents.EXPERIENCE_ORB_PICKUP, 1.0F, 1.2F);
-					} else {
-						player.displayClientMessage(
-							Component.translatable("message.crazyphone.image_upload_failed")
+							Component.translatable("message.crazyphone.camera_feature_disabled")
 								.withStyle(style -> style.withColor(ChatFormatting.RED).withItalic(true)),
 							true
 						);
 						player.playSound(net.minecraft.sounds.SoundEvents.NOTE_BLOCK_BASS.value(), 1.0F, 0.5F);
+					} else {
+						boolean result = CameraModHelper.tryInsertImageIntoCrazyPhone(player, offhandStack);
+						if (result) {
+							player.displayClientMessage(
+								Component.translatable("message.crazyphone.image_upload_success")
+									.withStyle(style -> style.withColor(ChatFormatting.GREEN).withBold(true)),
+								true
+							);
+							player.playSound(net.minecraft.sounds.SoundEvents.EXPERIENCE_ORB_PICKUP, 1.0F, 1.2F);
+						} else {
+							player.displayClientMessage(
+								Component.translatable("message.crazyphone.image_upload_failed")
+									.withStyle(style -> style.withColor(ChatFormatting.RED).withItalic(true)),
+								true
+							);
+							player.playSound(net.minecraft.sounds.SoundEvents.NOTE_BLOCK_BASS.value(), 1.0F, 0.5F);
+						}
 					}
 				} else {
 					CrazyPhoneRightclickedProcedure.execute(world, x, y, z, entity);

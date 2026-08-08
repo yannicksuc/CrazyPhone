@@ -9,6 +9,7 @@
 
   "message.crazyphone.image_upload_success": "✅ L'image a bien été uploadée dans le CrazyPhone.",
   "message.crazyphone.image_upload_failed": "❌ Échec de l'upload de l'image dans le CrazyPhone.",
+  "message.crazyphone.camera_feature_disabled": "❌ L'insertion de photos appareil photo est désactivée sur ce serveur.",
 
   "message.crazyphone.call_in_progress": "📞 Appel en cours — %s · %s",
   "message.crazyphone.call_summary": "📞 Appel — %s · %s",
@@ -66,6 +67,7 @@
 
   "gui.crazyphone.crazy_phone_mayor_candidate_screen.button_vote": "Voter",
   "gui.crazyphone.crazy_phone_mayor_candidate_screen.tooltip_vote": "Voter pour ce candidat",
+  "gui.crazyphone.crazy_phone_mayor_candidate_screen.tooltip_vote_disabled": "Le vote pour la mairie est désactivé sur ce serveur",
 
   "gui.crazyphone.crazy_phone_mayors_candidates_list.title": "Candidats à la mairie",
 
@@ -73,11 +75,14 @@
   "gui.crazyphone.crazy_phone_conversation.button_envoyer": ">",
   "gui.crazyphone.crazy_phone_conversation.click_to_zoom": "Clique pour zoomer sur l'image",
   "gui.crazyphone.crazy_phone_conversation.tooltip_send_image": "Envoyer une image",
+  "gui.crazyphone.crazy_phone_conversation.tooltip_send_image_disabled": "L'envoi d'images est désactivé sur ce serveur",
   "gui.crazyphone.crazy_phone_conversation.tooltip_send_message": "Envoyer le message",
   "gui.crazyphone.crazy_phone_conversation.tooltip_group_settings": "Paramètres du groupe",
   "gui.crazyphone.crazy_phone_conversation.tooltip_call": "Appeler",
+  "gui.crazyphone.crazy_phone_conversation.tooltip_call_disabled": "Les appels sont désactivés sur ce serveur",
   "gui.crazyphone.crazy_phone_conversation.tooltip_reopen_call": "Réouvrir l'appel",
   "gui.crazyphone.crazy_phone_conversation.tooltip_send_voice_message": "Envoyer un message vocal",
+  "gui.crazyphone.crazy_phone_conversation.tooltip_send_voice_message_disabled": "Les messages vocaux sont désactivés sur ce serveur",
   "gui.crazyphone.crazy_phone_conversation.button_voice_trash": "🗑",
   "gui.crazyphone.crazy_phone_conversation.button_voice_pause": "⏸",
 

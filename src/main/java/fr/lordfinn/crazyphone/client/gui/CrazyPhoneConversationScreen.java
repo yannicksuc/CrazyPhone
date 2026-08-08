@@ -11,7 +11,9 @@ import java.util.UUID;
 import java.util.function.BiConsumer;
 
 import fr.lordfinn.crazyphone.Config;
+import fr.lordfinn.crazyphone.FeatureFlag;
 import fr.lordfinn.crazyphone.client.ClientCallState;
+import fr.lordfinn.crazyphone.client.ClientFeatureFlagState;
 import fr.lordfinn.crazyphone.client.ConversationClientCache;
 import fr.lordfinn.crazyphone.client.CursorEffects;
 import fr.lordfinn.crazyphone.network.CrazyPhoneCallActionMessage;
@@ -291,15 +293,27 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
         return ClientCallState.isInCall() && menu.getConversationId().equals(ClientCallState.getConversationId());
     }
 
+    /** Reopening an already-active call is always allowed regardless of the CALLS toggle - only STARTING a
+     * new one is gated, same as the server-side check in CrazyPhoneCallActionMessage. */
+    private boolean isCallStartDisabled() {
+        return !hasMyActiveCallHere() && !ClientFeatureFlagState.isEnabled(FeatureFlag.CALLS);
+    }
+
     private void renderCallIcon(GuiGraphics guiGraphics, int mouseX, int mouseY) {
         int iconX = callIconX();
         int iconY = this.topPos + CALL_ICON_Y;
         boolean hovered = isHoveringCallIcon(mouseX, mouseY);
-        if (hovered) {
+        if (hovered && !isCallStartDisabled()) {
             CursorEffects.requestPointerCursor();
             guiGraphics.fill(iconX, iconY, iconX + 16, iconY + 16, 0x80FFFFFF);
         }
-        int color = hasMyActiveCallHere() ? 0xFF44FF66 : 0xFFFFFFFF;
+        int color;
+        if (isCallStartDisabled())
+            color = 0x80FFFFFF;
+        else if (hasMyActiveCallHere())
+            color = 0xFF44FF66;
+        else
+            color = 0xFFFFFFFF;
         guiGraphics.drawString(this.font, "📞", iconX + 4, iconY + 4, color, true);
     }
 
@@ -310,6 +324,9 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
     }
 
     private Component callIconTooltip() {
+        if (isCallStartDisabled())
+            return Component.translatable("gui.crazyphone.crazy_phone_conversation.tooltip_call_disabled")
+                    .withStyle(style -> style.withColor(ChatFormatting.RED));
         String key = hasMyActiveCallHere()
                 ? "gui.crazyphone.crazy_phone_conversation.tooltip_reopen_call"
                 : "gui.crazyphone.crazy_phone_conversation.tooltip_call";
@@ -317,11 +334,15 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
     }
 
     private void onCallIconClicked() {
+        if (isCallStartDisabled())
+            return;
         int action = hasMyActiveCallHere() ? CrazyPhoneCallActionMessage.OPEN_CALL_SCREEN : CrazyPhoneCallActionMessage.START_CALL;
         PacketDistributor.sendToServer(new CrazyPhoneCallActionMessage(action, menu.getConversationId()));
     }
 
     private void onMicIconClicked() {
+        if (!ClientFeatureFlagState.isEnabled(FeatureFlag.VOICE_MESSAGES))
+            return;
         voiceRecordingState = VoiceRecordingState.RECORDING;
         VoiceMessageRecorder.startRecording();
     }
@@ -424,6 +445,20 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
         imagebutton_crazyphoneaddimage.visible = hoveringColumn;
         if (imagebutton_crazyphonevoicemessage != null)
             imagebutton_crazyphonevoicemessage.visible = hoveringColumn;
+
+        boolean imagesEnabled = ClientFeatureFlagState.isEnabled(FeatureFlag.IMAGES);
+        imagebutton_crazyphoneaddimage.active = imagesEnabled;
+        imagebutton_crazyphoneaddimage.setTooltip(Tooltip.create(Component.translatable(imagesEnabled
+                ? "gui.crazyphone.crazy_phone_conversation.tooltip_send_image"
+                : "gui.crazyphone.crazy_phone_conversation.tooltip_send_image_disabled")));
+
+        if (imagebutton_crazyphonevoicemessage != null) {
+            boolean voiceEnabled = ClientFeatureFlagState.isEnabled(FeatureFlag.VOICE_MESSAGES);
+            imagebutton_crazyphonevoicemessage.active = voiceEnabled;
+            imagebutton_crazyphonevoicemessage.setTooltip(Tooltip.create(Component.translatable(voiceEnabled
+                    ? "gui.crazyphone.crazy_phone_conversation.tooltip_send_voice_message"
+                    : "gui.crazyphone.crazy_phone_conversation.tooltip_send_voice_message_disabled")));
+        }
     }
 
     private void renderMessageWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
@@ -656,8 +691,15 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
                 }) {
             @Override
             public void renderWidget(GuiGraphics guiGraphics, int x, int y, float partialTicks) {
+                // No separate disabled sprite was provided to WidgetSprites (2-arg ctor), so sprites.get()
+                // alone wouldn't visually dim this when inactive - unlike vanilla Button, which tints on its
+                // own. Fading the alpha here is what actually makes the IMAGES-disabled state visible.
+                if (!isActive())
+                    com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1, 1, 1, 0.35f);
                 guiGraphics.blit(sprites.get(isActive(), isHoveredOrFocused()), getX(), getY(), 300, 0, 0, width,
                         height, width, height);
+                if (!isActive())
+                    com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1, 1, 1, 1);
             }
         };
         button.setTooltip(Tooltip.create(Component.translatable("gui.crazyphone.crazy_phone_conversation.tooltip_send_image")));
@@ -674,8 +716,12 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
                 e -> onMicIconClicked()) {
             @Override
             public void renderWidget(GuiGraphics guiGraphics, int x, int y, float partialTicks) {
+                if (!isActive())
+                    com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1, 1, 1, 0.35f);
                 guiGraphics.blit(sprites.get(isActive(), isHoveredOrFocused()), getX(), getY(), 300, 0, 0, width,
                         height, width, height);
+                if (!isActive())
+                    com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1, 1, 1, 1);
             }
         };
         button.setTooltip(Tooltip.create(Component.translatable("gui.crazyphone.crazy_phone_conversation.tooltip_send_voice_message")));

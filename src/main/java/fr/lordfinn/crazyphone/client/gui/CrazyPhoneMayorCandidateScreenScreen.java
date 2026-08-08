@@ -3,6 +3,8 @@ package fr.lordfinn.crazyphone.client.gui;
 import de.maxhenkel.camera.ImageData;
 import de.maxhenkel.camera.TextureCache;
 import de.maxhenkel.camera.gui.ImageScreen;
+import fr.lordfinn.crazyphone.FeatureFlag;
+import fr.lordfinn.crazyphone.client.ClientFeatureFlagState;
 import fr.lordfinn.crazyphone.data.PhoneRegistrySavedData;
 import fr.lordfinn.crazyphone.utils.Contact;
 import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
@@ -72,14 +74,17 @@ public class CrazyPhoneMayorCandidateScreenScreen extends CrazyPhoneDefaultScree
 		candidateHead = CrazyPhoneHelper.createContactHead(mayorCandidate);
 
 		boolean votingOpen = PhoneRegistrySavedData.get(world).isMayorVotingOn;
+		boolean votingFeatureEnabled = ClientFeatureFlagState.isEnabled(FeatureFlag.MAYOR_VOTING);
 
 		voteButton = Button.builder(Component.translatable("gui.crazyphone.crazy_phone_mayor_candidate_screen.button_vote"), b -> {
-			Minecraft.getInstance().player.connection.sendCommand("phoneVoteForMayor " + mayorNumber);
+			Minecraft.getInstance().player.connection.sendCommand("crazyphone mayor vote " + mayorNumber);
 		}).bounds(this.leftPos + 6, this.topPos + 160, 110, 14)
 				.tooltip(net.minecraft.client.gui.components.Tooltip.create(
-						Component.translatable("gui.crazyphone.crazy_phone_mayor_candidate_screen.tooltip_vote")))
+						Component.translatable(!votingFeatureEnabled
+								? "gui.crazyphone.crazy_phone_mayor_candidate_screen.tooltip_vote_disabled"
+								: "gui.crazyphone.crazy_phone_mayor_candidate_screen.tooltip_vote")))
 				.build();
-		voteButton.active = votingOpen;
+		voteButton.active = votingOpen && votingFeatureEnabled;
 
 		this.addRenderableWidget(voteButton);
 	}
