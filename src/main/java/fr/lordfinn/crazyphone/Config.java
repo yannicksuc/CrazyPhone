@@ -111,26 +111,34 @@ public class Config {
     }
 
     /** Setters for the 5 toggleable-features below, used by /crazyphone feature to change them at runtime
-     * (not just at startup) - ConfigValue#set() both updates the live value used everywhere above (Config.
-     * onLoad re-fires on the resulting reload) and persists it to the TOML file, so a runtime toggle
-     * survives a restart the same as hand-editing the config would. */
+     * (not just at startup). ConfigValue#set() ALONE only updates its own internal cache and the in-memory
+     * backing config - per its own javadoc, it does so "without firing events or writing the config to
+     * disk". Config.onLoad (which populates the mirror fields FeatureFlag actually reads) only re-fires, and
+     * the TOML file only gets rewritten, once SPEC.save() is called afterward - a real bug found by
+     * mayorVote_whileFeatureGloballyDisabled_isBlocked (a GameTest), where set() alone left the mirror field
+     * stale and the vote went through anyway. */
     public static void setMayorElectionFeatureEnabled(boolean enabled) {
         MAYOR_ELECTION_FEATURE_ENABLED.set(enabled);
+        SPEC.save();
     }
 
     public static void setCallsFeatureEnabled(boolean enabled) {
         CALLS_FEATURE_ENABLED.set(enabled);
+        SPEC.save();
     }
 
     public static void setVoiceMessagesFeatureEnabled(boolean enabled) {
         VOICE_MESSAGES_FEATURE_ENABLED.set(enabled);
+        SPEC.save();
     }
 
     public static void setImagesFeatureEnabled(boolean enabled) {
         IMAGES_FEATURE_ENABLED.set(enabled);
+        SPEC.save();
     }
 
     public static void setCameraFeatureEnabled(boolean enabled) {
         CAMERA_FEATURE_ENABLED.set(enabled);
+        SPEC.save();
     }
 }

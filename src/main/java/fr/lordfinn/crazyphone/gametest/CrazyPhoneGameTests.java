@@ -1,0 +1,261 @@
+package fr.lordfinn.crazyphone.gametest;
+
+import fr.lordfinn.crazyphone.Crazyphone;
+import fr.lordfinn.crazyphone.FeatureFlag;
+import fr.lordfinn.crazyphone.data.PhoneAttachmentTypes;
+import fr.lordfinn.crazyphone.data.PhoneRegistrySavedData;
+import fr.lordfinn.crazyphone.init.ModItems;
+import fr.lordfinn.crazyphone.procedures.CrazyPhoneOnUseProcedure;
+import fr.lordfinn.crazyphone.procedures.GetCrazyPhoneNumberFromMainHandProcedure;
+import fr.lordfinn.crazyphone.voicechat.CallRegistry;
+
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.gametest.framework.GameTest;
+import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.StringTag;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.CustomData;
+import net.neoforged.neoforge.gametest.GameTestHolder;
+import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
+
+import java.util.List;
+import java.util.Optional;
+
+/**
+ * Real-world integration coverage the unit tests deliberately can't reach: an actual ServerLevel + real
+ * ServerPlayer(s) placed via {@link GameTestHelper#makeMockServerPlayerInLevel()}, real command dispatch
+ * through the registered Brigadier tree, and real menu-opening side effects. Every test's own structure
+ * (crazyphone:platform, a bare 3x3 stone floor) is irrelevant to what's being verified here - this mod has
+ * no block-placement behavior of its own to test, only entity/item/data interactions, so the platform
+ * exists purely to give the test player somewhere to legally stand.
+ */
+@GameTestHolder(Crazyphone.MODID)
+@PrefixGameTestTemplate(false) // every method below shares the one "platform" structure, no per-class prefix needed
+public class CrazyPhoneGameTests {
+
+    private static ItemStack freshCrazyPhone() {
+        return new ItemStack(ModItems.CRAZY_PHONE.get());
+    }
+
+    /** GameTestHelper#makeMockServerPlayerInLevel() places the player through the REAL PlayerList.placeNewPlayer
+     * path - connection, level placement, and player-list registration all happen there before it fires
+     * PlayerLoggedInEvent as its very last step. This mod's own login-sync handler (PhoneAttachmentTypes)
+     * then tries to send a packet over the mock's fake, handshake-less connection and throws, which
+     * propagates out of makeMockServerPlayerInLevel() itself - losing the otherwise fully-usable player
+     * along with it, since the method never reaches its own return statement. Recovering it from the
+     * player list (just-appended, so it's the last entry) avoids needing to touch that production code
+     * path just to accommodate this test-only limitation. */
+    private static ServerPlayer makeTestPlayer(GameTestHelper helper) {
+        try {
+            return helper.makeMockServerPlayerInLevel();
+        } catch (RuntimeException e) {
+            List<ServerPlayer> players = helper.getLevel().getServer().getPlayerList().getPlayers();
+            return players.get(players.size() - 1);
+        }
+    }
+
+    private static String votedFor(PhoneRegistrySavedData registry, String voterNumber) {
+        return registry.mayorVotes.get(voterNumber) instanceof StringTag tag ? tag.getAsString() : null;
+    }
+
+    /** The mock player's connection (see makeTestPlayer) never completed a real handshake, so NeoForge's
+     * NetworkRegistry correctly refuses to send ANY custom packet through it - a test-harness limitation,
+     * not a signal about the code actually under test. Any OTHER exception still propagates normally. */
+    private static void ignoringMockConnectionPacketLimits(Runnable action) {
+        try {
+            action.run();
+        } catch (UnsupportedOperationException e) {
+            if (e.getMessage() == null || !e.getMessage().contains("may not be sent to the client"))
+                throw e;
+        }
+    }
+
+    private static String currentScreenOf(ServerPlayer player) {
+        return player.getData(PhoneAttachmentTypes.PLAYER_PHONE_STATE).currentCrazyPhoneScreenOpened;
+    }
+
+    private static void resetRegistry(GameTestHelper helper) {
+        PhoneRegistrySavedData registry = PhoneRegistrySavedData.get(helper.getLevel());
+        registry.phones = new CompoundTag();
+        registry.mayorsCandidates = new CompoundTag();
+        registry.mayorVotes = new CompoundTag();
+        registry.lastMayorVoteTimestamps = new CompoundTag();
+        registry.isMayorVotingOn = false;
+        for (FeatureFlag flag : FeatureFlag.values())
+            flag.setGloballyEnabled(true);
+    }
+
+    /** An unregistered (no name/number set up yet) phone must route to the password/sign-up screen, never
+     * straight to the home screen - CrazyPhoneOnUseProcedure's very first branch.
+     *
+     * Verifies via PlayerPhoneState rather than player.containerMenu: the menu constructor (which records
+     * the opened screen there via ScreenMenuUtils.pushScreen) runs before ServerPlayer#openMenu's own
+     * packet send, but containerMenu itself is only assigned AFTER that send succeeds - which it can't,
+     * against the mock player's handshake-less connection (see ignoringMockConnectionPacketLimits). */
+    @GameTest(template = "platform", batch = "unregisteredPhone")
+    public static void unregisteredPhone_useOpensPasswordScreen(GameTestHelper helper) {
+        resetRegistry(helper);
+        ServerPlayer player = makeTestPlayer(helper);
+        player.getInventory().setItem(0, freshCrazyPhone());
+        player.getInventory().selected = 0;
+
+        ignoringMockConnectionPacketLimits(() ->
+                CrazyPhoneOnUseProcedure.execute(helper.getLevel(), player.getX(), player.getY(), player.getZ(), player));
+
+        String opened = currentScreenOf(player);
+        helper.assertTrue(opened != null && opened.contains("crazy_phone_password_screen"),
+                "an unregistered phone must open the password/sign-up screen, got " + opened);
+        helper.succeed();
+    }
+
+    /** A phone that's both set up (name/number registered) AND already unlocked this session (isOpen=true
+     * - distinct from being merely registered: a registered-but-not-yet-unlocked phone correctly routes to
+     * the sign-in screen first instead, exercised by the initial version of this test, which used to
+     * assert this exact scenario without setting isOpen and consequently failed against real
+     * CrazyPhoneOnUseProcedure behavior, not a bug in it) must open straight to the home screen. See
+     * unregisteredPhone_useOpensPasswordScreen's javadoc for why PlayerPhoneState is checked instead of
+     * containerMenu. */
+    @GameTest(template = "platform", batch = "registeredPhone")
+    public static void registeredPhone_useOpensHomeScreen(GameTestHelper helper) {
+        resetRegistry(helper);
+        ServerPlayer player = makeTestPlayer(helper);
+        ItemStack phone = freshCrazyPhone();
+        CustomData.update(DataComponents.CUSTOM_DATA, phone, tag -> {
+            tag.putString("name", "Alice");
+            tag.putString("number", "555");
+            tag.putBoolean("isOpen", true);
+        });
+        player.getInventory().setItem(0, phone);
+        player.getInventory().selected = 0;
+        PhoneRegistrySavedData.get(helper.getLevel()).phones.put("555", new CompoundTag());
+
+        ignoringMockConnectionPacketLimits(() ->
+                CrazyPhoneOnUseProcedure.execute(helper.getLevel(), player.getX(), player.getY(), player.getZ(), player));
+
+        String opened = currentScreenOf(player);
+        helper.assertTrue(opened != null && opened.contains("crazyphone_home_screen"),
+                "a set-up, unlocked phone must open straight to the home screen, got " + opened);
+        helper.succeed();
+    }
+
+    /** With no SVC server installed (the normal case for this headless GameTestServer run - it's an
+     * optional, compileOnly dependency), starting a call must degrade gracefully: no crash, no half-broken
+     * state - see SvcCallBridge.isCallable/createCallGroup. Wrapped in ignoringMockConnectionPacketLimits
+     * because even the "no SVC, bail out early" path may get far enough to attempt a state-sync packet
+     * before failing - that's the mock connection's limitation, not evidence startCall itself crashed. */
+    @GameTest(template = "platform", batch = "startCallNoSvc")
+    public static void startCall_withoutSvcInstalled_degradesGracefullyInsteadOfCrashing(GameTestHelper helper) {
+        ServerPlayer initiator = makeTestPlayer(helper);
+        ServerPlayer callee = makeTestPlayer(helper);
+
+        ignoringMockConnectionPacketLimits(() -> CallRegistry.startCall("112.223", initiator, List.of(callee)));
+
+        // Whether or not a session ended up existing (depends on whether SVC happens to be present in this
+        // environment), the one invariant that must always hold: a player is never left "in a call"
+        // without CallRegistry itself agreeing a session actually exists for them.
+        Optional<CallRegistry.CallSession> session = CallRegistry.getSessionFor(initiator.getUUID());
+        if (session.isEmpty()) {
+            helper.assertTrue(CallRegistry.getSessionFor(callee.getUUID()).isEmpty(),
+                    "initiator has no session but callee does - inconsistent half-started call state");
+        } else {
+            helper.assertTrue(session.get().participants.contains(initiator.getUUID()) || session.get().ringing.contains(initiator.getUUID()),
+                    "a session exists for the initiator but doesn't actually list them as a participant or ringer");
+        }
+
+        // If startCall did leave a session behind (SVC absent from this headless run, but the "no SVC" bail
+        // path still ran far enough to register one), tear it down explicitly rather than leaving these mock
+        // players dangling in CallRegistry's static maps for the rest of the JVM's lifetime - every other
+        // batch in this class runs in the same process, and CallTerminationListener's periodic sweep would
+        // otherwise keep tripping over these two on every future tick.
+        ignoringMockConnectionPacketLimits(() -> CallRegistry.leave(initiator));
+        ignoringMockConnectionPacketLimits(() -> CallRegistry.leave(callee));
+        helper.succeed();
+    }
+
+    /** Full round trip through the REAL registered command tree: register two phones, add one as a
+     * candidate, open voting, cast a vote via the actual "/crazyphone mayor vote" command, then confirm an
+     * immediate re-vote attempt is blocked by the 600-tick cooldown - the tricky stateful logic that's hard
+     * to reach without a real CommandSourceStack. */
+    @GameTest(template = "platform", batch = "mayorVoteCooldown")
+    public static void mayorVote_viaRealCommand_recordsVoteThenBlocksImmediateRevote(GameTestHelper helper) {
+        resetRegistry(helper);
+        ServerPlayer voter = makeTestPlayer(helper);
+
+        ItemStack voterPhone = freshCrazyPhone();
+        CustomData.update(DataComponents.CUSTOM_DATA, voterPhone, tag -> {
+            tag.putString("name", "Voter");
+            tag.putString("number", "555");
+        });
+        voter.getInventory().setItem(0, voterPhone);
+        voter.getInventory().selected = 0;
+
+        PhoneRegistrySavedData registry = PhoneRegistrySavedData.get(helper.getLevel());
+        registry.phones.put("555", new CompoundTag());
+        registry.phones.put("666", new CompoundTag());
+        registry.mayorsCandidates.put("666", new CompoundTag());
+        registry.isMayorVotingOn = true;
+
+        CommandSourceStack source = voter.createCommandSourceStack();
+        helper.getLevel().getServer().getCommands().performPrefixedCommand(source, "crazyphone mayor vote 666");
+
+        helper.assertValueEqual(votedFor(registry, "555"), "666", "vote must be recorded for the voter's own number, pointing at the candidate");
+
+        // Immediately re-vote for a DIFFERENT candidate - must be rejected by the 600-tick cooldown, not
+        // silently accepted as a changed vote.
+        registry.phones.put("777", new CompoundTag());
+        registry.mayorsCandidates.put("777", new CompoundTag());
+        helper.getLevel().getServer().getCommands().performPrefixedCommand(voter.createCommandSourceStack(), "crazyphone mayor vote 777");
+
+        helper.assertValueEqual(votedFor(registry, "555"), "666", "an immediate re-vote must be blocked by the cooldown - the original vote must still stand");
+        helper.succeed();
+    }
+
+    /** The permission-node half of FeatureFlag#isEnabledFor needs a real PermissionAPI, which a plain
+     * unit test can't provide - this confirms a globally-disabled feature actually blocks its command path
+     * end-to-end (not just that the config bit flips). */
+    @GameTest(template = "platform", batch = "mayorVoteFlagDisabled")
+    public static void mayorVote_whileFeatureGloballyDisabled_isBlocked(GameTestHelper helper) {
+        resetRegistry(helper);
+        ServerPlayer voter = makeTestPlayer(helper);
+        ItemStack voterPhone = freshCrazyPhone();
+        CustomData.update(DataComponents.CUSTOM_DATA, voterPhone, tag -> {
+            tag.putString("name", "Voter");
+            tag.putString("number", "555");
+        });
+        voter.getInventory().setItem(0, voterPhone);
+        voter.getInventory().selected = 0;
+
+        PhoneRegistrySavedData registry = PhoneRegistrySavedData.get(helper.getLevel());
+        registry.phones.put("555", new CompoundTag());
+        registry.phones.put("666", new CompoundTag());
+        registry.mayorsCandidates.put("666", new CompoundTag());
+        registry.isMayorVotingOn = true;
+
+        FeatureFlag.MAYOR_VOTING.setGloballyEnabled(false);
+
+        helper.getLevel().getServer().getCommands().performPrefixedCommand(voter.createCommandSourceStack(), "crazyphone mayor vote 666");
+
+        helper.assertTrue(votedFor(registry, "555") == null,
+                "voting must be a no-op entirely while the feature is globally disabled, not just gray out client-side");
+        helper.succeed();
+    }
+
+    /** Sanity check on the test helper itself: the phone actually held resolves to the number that was
+     * stamped on it - if this ever fails, every other GameTest here that seeds a phone via CustomData is
+     * suspect too. */
+    @GameTest(template = "platform", batch = "heldPhoneNumberSanity")
+    public static void heldPhoneNumber_resolvesCorrectly(GameTestHelper helper) {
+        ServerPlayer player = makeTestPlayer(helper);
+        ItemStack phone = freshCrazyPhone();
+        CustomData.update(DataComponents.CUSTOM_DATA, phone, tag -> tag.putString("number", "999"));
+        player.getInventory().setItem(0, phone);
+        player.getInventory().selected = 0;
+
+        String number = GetCrazyPhoneNumberFromMainHandProcedure.execute(player, null);
+        helper.assertValueEqual(number, "999", "held phone number");
+        helper.succeed();
+    }
+}

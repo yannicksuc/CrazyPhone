@@ -146,6 +146,16 @@ public class CrazyPhonePicturesScreenMenu extends CrazyPhoneDefaultScreenMenu {
 		return albumHandler == null ? ItemStack.EMPTY : albumHandler.albumInventory.getItem(absoluteIndex);
 	}
 
+	/** Pure row-offset clamping math, pulled out of the (otherwise unconstructable-in-isolation) inner
+	 * AlbumInventoryItemHandler so it has a direct unit-test surface. {@code containerSize}/{@code columns}
+	 * need not divide evenly - the ceiling division below is what makes a partially-filled last row still
+	 * count as a full scrollable row instead of vanishing. */
+	static int clampRowOffset(int currentOffset, int deltaRows, int containerSize, int columns, int visibleRows) {
+		int totalRows = (containerSize + columns - 1) / columns;
+		int maxOffset = Math.max(0, totalRows - visibleRows);
+		return Math.max(0, Math.min(maxOffset, currentOffset + deltaRows));
+	}
+
 	public class AlbumInventoryItemHandler implements IItemHandlerModifiable {
 		public final AlbumInventory albumInventory;
 		/** In rows, not slots - 0 means the grid shows the album's own first row. */
@@ -156,9 +166,7 @@ public class CrazyPhonePicturesScreenMenu extends CrazyPhoneDefaultScreenMenu {
 		}
 
 		private boolean scrollBy(int deltaRows) {
-			int totalRows = (albumInventory.getContainerSize() + ALBUM_COLUMNS - 1) / ALBUM_COLUMNS;
-			int maxOffset = Math.max(0, totalRows - VISIBLE_ROWS);
-			int newOffset = Math.max(0, Math.min(maxOffset, rowOffset + deltaRows));
+			int newOffset = clampRowOffset(rowOffset, deltaRows, albumInventory.getContainerSize(), ALBUM_COLUMNS, VISIBLE_ROWS);
 			if (newOffset == rowOffset)
 				return false;
 			rowOffset = newOffset;

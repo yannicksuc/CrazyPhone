@@ -26,6 +26,34 @@ class PhoneRegistrySavedDataTest {
         assertTrue(data.lastMayorVoteTimestamps.isEmpty());
         assertFalse(data.isMayorVotingOn);
         assertFalse(data.isMayorElectionOn);
+        assertTrue(data.groupMeta.isEmpty());
+        assertTrue(data.favorites.isEmpty());
+    }
+
+    @Test
+    void save_and_load_roundTripsGroupMetaAndFavorites() {
+        PhoneRegistrySavedData data = new PhoneRegistrySavedData();
+
+        CompoundTag group = new CompoundTag();
+        group.putString("name", "Squad");
+        group.putString("admin", "555");
+        ListTag members = new ListTag();
+        members.add(StringTag.valueOf("555"));
+        members.add(StringTag.valueOf("666"));
+        group.put("members", members);
+        data.groupMeta.put("555.666", group);
+
+        ListTag aliceFavorites = new ListTag();
+        aliceFavorites.add(StringTag.valueOf("777"));
+        data.favorites.put("555", aliceFavorites);
+
+        CompoundTag saved = data.save(new CompoundTag(), RegistryAccess.EMPTY);
+        PhoneRegistrySavedData loaded = PhoneRegistrySavedData.load(saved, RegistryAccess.EMPTY);
+
+        assertTrue(loaded.groupMeta.get("555.666") instanceof CompoundTag);
+        assertEquals("Squad", ((CompoundTag) loaded.groupMeta.get("555.666")).getString("name"));
+        assertTrue(loaded.favorites.get("555") instanceof ListTag);
+        assertEquals(1, ((ListTag) loaded.favorites.get("555")).size());
     }
 
     @Test
@@ -61,6 +89,11 @@ class PhoneRegistrySavedDataTest {
         PhoneRegistrySavedData data = new PhoneRegistrySavedData();
         data.phones.put("555", new CompoundTag());
         data.isMayorElectionOn = true;
+        // A client that was previously in a group must not keep seeing it after a fresh sync says
+        // otherwise (e.g. it was disbanded, or this player was excluded) - readFrom has to actually
+        // replace groupMeta/favorites too, not just the fields the original version of this test covered.
+        data.groupMeta.put("555.666", new CompoundTag());
+        data.favorites.put("555", new ListTag());
 
         CompoundTag freshState = new CompoundTag();
         freshState.put("phones", new CompoundTag());
@@ -70,11 +103,15 @@ class PhoneRegistrySavedDataTest {
         freshState.put("lastMayorVoteTimestamps", new CompoundTag());
         freshState.putBoolean("isMayorVotingOn", false);
         freshState.putBoolean("isMayorElectionOn", false);
+        freshState.put("groupMeta", new CompoundTag());
+        freshState.put("favorites", new CompoundTag());
 
         data.readFrom(freshState);
 
         assertTrue(data.phones.isEmpty(), "readFrom should replace, not merge, state (used by client-side packet sync)");
         assertFalse(data.isMayorElectionOn);
+        assertTrue(data.groupMeta.isEmpty(), "a stale group membership must not survive a fresh sync");
+        assertTrue(data.favorites.isEmpty());
     }
 
     @Test

@@ -17,6 +17,9 @@ import net.minecraft.sounds.SoundSource;
 import fr.lordfinn.crazyphone.Config;
 import fr.lordfinn.crazyphone.init.ModItems;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.UUID;
 
 /**
@@ -31,13 +34,19 @@ import java.util.UUID;
 @EventBusSubscriber
 public class CallTerminationListener {
     private static final int SWEEP_INTERVAL_TICKS = 20;
+    private static final Logger LOGGER = LoggerFactory.getLogger("crazyphone");
 
     @SubscribeEvent
     public static void onItemDropped(ItemTossEvent event) {
         if (event.getEntity().getItem().getItem() != ModItems.CRAZY_PHONE.get())
             return;
-        if (event.getPlayer() instanceof ServerPlayer serverPlayer)
-            CallRegistry.leave(serverPlayer);
+        if (event.getPlayer() instanceof ServerPlayer serverPlayer) {
+            try {
+                CallRegistry.leave(serverPlayer);
+            } catch (Exception e) {
+                LOGGER.error("Failed to end call for {} after dropping their phone", serverPlayer.getGameProfile().getName(), e);
+            }
+        }
     }
 
     @SubscribeEvent
@@ -52,14 +61,21 @@ public class CallTerminationListener {
 
     private static void sweepInventoryPossession(MinecraftServer server) {
         for (UUID playerId : CallRegistry.getAllPlayersInCalls()) {
-            ServerPlayer player = server.getPlayerList().getPlayer(playerId);
-            if (player == null || player.hasDisconnected()) {
-                if (player != null)
+            try {
+                ServerPlayer player = server.getPlayerList().getPlayer(playerId);
+                if (player == null || player.hasDisconnected()) {
+                    if (player != null)
+                        CallRegistry.leave(player);
+                    continue;
+                }
+                if (!stillHasPhone(player))
                     CallRegistry.leave(player);
-                continue;
+            } catch (Exception e) {
+                // One player's call-teardown failing (eg. a mid-tick disconnect/packet-send hiccup) must
+                // never take down the whole server tick loop - every other player in a call still needs
+                // this same sweep to run this tick, and every future tick still needs to run at all.
+                LOGGER.error("Failed to sweep call-inventory-possession for player {}", playerId, e);
             }
-            if (!stillHasPhone(player))
-                CallRegistry.leave(player);
         }
     }
 
@@ -82,25 +98,29 @@ public class CallTerminationListener {
     private static void sweepAloneParticipants(MinecraftServer server) {
         long currentGameTime = server.overworld().getGameTime();
         for (CallRegistry.CallSession session : CallRegistry.getActiveSessions()) {
-            // A call that still has people ringing isn't "alone" in the disconnected sense yet - that's a
-            // still-unanswered call, handled on its own (longer, distinct) timeout by sweepRingTimeouts
-            // below. Applying this kick during ringing used to end nearly every real call before the callee
-            // had a chance to answer, since aloneInCallKickSeconds (5s) is far shorter than a realistic
-            // answer time.
-            if (session.participants.size() != 1 || !session.ringing.isEmpty()) {
-                session.soleParticipantSinceGameTime = -1;
-                continue;
-            }
-            UUID lastParticipantId = session.participants.iterator().next();
-            ServerPlayer lastParticipant = server.getPlayerList().getPlayer(lastParticipantId);
-            if (lastParticipant == null)
-                continue;
+            try {
+                // A call that still has people ringing isn't "alone" in the disconnected sense yet - that's
+                // a still-unanswered call, handled on its own (longer, distinct) timeout by sweepRingTimeouts
+                // below. Applying this kick during ringing used to end nearly every real call before the
+                // callee had a chance to answer, since aloneInCallKickSeconds (5s) is far shorter than a
+                // realistic answer time.
+                if (session.participants.size() != 1 || !session.ringing.isEmpty()) {
+                    session.soleParticipantSinceGameTime = -1;
+                    continue;
+                }
+                UUID lastParticipantId = session.participants.iterator().next();
+                ServerPlayer lastParticipant = server.getPlayerList().getPlayer(lastParticipantId);
+                if (lastParticipant == null)
+                    continue;
 
-            if (session.soleParticipantSinceGameTime <= 0) {
-                session.soleParticipantSinceGameTime = currentGameTime;
-                playDisconnectSound(lastParticipant);
-            } else if (currentGameTime - session.soleParticipantSinceGameTime >= Config.aloneInCallKickSeconds * 20L) {
-                CallRegistry.leave(lastParticipant);
+                if (session.soleParticipantSinceGameTime <= 0) {
+                    session.soleParticipantSinceGameTime = currentGameTime;
+                    playDisconnectSound(lastParticipant);
+                } else if (currentGameTime - session.soleParticipantSinceGameTime >= Config.aloneInCallKickSeconds * 20L) {
+                    CallRegistry.leave(lastParticipant);
+                }
+            } catch (Exception e) {
+                LOGGER.error("Failed to sweep alone-in-call state for call {}", session.callId, e);
             }
         }
     }
@@ -111,10 +131,14 @@ public class CallTerminationListener {
     private static void sweepRingTimeouts(MinecraftServer server) {
         long currentGameTime = server.overworld().getGameTime();
         for (CallRegistry.CallSession session : CallRegistry.getActiveSessions()) {
-            if (session.ringing.isEmpty())
-                continue;
-            if (currentGameTime - session.startedAtGameTime >= Config.callRingTimeoutSeconds * 20L)
-                CallRegistry.expireRinging(session, server);
+            try {
+                if (session.ringing.isEmpty())
+                    continue;
+                if (currentGameTime - session.startedAtGameTime >= Config.callRingTimeoutSeconds * 20L)
+                    CallRegistry.expireRinging(session, server);
+            } catch (Exception e) {
+                LOGGER.error("Failed to sweep ring-timeout for call {}", session.callId, e);
+            }
         }
     }
 

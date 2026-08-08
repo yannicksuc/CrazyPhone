@@ -7,6 +7,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -24,6 +25,7 @@ class ConversationSavedDataTest {
         Config.maxStoredMessagesPerConversation = 300;
         Config.maxMessagesSentPerRequest = 100;
         Config.maxImagesStoredPerConversation = 50;
+        Config.maxVoiceMessagesStoredPerConversation = 50;
     }
 
     private static CompoundTag textMessage(String sender, String value, int timecode) {
@@ -37,6 +39,25 @@ class ConversationSavedDataTest {
     private static CompoundTag imageMessage(int timecode) {
         CompoundTag tag = textMessage("111", "", timecode);
         tag.put("image", new CompoundTag());
+        return tag;
+    }
+
+    private static CompoundTag voiceMessage(int timecode, UUID voiceId) {
+        CompoundTag tag = textMessage("111", "", timecode);
+        CompoundTag voice = new CompoundTag();
+        voice.putLong("voice_id_most", voiceId.getMostSignificantBits());
+        voice.putLong("voice_id_least", voiceId.getLeastSignificantBits());
+        tag.put("voice", voice);
+        return tag;
+    }
+
+    private static CompoundTag callMessage(UUID callId) {
+        CompoundTag tag = textMessage("", "", 0);
+        CompoundTag call = new CompoundTag();
+        call.putLong("call_id_most", callId.getMostSignificantBits());
+        call.putLong("call_id_least", callId.getLeastSignificantBits());
+        call.putInt("duration", -1);
+        tag.put("call", call);
         return tag;
     }
 
@@ -152,6 +173,96 @@ class ConversationSavedDataTest {
         List<CompoundTag> page = loaded.getPage(CONVO, 0, 10);
         assertEquals("hello", page.get(0).getString("value"));
         assertEquals("hi back", page.get(1).getString("value"));
+    }
+
+    @Test
+    void storeVoiceAudio_and_getVoiceAudio_roundTrips() {
+        ConversationSavedData data = new ConversationSavedData();
+        UUID voiceId = UUID.randomUUID();
+        byte[] pcm = {1, 2, 3, 4};
+
+        data.storeVoiceAudio(voiceId, CONVO, pcm);
+        ConversationSavedData.VoiceAudioEntry entry = data.getVoiceAudio(voiceId);
+
+        assertNotNull(entry);
+        assertEquals(CONVO, entry.conversationId());
+        assertArrayEquals(pcm, entry.bytes());
+    }
+
+    @Test
+    void getVoiceAudio_unknownId_returnsNull() {
+        ConversationSavedData data = new ConversationSavedData();
+        assertNull(data.getVoiceAudio(UUID.randomUUID()));
+    }
+
+    @Test
+    void appendMessage_evictingVoiceMessageBeyondVoiceCap_alsoRemovesItsAudioBlob() {
+        Config.maxVoiceMessagesStoredPerConversation = 1;
+        ConversationSavedData data = new ConversationSavedData();
+
+        UUID oldVoiceId = UUID.randomUUID();
+        UUID newVoiceId = UUID.randomUUID();
+        data.storeVoiceAudio(oldVoiceId, CONVO, new byte[]{1});
+        data.storeVoiceAudio(newVoiceId, CONVO, new byte[]{2});
+
+        data.appendMessage(CONVO, voiceMessage(0, oldVoiceId));
+        data.appendMessage(CONVO, voiceMessage(1, newVoiceId));
+
+        // Only the newest voice message's audio should survive - the older one dropped from both the
+        // message list AND voiceAudio, or its bytes would leak on disk forever (the exact bug this cap
+        // exists to prevent).
+        assertNull(data.getVoiceAudio(oldVoiceId), "evicted voice message's audio blob must be removed too");
+        assertNotNull(data.getVoiceAudio(newVoiceId));
+        assertEquals(1, data.getMessageCount(CONVO));
+    }
+
+    @Test
+    void appendMessage_evictingViaGeneralCountCap_stillCleansUpVoiceAudio() {
+        // Distinct from the voice-specific cap test above: this exercises the FIRST trim loop (general
+        // message count), which must also call evictVoiceAudioIfPresent - a voice message evicted purely
+        // because the conversation got too long, not because there were too many voice messages, must not
+        // leak its audio blob either.
+        Config.maxStoredMessagesPerConversation = 1;
+        ConversationSavedData data = new ConversationSavedData();
+
+        UUID voiceId = UUID.randomUUID();
+        data.storeVoiceAudio(voiceId, CONVO, new byte[]{9});
+        data.appendMessage(CONVO, voiceMessage(0, voiceId));
+        data.appendMessage(CONVO, textMessage("111", "pushes the voice message out", 1));
+
+        assertEquals(1, data.getMessageCount(CONVO));
+        assertNull(data.getVoiceAudio(voiceId), "audio must be cleaned up even when eviction came from the general count cap");
+    }
+
+    @Test
+    void updateCallMessage_mutatesTheMatchingCallByIdOnly() {
+        ConversationSavedData data = new ConversationSavedData();
+        UUID targetCallId = UUID.randomUUID();
+        UUID otherCallId = UUID.randomUUID();
+
+        data.appendMessage(CONVO, callMessage(otherCallId));
+        data.appendMessage(CONVO, callMessage(targetCallId));
+
+        data.updateCallMessage(CONVO, targetCallId, callTag -> callTag.putInt("duration", 12345));
+
+        List<CompoundTag> page = data.getPage(CONVO, 0, 10);
+        CompoundTag untouched = page.get(0).getCompound("call");
+        CompoundTag mutated = page.get(1).getCompound("call");
+        assertEquals(-1, untouched.getInt("duration"), "the OTHER call message must not be touched");
+        assertEquals(12345, mutated.getInt("duration"));
+    }
+
+    @Test
+    void updateCallMessage_unknownCallId_isNoOpNotException() {
+        ConversationSavedData data = new ConversationSavedData();
+        data.appendMessage(CONVO, callMessage(UUID.randomUUID()));
+        assertDoesNotThrow(() -> data.updateCallMessage(CONVO, UUID.randomUUID(), tag -> tag.putInt("duration", 1)));
+    }
+
+    @Test
+    void updateCallMessage_unknownConversation_isNoOpNotException() {
+        ConversationSavedData data = new ConversationSavedData();
+        assertDoesNotThrow(() -> data.updateCallMessage("nonexistent", UUID.randomUUID(), tag -> tag.putInt("duration", 1)));
     }
 
     /**

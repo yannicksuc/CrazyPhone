@@ -113,6 +113,12 @@ testing {
     suites {
         test {
             useJUnitJupiter('5.10.2')
+            dependencies {
+                // Only needed for the handful of procedures/helpers that take a LevelAccessor purely to
+                // reach registryAccess() (encodeItemStack/decodeItemStack/getGroupMeta) - mocking that one
+                // method avoids needing a real ServerLevel just to exercise otherwise-pure NBT logic.
+                implementation 'org.mockito:mockito-core:5.11.0'
+            }
         }
     }
 }
