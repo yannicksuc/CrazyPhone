@@ -19,6 +19,8 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
+import fr.lordfinn.crazyphone.init.ModItems;
+import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
 import fr.lordfinn.crazyphone.utils.ScreenMenuUtils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -50,6 +52,11 @@ abstract public class CrazyPhoneDefaultScreenMenu extends AbstractContainerMenu 
 	protected Supplier<Boolean> boundItemMatcher = null;
 	protected Entity boundEntity = null;
 	protected BlockEntity boundBlockEntity = null;
+	/** Captured once at construction (not re-derived later) so removed() flips the tag back off on the exact
+	 * same item instance, even if the player has since switched what's in their main hand - see
+	 * CrazyPhoneHelper#setPhoneScreenOpen for why this is written into the item's own data rather than any
+	 * client-only field (bystanders need to see this too, not just the phone's own owner). */
+	private ItemStack ownerPhoneStack = ItemStack.EMPTY;
 
 	public CrazyPhoneDefaultScreenMenu(MenuType<?> type, int id, Inventory inv, FriendlyByteBuf extraData) {
 		super(type, id);
@@ -57,6 +64,13 @@ abstract public class CrazyPhoneDefaultScreenMenu extends AbstractContainerMenu 
 		this.world = inv.player.level();
 		this.internal = new ItemStackHandler(0);
 		setCurrentPageHistory();
+		if (this.entity instanceof ServerPlayer) {
+			ItemStack held = CrazyPhoneHelper.getMainHandItemOrEmpty(this.entity);
+			if (held.getItem() == ModItems.CRAZY_PHONE.get()) {
+				ownerPhoneStack = held;
+				CrazyPhoneHelper.setPhoneScreenOpen(ownerPhoneStack, true);
+			}
+		}
 		BlockPos pos = null;
 		if (extraData != null) {
 			pos = extraData.readBlockPos();
@@ -206,6 +220,8 @@ abstract public class CrazyPhoneDefaultScreenMenu extends AbstractContainerMenu 
 	@Override
 	public void removed(Player playerIn) {
 		super.removed(playerIn);
+		if (!ownerPhoneStack.isEmpty())
+			CrazyPhoneHelper.setPhoneScreenOpen(ownerPhoneStack, false);
 		if (!bound && playerIn instanceof ServerPlayer serverPlayer) {
 			if (!serverPlayer.isAlive() || serverPlayer.hasDisconnected()) {
 				for (int j = 0; j < internal.getSlots(); ++j) {

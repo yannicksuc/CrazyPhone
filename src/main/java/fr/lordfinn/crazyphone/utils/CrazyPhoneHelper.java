@@ -29,12 +29,14 @@ import de.maxhenkel.camera.items.ImageItem;
 import fr.lordfinn.crazyphone.client.gui.components.MessageData;
 import fr.lordfinn.crazyphone.data.ConversationSavedData;
 import fr.lordfinn.crazyphone.data.PhoneRegistrySavedData;
+import fr.lordfinn.crazyphone.init.ModItems;
 import fr.lordfinn.crazyphone.item.CrazyPhoneItem;
 import fr.lordfinn.crazyphone.network.CrazyPhoneGroupMembershipNotificationPacket;
 import fr.lordfinn.crazyphone.network.CrazyPhoneNewMessageNotificationPacket;
 import fr.lordfinn.crazyphone.procedures.CrazyPhoneAddContactToPhoneProcedure;
 import fr.lordfinn.crazyphone.procedures.CrazyPhoneGetContactsProcedure;
 import fr.lordfinn.crazyphone.procedures.GetCrazyPhoneNumberFromMainHandProcedure;
+import fr.lordfinn.crazyphone.procedures.GetCrazyPhoneNumberProcedure;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
@@ -54,6 +56,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
@@ -568,6 +571,72 @@ public class CrazyPhoneHelper {
                 return members;
         }
         return getNumbersFromConversationId(conversationId);
+    }
+
+    /**
+     * These 4 methods write the phone's "screen open" / "call state" directly into the ITEM's own persisted
+     * data (the same CustomData tag "number"/"password" already live in) instead of any client-only field,
+     * so that vanilla's existing equipment-sync (which already replicates a held item's data to every nearby
+     * tracking client, purely because the ItemStack's own data changed) carries it to bystanders for free -
+     * zero new packets, and it's automatically correct for whichever specific phone stack this is, not just
+     * "the local viewer's own phone". Before this, {@link fr.lordfinn.crazyphone.item.CrazyPhoneItemProperties}
+     * read purely client-local state (Minecraft.getInstance().screen/.player, ClientCallState), so a phone
+     * screen lighting up or a call texture only ever rendered correctly for the owning player's own view -
+     * never for another player standing nearby watching them.
+     */
+    private static final String TAG_SCREEN_OPEN = "screenOpen";
+    private static final String TAG_CALL_STATE = "callState";
+
+    public static void setPhoneScreenOpen(ItemStack phone, boolean open) {
+        CompoundTag tag = phone.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+        if (open)
+            tag.putBoolean(TAG_SCREEN_OPEN, true);
+        else
+            tag.remove(TAG_SCREEN_OPEN);
+        phone.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
+    }
+
+    public static boolean isPhoneScreenOpen(ItemStack phone) {
+        return phone.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag().getBoolean(TAG_SCREEN_OPEN);
+    }
+
+    private static void setPhoneCallState(ItemStack phone, String state) {
+        CompoundTag tag = phone.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+        if (state.isEmpty())
+            tag.remove(TAG_CALL_STATE);
+        else
+            tag.putString(TAG_CALL_STATE, state);
+        phone.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
+    }
+
+    public static String getPhoneCallState(ItemStack phone) {
+        return phone.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag().getString(TAG_CALL_STATE);
+    }
+
+    /** Applies {@code state} to every CrazyPhone anywhere in {@code player}'s inventory whose OWN registered
+     * number is one of {@code callNumbers} - not just the one in their main hand, since a call stays "active"
+     * on a phone even after it's put away (see the item's in_call texture), and not every phone the player
+     * happens to be carrying, since a player can own several registered numbers at once (see the per-item
+     * call-state fix this mirrors). */
+    public static void setCallStateForMatchingPhones(ServerPlayer player, List<String> callNumbers, String state) {
+        Inventory inventory = player.getInventory();
+        for (int i = 0; i < inventory.getContainerSize(); i++) {
+            ItemStack stack = inventory.getItem(i);
+            if (stack.getItem() == ModItems.CRAZY_PHONE.get() && callNumbers.contains(GetCrazyPhoneNumberProcedure.execute(stack)))
+                setPhoneCallState(stack, state);
+        }
+    }
+
+    /** Only one call can ever be active per player (CallRegistry refuses to stack a second one), so ending a
+     * call can safely clear every phone the player holds rather than needing to know which numbers were on
+     * it. */
+    public static void clearCallStateForAllPhones(ServerPlayer player) {
+        Inventory inventory = player.getInventory();
+        for (int i = 0; i < inventory.getContainerSize(); i++) {
+            ItemStack stack = inventory.getItem(i);
+            if (stack.getItem() == ModItems.CRAZY_PHONE.get())
+                setPhoneCallState(stack, "");
+        }
     }
 
     private static List<String> readMembers(CompoundTag groupMetaTag) {

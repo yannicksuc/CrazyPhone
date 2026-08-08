@@ -262,6 +262,13 @@ public final class CallRegistry {
                 ? List.of()
                 : CrazyPhoneHelper.getGroupMembers(target.level(), session.conversationId);
         PacketDistributor.sendToPlayer(target, new CrazyPhoneCallStateSyncPacket(session.conversationId, session.callId, state, callNumbers));
+        // Also written into the actual held phone's own item data, not just this targeted packet - vanilla's
+        // equipment sync then carries it to nearby bystanders for free (see CrazyPhoneHelper), which the
+        // packet above (sent only to this one player) never would.
+        if (state == CrazyPhoneCallStateSyncPacket.State.ENDED)
+            CrazyPhoneHelper.clearCallStateForAllPhones(target);
+        else
+            CrazyPhoneHelper.setCallStateForMatchingPhones(target, callNumbers, state.name());
     }
 
     private static ServerPlayer findPlayer(ServerPlayer contextPlayer, UUID playerId) {
