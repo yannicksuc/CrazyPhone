@@ -977,6 +977,15 @@ public class CrazyPhoneHelper {
                 entity.drop(itemToCopy, false);
             }
         }
+
+        // The album screen is a fully custom AbstractContainerMenu that never registers the player's own
+        // Inventory slots (it's a phone UI, not a chest-with-your-inventory-below layout), so vanilla's
+        // normal per-tick slot-change broadcast - which only compares slots actually registered in the
+        // currently open menu - never notices entity.getInventory().add() above. The server-side inventory
+        // was already correct; the client just never got a packet about it until the phone closed and a
+        // full resync happened as a side effect. Forcing that resync now is what makes it show up instantly.
+        if (entity instanceof ServerPlayer serverPlayer)
+            serverPlayer.inventoryMenu.broadcastFullState();
     }
 
     public static void sendSelectedAlbumSlotsFromHeldPhone(Player entity, Level world, Set<Integer> selectedSlots, int albumId, String conversationId) {

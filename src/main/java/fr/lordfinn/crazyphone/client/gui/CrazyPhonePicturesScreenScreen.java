@@ -270,8 +270,22 @@ public class CrazyPhonePicturesScreenScreen extends CrazyPhoneDefaultScreenScree
 	@Override
 	protected List<Component> getTooltipFromContainerItem(ItemStack stack) {
 		List<Component> lines = new java.util.ArrayList<>(super.getTooltipFromContainerItem(stack));
-		lines.add(Component.translatable("gui.crazyphone.crazy_phone_pictures_screen.tooltip_image_actions")
-				.withStyle(net.minecraft.ChatFormatting.GRAY));
+		// "select"/"zoom in" colored to match their actual on-screen feedback - the same amber the
+		// selection border uses, and blue for zoom - so the hint visually pairs with what clicking does,
+		// not just a plain gray instruction line.
+		lines.add(Component.translatable("gui.crazyphone.crazy_phone_pictures_screen.tooltip_left_click")
+				.withStyle(net.minecraft.ChatFormatting.GRAY)
+				.append(Component.literal(" "))
+				.append(Component.translatable("gui.crazyphone.crazy_phone_pictures_screen.tooltip_select")
+						// SELECTED_BORDER_COLOR is ARGB (0xAARRGGBB, for guiGraphics.fill) - Style.withColor(int)
+						// wants plain RGB, so the alpha byte has to be masked off or it corrupts the color.
+						.withStyle(style -> style.withColor(SELECTED_BORDER_COLOR & 0xFFFFFF)))
+				.append(Component.literal(" · ").withStyle(net.minecraft.ChatFormatting.GRAY))
+				.append(Component.translatable("gui.crazyphone.crazy_phone_pictures_screen.tooltip_right_click")
+						.withStyle(net.minecraft.ChatFormatting.GRAY))
+				.append(Component.literal(" "))
+				.append(Component.translatable("gui.crazyphone.crazy_phone_pictures_screen.tooltip_zoom_in")
+						.withStyle(net.minecraft.ChatFormatting.BLUE)));
 		return lines;
 	}
 

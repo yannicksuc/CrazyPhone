@@ -59,7 +59,7 @@ public class MessageWidget extends AbstractWidget {
     private final java.util.UUID voiceId;
     private final int voiceDurationTicks;
     private final byte[] voiceEnvelope;
-    private static final float[] VOICE_SPEEDS = {0.5f, 1f, 2f};
+    private static final float[] VOICE_SPEEDS = {0.5f, 1f, 1.5f, 2f};
     private int voiceSpeedIndex = 1;
     private long voicePlayStartMs = -1;
     /** Original-clip tick position where the CURRENT playback segment began - not always 0: changing speed
