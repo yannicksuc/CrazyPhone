@@ -16,8 +16,8 @@ public class CrazyPhoneGetInitialFormValidationMessageProcedure {
 				return "Téléphone configuré!";
 			}
 			return "Numero déja utilisé";
-		} else if ((guistate.containsKey("textin:name") ? (String) guistate.get("textin:name") : "").isEmpty()) {
-			return "Nom requis";
+		// An empty name is fine, not an error - RegisterNewPhoneFromFormProcedure falls back to the
+		// player's own Minecraft username (already shown as the field's ghosted placeholder).
 		} else if ((guistate.containsKey("textin:name") ? (String) guistate.get("textin:name") : "").length() > 25) {
 			return "Nom trop long";
 		} else if ((guistate.containsKey("textin:password") ? (String) guistate.get("textin:password") : "").isEmpty()) {

@@ -45,6 +45,7 @@ import net.neoforged.neoforge.items.IItemHandlerModifiable;
 import net.neoforged.neoforge.network.connection.ConnectionType;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.network.chat.Component;
@@ -618,16 +619,16 @@ public class ScreenMenuUtils {
             return;
         String displayTitle = buildCallDisplayTitle(player, session);
         if (session.ringing.contains(player.getUUID())) {
-            openIncomingCallMenu(player, session.conversationId, session.callId, displayTitle);
+            openIncomingCallMenu(player, session.conversationId, session.callId, displayTitle, session.participants);
             return;
         }
         // The initiator, still waiting for anyone at all to pick up. The InCall screen (participant list,
         // working hangup-of-an-active-call UI) would be misleading here since there's no live audio yet.
         boolean stillWaitingForAnyAnswer = player.getUUID().equals(session.initiator) && session.participants.size() == 1;
         if (stillWaitingForAnyAnswer) {
-            openCallingMenu(player, session.conversationId, session.callId, displayTitle);
+            openCallingMenu(player, session.conversationId, session.callId, displayTitle, session.participants);
         } else {
-            openInCallMenu(player, session.conversationId, session.callId, displayTitle);
+            openInCallMenu(player, session.conversationId, session.callId, displayTitle, session.participants);
         }
     }
 
@@ -645,7 +646,7 @@ public class ScreenMenuUtils {
         return String.join(", ", names);
     }
 
-    private static void openCallingMenu(Player player, String conversationId, UUID callId, String displayTitle) {
+    private static void openCallingMenu(Player player, String conversationId, UUID callId, String displayTitle, Set<UUID> participantIds) {
         if (player instanceof ServerPlayer) {
             player.openMenu(new MenuProvider() {
                 @Override
@@ -656,18 +657,18 @@ public class ScreenMenuUtils {
                 @Override
                 public AbstractContainerMenu createMenu(int id, Inventory inventory, Player player) {
                     FriendlyByteBuf packetBuffer = new FriendlyByteBuf(Unpooled.buffer());
-                    populateCallScreenBuffer(packetBuffer, player, conversationId, callId, displayTitle);
+                    populateCallScreenBuffer(packetBuffer, player, conversationId, callId, displayTitle, participantIds);
                     try {
                         return new CrazyPhoneCallingScreenMenu(id, inventory, packetBuffer);
                     } catch (Exception e) {
                         throw new RuntimeException("Failed to create menu instance", e);
                     }
                 }
-            }, buf -> populateCallScreenBuffer(buf, player, conversationId, callId, displayTitle));
+            }, buf -> populateCallScreenBuffer(buf, player, conversationId, callId, displayTitle, participantIds));
         }
     }
 
-    private static void openIncomingCallMenu(Player player, String conversationId, UUID callId, String displayTitle) {
+    private static void openIncomingCallMenu(Player player, String conversationId, UUID callId, String displayTitle, Set<UUID> participantIds) {
         if (player instanceof ServerPlayer) {
             player.openMenu(new MenuProvider() {
                 @Override
@@ -678,18 +679,18 @@ public class ScreenMenuUtils {
                 @Override
                 public AbstractContainerMenu createMenu(int id, Inventory inventory, Player player) {
                     FriendlyByteBuf packetBuffer = new FriendlyByteBuf(Unpooled.buffer());
-                    populateCallScreenBuffer(packetBuffer, player, conversationId, callId, displayTitle);
+                    populateCallScreenBuffer(packetBuffer, player, conversationId, callId, displayTitle, participantIds);
                     try {
                         return new CrazyPhoneIncomingCallScreenMenu(id, inventory, packetBuffer);
                     } catch (Exception e) {
                         throw new RuntimeException("Failed to create menu instance", e);
                     }
                 }
-            }, buf -> populateCallScreenBuffer(buf, player, conversationId, callId, displayTitle));
+            }, buf -> populateCallScreenBuffer(buf, player, conversationId, callId, displayTitle, participantIds));
         }
     }
 
-    private static void openInCallMenu(Player player, String conversationId, UUID callId, String displayTitle) {
+    private static void openInCallMenu(Player player, String conversationId, UUID callId, String displayTitle, Set<UUID> participantIds) {
         if (player instanceof ServerPlayer) {
             player.openMenu(new MenuProvider() {
                 @Override
@@ -700,22 +701,34 @@ public class ScreenMenuUtils {
                 @Override
                 public AbstractContainerMenu createMenu(int id, Inventory inventory, Player player) {
                     FriendlyByteBuf packetBuffer = new FriendlyByteBuf(Unpooled.buffer());
-                    populateCallScreenBuffer(packetBuffer, player, conversationId, callId, displayTitle);
+                    populateCallScreenBuffer(packetBuffer, player, conversationId, callId, displayTitle, participantIds);
                     try {
                         return new CrazyPhoneInCallScreenMenu(id, inventory, packetBuffer);
                     } catch (Exception e) {
                         throw new RuntimeException("Failed to create menu instance", e);
                     }
                 }
-            }, buf -> populateCallScreenBuffer(buf, player, conversationId, callId, displayTitle));
+            }, buf -> populateCallScreenBuffer(buf, player, conversationId, callId, displayTitle, participantIds));
         }
     }
 
-    private static void populateCallScreenBuffer(FriendlyByteBuf buf, Player player, String conversationId, UUID callId, String displayTitle) {
+    /** {@code participantIds} is written as (uuid, name) pairs excluding the viewer themselves - only the
+     * InCall screen actually reads them (its bust-portrait grid), but writing them here too (not just in the
+     * live CrazyPhoneCallStateSyncPacket resyncs) means the grid is already populated the instant the screen
+     * first opens, not one packet round-trip later. */
+    private static void populateCallScreenBuffer(FriendlyByteBuf buf, Player player, String conversationId, UUID callId, String displayTitle, Set<UUID> participantIds) {
         buf.writeBlockPos(player.blockPosition());
         buf.writeByte(0); // Always Main Hand
         buf.writeUtf(conversationId);
         buf.writeUUID(callId);
         buf.writeUtf(displayTitle);
+        List<UUID> others = participantIds.stream().filter(id -> !id.equals(player.getUUID())).toList();
+        buf.writeVarInt(others.size());
+        MinecraftServer server = player.getServer();
+        for (UUID id : others) {
+            buf.writeUUID(id);
+            ServerPlayer other = server != null ? server.getPlayerList().getPlayer(id) : null;
+            buf.writeUtf(other != null ? other.getGameProfile().getName() : "");
+        }
     }
 }

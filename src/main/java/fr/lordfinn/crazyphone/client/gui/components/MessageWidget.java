@@ -84,6 +84,22 @@ public class MessageWidget extends AbstractWidget {
     private boolean callWasEverMine = false;
     private static final DateTimeFormatter CALL_TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
 
+    /** Null for every non-call message type. */
+    @Nullable
+    public java.util.UUID getCallId() {
+        return callId;
+    }
+
+    /** Applied when the server pushes the real finalized duration for this call (see
+     * CrazyPhoneNewCallDurationNotificationPacket) - closes the gap where a widget that was never "mine"
+     * (a bystander watching someone else's call in a group conversation) would otherwise keep ticking an
+     * estimate forever, since only a client who lived through the call themselves ever locally freezes it
+     * (see {@link #callWasEverMine}). Harmless no-op if this widget already froze itself with the same value
+     * a few ms earlier. */
+    public void applyFinalizedDuration(long durationMillis) {
+        this.callDurationMillis = durationMillis;
+    }
+
     public MessageWidget(WrappedTextWidget wrappedText, boolean isSender, ItemStack icon, int scrollPosition, @Nullable ItemStack image, MessageDisplayManager messageDisplayManager) {
         this(wrappedText, isSender, icon, scrollPosition, image, messageDisplayManager, false, null, 0, null, null, 0, -1);
     }
@@ -153,6 +169,17 @@ public class MessageWidget extends AbstractWidget {
      * own javadoc and WrappedTextWidget#renderWidget, which re-reads its message fresh each frame too, so
      * calling setMessage() here each render is all live-ticking needs, no separate animation/tick hook. */
     private Component computeCallText() {
+        // The server marks a call this way at startup if it was still connected when the previous server
+        // process ended (crash, forced kill, shutdown) - CallRegistry never got to run its normal end-of-call
+        // finalize for it, so there's no real duration to show, and none of the branches below (which all
+        // exist to freeze/estimate a duration for a call that genuinely ran to completion) apply here. Without
+        // this early return this would otherwise fall into the "never mine" branch and tick a fake elapsed
+        // time forever, since it can never become this client's own active call again.
+        if (callDurationMillis == fr.lordfinn.crazyphone.data.ConversationSavedData.ORPHANED_CALL_DURATION_MILLIS) {
+            String startTime = CALL_TIME_FORMATTER.format(Instant.ofEpochMilli(callStartMillis).atZone(ZoneId.systemDefault()));
+            return Component.translatable("message.crazyphone.call_interrupted", startTime);
+        }
+
         long elapsedMillis;
         if (callDurationMillis >= 0) {
             elapsedMillis = callDurationMillis;

@@ -1,5 +1,7 @@
 package fr.lordfinn.crazyphone.voicechat;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.PacketDistributor;
@@ -7,6 +9,9 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import fr.lordfinn.crazyphone.network.CrazyPhoneCallStateSyncPacket;
 import fr.lordfinn.crazyphone.network.CrazyPhoneIncomingCallNotificationPacket;
 import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -25,6 +30,7 @@ import java.util.UUID;
  * termination sweep (added in a later phase) both query.
  */
 public final class CallRegistry {
+    private static final Logger LOGGER = LoggerFactory.getLogger("crazyphone");
 
     public static final class CallSession {
         public final UUID callId;
@@ -90,6 +96,17 @@ public final class CallRegistry {
      * never ring, exactly like calling a phone number that's turned off.
      */
     public static CallSession startCall(String conversationId, ServerPlayer initiator, List<ServerPlayer> callees) {
+        // Loading SvcCallBridge's class at all - triggered by calling ANY of its static methods, even ones
+        // whose particular execution path would have no-opped - requires the JVM to verify its ENTIRE
+        // bytecode, including methods unrelated to this call (playAudioToPlayer's AudioChannel/AudioPlayer
+        // usage, for instance). Those types come from the compileOnly voicechat-api, never bundled at
+        // runtime, so if the real SVC mod isn't installed they're simply unresolvable - the very first
+        // SvcCallBridge call this method used to make (createCallGroup, below) crashed with
+        // NoClassDefFoundError instead of the graceful no-call this method's own javadoc promises. This is
+        // the ONLY place a session is ever created, so keeping it here means every other CallRegistry method
+        // stays safe too: none of them can reach their own SvcCallBridge calls if no session exists to find.
+        if (!VoicechatIntegration.isAvailable())
+            return null;
         // Already on a call (as caller or participant elsewhere) - do not stack a second one.
         if (getSessionFor(initiator.getUUID()).isPresent())
             return null;
@@ -113,14 +130,18 @@ public final class CallRegistry {
         ACTIVE_CALLS.put(callId, session);
         PLAYER_TO_CALL.put(initiator.getUUID(), callId);
         SvcCallBridge.joinGroup(initiator, callId);
-        sendStateSync(initiator, session, CrazyPhoneCallStateSyncPacket.State.CALLING);
+        notifySafe(initiator, session, CrazyPhoneCallStateSyncPacket.State.CALLING);
+        // A brand-new session, not a join of an already-active one (see the existing != null branch above) -
+        // this is the transition that actually flips conversation-level "is there a call happening here",
+        // so every online conversation member (not just these participants/ringers) needs to hear about it.
+        CrazyPhoneHelper.broadcastConversationCallActivity(initiator.level(), conversationId, true);
 
         for (ServerPlayer callee : callees) {
             if (callee.getUUID().equals(initiator.getUUID()) || !SvcCallBridge.isCallable(callee))
                 continue;
             session.ringing.add(callee.getUUID());
             PLAYER_TO_CALL.put(callee.getUUID(), callId);
-            sendStateSync(callee, session, CrazyPhoneCallStateSyncPacket.State.RINGING);
+            notifySafe(callee, session, CrazyPhoneCallStateSyncPacket.State.RINGING);
             PacketDistributor.sendToPlayer(callee,
                     new CrazyPhoneIncomingCallNotificationPacket(conversationId, initiator.getGameProfile().getName(), callId));
         }
@@ -149,7 +170,7 @@ public final class CallRegistry {
         for (UUID participantId : new HashSet<>(session.participants)) {
             ServerPlayer participant = findPlayer(joiner, participantId);
             if (participant != null)
-                sendStateSync(participant, session, CrazyPhoneCallStateSyncPacket.State.ACTIVE);
+                notifySafe(participant, session, CrazyPhoneCallStateSyncPacket.State.ACTIVE);
         }
     }
 
@@ -165,20 +186,48 @@ public final class CallRegistry {
         for (UUID participantId : new HashSet<>(session.participants)) {
             ServerPlayer participant = findPlayer(player, participantId);
             if (participant != null)
-                sendStateSync(participant, session, CrazyPhoneCallStateSyncPacket.State.ACTIVE);
+                notifySafe(participant, session, CrazyPhoneCallStateSyncPacket.State.ACTIVE);
         }
     }
 
-    /** Voluntary hangup/decline, or a forced removal (drop, moved to another inventory, disconnect). */
+    /** Voluntary hangup/decline, or a forced removal (drop, moved to another inventory, disconnect). The
+     * cleanup runs FIRST and the leaving player's own ENDED notification is strictly best-effort afterward -
+     * getting this order backwards once already caused a real bug: sendStateSync throwing (their connection
+     * is already gone, or - in tests - never completed a handshake) aborted the method before the session
+     * was ever actually cleaned up, leaving them stuck in CallRegistry's maps forever and the periodic sweep
+     * retrying (and re-throwing) on every subsequent tick indefinitely. */
     public static void leave(ServerPlayer player) {
         CallSession session = getSessionFor(player.getUUID()).orElse(null);
         if (session == null)
             return;
-        session.participants.remove(player.getUUID());
-        session.ringing.remove(player.getUUID());
-        PLAYER_TO_CALL.remove(player.getUUID());
-        SvcCallBridge.leaveGroup(player);
-        sendStateSync(player, session, CrazyPhoneCallStateSyncPacket.State.ENDED);
+        leaveInternal(player.getUUID(), player.getServer(), session);
+        notifySafe(player, session, CrazyPhoneCallStateSyncPacket.State.ENDED);
+    }
+
+    /** Same cleanup as {@link #leave(ServerPlayer)}, for a player who's no longer reachable as a live
+     * ServerPlayer at all - fully logged out, not just mid-disconnect. Needed because the periodic sweep
+     * (CallTerminationListener) can only look someone up via {@code PlayerList#getPlayer(UUID)}, which
+     * returns null the instant a player is actually gone - {@code hasDisconnected()} only covers the brief
+     * mid-disconnect window, not "already logged off", so this is the path that actually fires in the
+     * common case. Skips whatever needs a live connection for THIS player (no ENDED packet to send them -
+     * they're not connected to receive it; no inventory to touch - reconcilePhoneStateOnJoin cleans up their
+     * held phones' stale NBT the next time they log back in) but still updates the session, tells SVC to
+     * drop their connection's group membership, and - critically - still notifies any REMAINING participants
+     * and tears the session down if this was the last one. Without this, a session with zero reachable
+     * participants left never empties: the conversation's "call in progress" chat entry never finalizes its
+     * duration, and the phantom session lingers, blocking a clean rejoin. */
+    public static void leave(UUID playerId, @Nullable MinecraftServer server) {
+        CallSession session = getSessionFor(playerId).orElse(null);
+        if (session == null)
+            return;
+        leaveInternal(playerId, server, session);
+    }
+
+    private static void leaveInternal(UUID playerId, @Nullable MinecraftServer server, CallSession session) {
+        session.participants.remove(playerId);
+        session.ringing.remove(playerId);
+        PLAYER_TO_CALL.remove(playerId);
+        SvcCallBridge.leaveGroup(playerId);
 
         // Nobody actually connected left - whether that's the last real participant hanging up, or the
         // initiator cancelling before anyone still ringing had a chance to answer, either way there's no
@@ -187,7 +236,7 @@ public final class CallRegistry {
         // forever, and a still-ringing callee who later answers gets added as the sole "participant" of a
         // call nobody else is on.
         if (session.participants.isEmpty()) {
-            endCall(session, player.getServer(), player.getUUID());
+            endCall(session, server, playerId);
             return;
         }
         if (session.participants.size() == 1 && session.ringing.isEmpty()) {
@@ -203,28 +252,42 @@ public final class CallRegistry {
         endCall(session, null, null);
     }
 
-    private static void endCall(CallSession session, MinecraftServer server, UUID alreadyNotifiedId) {
+    private static void endCall(CallSession session, @Nullable MinecraftServer server, @Nullable UUID alreadyNotifiedId) {
         finalizeCallMessageIfConnected(session, server);
         ACTIVE_CALLS.remove(session.callId);
         Set<UUID> everyone = new HashSet<>(session.participants);
         everyone.addAll(session.ringing);
         for (UUID playerId : everyone) {
+            // PLAYER_TO_CALL.remove happens unconditionally, BEFORE the notify attempt below - one
+            // participant's packet send failing must never leave THEM (or anyone later in this loop) stuck
+            // registered in a session that's otherwise already torn down (see notifyEnded's own javadoc for
+            // why this ordering matters).
             PLAYER_TO_CALL.remove(playerId);
             if (server == null || playerId.equals(alreadyNotifiedId))
                 continue;
             ServerPlayer target = server.getPlayerList().getPlayer(playerId);
             if (target != null)
-                sendStateSync(target, session, CrazyPhoneCallStateSyncPacket.State.ENDED);
+                notifySafe(target, session, CrazyPhoneCallStateSyncPacket.State.ENDED);
         }
         SvcCallBridge.removeGroup(session.callId);
+        // The other conversation-liveness transition (see startCall's matching broadcast) - lets a
+        // contacts-list badge or the conversation screen's call icon clear once the call actually ends,
+        // instead of staying stuck showing "rejoinable" for a call that no longer exists.
+        if (server != null)
+            CrazyPhoneHelper.broadcastConversationCallActivity(server.overworld(), session.conversationId, false);
     }
 
-    /** No-op if the call never actually connected (nobody answered) - a missed/declined call has no
-     * duration worth logging, and never got a "call in progress" chat entry to finalize in the first place
-     * (see markConnectedIfFirstTime). */
+    /** A call that connected gets its "call in progress" chat entry finalized with the real duration; one
+     * that never connected at all (nobody answered, everyone declined, or the caller cancelled first) never
+     * got that entry in the first place (see markConnectedIfFirstTime) - it posts a "missed call" system
+     * message instead, so it isn't just silently invisible in the conversation feed. */
     private static void finalizeCallMessageIfConnected(CallSession session, MinecraftServer server) {
-        if (session.connectedAtEpochMillis < 0 || server == null)
+        if (server == null)
             return;
+        if (session.connectedAtEpochMillis < 0) {
+            CrazyPhoneHelper.addMissedCallMessage(server.overworld(), session.conversationId, session.initiator);
+            return;
+        }
         long durationMillis = System.currentTimeMillis() - session.connectedAtEpochMillis;
         CrazyPhoneHelper.finalizeCallMessage(server.overworld(), session.conversationId, session.callId, durationMillis);
     }
@@ -251,17 +314,38 @@ public final class CallRegistry {
             PLAYER_TO_CALL.remove(ringerId);
             ServerPlayer ringer = server.getPlayerList().getPlayer(ringerId);
             if (ringer != null)
-                sendStateSync(ringer, session, CrazyPhoneCallStateSyncPacket.State.ENDED);
+                notifySafe(ringer, session, CrazyPhoneCallStateSyncPacket.State.ENDED);
         }
         if (session.participants.size() <= 1)
             endCall(session, server, null);
+    }
+
+    /** Best-effort state notification - wrapped so one player's packet-send failure (a connection that's
+     * already gone, or in tests never completed a handshake) can never abort whatever loop called this
+     * partway through. Every call site that mutates CallRegistry's own maps (leave/endCall/expireRinging)
+     * already does so BEFORE calling this, specifically so a failure here is cosmetic (that one player just
+     * doesn't get the toast) rather than leaving them - or, worse, anyone processed after them in the same
+     * loop - permanently stuck registered in a call that's already ended for real. The CALLING/RINGING/ACTIVE
+     * call sites (starting or joining a call) don't have that same "stuck forever" failure mode since nothing
+     * is torn down there, but a failed notification still shouldn't be able to stop the REST of a multi-callee
+     * ring-out or a group's other participants from hearing about a new joiner. */
+    private static void notifySafe(ServerPlayer target, CallSession session, CrazyPhoneCallStateSyncPacket.State state) {
+        try {
+            sendStateSync(target, session, state);
+        } catch (Exception e) {
+            LOGGER.error("Failed to send call state {} to {}", state, target.getGameProfile().getName(), e);
+        }
     }
 
     private static void sendStateSync(ServerPlayer target, CallSession session, CrazyPhoneCallStateSyncPacket.State state) {
         List<String> callNumbers = state == CrazyPhoneCallStateSyncPacket.State.ENDED
                 ? List.of()
                 : CrazyPhoneHelper.getGroupMembers(target.level(), session.conversationId);
-        PacketDistributor.sendToPlayer(target, new CrazyPhoneCallStateSyncPacket(session.conversationId, session.callId, state, callNumbers));
+        List<UUID> participantIds = state == CrazyPhoneCallStateSyncPacket.State.ENDED
+                ? List.of()
+                : session.participants.stream().filter(id -> !id.equals(target.getUUID())).toList();
+        List<String> participantNames = participantIds.stream().map(id -> resolvePlayerName(target, id)).toList();
+        PacketDistributor.sendToPlayer(target, new CrazyPhoneCallStateSyncPacket(session.conversationId, session.callId, state, callNumbers, participantIds, participantNames));
         // Also written into the actual held phone's own item data, not just this targeted packet - vanilla's
         // equipment sync then carries it to nearby bystanders for free (see CrazyPhoneHelper), which the
         // packet above (sent only to this one player) never would.
@@ -269,6 +353,11 @@ public final class CallRegistry {
             CrazyPhoneHelper.clearCallStateForAllPhones(target);
         else
             CrazyPhoneHelper.setCallStateForMatchingPhones(target, callNumbers, state.name());
+    }
+
+    private static String resolvePlayerName(ServerPlayer contextPlayer, UUID playerId) {
+        ServerPlayer player = findPlayer(contextPlayer, playerId);
+        return player != null ? player.getGameProfile().getName() : "";
     }
 
     private static ServerPlayer findPlayer(ServerPlayer contextPlayer, UUID playerId) {

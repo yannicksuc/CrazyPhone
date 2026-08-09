@@ -43,7 +43,7 @@ public class CrazyPhoneCallingScreenScreen extends CrazyPhoneDefaultScreenScreen
 
         button_cancel = Button.builder(Component.translatable("gui.crazyphone.crazy_phone_calling_screen.button_cancel"), e -> {
             PacketDistributor.sendToServer(new CrazyPhoneCallActionMessage(CrazyPhoneCallActionMessage.HANGUP, menu.getConversationId()));
-        }).bounds(this.leftPos + 7, this.topPos + 160, 108, 20).build();
+        }).bounds(this.leftPos + 8, this.topPos + 158, 106, 14).build();
         this.addRenderableWidget(button_cancel);
     }
 

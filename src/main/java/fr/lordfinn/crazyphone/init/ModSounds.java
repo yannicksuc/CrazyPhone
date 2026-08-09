@@ -19,4 +19,9 @@ public class ModSounds {
             () -> SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath(Crazyphone.MODID, "ringback_tone")));
     public static final DeferredHolder<SoundEvent, SoundEvent> RINGTONE = REGISTRY.register("ringtone",
             () -> SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath(Crazyphone.MODID, "ringtone")));
+    /** Short buzz, retriggered every pulse cycle while a phone is ringing (see CallRingtoneManager /
+     * CallVibrationTiming) - layered on top of the ringtone melody, distinct from it, matching the visual
+     * hand-shake pulses. */
+    public static final DeferredHolder<SoundEvent, SoundEvent> PHONE_VIBRATING = REGISTRY.register("phone_vibrating",
+            () -> SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath(Crazyphone.MODID, "phone_vibrating")));
 }

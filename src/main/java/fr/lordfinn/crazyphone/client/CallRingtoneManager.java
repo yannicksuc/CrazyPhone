@@ -7,26 +7,37 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.client.resources.sounds.SoundInstance;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.sounds.SoundEvent;
+import net.minecraft.sounds.SoundSource;
 
 import fr.lordfinn.crazyphone.init.ModItems;
 import fr.lordfinn.crazyphone.init.ModSounds;
 import fr.lordfinn.crazyphone.network.CrazyPhoneCallStateSyncPacket.State;
 import fr.lordfinn.crazyphone.procedures.GetCrazyPhoneNumberProcedure;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * Drives the two call ringtones off the player's actual possession of the ringing/calling phone, not off
  * any screen being open - a real phone rings whether or not you've pulled it out of your pocket to look at
  * it. Runs every client tick, independent of CrazyPhoneCallingScreenScreen / CrazyPhoneIncomingCallScreenScreen
- * (which no longer touch these sounds themselves).
+ * (which no longer touch these sounds themselves). While RINGING (being called, not calling), also
+ * retriggers a short buzz every pulse cycle (see CallVibrationTiming), layered on top of the ringtone melody
+ * and synced to CrazyPhoneVibrationRenderer's visual hand-shake pulses.
  */
 @EventBusSubscriber(value = Dist.CLIENT)
 public class CallRingtoneManager {
+    private static final Logger LOGGER = LoggerFactory.getLogger("crazyphone");
     private static SoundInstance currentSound;
     private static State currentSoundFor;
+    private static long lastBuzzCycle = -1;
+    // TEMP diagnostic (see chat report of "no vibration/sound/ringtone at all") - remove once confirmed.
+    private static long ringingStartedGameTime = -1;
 
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
@@ -38,17 +49,40 @@ public class CallRingtoneManager {
         }
 
         State state = ClientCallState.getState();
-        State wanted = (state == State.CALLING || state == State.RINGING) && playerHasMatchingPhone(player, state)
+        boolean hasMatchingPhone = playerHasMatchingPhone(player, state);
+        State wanted = (state == State.CALLING || state == State.RINGING) && hasMatchingPhone
                 ? state
                 : null;
 
-        if (wanted == currentSoundFor)
-            return;
-        stopCurrent();
-        if (wanted != null) {
-            SoundEvent sound = wanted == State.CALLING ? ModSounds.RINGBACK_TONE.get() : ModSounds.RINGTONE.get();
-            currentSound = CallRingtonePlayer.play(sound);
-            currentSoundFor = wanted;
+        if (state == State.RINGING && !hasMatchingPhone)
+            LOGGER.info("[callring-diag] ClientCallState is RINGING but no held/carried phone matched callNumbers");
+
+        if (wanted != currentSoundFor) {
+            if (wanted == State.RINGING && mc.level != null) {
+                ringingStartedGameTime = mc.level.getGameTime();
+                LOGGER.info("[callring-diag] RINGING started at gameTime={}", ringingStartedGameTime);
+            } else if (currentSoundFor == State.RINGING && mc.level != null) {
+                LOGGER.info("[callring-diag] RINGING ended at gameTime={} (lasted {} ticks)", mc.level.getGameTime(), mc.level.getGameTime() - ringingStartedGameTime);
+            }
+            stopCurrent();
+            if (wanted != null) {
+                SoundEvent sound = wanted == State.CALLING ? ModSounds.RINGBACK_TONE.get() : ModSounds.RINGTONE.get();
+                currentSound = CallRingtonePlayer.play(sound);
+                currentSoundFor = wanted;
+            }
+        }
+
+        if (wanted == State.RINGING && mc.level != null) {
+            long cycleIndex = mc.level.getGameTime() / (long) CallVibrationTiming.CYCLE_TICKS;
+            if (cycleIndex != lastBuzzCycle) {
+                lastBuzzCycle = cycleIndex;
+                mc.getSoundManager().play(new SimpleSoundInstance(
+                        ModSounds.PHONE_VIBRATING.get().getLocation(), SoundSource.RECORDS, 0.7f, 1.0f,
+                        SoundInstance.createUnseededRandom(), false, 0,
+                        SoundInstance.Attenuation.NONE, 0.0, 0.0, 0.0, true));
+            }
+        } else {
+            lastBuzzCycle = -1; // so the buzz retriggers immediately the next time ringing starts
         }
     }
 

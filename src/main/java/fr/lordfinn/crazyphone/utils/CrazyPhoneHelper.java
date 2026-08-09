@@ -31,6 +31,7 @@ import fr.lordfinn.crazyphone.data.ConversationSavedData;
 import fr.lordfinn.crazyphone.data.PhoneRegistrySavedData;
 import fr.lordfinn.crazyphone.init.ModItems;
 import fr.lordfinn.crazyphone.item.CrazyPhoneItem;
+import fr.lordfinn.crazyphone.network.ConversationCallActivitySyncPacket;
 import fr.lordfinn.crazyphone.network.CrazyPhoneGroupMembershipNotificationPacket;
 import fr.lordfinn.crazyphone.network.CrazyPhoneNewMessageNotificationPacket;
 import fr.lordfinn.crazyphone.procedures.CrazyPhoneAddContactToPhoneProcedure;
@@ -342,15 +343,55 @@ public class CrazyPhoneHelper {
     }
 
     /** Fills in the final duration once a call ends, mutating the same chat entry {@link #addCallMessage}
-     * already posted. No packet is sent for this: the two call participants freeze their own live-ticking
-     * display themselves the moment they receive the call's own ENDED state sync (which they already get
-     * regardless of this), and anyone else just sees the correct value next time this conversation is
-     * loaded or refetched. No-op if the entry was already evicted by the message history cap. */
+     * already posted, and pushes the real value to every online conversation member (see
+     * {@link fr.lordfinn.crazyphone.network.CrazyPhoneNewCallDurationNotificationPacket}) - the two call
+     * participants already freeze their own live-ticking display locally the moment they get the call's own
+     * ENDED state sync, but a bystander merely watching someone else's call in a group conversation was never
+     * "live" for it and had no other way to learn it ended; without this push their copy just kept ticking
+     * an estimate forever. No-op (both for the stored entry and the push) if the entry was already evicted by
+     * the message history cap. */
     public static void finalizeCallMessage(Level world, String conversationId, UUID callId, long durationMillis) {
         synchronized (messageLock) {
             ConversationSavedData.get(world).updateCallMessage(conversationId, callId,
                     callTag -> callTag.putLong("call_duration_millis", durationMillis));
         }
+        MinecraftServer server = world.getServer();
+        if (server == null)
+            return;
+        for (String number : getGroupMembers(world, conversationId)) {
+            Contact receiver = getContact(world, number);
+            if (receiver == null || receiver.getUuid() == null)
+                continue;
+            ServerPlayer receiverPlayer = server.getPlayerList().getPlayer(UUID.fromString(receiver.getUuid()));
+            if (receiverPlayer != null)
+                PacketDistributor.sendToPlayer(receiverPlayer, new fr.lordfinn.crazyphone.network.CrazyPhoneNewCallDurationNotificationPacket(conversationId, callId, durationMillis));
+        }
+    }
+
+    /** Posts a "missed call" system message - the mirror-image case to {@link #addCallMessage}/
+     * {@link #finalizeCallMessage}, which only ever fire for a call that actually connected. Called from
+     * CallRegistry#endCall whenever a session's connectedAtEpochMillis was never set: the caller cancelled
+     * before anyone answered, everyone declined, or the ring timeout expired with no answer - all of those
+     * currently left NO trace at all in the conversation feed before this existed. Uses the generic
+     * system-message channel rather than the "call" message tag/live-ticking widget, since there's no
+     * duration or live state to show for a call that never actually happened. */
+    public static void addMissedCallMessage(Level world, String conversationId, UUID initiatorId) {
+        String callerName = resolveContactNameByUuid(world, conversationId, initiatorId);
+        Component text = callerName != null
+                ? Component.translatable("gui.crazyphone.crazy_phone_conversation.system_missed_call_from", callerName).withStyle(ChatFormatting.RED)
+                : Component.translatable("gui.crazyphone.crazy_phone_conversation.system_missed_call").withStyle(ChatFormatting.RED);
+        addSystemMessage(world, conversationId, text, new ItemStack(ModItems.CRAZY_PHONE.get()));
+    }
+
+    @Nullable
+    private static String resolveContactNameByUuid(LevelAccessor world, String conversationId, UUID playerId) {
+        String playerIdString = playerId.toString();
+        for (String number : getGroupMembers(world, conversationId)) {
+            Contact contact = getContact((Level) world, number);
+            if (contact != null && playerIdString.equals(contact.getUuid()))
+                return contact.getName();
+        }
+        return null;
     }
 
     private static void notifySystemMessage(Level world, String conversationId, CompoundTag messageTag) {
@@ -636,6 +677,46 @@ public class CrazyPhoneHelper {
             ItemStack stack = inventory.getItem(i);
             if (stack.getItem() == ModItems.CRAZY_PHONE.get())
                 setPhoneCallState(stack, "");
+        }
+    }
+
+    /** screenOpen/callState are written straight into the item's own persisted NBT (see the 4 methods
+     * above) so vanilla's equipment sync carries them to bystanders for free - but that also means they
+     * survive on disk through anything that skips the normal cleanup path: a server crash mid-call, or a
+     * player alt-F4ing instead of a graceful disconnect. CallRegistry itself is in-memory only and always
+     * starts empty on a fresh server boot, so "this player isn't actually in a call or looking at a screen"
+     * is always the correct baseline the instant they join - a genuinely still-active session (the server
+     * merely had a network hiccup, not a restart) gets its real state pushed back moments later by the
+     * normal CrazyPhoneCallStateSyncPacket/menu-open flow, so clearing here first is never wrong, only
+     * briefly premature. Called from PhoneAttachmentTypes#onPlayerLoggedIn - every join, not just the first
+     * one after a crash, since there's no cheap way to tell those apart from here. */
+    public static void reconcilePhoneStateOnJoin(ServerPlayer player) {
+        Inventory inventory = player.getInventory();
+        for (int i = 0; i < inventory.getContainerSize(); i++) {
+            ItemStack stack = inventory.getItem(i);
+            if (stack.getItem() == ModItems.CRAZY_PHONE.get()) {
+                setPhoneScreenOpen(stack, false);
+                setPhoneCallState(stack, "");
+            }
+        }
+    }
+
+    /** Tells every ONLINE member of {@code conversationId} - not just the call's own participants/ringers -
+     * whether it currently has a live call, so someone who left a group call (or was never on it) can still
+     * see it's happening and rejoin: the contacts-list badge and the conversation screen's call icon both
+     * read this via ClientCallState. Only call this on the two transitions that actually flip the boolean
+     * (a session starting fresh, or fully ending) - see CallRegistry. */
+    public static void broadcastConversationCallActivity(Level world, String conversationId, boolean active) {
+        MinecraftServer server = world.getServer();
+        if (server == null)
+            return;
+        for (String number : getGroupMembers(world, conversationId)) {
+            Contact member = getContact(world, number);
+            if (member == null || member.getUuid() == null)
+                continue;
+            ServerPlayer player = server.getPlayerList().getPlayer(UUID.fromString(member.getUuid()));
+            if (player != null)
+                PacketDistributor.sendToPlayer(player, new ConversationCallActivitySyncPacket(conversationId, active));
         }
     }
 

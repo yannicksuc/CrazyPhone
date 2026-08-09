@@ -134,6 +134,34 @@ public class ConversationSavedData extends SavedData {
         voiceAudio.remove(voiceId.toString());
     }
 
+    /** Sentinel {@code call_duration_millis} value meaning "connected, then the server went away before it
+     * could be gracefully ended (crash, forced kill, normal shutdown) - the real duration is unknown and
+     * unrecoverable", distinct from -1 ("still genuinely ongoing"). See {@link #finalizeOrphanedCalls()}. */
+    public static final long ORPHANED_CALL_DURATION_MILLIS = -2;
+
+    /** Called once when the server finishes starting (see fr.lordfinn.crazyphone.data.OrphanedCallCleanup):
+     * CallRegistry is in-memory only and always starts empty on a fresh boot, so ANY call message still
+     * showing call_duration_millis == -1 at this point can only mean the previous server process ended while
+     * that call was still active, and nothing will ever finalize it through the normal hangup/leave path.
+     * Without this, that entry would tick an ever-growing fake "in progress" duration forever, surviving
+     * every future relaunch since it's on disk. */
+    public void finalizeOrphanedCalls() {
+        boolean changed = false;
+        for (String conversationId : conversations.getAllKeys()) {
+            if (!(conversations.get(conversationId) instanceof ListTag messages))
+                continue;
+            for (int i = 0; i < messages.size(); i++) {
+                CompoundTag message = messages.getCompound(i);
+                if (message.get("call") instanceof CompoundTag callTag && callTag.getLong("call_duration_millis") == -1) {
+                    callTag.putLong("call_duration_millis", ORPHANED_CALL_DURATION_MILLIS);
+                    changed = true;
+                }
+            }
+        }
+        if (changed)
+            setDirty();
+    }
+
     /** Finds the most recent message in this conversation whose "call" sub-tag has the given call id and
      * lets the caller mutate it in place - used to fill in a call's final duration once it ends, without
      * appending a second "call ended" message. No-op if not found (e.g. already evicted by the history cap). */

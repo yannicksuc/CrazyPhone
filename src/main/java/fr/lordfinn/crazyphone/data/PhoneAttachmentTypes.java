@@ -11,6 +11,7 @@ import net.minecraft.server.level.ServerPlayer;
 
 import fr.lordfinn.crazyphone.Crazyphone;
 import fr.lordfinn.crazyphone.network.FeatureFlagSyncPacket;
+import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
 
 import java.util.function.Supplier;
 
@@ -24,6 +25,7 @@ public class PhoneAttachmentTypes {
     @SubscribeEvent
     public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
+            CrazyPhoneHelper.reconcilePhoneStateOnJoin(player);
             player.getData(PLAYER_PHONE_STATE).syncTo(player);
             PhoneRegistrySavedData.get(player.level()).syncTo(player);
             FeatureFlagSyncPacket.syncTo(player);

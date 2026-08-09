@@ -27,11 +27,19 @@ public class RegisterNewPhoneFromFormProcedure {
         updateItemStackTag(itemstack, textstate, "text:name", "name");
         updateItemStackTag(itemstack, textstate, "text:number", "number");
 
+        // An empty/never-typed name field falls back to the player's own Minecraft username rather than
+        // being stored blank - the client-side EditBox already suggests it as a placeholder (see
+        // CrazyPhonePasswordScreenScreen), but this is the actual write path, so it can't just trust the
+        // client sent something: a modified client (or simply clicking Validate without touching the field)
+        // could still submit an empty string.
+        String submittedName = textstate.containsKey("textin:name") ? (String) textstate.get("textin:name") : "";
+        String resolvedName = submittedName.isBlank() ? entity.getName().getString() : submittedName;
+
         // Create a new CompoundTag for the phone data
         phone = new CompoundTag();
         phone.putString("uuid", entity.getStringUUID());
         phone.putString("password", textstate.containsKey("textin:password") ? (String) textstate.get("textin:password") : "");
-        phone.putString("name", textstate.containsKey("textin:name") ? (String) textstate.get("textin:name") : "");
+        phone.putString("name", resolvedName);
         // Get the skin texture UUID from the player entity
         if (entity instanceof ServerPlayer) {
             ServerPlayer player = (ServerPlayer) entity;
@@ -57,7 +65,7 @@ public class RegisterNewPhoneFromFormProcedure {
 
         // Update itemstack with name and number from GUI state again
         updateItemStackTag(itemstack, textstate, "textin:number", "number");
-        updateItemStackTag(itemstack, textstate, "textin:name", "name");
+        CustomData.update(DataComponents.CUSTOM_DATA, itemstack, tag -> tag.putString("name", resolvedName));
 
         // Sync the data with the world
         PhoneRegistrySavedData.get(world).syncToAll(world);

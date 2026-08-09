@@ -20,6 +20,8 @@ hs_err_pid*
 # Common working directory
 run
 run-client2
+run-server
+run-gametest
 
 # Third-party jars not owned by this project - fetch/place them locally, see README
 libs/

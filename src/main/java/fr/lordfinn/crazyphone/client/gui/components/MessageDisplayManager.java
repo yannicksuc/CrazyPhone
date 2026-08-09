@@ -199,4 +199,18 @@ public class MessageDisplayManager {
     public List<MessageEntry> getMessages() {
         return messageEntries;
     }
+
+    /** Finds the call entry matching {@code callId} (if it's currently loaded in this screen's history) and
+     * pushes the server's authoritative final duration into it - see MessageWidget#applyFinalizedDuration.
+     * No-op if that call's entry isn't loaded here (evicted, or this conversation's history hasn't scrolled
+     * back far enough to include it), same as the pre-existing "next full reload picks up the real value"
+     * fallback for that case. */
+    public void updateCallDuration(java.util.UUID callId, long durationMillis) {
+        for (MessageEntry entry : messageEntries) {
+            if (callId.equals(entry.widget().getCallId())) {
+                entry.widget().applyFinalizedDuration(durationMillis);
+                return;
+            }
+        }
+    }
 }

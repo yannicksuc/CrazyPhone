@@ -3,6 +3,7 @@ package fr.lordfinn.crazyphone.procedures;
 import fr.lordfinn.crazyphone.data.PhoneRegistrySavedData;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.ItemStack;
@@ -25,6 +26,10 @@ class RegisterNewPhoneFromFormProcedureTest {
 
     RegisterNewPhoneFromFormProcedureTest() {
         when(entity.getStringUUID()).thenReturn("11111111-1111-1111-1111-111111111111");
+        // Used by the "name" field's fallback (see missingName_fallsBackToTheEntitysOwnName below) - Mockito
+        // returns null for an unstubbed Component-returning method, which would NPE the very first time that
+        // fallback is exercised rather than genuinely testing it.
+        when(entity.getName()).thenReturn(Component.literal("EntityFallbackName"));
     }
 
     @AfterEach
@@ -109,8 +114,30 @@ class RegisterNewPhoneFromFormProcedureTest {
     }
 
     @Test
-    void missingFormFields_defaultToEmptyStringsRatherThanThrowing() {
+    void missingFormFields_doNotThrow() {
         ItemStack stack = new ItemStack(Items.STICK);
         assertDoesNotThrow(() -> RegisterNewPhoneFromFormProcedure.execute(null, entity, stack, new HashMap<>()));
+    }
+
+    /** The name field is the one exception to "missing fields default to empty strings" - a submitted-blank
+     * (or never-typed) name falls back to the entity's own Minecraft username instead of being stored blank,
+     * matching the client-side EditBox's own ghosted placeholder (see CrazyPhonePasswordScreenScreen). */
+    @Test
+    void missingName_fallsBackToTheEntitysOwnName() {
+        ItemStack stack = new ItemStack(Items.STICK);
+        RegisterNewPhoneFromFormProcedure.execute(null, entity, stack, textstate("555", "", "1234"));
+
+        assertEquals("EntityFallbackName", PhoneRegistrySavedData.get(null).phones.getCompound("555").getString("name"));
+        assertEquals("EntityFallbackName", storedTag(stack, "name"));
+    }
+
+    @Test
+    void blankName_alsoFallsBackToTheEntitysOwnName() {
+        // Not just empty - a name field that's all whitespace (e.g. the player typed then deleted spaces)
+        // should be treated the same as never having typed anything, not stored as literal whitespace.
+        ItemStack stack = new ItemStack(Items.STICK);
+        RegisterNewPhoneFromFormProcedure.execute(null, entity, stack, textstate("555", "   ", "1234"));
+
+        assertEquals("EntityFallbackName", PhoneRegistrySavedData.get(null).phones.getCompound("555").getString("name"));
     }
 }

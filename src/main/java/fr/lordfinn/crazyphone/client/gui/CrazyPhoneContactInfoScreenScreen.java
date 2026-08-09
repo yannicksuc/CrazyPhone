@@ -128,6 +128,7 @@ public class CrazyPhoneContactInfoScreenScreen extends CrazyPhoneDefaultScreenSc
             playerInfo.getSkin();
 			this.fakePlayer = new RemotePlayer(level, profile);
 			this.fakePlayer.refreshDisplayName();
+			fr.lordfinn.crazyphone.client.FakePlayerPreview.showAllSkinLayers(this.fakePlayer);
 			level.addFreshEntity(this.fakePlayer);
 		});
 		} catch (Exception e) {

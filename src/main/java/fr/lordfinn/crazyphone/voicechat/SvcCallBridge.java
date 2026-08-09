@@ -50,6 +50,12 @@ public final class SvcCallBridge {
         return clientApi;
     }
 
+    /** Live per-player talking indicator for the InCall screen's yellow "speaking" border - null-safe so it
+     * can be polled every frame without the caller worrying about client-API init timing. */
+    public static boolean isTalking(UUID playerId) {
+        return clientApi != null && clientApi.isTalking(playerId);
+    }
+
     /** Creates a fresh, transient, hidden, isolated (no proximity leak either way) group for one call. */
     public static UUID createCallGroup(String name) {
         if (serverApi == null)
@@ -74,10 +80,14 @@ public final class SvcCallBridge {
             connection.setGroup(group);
     }
 
-    public static void leaveGroup(ServerPlayer player) {
+    /** Takes a bare UUID, not a ServerPlayer, so it also works for a player who's already fully logged out
+     * by the time CallRegistry gets around to cleaning up their call membership (see the periodic sweep in
+     * CallTerminationListener, which only ever has a UUID for someone PlayerList#getPlayer can't find
+     * anymore) - getConnectionOf only ever needed the UUID internally anyway. */
+    public static void leaveGroup(UUID playerId) {
         if (serverApi == null)
             return;
-        VoicechatConnection connection = serverApi.getConnectionOf(player.getUUID());
+        VoicechatConnection connection = serverApi.getConnectionOf(playerId);
         if (connection != null)
             connection.setGroup(null);
     }

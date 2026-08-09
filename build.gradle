@@ -30,39 +30,51 @@ neoForge {
     // Default run configurations.
     // These can be tweaked, removed, or duplicated as needed.
     runs {
+        // Two-player local testing (calls, group chats): run "server" (a dedicated, offline/cracked-mode
+        // server - see run-server/server.properties) alongside "client" and "client2", both of which
+        // auto-connect to it on launch via --quickPlayMultiplayer, no manual "Direct Connection" click
+        // needed. Usernames are fixed offline identities (not the real Microsoft-authenticated LordFinn/
+        // Bouteilles accounts - a cracked server can't verify those anyway), each with the standard
+        // offline-mode UUID derivation (UUID.nameUUIDFromBytes("OfflinePlayer:<name>")) so they're stable
+        // across runs rather than random each launch. Skins still resolve to the real accounts' real skins
+        // client-side regardless (see CrazyPhoneInCallScreenScreen's bust rendering / MojangProfileLookup) -
+        // that only needs a name, not an authenticated session, since skin data is public. Real Microsoft
+        // sessions (for an online-mode server) are handled in-game by In-Game Account Switcher, not here -
+        // see the mods folder in run/ and run-client2/.
         client {
             client()
-
-            // Comma-separated list of namespaces to load gametests from. Empty = all namespaces.
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+            programArguments.addAll '--username', 'LordFinn', '--uuid', '60b30ab6-a3a3-3980-9bfe-b84bc32ce8d0',
+                    '--quickPlayMultiplayer', 'localhost:25565'
         }
 
-        // A second client identity for testing two-player features (calls, group chats) locally: same mod,
-        // its own game directory (so it doesn't fight the main "client" run over options.txt/logs/world
-        // files), logged in as a different offline player so the two are distinct participants rather than
-        // the same "Dev" account twice. The UUID is the standard offline-mode derivation
-        // (UUID.nameUUIDFromBytes("OfflinePlayer:Dev2")) so it's stable across runs, not random each launch.
-        // Run this alongside "client" (open that one's world to LAN), then connect this one via
-        // multiplayer -> Direct Connection -> localhost:<the LAN port it shows>.
         client2 {
             client()
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
             gameDirectory = project.file('run-client2')
-            programArguments.addAll '--username', 'Dev2', '--uuid', '21cc3e25-481e-3cfa-8770-c5693a3e93a4'
+            programArguments.addAll '--username', 'Bouteilles', '--uuid', '94f877fb-ab97-3a21-a67f-715f0a12f124',
+                    '--quickPlayMultiplayer', 'localhost:25565'
         }
 
         server {
             server()
             programArgument '--nogui'
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+            gameDirectory = project.file('run-server')
         }
 
         // This run config launches GameTestServer and runs all registered gametests, then exits.
         // By default, the server will crash when no gametests are provided.
         // The gametest system is also enabled by default for other run configs under the /test command.
+        // Own gameDirectory, NOT the default "run" the plain client run uses - GameTestServer is a
+        // dedicated-server dist, and it otherwise shares "run"'s mods folder, which is meant for CLIENT-side
+        // dev conveniences (In-Game Account Switcher, Sodium, Iris) - IAS specifically crashes on that dist
+        // ("Attempted to load class net/minecraft/client/gui/screens/Screen for invalid dist
+        // DEDICATED_SERVER"), discovered the hard way when it landed in "run/mods" for the client run.
         gameTestServer {
             type = "gameTestServer"
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+            gameDirectory = project.file('run-gametest')
         }
 
         data {

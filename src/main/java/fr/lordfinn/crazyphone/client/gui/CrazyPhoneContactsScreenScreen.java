@@ -47,6 +47,10 @@ public class CrazyPhoneContactsScreenScreen extends CrazyPhoneDefaultScreenScree
 	private final static HashMap<String, Object> guistate = CrazyPhoneContactsScreenMenu.guistate;
 	private static final ResourceLocation NOTIFICATION_IMAGE = ResourceLocation.parse("crazyphone:textures/screens/crazyphone-notification.png");
 	private static final ResourceLocation IN_CALL_BADGE_IMAGE = ResourceLocation.parse("crazyphone:textures/screens/crazyphone-in-call-badge.png");
+	/** Amber variant of the badge above - a call is active for this conversation, but it's not the local
+	 * player's own currently-active call (they left it, or were never on it) - see
+	 * ClientCallState#hasJoinableCallElsewhere. */
+	private static final ResourceLocation REJOIN_CALL_BADGE_IMAGE = ResourceLocation.parse("crazyphone:textures/screens/crazyphone-rejoin-call-badge.png");
 	/** Player heads with a resolved skin profile render as a 3D skull model that visually reads larger
 	 * than other flat icons next to it - scaled down here (matching the add-contact tile) so they read as
 	 * the same size. */
@@ -473,7 +477,9 @@ public class CrazyPhoneContactsScreenScreen extends CrazyPhoneDefaultScreenScree
 		// number has to actually be on the local player's currently ACTIVE call, not just "some call
 		// somewhere", the same per-number gating ClientCallState.numberHasState was built for.
 		if (ClientCallState.numberHasState(person.getNumber(), State.ACTIVE)) {
-			guiGraphics.blit(IN_CALL_BADGE_IMAGE, iconX, iconY + 9, 0, 0, 7, 7, 7, 7);
+			guiGraphics.blit(IN_CALL_BADGE_IMAGE, iconX, iconY + 2, 0, 0, 14, 14, 14, 14);
+		} else if (ClientCallState.hasJoinableCallElsewhere(oneOnOneId)) {
+			guiGraphics.blit(REJOIN_CALL_BADGE_IMAGE, iconX, iconY + 2, 0, 0, 14, 14, 14, 14);
 		}
 
 		return hovered;
@@ -543,6 +549,14 @@ public class CrazyPhoneContactsScreenScreen extends CrazyPhoneDefaultScreenScree
 
 			if (pendingNotifications != null && pendingNotifications.contains(group.conversationId())) {
 				guiGraphics.blit(NOTIFICATION_IMAGE, iconX, iconY, 0, 0, 18, 18, 18, 18);
+			}
+
+			// Same rejoin badge as a 1:1 contact - a group call has no equivalent "am I on MY OWN active
+			// call here" green state to prefer, since ClientCallState only ever tracks one call's numbers
+			// (a 1:1 conversation's own contact number), not a group conversation id - hasJoinableCallElsewhere
+			// already excludes the local player's own active call by conversation id, so this alone is correct.
+			if (ClientCallState.hasJoinableCallElsewhere(group.conversationId())) {
+				guiGraphics.blit(REJOIN_CALL_BADGE_IMAGE, iconX, iconY + 2, 0, 0, 14, 14, 14, 14);
 			}
 
 			if (hovered) {

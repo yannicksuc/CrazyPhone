@@ -63,9 +63,19 @@ public class CallTerminationListener {
         for (UUID playerId : CallRegistry.getAllPlayersInCalls()) {
             try {
                 ServerPlayer player = server.getPlayerList().getPlayer(playerId);
-                if (player == null || player.hasDisconnected()) {
-                    if (player != null)
-                        CallRegistry.leave(player);
+                // player == null is the NORMAL disconnect case, not a rare corner one - PlayerList#getPlayer
+                // stops returning someone the instant they're actually gone, whereas hasDisconnected() only
+                // covers the brief mid-disconnect window on the way out. A previous version of this only
+                // called CallRegistry.leave() in the hasDisconnected() branch, silently skipping cleanup for
+                // anyone who'd already fully logged off - their call session (and its participants/ringing
+                // sets) then never emptied out, so it never ended: the "call in progress" chat entry kept
+                // ticking forever and the conversation became a phantom nobody could cleanly rejoin.
+                if (player == null) {
+                    CallRegistry.leave(playerId, server);
+                    continue;
+                }
+                if (player.hasDisconnected()) {
+                    CallRegistry.leave(player);
                     continue;
                 }
                 if (!stillHasPhone(player))

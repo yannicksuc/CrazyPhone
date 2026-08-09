@@ -10,5 +10,11 @@
     "sounds": [
       "crazyphone:ringtone"
     ]
+  },
+  "phone_vibrating": {
+    "category": "record",
+    "sounds": [
+      "crazyphone:phone-vibrating"
+    ]
   }
 }

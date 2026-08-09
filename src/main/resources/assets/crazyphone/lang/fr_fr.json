@@ -13,6 +13,7 @@
 
   "message.crazyphone.call_in_progress": "📞 Appel en cours — %s · %s",
   "message.crazyphone.call_summary": "📞 Appel — %s · %s",
+  "message.crazyphone.call_interrupted": "📞 Appel — %s (interrompu)",
 
   "gui.crazyphone.crazyphone_home_screen.button_photo": "Photo",
   "gui.crazyphone.crazyphone_home_screen.button_contacts": "Contacts",
@@ -36,7 +37,7 @@
   "gui.crazyphone.crazy_phone_password_screen.label_3630": "3630",
   "gui.crazyphone.crazy_phone_password_screen.label_numero_associe_au_telephone": "Numéro:",
   "gui.crazyphone.crazy_phone_password_screen.label_nom": "Nom:",
-  "gui.crazyphone.crazy_phone_password_screen.name": "Steve",
+  "gui.crazyphone.crazy_phone_password_screen.name": "Nom",
   "gui.crazyphone.crazy_phone_password_screen.button_valider": "Valider",
   "gui.crazyphone.crazy_phone_password_screen.tooltip_valider": "Enregistrer ce numéro de téléphone",
   "gui.crazyphone.crazy_phone_password_screen.button_empty": "",
@@ -81,6 +82,9 @@
   "gui.crazyphone.crazy_phone_conversation.tooltip_call": "Appeler",
   "gui.crazyphone.crazy_phone_conversation.tooltip_call_disabled": "Les appels sont désactivés sur ce serveur",
   "gui.crazyphone.crazy_phone_conversation.tooltip_reopen_call": "Réouvrir l'appel",
+  "gui.crazyphone.crazy_phone_conversation.tooltip_rejoin_call": "Rejoindre l'appel en cours",
+  "gui.crazyphone.crazy_phone_conversation.system_missed_call": "📵 Appel manqué",
+  "gui.crazyphone.crazy_phone_conversation.system_missed_call_from": "📵 Appel manqué de %s",
   "gui.crazyphone.crazy_phone_conversation.tooltip_send_voice_message": "Envoyer un message vocal",
   "gui.crazyphone.crazy_phone_conversation.tooltip_send_voice_message_disabled": "Les messages vocaux sont désactivés sur ce serveur",
   "gui.crazyphone.crazy_phone_conversation.button_voice_trash": "🗑",

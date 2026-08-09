@@ -320,6 +320,8 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
             color = 0x80FFFFFF;
         else if (hasMyActiveCallHere())
             color = 0xFF44FF66;
+        else if (ClientCallState.hasJoinableCallElsewhere(menu.getConversationId()))
+            color = 0xFFFFC107; // amber - same "you could join/rejoin this" color as the contacts-list badge
         else
             color = 0xFFFFFFFF;
         guiGraphics.drawString(this.font, "📞", iconX + 4, iconY + 4, color, true);
@@ -335,10 +337,14 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
         if (isCallStartDisabled())
             return Component.translatable("gui.crazyphone.crazy_phone_conversation.tooltip_call_disabled")
                     .withStyle(style -> style.withColor(ChatFormatting.RED));
-        String key = hasMyActiveCallHere()
-                ? "gui.crazyphone.crazy_phone_conversation.tooltip_reopen_call"
-                : "gui.crazyphone.crazy_phone_conversation.tooltip_call";
-        return Component.translatable(key).withStyle(style -> style.withColor(ChatFormatting.GREEN).withBold(true));
+        if (hasMyActiveCallHere())
+            return Component.translatable("gui.crazyphone.crazy_phone_conversation.tooltip_reopen_call")
+                    .withStyle(style -> style.withColor(ChatFormatting.GREEN).withBold(true));
+        if (ClientCallState.hasJoinableCallElsewhere(menu.getConversationId()))
+            return Component.translatable("gui.crazyphone.crazy_phone_conversation.tooltip_rejoin_call")
+                    .withStyle(style -> style.withColor(0xFFC107).withBold(true));
+        return Component.translatable("gui.crazyphone.crazy_phone_conversation.tooltip_call")
+                .withStyle(style -> style.withColor(ChatFormatting.GREEN).withBold(true));
     }
 
     private void onCallIconClicked() {
@@ -866,5 +872,16 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
         // Add message
         MessageEntry entry = messageManager.addMessage(newMessageData);
         this.addRenderableWidget(entry.widget());
+    }
+
+    /** Called directly by {@link fr.lordfinn.crazyphone.network.CrazyPhoneNewCallDurationNotificationPacket}
+     * when this screen is open for the conversation whose call just got its final duration - without this,
+     * a widget that was never THIS client's own live call (a bystander watching someone else's call in a
+     * group conversation) has no other way to learn it ended and would keep ticking an estimate forever.
+     */
+    public void updateCallDuration(String conversationId, UUID callId, long durationMillis) {
+        if (!conversationId.equals(this.menu.getConversationId()))
+            return;
+        messageManager.updateCallDuration(callId, durationMillis);
     }
 }

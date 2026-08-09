@@ -45,12 +45,12 @@ public class CrazyPhoneIncomingCallScreenScreen extends CrazyPhoneDefaultScreenS
 
         button_accept = Button.builder(Component.translatable("gui.crazyphone.crazy_phone_incoming_call_screen.button_accept"), e -> {
             PacketDistributor.sendToServer(new CrazyPhoneCallActionMessage(CrazyPhoneCallActionMessage.ANSWER, menu.getConversationId()));
-        }).bounds(this.leftPos + 7, this.topPos + 137, 108, 20).build();
+        }).bounds(this.leftPos + 8, this.topPos + 158, 52, 14).build();
         this.addRenderableWidget(button_accept);
 
         button_decline = Button.builder(Component.translatable("gui.crazyphone.crazy_phone_incoming_call_screen.button_decline"), e -> {
             PacketDistributor.sendToServer(new CrazyPhoneCallActionMessage(CrazyPhoneCallActionMessage.HANGUP, menu.getConversationId()));
-        }).bounds(this.leftPos + 7, this.topPos + 160, 108, 20).build();
+        }).bounds(this.leftPos + 62, this.topPos + 158, 52, 14).build();
         this.addRenderableWidget(button_decline);
     }
 

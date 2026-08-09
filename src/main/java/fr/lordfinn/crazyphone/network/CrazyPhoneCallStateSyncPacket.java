@@ -29,8 +29,14 @@ import java.util.UUID;
  * physically hold several registered phones at once. Without this, the item's "in call" texture (and
  * anything else client-side gating on "is THIS phone in the call") could only check "is this player in a
  * call at all", lighting up every phone the player held rather than just the one actually on the call.
+ *
+ * {@code participantIds}/{@code participantNames} (parallel lists, always the same length, always excluding
+ * the recipient themselves) carry the OTHER players actually on the call right now - the InCall screen's
+ * bust-portrait grid reads this. Piggybacking on the packet that's already resent to every affected player on
+ * every join/leave/answer (see CallRegistry) means the grid updates live with zero new sync call sites.
  */
-public record CrazyPhoneCallStateSyncPacket(String conversationId, UUID callId, State state, List<String> callNumbers) implements CustomPacketPayload {
+public record CrazyPhoneCallStateSyncPacket(String conversationId, UUID callId, State state, List<String> callNumbers,
+                                             List<UUID> participantIds, List<String> participantNames) implements CustomPacketPayload {
 
     public enum State {
         CALLING, RINGING, ACTIVE, ENDED
@@ -47,11 +53,15 @@ public record CrazyPhoneCallStateSyncPacket(String conversationId, UUID callId, 
                         buffer.writeUUID(message.callId);
                         buffer.writeEnum(message.state);
                         buffer.writeCollection(message.callNumbers, (buf, number) -> buf.writeUtf(number));
+                        buffer.writeCollection(message.participantIds, (buf, id) -> buf.writeUUID(id));
+                        buffer.writeCollection(message.participantNames, (buf, name) -> buf.writeUtf(name));
                     },
                     (RegistryFriendlyByteBuf buffer) -> new CrazyPhoneCallStateSyncPacket(
                             buffer.readUtf(),
                             buffer.readUUID(),
                             buffer.readEnum(State.class),
+                            buffer.readList(buf -> buf.readUtf()),
+                            buffer.readList(buf -> buf.readUUID()),
                             buffer.readList(buf -> buf.readUtf())
                     )
             );

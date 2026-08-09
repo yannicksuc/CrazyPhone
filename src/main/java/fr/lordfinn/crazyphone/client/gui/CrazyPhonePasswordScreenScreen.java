@@ -100,6 +100,15 @@ public class CrazyPhonePasswordScreenScreen extends CrazyPhoneDefaultScreenScree
         addWidget(number);
     }
 
+    /** Ghosted placeholder shown while the field is empty - the player's own Minecraft username, not a
+     * generic example name, since RegisterNewPhoneFromFormProcedure falls back to exactly that if the field
+     * is ever actually submitted empty. */
+    private String defaultNameSuggestion() {
+        return this.minecraft != null && this.minecraft.player != null
+                ? this.minecraft.player.getGameProfile().getName()
+                : Component.translatable("gui.crazyphone.crazy_phone_password_screen.name").getString();
+    }
+
     private void initNameField() {
         name = new EditBox(font, leftPos + 8, topPos + 72, 106, 18, Component.translatable("gui.crazyphone.crazy_phone_password_screen.name")) {
             @Override
@@ -115,11 +124,11 @@ public class CrazyPhonePasswordScreenScreen extends CrazyPhoneDefaultScreenScree
             }
 
             private void updateSuggestion() {
-                setSuggestion(getValue().isEmpty() ? Component.translatable("gui.crazyphone.crazy_phone_password_screen.name").getString() : null);
+                setSuggestion(getValue().isEmpty() ? defaultNameSuggestion() : null);
             }
         };
         name.setMaxLength(32767);
-        name.setSuggestion(Component.translatable("gui.crazyphone.crazy_phone_password_screen.name").getString());
+        name.setSuggestion(defaultNameSuggestion());
         guistate.put("text:name", name);
         addWidget(name);
     }
