@@ -20,32 +20,42 @@ import fr.lordfinn.crazyphone.init.ModItems;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 /**
- * Ends a player's call when they drop the phone or move it into a different inventory - but NOT when it's
- * just being carried on the cursor or reorganized within their own inventory (see the periodic sweep below,
- * which checks {@link net.minecraft.world.inventory.AbstractContainerMenu#getCarried()} separately from
- * {@link Inventory} for exactly that reason). Also runs the 5-second alone-in-call auto-kick. There is no
- * general mechanism elsewhere in this codebase for tracking a specific ItemStack instance across inventory
- * moves, so calls are bound to the PLAYER instead: "do they still possess a phone anywhere" is re-checked
- * periodically rather than trying to hook every possible container-click path individually.
+ * Ends a player's call when they've gone without the phone (dropped, or moved into a different inventory)
+ * for longer than {@code Config.phoneDropGraceSeconds} - but NOT when it's just being carried on the cursor
+ * or reorganized within their own inventory (see {@link #stillHasPhone}, which checks {@link
+ * net.minecraft.world.inventory.AbstractContainerMenu#getCarried()} separately from {@link Inventory} for
+ * exactly that reason), and not at all if they pick it back up within the grace window - a quick drop/pickup
+ * (bumping a hotbar key, a stray click) shouldn't interrupt an otherwise-fine call. Also runs the 5-second
+ * alone-in-call auto-kick. There is no general mechanism elsewhere in this codebase for tracking a specific
+ * ItemStack instance across inventory moves, so calls are bound to the PLAYER instead: "do they still
+ * possess a phone anywhere" is re-checked periodically rather than trying to hook every possible
+ * container-click path individually.
  */
 @EventBusSubscriber
 public class CallTerminationListener {
     private static final int SWEEP_INTERVAL_TICKS = 20;
     private static final Logger LOGGER = LoggerFactory.getLogger("crazyphone");
+    /** Game time each currently-phoneless in-call player was first noticed without their phone - absent
+     * entirely while they still have one. Seeded by {@link #onItemDropped} for a precise start time (rather
+     * than waiting for the next periodic sweep tick), read and ultimately acted on by {@link
+     * #sweepInventoryPossession}, which is also what clears an entry the moment the phone comes back. */
+    private static final Map<UUID, Long> phonelessSinceGameTime = new HashMap<>();
 
+    /** Just seeds {@link #phonelessSinceGameTime} with a precise timestamp - does NOT end the call itself
+     * (see the class javadoc for why: the periodic sweep owns that decision, after the grace period). */
     @SubscribeEvent
     public static void onItemDropped(ItemTossEvent event) {
         if (event.getEntity().getItem().getItem() != ModItems.CRAZY_PHONE.get())
             return;
-        if (event.getPlayer() instanceof ServerPlayer serverPlayer) {
-            try {
-                CallRegistry.leave(serverPlayer);
-            } catch (Exception e) {
-                LOGGER.error("Failed to end call for {} after dropping their phone", serverPlayer.getGameProfile().getName(), e);
-            }
+        if (event.getPlayer() instanceof ServerPlayer serverPlayer && CallRegistry.getSessionFor(serverPlayer.getUUID()).isPresent()) {
+            MinecraftServer server = serverPlayer.getServer();
+            if (server != null)
+                phonelessSinceGameTime.putIfAbsent(serverPlayer.getUUID(), server.overworld().getGameTime());
         }
     }
 
@@ -60,6 +70,7 @@ public class CallTerminationListener {
     }
 
     private static void sweepInventoryPossession(MinecraftServer server) {
+        long currentGameTime = server.overworld().getGameTime();
         for (UUID playerId : CallRegistry.getAllPlayersInCalls()) {
             try {
                 ServerPlayer player = server.getPlayerList().getPlayer(playerId);
@@ -72,14 +83,26 @@ public class CallTerminationListener {
                 // ticking forever and the conversation became a phantom nobody could cleanly rejoin.
                 if (player == null) {
                     CallRegistry.leave(playerId, server);
+                    phonelessSinceGameTime.remove(playerId);
                     continue;
                 }
                 if (player.hasDisconnected()) {
                     CallRegistry.leave(player);
+                    phonelessSinceGameTime.remove(playerId);
                     continue;
                 }
-                if (!stillHasPhone(player))
+                if (stillHasPhone(player)) {
+                    // Recovered within the grace window (or never lost it) - no interruption at all, and
+                    // critically, no clearCallStateForAllPhones() ever ran on the item while it was out of
+                    // their inventory, so its in_call texture flag was never touched and stays correct.
+                    phonelessSinceGameTime.remove(playerId);
+                    continue;
+                }
+                long since = phonelessSinceGameTime.computeIfAbsent(playerId, id -> currentGameTime);
+                if (currentGameTime - since >= Config.phoneDropGraceSeconds * 20L) {
                     CallRegistry.leave(player);
+                    phonelessSinceGameTime.remove(playerId);
+                }
             } catch (Exception e) {
                 // One player's call-teardown failing (eg. a mid-tick disconnect/packet-send hiccup) must
                 // never take down the whole server tick loop - every other player in a call still needs

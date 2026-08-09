@@ -12,6 +12,8 @@ import net.minecraft.server.level.ServerPlayer;
 import fr.lordfinn.crazyphone.Crazyphone;
 import fr.lordfinn.crazyphone.network.FeatureFlagSyncPacket;
 import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
+import fr.lordfinn.crazyphone.voicechat.SvcCallBridge;
+import fr.lordfinn.crazyphone.voicechat.VoicechatIntegration;
 
 import java.util.function.Supplier;
 
@@ -26,6 +28,15 @@ public class PhoneAttachmentTypes {
     public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
             CrazyPhoneHelper.reconcilePhoneStateOnJoin(player);
+            // CallRegistry itself is in-memory and always starts empty on a fresh server boot (see its own
+            // javadoc), but Simple Voice Chat's own per-connection group assignment is tracked entirely
+            // outside CrazyPhone and isn't reset by that - a player who reconnects mid-call (crash, forced
+            // kill, alt-F4 instead of a graceful hangup) can come back still assigned to a now-orphaned SVC
+            // group nobody else is in. Unconditionally clearing it here is never wrong for the same reason
+            // reconcilePhoneStateOnJoin's own clearing isn't: a genuinely still-active call session gets its
+            // real group membership pushed back moments later by the normal join/answer flow.
+            if (VoicechatIntegration.isAvailable())
+                SvcCallBridge.leaveGroup(player.getUUID());
             player.getData(PLAYER_PHONE_STATE).syncTo(player);
             PhoneRegistrySavedData.get(player.level()).syncTo(player);
             FeatureFlagSyncPacket.syncTo(player);

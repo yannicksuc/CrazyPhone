@@ -49,7 +49,7 @@ public final class CallBustPreview {
         FULL_BODY(0.50f, 0.95f),
         /** Head + shoulders only, with a little headroom above the head - used by the still calling/incoming
          * call previews, where a full-body pose isn't meaningful since nothing is actually moving yet. */
-        BUST(1.01f, 1.87f);
+        BUST(0.75f, 1.70f);
 
         private final float scaleFactor;
         private final float anchorOffsetFactor;

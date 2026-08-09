@@ -11,9 +11,9 @@
   "message.crazyphone.image_upload_failed": "❌ Failed to upload the image to the CrazyPhone.",
   "message.crazyphone.camera_feature_disabled": "❌ Camera photo insertion is disabled on this server.",
 
-  "message.crazyphone.call_in_progress": "📞 Call in progress — %s · %s",
-  "message.crazyphone.call_summary": "📞 Call — %s · %s",
-  "message.crazyphone.call_interrupted": "📞 Call — %s (interrupted)",
+  "message.crazyphone.call_in_progress": "📞 Call in progress - %s · %s",
+  "message.crazyphone.call_summary": "📞 Call - %s · %s",
+  "message.crazyphone.call_interrupted": "📞 Call - %s (interrupted)",
 
   "gui.crazyphone.crazyphone_home_screen.button_photo": "Photo",
   "gui.crazyphone.crazyphone_home_screen.button_contacts": "Contacts",

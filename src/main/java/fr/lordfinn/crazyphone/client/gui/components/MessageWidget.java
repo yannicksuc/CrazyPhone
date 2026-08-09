@@ -157,8 +157,16 @@ public class MessageWidget extends AbstractWidget {
 
     @Override
     public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
-        if (callId != null)
+        if (callId != null) {
             wrappedText.setMessage(computeCallText());
+            // AbstractWidget's own height field (what MessageDisplayManager#resetPositions actually reads
+            // via getHeight()) is otherwise frozen at whatever it was when this widget was constructed - see
+            // the constructor's super() call - so without this, a call entry whose real text (set above)
+            // needs more room than the empty placeholder it was built with (e.g. a 2-line "interrupted"
+            // message vs the 1-line construction-time height) permanently understates its own height to the
+            // layout pass, and the neighbor above it never gets pushed up to make room.
+            this.setHeight(wrappedText.getHeight());
+        }
         wrappedText.renderWidget(guiGraphics, mouseX, mouseY, partialTicks);
         if (voiceId != null)
             renderVoiceContent(guiGraphics, mouseX, mouseY);

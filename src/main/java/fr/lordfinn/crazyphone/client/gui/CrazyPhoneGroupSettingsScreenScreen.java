@@ -297,7 +297,7 @@ public class CrazyPhoneGroupSettingsScreenScreen extends CrazyPhoneDefaultScreen
         if (hovered)
             CursorEffects.requestPointerCursor();
 
-        drawStateToggle(guiGraphics, toggleX, toggleY, staged); // staged for exclusion -> arrow (put back), else cross (exclude)
+        drawStateToggle(guiGraphics, toggleX, toggleY, !staged); // staged for exclusion -> arrow (put back), else cross (exclude)
 
         if (!hovered)
             return null;
@@ -321,7 +321,7 @@ public class CrazyPhoneGroupSettingsScreenScreen extends CrazyPhoneDefaultScreen
         if (hovered)
             CursorEffects.requestPointerCursor();
 
-        drawStateToggle(guiGraphics, toggleX, toggleY, !staged); // staged for addition -> cross (cancel), else arrow (add)
+        drawStateToggle(guiGraphics, toggleX, toggleY, staged); // staged for addition -> cross (cancel), else arrow (add)
 
         if (!hovered)
             return null;

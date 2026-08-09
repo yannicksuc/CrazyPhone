@@ -67,6 +67,10 @@ public class Config {
             .comment("How long a call stays open with only one participant left before that participant is automatically removed from it.")
             .defineInRange("aloneInCallKickSeconds", 5, 1, 60);
 
+    private static final ModConfigSpec.IntValue PHONE_DROP_GRACE_SECONDS = BUILDER
+            .comment("How long a player can be without their phone (dropped, or moved to another inventory) during a call before it actually ends - picking it back up within this window keeps the call going uninterrupted.")
+            .defineInRange("phoneDropGraceSeconds", 5, 0, 60);
+
     private static final ModConfigSpec.IntValue MAX_VOICE_MESSAGES_STORED_PER_CONVERSATION = BUILDER
             .comment("Maximum number of voice messages (with their audio) kept on disk per conversation - voice audio is the heaviest payload, capped separately from text/image messages.")
             .defineInRange("maxVoiceMessagesStoredPerConversation", 30, 5, 500);
@@ -89,6 +93,7 @@ public class Config {
     public static boolean voicechatIntegrationEnabled;
     public static int callRingTimeoutSeconds;
     public static int aloneInCallKickSeconds;
+    public static int phoneDropGraceSeconds;
     public static int maxVoiceMessagesStoredPerConversation;
     public static int maxVoiceMessageRecordingSeconds;
 
@@ -106,6 +111,7 @@ public class Config {
         voicechatIntegrationEnabled = VOICECHAT_INTEGRATION_ENABLED.get();
         callRingTimeoutSeconds = CALL_RING_TIMEOUT_SECONDS.get();
         aloneInCallKickSeconds = ALONE_IN_CALL_KICK_SECONDS.get();
+        phoneDropGraceSeconds = PHONE_DROP_GRACE_SECONDS.get();
         maxVoiceMessagesStoredPerConversation = MAX_VOICE_MESSAGES_STORED_PER_CONVERSATION.get();
         maxVoiceMessageRecordingSeconds = MAX_VOICE_MESSAGE_RECORDING_SECONDS.get();
     }

@@ -27,9 +27,12 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
- * Active-call screen. Escape (handled by the base class's keyPressed - closes the container) deliberately
- * does NOT end the call: call state lives in the server-side CallRegistry, entirely decoupled from this
- * menu's lifecycle, so closing this screen just stops looking at it.
+ * Active-call screen. Escape (handled by the base class's keyPressed - closes the container), and now also
+ * the Back/Home buttons (left enabled here, unlike most other CrazyPhoneDefaultScreenScreen subclasses),
+ * deliberately do NOT end the call: call state lives in the server-side CallRegistry, entirely decoupled
+ * from this menu's lifecycle, so navigating away just stops looking at it - the call keeps running and the
+ * conversation screen's call icon (see CrazyPhoneConversationScreen) is how the player gets back to this
+ * screen. Only the Lock button stays disabled, since locking mid-call has no meaningful effect here.
  *
  * Renders every OTHER participant (never the local player - the server already excludes them, see
  * CrazyPhoneInCallScreenMenu) as a live full-body bust (see CallBustPreview), laid out in a grid that grows
@@ -65,8 +68,6 @@ public class CrazyPhoneInCallScreenScreen extends CrazyPhoneDefaultScreenScreen<
     @Override
     public void init() {
         super.init();
-        setBackButtonActive(false);
-        setHomeButtonActive(false);
         setLockButtonActive(false);
         ClientCallState.setListener(callStateListener);
         updateParticipants(menu.getParticipants());
