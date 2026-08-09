@@ -8,8 +8,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
 
@@ -666,6 +669,12 @@ public class CrazyPhoneHelper {
             if (stack.getItem() == ModItems.CRAZY_PHONE.get() && callNumbers.contains(GetCrazyPhoneNumberProcedure.execute(stack)))
                 setPhoneCallState(stack, state);
         }
+        // While a custom phone menu is open, vanilla's per-tick slot broadcast never looks at the hotbar
+        // (see CrazyPhoneDefaultScreenMenu's constructor for the same fix) - force it here too, or the
+        // calling/called_in/in_call texture never reaches the client until the menu happens to close.
+        // broadcastChanges, not broadcastFullState - see that same call site for why full-content resync
+        // visibly flickers the held item.
+        player.inventoryMenu.broadcastChanges();
     }
 
     /** Only one call can ever be active per player (CallRegistry refuses to stack a second one), so ending a
@@ -678,6 +687,7 @@ public class CrazyPhoneHelper {
             if (stack.getItem() == ModItems.CRAZY_PHONE.get())
                 setPhoneCallState(stack, "");
         }
+        player.inventoryMenu.broadcastChanges();
     }
 
     /** screenOpen/callState are written straight into the item's own persisted NBT (see the 4 methods
@@ -756,7 +766,7 @@ public class CrazyPhoneHelper {
         PhoneRegistrySavedData registry = PhoneRegistrySavedData.get(world);
         if (!(registry.groupMeta.get(conversationId) instanceof CompoundTag)) {
             CompoundTag meta = new CompoundTag();
-            meta.putString("name", "");
+            meta.putString("name", generateDefaultGroupName(world, members));
             meta.put("icon", new CompoundTag());
             meta.putString("admin", adminNumber == null ? "" : adminNumber);
             ListTag membersTag = new ListTag();
@@ -768,6 +778,63 @@ public class CrazyPhoneHelper {
 
         addToGroupsList(registry, conversationId, getGroupMembers(world, conversationId));
         registry.setDirty();
+    }
+
+    private static final Pattern VOWEL_GROUP = Pattern.compile("[aeiouyAEIOUY]+");
+    private static final Random GROUP_NAME_RANDOM = new Random();
+
+    /** Splits a name into rough syllable-sized chunks (e.g. "Georges" -> "Geor", "ges"; "Bouteilles" ->
+     * "Bou", "teil", "les") - a deliberately simple heuristic (no real hyphenation dictionary), good enough
+     * for a fun randomized name and not meant to be linguistically precise. Follows the "maximal onset"
+     * convention for where to split a consonant cluster sitting between two vowel groups: a single
+     * consonant starts the next syllable whole ("Bou" | "teilles" has just "t" between "ou" and "ei"), but
+     * a cluster of 2+ splits down the middle, leaving everything but the last consonant attached to the
+     * PRECEDING syllable instead - e.g. "rg" between "eo" and "e" in "Georges" gives "Geor" + "ges", not
+     * "Geo" + "rges" (putting the whole cluster on the next syllable reads as an unnatural split). A name
+     * with no vowels at all (numbers, symbols-only) comes back as a single "syllable": itself. */
+    private static List<String> splitIntoSyllables(String word) {
+        Matcher vowelGroups = VOWEL_GROUP.matcher(word);
+        List<int[]> vowelRanges = new ArrayList<>();
+        while (vowelGroups.find())
+            vowelRanges.add(new int[]{vowelGroups.start(), vowelGroups.end()});
+        if (vowelRanges.size() <= 1)
+            return List.of(word);
+
+        List<Integer> boundaries = new ArrayList<>();
+        boundaries.add(0);
+        for (int i = 0; i < vowelRanges.size() - 1; i++) {
+            int consonantStart = vowelRanges.get(i)[1];
+            int consonantEnd = vowelRanges.get(i + 1)[0];
+            boundaries.add(consonantEnd - consonantStart <= 1 ? consonantStart : consonantEnd - 1);
+        }
+        boundaries.add(word.length());
+
+        List<String> syllables = new ArrayList<>();
+        for (int i = 0; i < boundaries.size() - 1; i++) {
+            String syllable = word.substring(boundaries.get(i), boundaries.get(i + 1));
+            if (!syllable.isEmpty())
+                syllables.add(syllable);
+        }
+        return syllables.isEmpty() ? List.of(word) : syllables;
+    }
+
+    /** Builds a fun default group name by picking one random syllable from each member's own contact name
+     * and running them together into a single portmanteau (e.g. "LordFinn" + "Bouteilles" + "Georges" might
+     * come out "Lo" + "teil" + "Geo" = "LoteilGeo") - used as {@code createGroup}'s initial name instead of
+     * a plain ", "-joined list of full names. The admin can always rename it afterward from the group
+     * settings screen; this is only ever the starting point. */
+    private static String generateDefaultGroupName(Level world, List<String> memberNumbers) {
+        List<String> parts = new ArrayList<>();
+        for (String number : memberNumbers) {
+            Contact contact = getContact(world, number);
+            String name = contact != null ? contact.getName() : null;
+            if (name == null || name.isBlank())
+                continue;
+            List<String> syllables = splitIntoSyllables(name);
+            String chosen = syllables.get(GROUP_NAME_RANDOM.nextInt(syllables.size()));
+            parts.add(Character.toUpperCase(chosen.charAt(0)) + chosen.substring(1).toLowerCase());
+        }
+        return String.join("", parts);
     }
 
     /** Makes sure every given member's phone registry entry lists {@code conversationId} under "groups" -

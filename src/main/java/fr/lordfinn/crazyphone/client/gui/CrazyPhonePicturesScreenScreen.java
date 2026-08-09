@@ -22,6 +22,7 @@ import fr.lordfinn.crazyphone.network.CrazyPhonePicturesScreenButtonMessage;
 import fr.lordfinn.crazyphone.utils.CameraModHelper;
 import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
 import fr.lordfinn.crazyphone.utils.ScreenMenuUtils;
+import fr.lordfinn.crazyphone.client.gui.components.CrazyPhoneColors;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -88,7 +89,7 @@ public class CrazyPhonePicturesScreenScreen extends CrazyPhoneDefaultScreenScree
 		renderThumbnails(guiGraphics);
 	}
 
-	private static final int SELECTED_BORDER_COLOR = 0xFFFFC107; // amber - more orange than pure yellow
+	private static final int SELECTED_BORDER_COLOR = CrazyPhoneColors.ACCENT_YELLOW;
 	private static final int SELECTED_INSET = 2; // per side - 4px total, matching the spec's "shrink by 4px, centered"
 
 	/** Instagram-feed style: each slot draws the real photo, center-cropped to fill the square (not the

@@ -13,6 +13,7 @@ import java.util.function.BiConsumer;
 import fr.lordfinn.crazyphone.Config;
 import fr.lordfinn.crazyphone.FeatureFlag;
 import fr.lordfinn.crazyphone.client.ClientCallState;
+import fr.lordfinn.crazyphone.client.gui.components.CrazyPhoneColors;
 import fr.lordfinn.crazyphone.client.ClientFeatureFlagState;
 import fr.lordfinn.crazyphone.client.ConversationClientCache;
 import fr.lordfinn.crazyphone.client.CursorEffects;
@@ -70,16 +71,17 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
     private final static HashMap<String, Object> guistate = CrazyPhoneConversationMenu.guistate;
     /** Top-right corner of the header banner, same position/size convention as the contacts screen's
      * add-contact icon - only shown for group conversations. */
-    private static final int GROUP_SETTINGS_ICON_X = 100;
+    private static final int GROUP_SETTINGS_ICON_X = 99;
     private static final int GROUP_SETTINGS_ICON_Y = 9;
     private final ItemStack groupSettingsIcon = CrazyPhoneConversationMenu.createGroupSettingsIcon();
     private final Component groupSettingsTooltip = Component.translatable("gui.crazyphone.crazy_phone_conversation.tooltip_group_settings")
             .withStyle(style -> style.withColor(ChatFormatting.GOLD).withBold(true));
-    /** Sits immediately left of the group-settings icon when both are shown (group conversations), or in
-     * that same slot when there's no group icon to share it with (1:1 conversations). */
+    /** Sits immediately left of the group-settings icon when both are shown (group conversations, flush
+     * against it - no gap between the two buttons), or in that same slot when there's no group icon to
+     * share it with (1:1 conversations). */
     private static final int CALL_ICON_Y = 9;
     private int callIconX() {
-        return this.leftPos + (menu.isGroup() ? GROUP_SETTINGS_ICON_X - 18 : GROUP_SETTINGS_ICON_X);
+        return this.leftPos + (menu.isGroup() ? GROUP_SETTINGS_ICON_X - 16 : GROUP_SETTINGS_ICON_X);
     }
     private EditBox message;
     private Button button_envoyer;
@@ -268,7 +270,10 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
         ItemStack contactHead = resolveHeaderIcon(otherContacts);
         String names = otherContacts.stream().map(Contact::getName).collect(java.util.stream.Collectors.joining(", "));
         String title = (menu.isGroup() && !menu.getGroupName().isEmpty()) ? menu.getGroupName() : names;
-        renderHeader(guiGraphics, contactHead, Component.literal(title));
+        // The title's scroll boundary must stop at whichever right-side header button sits closest to it -
+        // the call icon, which itself shifts left to sit flush against the group-settings cog when both are
+        // shown (see callIconX()) - not a fixed constant, or the title would scroll behind/under a button.
+        renderHeader(guiGraphics, contactHead, Component.literal(title), callIconX() - this.leftPos);
     }
 
     private ItemStack resolveHeaderIcon(List<Contact> otherContacts) {
@@ -321,7 +326,7 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
         else if (hasMyActiveCallHere())
             color = 0xFF44FF66;
         else if (ClientCallState.hasJoinableCallElsewhere(menu.getConversationId()))
-            color = 0xFFFFC107; // amber - same "you could join/rejoin this" color as the contacts-list badge
+            color = CrazyPhoneColors.ACCENT_YELLOW; // same "you could join/rejoin this" color as the contacts-list badge
         else
             color = 0xFFFFFFFF;
         guiGraphics.drawString(this.font, "📞", iconX + 4, iconY + 4, color, true);
@@ -342,7 +347,7 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
                     .withStyle(style -> style.withColor(ChatFormatting.GREEN).withBold(true));
         if (ClientCallState.hasJoinableCallElsewhere(menu.getConversationId()))
             return Component.translatable("gui.crazyphone.crazy_phone_conversation.tooltip_rejoin_call")
-                    .withStyle(style -> style.withColor(0xFFC107).withBold(true));
+                    .withStyle(style -> style.withColor(CrazyPhoneColors.ACCENT_YELLOW & 0xFFFFFF).withBold(true));
         return Component.translatable("gui.crazyphone.crazy_phone_conversation.tooltip_call")
                 .withStyle(style -> style.withColor(ChatFormatting.GREEN).withBold(true));
     }
@@ -532,7 +537,9 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
         // message feed's scissor rect, which extends to leftPos+200 - well past the phone's right edge,
         // a pre-existing harmless quirk that only mattered once something this wide tried to use it): a
         // system message spanning past x=122 rendered outside the visible phone background entirely.
-        messageManager = new MessageDisplayManager(this.leftPos + 8, this.topPos + 157, 91, 108, 0.75f,
+        // 106, not 108 - matches the symmetric 8px margin on both sides (122 - 8 - 8), same width as the
+        // call screens' own GRID_WIDTH; 108 was overshooting the right margin by 2px.
+        messageManager = new MessageDisplayManager(this.leftPos + 8, this.topPos + 157, 91, 106, 0.75f,
                 this.menu.getContacts(), ownerNumber);
 
         // Replay whatever pages have already come back from the server (survives resize, which rebuilds

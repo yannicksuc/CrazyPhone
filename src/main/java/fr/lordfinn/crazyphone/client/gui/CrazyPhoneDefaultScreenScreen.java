@@ -15,6 +15,7 @@ import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.world.item.ItemStack;
 
+import fr.lordfinn.crazyphone.client.gui.components.ScrollingText;
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneDefaultScreenMenu;
 import fr.lordfinn.crazyphone.network.CrazyPhoneDefaultScreenButtonMessage;
 
@@ -63,16 +64,36 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 
 	public abstract HashMap<String, Object> getWidgets();
 
+	/** Where the header icon sits, and where the title text starts just past it - both relative to leftPos. */
+	private static final int HEADER_ICON_X = 7;
+	private static final int HEADER_TITLE_X = 26;
+	/** Right edge of the header banner itself, relative to leftPos (banner starts at +4, is 114px wide). */
+	private static final int HEADER_BANNER_RIGHT_X = 118;
+	/** Small breathing room between the scrolling title and whatever sits immediately to its right. */
+	private static final int HEADER_TITLE_RIGHT_GAP = 2;
+
 	/**
 	 * Shared page-title banner: an icon followed by a title, in a strip at the top of the phone screen.
 	 * Every screen but the home page shows one - originally introduced (and duplicated) as the
 	 * conversation screen's per-contact header, now generalized so every screen can reuse the exact same
-	 * texture/layout instead of re-drawing it by hand.
+	 * texture/layout instead of re-drawing it by hand. The title scrolls (see ScrollingText) instead of
+	 * overflowing/overlapping whatever's to its right when it's too long to fit - e.g. a group's name
+	 * auto-built from every member's name easily exceeds the available width.
 	 */
 	protected void renderHeader(GuiGraphics guiGraphics, ItemStack icon, Component title) {
+		renderHeader(guiGraphics, icon, title, HEADER_BANNER_RIGHT_X);
+	}
+
+	/** @param rightBoundX where the title's available width stops, relative to leftPos - pass the exact x
+	 *                     of whichever right-side icon sits closest to the title (e.g. the conversation
+	 *                     screen's call icon, which itself shifts left of the group-settings cog when both
+	 *                     are shown) so the title scrolls under it, not behind or past it. Defaults to the
+	 *                     header banner's own right edge when a screen has no such icon. */
+	protected void renderHeader(GuiGraphics guiGraphics, ItemStack icon, Component title, int rightBoundX) {
 		guiGraphics.blit(HEADER_BANNER_IMAGE, this.leftPos + 4, this.topPos + 9, 0, 0, 0, 114, 18, 114, 18);
-		guiGraphics.renderItem(icon, this.leftPos + 8, this.topPos + 9);
-		guiGraphics.drawString(this.font, title, this.leftPos + 27, this.topPos + 14, 0x404040, false);
+		guiGraphics.renderItem(icon, this.leftPos + HEADER_ICON_X, this.topPos + 9);
+		int availableWidth = Math.max(0, rightBoundX - HEADER_TITLE_RIGHT_GAP - HEADER_TITLE_X);
+		ScrollingText.render(guiGraphics, this.font, title, this.leftPos + HEADER_TITLE_X, this.topPos + 14, availableWidth, 0x404040);
 	}
 
 	public static HashMap<String, String> getEditBoxAndCheckBoxValues() {

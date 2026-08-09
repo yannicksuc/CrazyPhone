@@ -54,14 +54,12 @@ public class CrazyPhoneVibrationRenderer {
         if (envelope <= 0f)
             return;
 
-        // Amplitudes calibrated up from an earlier pass that was too subtle to notice on a held item at
-        // normal FOV/scale - these are deliberately closer to vanilla's own swing-offset magnitudes than a
-        // truly "physical" buzz would be, since a real phone's actual vibration amplitude is imperceptible
-        // at this render scale.
+        // TEMP diagnostic amplitude (way past anything reasonable) - proves whether this transform reaches
+        // the render at all before tuning it back down to something that actually looks like a phone buzz.
         PoseStack poseStack = event.getPoseStack();
-        float shakeX = Mth.sin(time * 3.5f) * 0.07f * envelope;
-        float shakeY = Mth.cos(time * 5.3f) * 0.05f * envelope;
-        float shakeRot = Mth.sin(time * 4.1f) * 14.0f * envelope;
+        float shakeX = Mth.sin(time * 3.5f) * 0.4f * envelope;
+        float shakeY = Mth.cos(time * 5.3f) * 0.3f * envelope;
+        float shakeRot = Mth.sin(time * 4.1f) * 45.0f * envelope;
         poseStack.translate(shakeX, shakeY, 0);
         poseStack.mulPose(Axis.ZP.rotationDegrees(shakeRot));
     }

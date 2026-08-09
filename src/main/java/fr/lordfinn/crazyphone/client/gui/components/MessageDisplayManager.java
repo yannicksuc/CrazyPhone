@@ -50,6 +50,15 @@ public class MessageDisplayManager {
     }
 
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+        // A call entry's own text (and therefore height) changes every frame while live - see
+        // MessageWidget#computeCallText, called from its renderWidget before this loop even runs - but
+        // resetPositions() was previously only invoked on scroll/add/prepend, never in response to a
+        // widget's height changing on its own. That left every OTHER entry's cached Y position stale
+        // relative to a call bubble that had since grown or shrunk (e.g. from the empty placeholder text
+        // it's constructed with to its real "in progress"/"interrupted"/summary text on the very next
+        // frame), overlapping whichever entry sits just above it. Recomputing every frame is cheap for a
+        // handful of visible messages and guarantees positions never drift out of sync with actual heights.
+        resetPositions();
         MessageEntry hoveredImageEntry = null;
         for (MessageEntry entry : messageEntries) {
             if (entry.widget().isImageHovered(mouseX, mouseY)) {

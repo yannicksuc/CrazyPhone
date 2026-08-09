@@ -2,6 +2,7 @@ package fr.lordfinn.crazyphone.utils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -38,6 +39,7 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
@@ -626,7 +628,14 @@ public class ScreenMenuUtils {
         // working hangup-of-an-active-call UI) would be misleading here since there's no live audio yet.
         boolean stillWaitingForAnyAnswer = player.getUUID().equals(session.initiator) && session.participants.size() == 1;
         if (stillWaitingForAnyAnswer) {
-            openCallingMenu(player, session.conversationId, session.callId, displayTitle, session.participants);
+            // Unlike every other case, the callee(s) being shown on THIS screen aren't in session.participants
+            // yet (they're only added once they actually answer) - they're still in session.ringing. Without
+            // this the Calling screen would always compute an empty "others" list (see populateCallScreenBuffer's
+            // viewer-exclusion filter) since the only entry in participants at this point is the viewer
+            // themselves.
+            Set<UUID> callerAndRinging = new HashSet<>(session.participants);
+            callerAndRinging.addAll(session.ringing);
+            openCallingMenu(player, session.conversationId, session.callId, displayTitle, callerAndRinging);
         } else {
             openInCallMenu(player, session.conversationId, session.callId, displayTitle, session.participants);
         }
@@ -712,10 +721,15 @@ public class ScreenMenuUtils {
         }
     }
 
-    /** {@code participantIds} is written as (uuid, name) pairs excluding the viewer themselves - only the
-     * InCall screen actually reads them (its bust-portrait grid), but writing them here too (not just in the
-     * live CrazyPhoneCallStateSyncPacket resyncs) means the grid is already populated the instant the screen
-     * first opens, not one packet round-trip later. */
+    private static final EquipmentSlot[] CALL_PREVIEW_ARMOR_SLOTS = {EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET};
+
+    /** {@code participantIds} is written as (uuid, name, armor snapshot) tuples excluding the viewer
+     * themselves - only the call screens' bust previews actually read them (see CallBustPreview), but
+     * writing them here too (not just in the live CrazyPhoneCallStateSyncPacket resyncs) means the preview
+     * is already populated the instant the screen first opens, not one packet round-trip later. The armor
+     * (helmet/chestplate/leggings/boots, in that order) is a one-time snapshot of what the participant is
+     * actually wearing right now - CallBustPreview never re-syncs it afterward, so mid-call gear changes
+     * won't retroactively show up on an already-open screen. */
     private static void populateCallScreenBuffer(FriendlyByteBuf buf, Player player, String conversationId, UUID callId, String displayTitle, Set<UUID> participantIds) {
         buf.writeBlockPos(player.blockPosition());
         buf.writeByte(0); // Always Main Hand
@@ -729,6 +743,10 @@ public class ScreenMenuUtils {
             buf.writeUUID(id);
             ServerPlayer other = server != null ? server.getPlayerList().getPlayer(id) : null;
             buf.writeUtf(other != null ? other.getGameProfile().getName() : "");
+            for (EquipmentSlot slot : CALL_PREVIEW_ARMOR_SLOTS) {
+                ItemStack armor = other != null ? other.getItemBySlot(slot) : ItemStack.EMPTY;
+                buf.writeNbt(CrazyPhoneHelper.encodeItemStack(player.level(), armor));
+            }
         }
     }
 }

@@ -279,6 +279,16 @@ public class MessageWidget extends AbstractWidget {
                 ? String.valueOf((int) VOICE_SPEEDS[voiceSpeedIndex]) : String.valueOf(VOICE_SPEEDS[voiceSpeedIndex]));
         voiceSpeedLabelWidth = Math.round(font.width(speedLabel) * textScale);
         voiceSpeedLabelX = bubbleX + bubbleW - voiceSpeedLabelWidth - 2;
+        // The waveform's right edge is pinned to the WIDEST possible speed label ("x0.5"/"x1.5", 4 chars),
+        // not this specific label's own (narrower, for "x1"/"x2") width - otherwise cycling speed shifts
+        // where the waveform ends and the whole histogram visibly resizes/redraws on every click, which
+        // should never happen since the waveform's shape has nothing to do with playback speed.
+        int maxSpeedLabelWidth = 0;
+        for (float speed : VOICE_SPEEDS) {
+            String label = "x" + (speed == (int) speed ? String.valueOf((int) speed) : String.valueOf(speed));
+            maxSpeedLabelWidth = Math.max(maxSpeedLabelWidth, Math.round(font.width(label) * textScale));
+        }
+        int waveformRightBound = bubbleX + bubbleW - maxSpeedLabelWidth - 2;
         boolean hoveringSpeed = mouseX >= voiceSpeedLabelX && mouseX < voiceSpeedLabelX + voiceSpeedLabelWidth
                 && mouseY >= voiceLabelY && mouseY < voiceLabelY + glyphHeight;
         if (hoveringSpeed)
@@ -291,13 +301,13 @@ public class MessageWidget extends AbstractWidget {
         guiGraphics.pose().scale(textScale, textScale, 1.0F);
         guiGraphics.drawString(font, playIcon, (int) (voicePlayIconX / textScale), (int) (voicePlayIconY / textScale), accentColor, false);
         guiGraphics.drawString(font, timeLabel, (int) (timeX / textScale), (int) (voiceLabelY / textScale), accentColor, false);
-        guiGraphics.drawString(font, speedLabel, (int) (voiceSpeedLabelX / textScale), (int) (voiceLabelY / textScale), hoveringSpeed ? 0xFFFFEE00 : accentColor, false);
+        guiGraphics.drawString(font, speedLabel, (int) (voiceSpeedLabelX / textScale), (int) (voiceLabelY / textScale), hoveringSpeed ? CrazyPhoneColors.ACCENT_YELLOW : accentColor, false);
         guiGraphics.pose().popPose();
 
         // Live waveform, to the right of the time - a static preview of the whole clip's envelope normally,
         // scrubbing left-to-right in sync with elapsed playback time while playing.
         int waveformX = timeX + timeWidth + 3;
-        int waveformEnd = voiceSpeedLabelX - 3;
+        int waveformEnd = waveformRightBound - 3;
         renderVoiceWaveform(guiGraphics, waveformX, waveformEnd, bubbleY, bubbleH, playing, elapsedTicks, accentColor);
     }
 
@@ -324,7 +334,7 @@ public class MessageWidget extends AbstractWidget {
             int level = voiceEnvelope[i] & 0xFF;
             int barHeight = Math.max(1, level * (bubbleH - 4) / 255);
             int barX = startX + i * barWidth;
-            int color = playing && i < progressBar ? 0xFFFFEE00 : accentColor;
+            int color = playing && i < progressBar ? CrazyPhoneColors.ACCENT_YELLOW : accentColor;
             guiGraphics.fill(barX, centerY2x - barHeight, barX + Math.max(1, barWidth - 1), centerY2x + barHeight, color);
         }
         guiGraphics.pose().popPose();

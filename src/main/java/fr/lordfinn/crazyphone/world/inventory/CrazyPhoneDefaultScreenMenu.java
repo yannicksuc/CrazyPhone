@@ -64,11 +64,19 @@ abstract public class CrazyPhoneDefaultScreenMenu extends AbstractContainerMenu 
 		this.world = inv.player.level();
 		this.internal = new ItemStackHandler(0);
 		setCurrentPageHistory();
-		if (this.entity instanceof ServerPlayer) {
+		if (this.entity instanceof ServerPlayer serverPlayer) {
 			ItemStack held = CrazyPhoneHelper.getMainHandItemOrEmpty(this.entity);
 			if (held.getItem() == ModItems.CRAZY_PHONE.get()) {
 				ownerPhoneStack = held;
 				CrazyPhoneHelper.setPhoneScreenOpen(ownerPhoneStack, true);
+				// This menu is a fully custom phone UI that never wraps the player's own Inventory slots
+				// (see CrazyPhoneHelper#sendSelectedAlbumSlotsFromHeldPhone for the same issue previously
+				// found on album slots), so once it's open, vanilla's per-tick slot-change broadcast stops
+				// looking at the hotbar - the mutation above would otherwise never reach the client.
+				// broadcastChanges (not broadcastFullState) - a full-content resync packet replaces every
+				// slot's ItemStack instance at once, which makes the client replay the item re-equip/bob
+				// animation on the held phone even though nothing about the held slot itself moved.
+				serverPlayer.inventoryMenu.broadcastChanges();
 			}
 		}
 		BlockPos pos = null;
@@ -220,8 +228,11 @@ abstract public class CrazyPhoneDefaultScreenMenu extends AbstractContainerMenu 
 	@Override
 	public void removed(Player playerIn) {
 		super.removed(playerIn);
-		if (!ownerPhoneStack.isEmpty())
+		if (!ownerPhoneStack.isEmpty()) {
 			CrazyPhoneHelper.setPhoneScreenOpen(ownerPhoneStack, false);
+			if (playerIn instanceof ServerPlayer serverPlayer)
+				serverPlayer.inventoryMenu.broadcastChanges();
+		}
 		if (!bound && playerIn instanceof ServerPlayer serverPlayer) {
 			if (!serverPlayer.isAlive() || serverPlayer.hasDisconnected()) {
 				for (int j = 0; j < internal.getSlots(); ++j) {

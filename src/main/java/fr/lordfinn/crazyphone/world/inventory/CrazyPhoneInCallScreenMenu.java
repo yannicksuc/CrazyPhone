@@ -2,8 +2,10 @@ package fr.lordfinn.crazyphone.world.inventory;
 
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.item.ItemStack;
 
 import fr.lordfinn.crazyphone.init.ModMenus;
+import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
 import fr.lordfinn.crazyphone.utils.ScreenMenuUtils;
 
 import java.util.ArrayList;
@@ -15,8 +17,9 @@ import java.util.UUID;
 public class CrazyPhoneInCallScreenMenu extends CrazyPhoneDefaultScreenMenu {
     /** One other participant's identity, as seen by the viewer - never includes the viewer themselves (see
      * ScreenMenuUtils#populateCallScreenBuffer). {@code name} is empty if the server couldn't resolve them
-     * (shouldn't normally happen for someone actually in CallSession#participants). */
-    public record CallParticipant(UUID id, String name) {
+     * (shouldn't normally happen for someone actually in CallSession#participants). Armor is a one-time
+     * snapshot taken when this list was sent, not live-synced afterward - see CallBustPreview. */
+    public record CallParticipant(UUID id, String name, ItemStack helmet, ItemStack chestplate, ItemStack leggings, ItemStack boots) {
     }
 
     private String conversationId = "";
@@ -33,7 +36,11 @@ public class CrazyPhoneInCallScreenMenu extends CrazyPhoneDefaultScreenMenu {
             int count = extraData.readVarInt();
             List<CallParticipant> list = new ArrayList<>(count);
             for (int i = 0; i < count; i++)
-                list.add(new CallParticipant(extraData.readUUID(), extraData.readUtf()));
+                list.add(new CallParticipant(extraData.readUUID(), extraData.readUtf(),
+                        CrazyPhoneHelper.decodeItemStack(this.world, extraData.readNbt()),
+                        CrazyPhoneHelper.decodeItemStack(this.world, extraData.readNbt()),
+                        CrazyPhoneHelper.decodeItemStack(this.world, extraData.readNbt()),
+                        CrazyPhoneHelper.decodeItemStack(this.world, extraData.readNbt())));
             participants = list;
         }
         ScreenMenuUtils.addDataToCurrentPage(this.entity, conversationId);

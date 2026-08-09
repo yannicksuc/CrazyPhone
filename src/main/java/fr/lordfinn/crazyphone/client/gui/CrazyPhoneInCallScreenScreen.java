@@ -1,29 +1,17 @@
 package fr.lordfinn.crazyphone.client.gui;
 
-import com.mojang.authlib.GameProfile;
-import org.joml.Quaternionf;
-import org.joml.Vector3f;
-
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import net.minecraft.world.entity.player.Inventory;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.Pose;
 import net.minecraft.network.chat.Component;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.player.RemotePlayer;
 import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.ChatFormatting;
-import net.minecraft.util.Mth;
 
 import fr.lordfinn.crazyphone.client.ClientCallState;
-import fr.lordfinn.crazyphone.client.FakePlayerPreview;
-import fr.lordfinn.crazyphone.client.MojangProfileLookup;
+import fr.lordfinn.crazyphone.client.gui.components.CallBustPreview;
+import fr.lordfinn.crazyphone.client.gui.components.CrazyPhoneColors;
 import fr.lordfinn.crazyphone.init.ModItems;
 import fr.lordfinn.crazyphone.network.CrazyPhoneCallActionMessage;
 import fr.lordfinn.crazyphone.network.CrazyPhoneCallStateSyncPacket;
@@ -35,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -45,16 +32,13 @@ import java.util.stream.Collectors;
  * menu's lifecycle, so closing this screen just stops looking at it.
  *
  * Renders every OTHER participant (never the local player - the server already excludes them, see
- * CrazyPhoneInCallScreenMenu) as a cropped-square 3D bust, laid out in a grid that grows with the
- * participant count. Each bust is a synthetic RemotePlayer built from the participant's GameProfile via
- * SkinManager - same technique CrazyPhoneContactInfoScreenScreen uses for its full-body preview - rather
- * than the real world entity, since a call partner is very often out of render distance or in a different
- * dimension entirely (that's the whole point of a phone call). A yellow border (the same amber used for
- * photo-album selection) appears around a bust exactly while SvcCallBridge.isTalking() reports that player
- * as currently speaking, and disappears the instant they stop.
+ * CrazyPhoneInCallScreenMenu) as a live full-body bust (see CallBustPreview), laid out in a grid that grows
+ * with the participant count. A yellow border (the same amber used for photo-album selection) appears
+ * around a bust exactly while SvcCallBridge.isTalking() reports that player as currently speaking, and
+ * disappears the instant they stop.
  */
 public class CrazyPhoneInCallScreenScreen extends CrazyPhoneDefaultScreenScreen<CrazyPhoneInCallScreenMenu> {
-    private static final int TALKING_BORDER_COLOR = 0xFFFFC107; // same amber used for photo-album selection
+    private static final int TALKING_BORDER_COLOR = CrazyPhoneColors.ACCENT_YELLOW;
     private static final int CELL_BACKGROUND_COLOR = 0xFF2B2B2B;
     private static final int BORDER_INSET = 2;
     private static final int GRID_LEFT = 8;
@@ -66,15 +50,9 @@ public class CrazyPhoneInCallScreenScreen extends CrazyPhoneDefaultScreenScreen<
     private static final int MIN_CELL_SIZE = 16;
 
     private final Consumer<CrazyPhoneCallStateSyncPacket> callStateListener = this::onCallStateChanged;
-    private final Map<UUID, Player> fakePlayers = new ConcurrentHashMap<>();
+    private final CallBustPreview bustPreview = new CallBustPreview();
     private List<CrazyPhoneInCallScreenMenu.CallParticipant> participants = List.of();
     private Button button_hangup;
-    /** Guards the walk-animation drive in {@link #renderBust} so each participant's bust advances exactly
-     * once per game tick regardless of how many times render is called within that tick (uncapped framerate
-     * would otherwise replay LivingEntity.walkAnimation.update() many times per tick and make legs swing
-     * unnaturally fast) - keyed per participant since the grid renders several busts per frame and each has
-     * its own fake entity/animation state. */
-    private final Map<UUID, Integer> lastAnimatedGameTick = new java.util.HashMap<>();
 
     public CrazyPhoneInCallScreenScreen(CrazyPhoneInCallScreenMenu container, Inventory inventory, Component text) {
         super(container, inventory, text);
@@ -103,9 +81,7 @@ public class CrazyPhoneInCallScreenScreen extends CrazyPhoneDefaultScreenScreen<
     public void onClose() {
         super.onClose();
         ClientCallState.clearListener(callStateListener);
-        for (Player fake : fakePlayers.values())
-            fake.discard();
-        fakePlayers.clear();
+        bustPreview.discardAll();
     }
 
     private void onCallStateChanged(CrazyPhoneCallStateSyncPacket packet) {
@@ -117,9 +93,21 @@ public class CrazyPhoneInCallScreenScreen extends CrazyPhoneDefaultScreenScreen<
             return;
         }
         if (packet.state() == CrazyPhoneCallStateSyncPacket.State.ACTIVE) {
+            // This resync doesn't carry armor (see CallParticipant's javadoc - it's a one-time snapshot, not
+            // continuously re-synced) - carry over whatever was already known for a participant we've seen
+            // before rather than losing their armor on every resync; a genuinely new participant just starts
+            // bare until the next time they reopen a screen that re-snapshots them.
+            Map<UUID, CrazyPhoneInCallScreenMenu.CallParticipant> previouslyKnown = participants.stream()
+                    .collect(Collectors.toMap(CrazyPhoneInCallScreenMenu.CallParticipant::id, p -> p));
             List<CrazyPhoneInCallScreenMenu.CallParticipant> updated = new ArrayList<>();
-            for (int i = 0; i < packet.participantIds().size(); i++)
-                updated.add(new CrazyPhoneInCallScreenMenu.CallParticipant(packet.participantIds().get(i), packet.participantNames().get(i)));
+            for (int i = 0; i < packet.participantIds().size(); i++) {
+                UUID id = packet.participantIds().get(i);
+                String name = packet.participantNames().get(i);
+                CrazyPhoneInCallScreenMenu.CallParticipant known = previouslyKnown.get(id);
+                updated.add(known != null
+                        ? new CrazyPhoneInCallScreenMenu.CallParticipant(id, name, known.helmet(), known.chestplate(), known.leggings(), known.boots())
+                        : new CrazyPhoneInCallScreenMenu.CallParticipant(id, name, ItemStack.EMPTY, ItemStack.EMPTY, ItemStack.EMPTY, ItemStack.EMPTY));
+            }
             updateParticipants(updated);
         }
     }
@@ -129,39 +117,9 @@ public class CrazyPhoneInCallScreenScreen extends CrazyPhoneDefaultScreenScreen<
     private void updateParticipants(List<CrazyPhoneInCallScreenMenu.CallParticipant> updated) {
         participants = updated;
         Set<UUID> currentIds = updated.stream().map(CrazyPhoneInCallScreenMenu.CallParticipant::id).collect(Collectors.toSet());
-        fakePlayers.keySet().removeIf(id -> {
-            if (currentIds.contains(id))
-                return false;
-            Player stale = fakePlayers.get(id);
-            if (stale != null)
-                stale.discard();
-            return true;
-        });
+        bustPreview.discardStale(currentIds);
         for (CrazyPhoneInCallScreenMenu.CallParticipant p : updated)
-            ensureFakePlayer(p.id(), p.name());
-    }
-
-    /** Looks up the participant's REAL Mojang profile by name first (works with no login at all - see
-     * MojangProfileLookup) so the bust shows their actual skin even when the local connection itself is to
-     * an offline/cracked dev server; falls back to a synthetic profile (default Steve/Alex skin) if that
-     * name isn't a real account or Mojang's API can't be reached. */
-    private void ensureFakePlayer(UUID id, String name) {
-        if (fakePlayers.containsKey(id) || name.isEmpty())
-            return;
-        Minecraft mc = Minecraft.getInstance();
-        ClientLevel level = mc.level;
-        if (level == null)
-            return;
-        MojangProfileLookup.lookup(name).thenAccept(realProfile -> {
-            GameProfile profile = realProfile != null ? realProfile : new GameProfile(id, name);
-            mc.getSkinManager().getOrLoad(profile).thenAccept(skin -> {
-                RemotePlayer fake = new RemotePlayer(level, profile);
-                fake.refreshDisplayName();
-                FakePlayerPreview.showAllSkinLayers(fake);
-                level.addFreshEntity(fake);
-                fakePlayers.put(id, fake);
-            });
-        });
+            bustPreview.ensure(p.id(), p.name(), p.helmet(), p.chestplate(), p.leggings(), p.boots());
     }
 
     @Override
@@ -213,77 +171,8 @@ public class CrazyPhoneInCallScreenScreen extends CrazyPhoneDefaultScreenScreen<
             }
 
             int inset = talking ? BORDER_INSET : 0;
-            Player fake = fakePlayers.get(participant.id());
-            if (fake instanceof LivingEntity livingEntity)
-                renderBust(guiGraphics, livingEntity, participant.id(), cellX + inset, cellY + inset, cellSize - inset * 2);
+            bustPreview.render(guiGraphics, participant.id(), cellX + inset, cellY + inset, cellSize - inset * 2,
+                    CallBustPreview.CropMode.FULL_BODY, true);
         }
-    }
-
-    /** Player model is ~1.8 blocks tall; InventoryScreen.renderEntityInInventory's "scale" param is pixels
-     * per block, anchored at the model's feet. Earlier versions cropped to a head/shoulders "bust" - once
-     * live sneak/swim/sprint/walk-animation state got mirrored (see renderBust), that crop hid the very
-     * poses it was meant to show, so this now frames the FULL body instead: scale keeps 1.8 blocks within
-     * 90% of the cell height, anchored near the cell's bottom edge (5% margin) so there's a small matching
-     * headroom margin above the head. */
-    private static final float BUST_SCALE_FACTOR = 0.50f;
-    private static final float BUST_ANCHOR_OFFSET_FACTOR = 0.95f;
-    /** How far the bust's head is allowed to turn away from its fixed forward-facing body before being
-     * clamped - the body deliberately always faces the camera (a design choice, not a bug: see
-     * CallHeadRotationSync's javadoc), so an unclamped 1:1 head-yaw mirror could swing the head almost
-     * all the way around on a small portrait, which reads as broken rather than lifelike. */
-    private static final float MAX_HEAD_YAW_DELTA = 50f;
-    private static final float MAX_HEAD_PITCH = 50f;
-
-    /** Cropped-square, full-body live preview of a call participant: the same
-     * InventoryScreen.renderEntityInInventory technique CrazyPhoneContactInfoScreenScreen uses for its
-     * full-body preview, sized to fit the whole model in the cell (see the factors above) and clipped to a
-     * scissor square. The body always faces the camera; the head turns to mirror the real player's live
-     * head-vs-body deviation (clamped so it can't look unnaturally far around on such a small portrait), and
-     * the pose/sneak/sprint/swim/walk-animation state mirrors the real player's live actions - see
-     * ClientCallState#getLiveState / CallHeadRotationSync. */
-    private void renderBust(GuiGraphics guiGraphics, LivingEntity entity, UUID participantId, int cellX, int cellY, int cellSize) {
-        guiGraphics.enableScissor(cellX, cellY, cellX + cellSize, cellY + cellSize);
-        int anchorX = cellX + cellSize / 2;
-        int anchorY = cellY + Math.round(cellSize * BUST_ANCHOR_OFFSET_FACTOR);
-        int scale = Math.round(cellSize * BUST_SCALE_FACTOR);
-
-        ClientCallState.LiveState live = ClientCallState.getLiveState(participantId);
-        float headYawDelta = live != null ? Mth.clamp(live.headYawDelta(), -MAX_HEAD_YAW_DELTA, MAX_HEAD_YAW_DELTA) : 0f;
-        float pitch = live != null ? Mth.clamp(live.pitch(), -MAX_HEAD_PITCH, MAX_HEAD_PITCH) : 0f;
-
-        if (live != null) {
-            entity.setPose(Pose.values()[live.poseOrdinal()]);
-            entity.setShiftKeyDown(live.crouching());
-            entity.setSprinting(live.sprinting());
-            entity.setSwimming(live.swimming());
-        }
-        // Advance the walk-animation once per game tick per participant (not per render call - see
-        // lastAnimatedGameTick) so legs/arms actually swing while the real player is walking/running/swimming
-        // instead of standing rigid.
-        if (this.minecraft != null && this.minecraft.level != null) {
-            int currentGameTick = (int) this.minecraft.level.getGameTime();
-            Integer previousTick = lastAnimatedGameTick.put(participantId, currentGameTick);
-            if (previousTick == null || previousTick != currentGameTick) {
-                float walkSpeed = live != null ? live.walkAnimationSpeed() : 0f;
-                entity.walkAnimation.update(walkSpeed, 0.4f);
-            }
-        }
-
-        Quaternionf pose = new Quaternionf().rotateZ((float) Math.PI);
-        float prevBodyRot = entity.yBodyRot, prevYRot = entity.getYRot(), prevXRot = entity.getXRot();
-        float prevHeadRotO = entity.yHeadRotO, prevHeadRot = entity.yHeadRot;
-        entity.yBodyRot = 180.0F;
-        entity.setYRot(180.0F);
-        entity.setXRot(pitch);
-        entity.yHeadRot = 180.0F + headYawDelta;
-        entity.yHeadRotO = entity.yHeadRot;
-        InventoryScreen.renderEntityInInventory(guiGraphics, anchorX, anchorY, scale, new Vector3f(0, 0, 0), pose, new Quaternionf(), entity);
-        entity.yBodyRot = prevBodyRot;
-        entity.setYRot(prevYRot);
-        entity.setXRot(prevXRot);
-        entity.yHeadRotO = prevHeadRotO;
-        entity.yHeadRot = prevHeadRot;
-
-        guiGraphics.disableScissor();
     }
 }
