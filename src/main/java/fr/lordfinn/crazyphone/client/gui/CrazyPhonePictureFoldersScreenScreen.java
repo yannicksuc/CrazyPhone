@@ -45,7 +45,11 @@ public class CrazyPhonePictureFoldersScreenScreen extends CrazyPhoneDefaultScree
 			if (isHovering(slot, mouseX, mouseY)) {
 				ItemStack clickedStack = slot.getItem();
 				if (clickedStack.getItem() instanceof AlbumItem) {
+					//? if >=1.20.5 {
 					PacketDistributor.sendToServer(new PictureFoldersSlotClickMessage(i));
+					//? } else {
+					/*PacketDistributor.SERVER.noArg().send(new PictureFoldersSlotClickMessage(i));
+					*///?}
 					return true;
 				}
 			}

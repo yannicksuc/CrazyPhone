@@ -61,6 +61,18 @@ class ConversationSavedDataTest {
         return tag;
     }
 
+    /** Distinct from {@link #callMessage}: uses the REAL field name ({@code call_duration_millis})
+     *  that {@link ConversationSavedData#finalizeOrphanedCalls()} actually reads, rather than
+     *  {@code callMessage}'s simplified {@code "duration"} field used only by the updateCallMessage
+     *  tests above. */
+    private static CompoundTag callMessageWithDuration(long durationMillis) {
+        CompoundTag tag = textMessage("", "", 0);
+        CompoundTag call = new CompoundTag();
+        call.putLong("call_duration_millis", durationMillis);
+        tag.put("call", call);
+        return tag;
+    }
+
     @Test
     void appendMessage_storesMessageRetrievableViaGetPage() {
         ConversationSavedData data = new ConversationSavedData();
@@ -263,6 +275,58 @@ class ConversationSavedDataTest {
     void updateCallMessage_unknownConversation_isNoOpNotException() {
         ConversationSavedData data = new ConversationSavedData();
         assertDoesNotThrow(() -> data.updateCallMessage("nonexistent", UUID.randomUUID(), tag -> tag.putInt("duration", 1)));
+    }
+
+    @Test
+    void finalizeOrphanedCalls_marksStillInProgressCallsAsOrphaned() {
+        ConversationSavedData data = new ConversationSavedData();
+        data.appendMessage(CONVO, callMessageWithDuration(-1));
+
+        data.finalizeOrphanedCalls();
+
+        CompoundTag call = data.getPage(CONVO, 0, 10).get(0).getCompound("call");
+        assertEquals(ConversationSavedData.ORPHANED_CALL_DURATION_MILLIS, call.getLong("call_duration_millis"),
+                "a call still showing -1 (in progress) after a fresh boot can only be a leftover from a server that died mid-call");
+        assertTrue(data.isDirty(), "finalizing an orphaned call must mark the data dirty for disk persistence");
+    }
+
+    @Test
+    void finalizeOrphanedCalls_leavesAlreadyFinishedCallsUntouched() {
+        ConversationSavedData data = new ConversationSavedData();
+        data.appendMessage(CONVO, callMessageWithDuration(5000));
+
+        data.finalizeOrphanedCalls();
+
+        CompoundTag call = data.getPage(CONVO, 0, 10).get(0).getCompound("call");
+        assertEquals(5000, call.getLong("call_duration_millis"), "a call with a real, already-recorded duration must not be touched");
+    }
+
+    @Test
+    void finalizeOrphanedCalls_withNoInProgressCalls_isNoOpAndDoesNotReDirty() {
+        ConversationSavedData data = new ConversationSavedData();
+        data.appendMessage(CONVO, textMessage("111", "just a normal message", 0));
+        data.appendMessage(CONVO, callMessageWithDuration(1234));
+        // appendMessage itself already marks dirty (that's its own documented contract) - clear it here so
+        // the assertion below isolates finalizeOrphanedCalls' OWN behavior instead of re-observing that.
+        data.setDirty(false);
+
+        data.finalizeOrphanedCalls();
+
+        assertFalse(data.isDirty(), "must not mark dirty (or trigger an unnecessary disk write) when nothing needed finalizing");
+    }
+
+    @Test
+    void finalizeOrphanedCalls_sweepsAcrossEveryConversationNotJustTheFirst() {
+        ConversationSavedData data = new ConversationSavedData();
+        data.appendMessage("111.222", callMessageWithDuration(-1));
+        data.appendMessage("111.333", callMessageWithDuration(-1));
+
+        data.finalizeOrphanedCalls();
+
+        assertEquals(ConversationSavedData.ORPHANED_CALL_DURATION_MILLIS,
+                data.getPage("111.222", 0, 10).get(0).getCompound("call").getLong("call_duration_millis"));
+        assertEquals(ConversationSavedData.ORPHANED_CALL_DURATION_MILLIS,
+                data.getPage("111.333", 0, 10).get(0).getCompound("call").getLong("call_duration_millis"));
     }
 
     /**

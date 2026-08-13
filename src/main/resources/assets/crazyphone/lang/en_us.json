@@ -30,6 +30,10 @@
   "gui.crazyphone.crazy_phone_sign_in_screen.tooltip_deverrouiller": "Unlock the phone",
 
   "gui.crazyphone.crazy_phone_password_screen.title": "Registration",
+  "gui.crazyphone.crazy_phone_password_screen.title_password_step": "Password",
+  "gui.crazyphone.crazy_phone_password_screen.warning_admin_visible": "Warning: this password is visible to server admins. They can see the contents of this phone.",
+  "gui.crazyphone.crazy_phone_password_screen.button_suivant": "Next",
+  "gui.crazyphone.crazy_phone_password_screen.tooltip_suivant": "Continue to set your password",
   "gui.crazyphone.crazy_phone_password_screen.label_mot_de_passe": "Password:",
   "gui.crazyphone.crazy_phone_password_screen.uuid": "",
   "gui.crazyphone.crazy_phone_password_screen.number": "",

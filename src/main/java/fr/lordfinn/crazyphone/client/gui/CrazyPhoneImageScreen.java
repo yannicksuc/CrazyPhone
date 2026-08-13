@@ -81,7 +81,11 @@ public class CrazyPhoneImageScreen extends ImageScreen implements PhoneScreen {
         // Bouton 2 : Prendre
         button_take = Button.builder(Component.translatable("gui.crazyphone.crazy_phone_pictures_screen.button_take"), e -> {
             if (!image.isEmpty()) {
+                //? if >=1.20.5 {
                 PacketDistributor.sendToServer(new CrazyPhoneImageActionMessage(image.copy(), ImageActionType.GIVE_PLAYER));
+                //? } else {
+                /*PacketDistributor.SERVER.noArg().send(new CrazyPhoneImageActionMessage(image.copy(), ImageActionType.GIVE_PLAYER));
+                *///?}
                 Minecraft.getInstance().player.playSound(net.minecraft.sounds.SoundEvents.ITEM_PICKUP, 1.0F, 1.0F);
             }
             this.onClose();
@@ -92,7 +96,11 @@ public class CrazyPhoneImageScreen extends ImageScreen implements PhoneScreen {
         // Bouton 3 : Ajouter dans mes albums
         Button button_addToAlbum = Button.builder(Component.translatable("gui.crazyphone.crazy_phone_pictures_screen.button_add_album"), e -> {
             if (!image.isEmpty()) {
+                //? if >=1.20.5 {
                 PacketDistributor.sendToServer(new CrazyPhoneImageActionMessage(image.copy(), ImageActionType.GIVE_ALBUM));
+                //? } else {
+                /*PacketDistributor.SERVER.noArg().send(new CrazyPhoneImageActionMessage(image.copy(), ImageActionType.GIVE_ALBUM));
+                *///?}
                 Minecraft.getInstance().player.playSound(net.minecraft.sounds.SoundEvents.BOOK_PUT, 1.0F, 1.0F);
             }
             this.onClose();
@@ -108,7 +116,11 @@ public class CrazyPhoneImageScreen extends ImageScreen implements PhoneScreen {
     @Override
     public void onClose() {
         super.onClose();
+        //? if >=1.20.5 {
         PacketDistributor.sendToServer(new CrazyPhoneAlbumClosedMessage());
+        //? } else {
+        /*PacketDistributor.SERVER.noArg().send(new CrazyPhoneAlbumClosedMessage());
+        *///?}
         Minecraft.getInstance().setScreen(previousScreen);
     }
 }

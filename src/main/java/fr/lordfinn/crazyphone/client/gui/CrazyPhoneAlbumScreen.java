@@ -46,7 +46,11 @@ public class CrazyPhoneAlbumScreen extends AlbumScreen implements PhoneScreen {
             if (this.images != null && !this.images.isEmpty() && this.index < imageStacks.size()) {
                 ItemStack stack = imageStacks.get(this.index);
                 if (!stack.isEmpty()) {
+                    //? if >=1.20.5 {
                     PacketDistributor.sendToServer(new CrazyPhoneImageActionMessage(stack.copy(), ImageActionType.GIVE_PLAYER));
+                    //? } else {
+                    /*PacketDistributor.SERVER.noArg().send(new CrazyPhoneImageActionMessage(stack.copy(), ImageActionType.GIVE_PLAYER));
+                    *///?}
                     Minecraft.getInstance().player.playSound(net.minecraft.sounds.SoundEvents.ITEM_PICKUP, 1.0F, 1.0F);
                 }
             }
@@ -98,6 +102,10 @@ public class CrazyPhoneAlbumScreen extends AlbumScreen implements PhoneScreen {
     @Override
     public void onClose() {
         super.onClose(); // Call the original onClose to handle cleanup
+        //? if >=1.20.5 {
         PacketDistributor.sendToServer(new CrazyPhoneAlbumClosedMessage());
+        //? } else {
+        /*PacketDistributor.SERVER.noArg().send(new CrazyPhoneAlbumClosedMessage());
+        *///?}
     }
 }

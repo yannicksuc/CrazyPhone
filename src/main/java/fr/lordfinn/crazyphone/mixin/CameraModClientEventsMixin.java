@@ -13,7 +13,11 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemStack;
+//? if >=1.20.5 {
 import net.neoforged.neoforge.client.event.RenderGuiLayerEvent;
+//? } else {
+/*import net.neoforged.neoforge.client.event.RenderGuiOverlayEvent;
+*///?}
 import net.neoforged.neoforge.client.event.RenderPlayerEvent;
 
 import org.spongepowered.asm.mixin.injection.At;
@@ -59,6 +63,7 @@ public abstract class CameraModClientEventsMixin {
         ci.cancel();
     }
 
+    //? if >=1.20.5 {
     @Inject(method = "renderOverlay", at = @At("HEAD"), cancellable = true)
     public void onRenderOverlay(RenderGuiLayerEvent.Pre event, CallbackInfo ci) {
         if (ImageTakerAccessor.getTakeScreenshot()) {
@@ -66,4 +71,13 @@ public abstract class CameraModClientEventsMixin {
             ci.cancel();
         }
     }
+    //? } else {
+    /*@Inject(method = "renderOverlay", at = @At("HEAD"), cancellable = true)
+    public void onRenderOverlay(RenderGuiOverlayEvent.Pre event, CallbackInfo ci) {
+        if (ImageTakerAccessor.getTakeScreenshot()) {
+            event.setCanceled(true);
+            ci.cancel();
+        }
+    }
+    *///?}
 }

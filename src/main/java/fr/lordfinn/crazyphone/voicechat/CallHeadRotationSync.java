@@ -1,7 +1,12 @@
 package fr.lordfinn.crazyphone.voicechat;
 
+//? if >=1.20.5 {
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+//? } else {
+/*import net.neoforged.neoforge.event.TickEvent;
+import net.neoforged.fml.common.Mod.EventBusSubscriber;
+*///?}
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 
@@ -41,11 +46,20 @@ public class CallHeadRotationSync {
      * UUID no longer in any call is harmless and the set of ever-synced players stays small. */
     private static final Map<UUID, Vec3> lastPositions = new ConcurrentHashMap<>();
 
+    //? if >=1.20.5 {
     @SubscribeEvent
     public static void onServerTick(ServerTickEvent.Post event) {
         MinecraftServer server = event.getServer();
         if (server.getTickCount() % SYNC_INTERVAL_TICKS != 0)
             return;
+    //? } else {
+    /*@SubscribeEvent
+    public static void onServerTick(TickEvent.ServerTickEvent event) {
+        if (event.phase != TickEvent.Phase.END) return;
+        MinecraftServer server = event.getServer();
+        if (server.getTickCount() % SYNC_INTERVAL_TICKS != 0)
+            return;
+    *///?}
         for (CallRegistry.CallSession session : CallRegistry.getActiveSessions()) {
             try {
                 syncSession(server, session);
@@ -109,9 +123,15 @@ public class CallHeadRotationSync {
                 otherSwimming.add(swimming.get(i));
                 otherWalkSpeeds.add(walkAnimationSpeeds.get(i));
             }
+            //? if >=1.20.5 {
             PacketDistributor.sendToPlayer(target,
                     new CallParticipantHeadRotationSyncPacket(session.conversationId, otherIds, otherYawDeltas, otherPitches,
                             otherPoses, otherCrouching, otherSprinting, otherSwimming, otherWalkSpeeds));
+            //? } else {
+            /*PacketDistributor.PLAYER.with(target).send(
+                    new CallParticipantHeadRotationSyncPacket(session.conversationId, otherIds, otherYawDeltas, otherPitches,
+                            otherPoses, otherCrouching, otherSprinting, otherSwimming, otherWalkSpeeds));
+            *///?}
         }
     }
 

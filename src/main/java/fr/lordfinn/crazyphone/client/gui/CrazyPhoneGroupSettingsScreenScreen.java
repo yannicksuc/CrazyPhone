@@ -272,10 +272,10 @@ public class CrazyPhoneGroupSettingsScreenScreen extends CrazyPhoneDefaultScreen
     private void drawStateToggle(GuiGraphics guiGraphics, int toggleX, int toggleY, boolean showCross) {
         if (showCross) {
             drawBeveledButton(guiGraphics, toggleX, toggleY, TOGGLE_SIZE, 0xFF884444);
-            drawToggleSymbol(guiGraphics, toggleX, toggleY, "✕", 0xFFFFFF, -0.25f);
+            drawToggleSymbol(guiGraphics, toggleX, toggleY, "âœ•", 0xFFFFFF, -0.25f);
         } else {
             drawBeveledButton(guiGraphics, toggleX, toggleY, TOGGLE_SIZE, 0xFFCCAA00);
-            drawToggleSymbol(guiGraphics, toggleX, toggleY, "→", 0x000000);
+            drawToggleSymbol(guiGraphics, toggleX, toggleY, "â†’", 0x000000);
         }
     }
 
@@ -436,6 +436,10 @@ public class CrazyPhoneGroupSettingsScreenScreen extends CrazyPhoneDefaultScreen
                 : CrazyPhoneHelper.encodeItemStack(this.entity.level(), stagedIcon).toString());
         textstate.put("excludedNumbers", String.join(",", stagedExcluded));
         textstate.put("addedNumbers", String.join(",", stagedAdded));
+        //? if >=1.20.5 {
         PacketDistributor.sendToServer(new CrazyPhoneGroupSettingsButtonMessage(0, x, y, z, textstate));
+        //? } else {
+        /*PacketDistributor.SERVER.noArg().send(new CrazyPhoneGroupSettingsButtonMessage(0, x, y, z, textstate));
+        *///?}
     }
 }

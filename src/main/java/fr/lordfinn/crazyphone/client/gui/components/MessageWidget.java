@@ -386,8 +386,7 @@ public class MessageWidget extends AbstractWidget {
     }
 
     private String readIconCustomData(String key) {
-        return icon.getOrDefault(net.minecraft.core.component.DataComponents.CUSTOM_DATA,
-                net.minecraft.world.item.component.CustomData.EMPTY).copyTag().getString(key);
+        return fr.lordfinn.crazyphone.utils.PhoneTagAccess.getTag(icon).getString(key);
     }
 
     /** Hit box for the message bubble itself (not the head icon), used by the screen to show a sent-at timestamp tooltip on hover. */
@@ -412,12 +411,20 @@ public class MessageWidget extends AbstractWidget {
                     // Already playing - this click is the pause icon, actually stop the server-side
                     // AudioPlayer rather than just resetting the local timer (which would leave the real
                     // audio still playing out even though the icon flipped back to "play").
+                    //? if >=1.20.5 {
                     PacketDistributor.sendToServer(new VoiceMessageStopPacket());
+                    //? } else {
+                    /*PacketDistributor.SERVER.noArg().send(new VoiceMessageStopPacket());
+                    *///?}
                     voicePlayStartMs = -1;
                 } else {
                     voicePlayStartTick = 0;
                     voicePlayStartMs = System.currentTimeMillis();
+                    //? if >=1.20.5 {
                     PacketDistributor.sendToServer(new VoiceMessageAudioRequestPacket(voiceId, VOICE_SPEEDS[voiceSpeedIndex], 0));
+                    //? } else {
+                    /*PacketDistributor.SERVER.noArg().send(new VoiceMessageAudioRequestPacket(voiceId, VOICE_SPEEDS[voiceSpeedIndex], 0));
+                    *///?}
                 }
                 return true;
             }
@@ -436,7 +443,11 @@ public class MessageWidget extends AbstractWidget {
         if (wasPlaying) {
             voicePlayStartTick = resumeTick;
             voicePlayStartMs = System.currentTimeMillis();
+            //? if >=1.20.5 {
             PacketDistributor.sendToServer(new VoiceMessageAudioRequestPacket(voiceId, VOICE_SPEEDS[voiceSpeedIndex], resumeTick));
+            //? } else {
+            /*PacketDistributor.SERVER.noArg().send(new VoiceMessageAudioRequestPacket(voiceId, VOICE_SPEEDS[voiceSpeedIndex], resumeTick));
+            *///?}
         }
     }
 
@@ -578,12 +589,22 @@ public class MessageWidget extends AbstractWidget {
     float top = (hs - hnew) / 2.0F;
 
     Matrix4f matrix = guiGraphics.pose().last().pose();
+    //? if >=1.20.5 {
     BufferBuilder buffer = Tesselator.getInstance().begin(Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
 
     buffer.addVertex(matrix, left, top, zLevel).setUv(0.0F, 0.0F);
     buffer.addVertex(matrix, left, top + hnew, zLevel).setUv(0.0F, 1.0F);
     buffer.addVertex(matrix, left + wnew, top + hnew, zLevel).setUv(1.0F, 1.0F);
     buffer.addVertex(matrix, left + wnew, top, zLevel).setUv(1.0F, 0.0F);
+    //? } else {
+    /*BufferBuilder buffer = Tesselator.getInstance().getBuilder();
+    buffer.begin(Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
+
+    buffer.vertex(matrix, left, top, zLevel).uv(0.0F, 0.0F).endVertex();
+    buffer.vertex(matrix, left, top + hnew, zLevel).uv(0.0F, 1.0F).endVertex();
+    buffer.vertex(matrix, left + wnew, top + hnew, zLevel).uv(1.0F, 1.0F).endVertex();
+    buffer.vertex(matrix, left + wnew, top, zLevel).uv(1.0F, 0.0F).endVertex();
+    *///?}
 
     // This is a raw Tesselator draw that bypasses GuiGraphics's own Z-tracking (used by blit()/fill()/
     // renderTooltip() etc. to guarantee later-drawn elements like tooltips appear on top). Without
@@ -591,7 +612,11 @@ public class MessageWidget extends AbstractWidget {
     // later-drawn, higher-Z tooltip fail the depth test and render as hidden behind message images -
     // exactly the bug this fixes (tooltips appearing under the send/add-image buttons).
     RenderSystem.disableDepthTest();
+    //? if >=1.20.5 {
     BufferUploader.drawWithShader(buffer.buildOrThrow());
+    //? } else {
+    /*Tesselator.getInstance().end();
+    *///?}
     RenderSystem.enableDepthTest();
 
     guiGraphics.pose().popPose();

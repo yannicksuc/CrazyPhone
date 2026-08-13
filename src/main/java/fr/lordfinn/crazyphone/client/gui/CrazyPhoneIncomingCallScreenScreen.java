@@ -57,12 +57,20 @@ public class CrazyPhoneIncomingCallScreenScreen extends CrazyPhoneDefaultScreenS
             bustPreview.ensure(caller.id(), caller.name(), caller.helmet(), caller.chestplate(), caller.leggings(), caller.boots());
 
         button_accept = Button.builder(Component.translatable("gui.crazyphone.crazy_phone_incoming_call_screen.button_accept"), e -> {
+            //? if >=1.20.5 {
             PacketDistributor.sendToServer(new CrazyPhoneCallActionMessage(CrazyPhoneCallActionMessage.ANSWER, menu.getConversationId()));
+            //? } else {
+            /*PacketDistributor.SERVER.noArg().send(new CrazyPhoneCallActionMessage(CrazyPhoneCallActionMessage.ANSWER, menu.getConversationId()));
+            *///?}
         }).bounds(this.leftPos + 8, this.topPos + 158, 52, 14).build();
         this.addRenderableWidget(button_accept);
 
         button_decline = Button.builder(Component.translatable("gui.crazyphone.crazy_phone_incoming_call_screen.button_decline"), e -> {
+            //? if >=1.20.5 {
             PacketDistributor.sendToServer(new CrazyPhoneCallActionMessage(CrazyPhoneCallActionMessage.HANGUP, menu.getConversationId()));
+            //? } else {
+            /*PacketDistributor.SERVER.noArg().send(new CrazyPhoneCallActionMessage(CrazyPhoneCallActionMessage.HANGUP, menu.getConversationId()));
+            *///?}
         }).bounds(this.leftPos + 62, this.topPos + 158, 52, 14).build();
         this.addRenderableWidget(button_decline);
     }

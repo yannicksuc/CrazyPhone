@@ -2,7 +2,11 @@ package fr.lordfinn.crazyphone.client;
 
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
+//? if >=1.20.5 {
 import net.neoforged.fml.common.EventBusSubscriber;
+//? } else {
+/*import net.neoforged.fml.common.Mod.EventBusSubscriber;
+*///?}
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 
@@ -23,6 +27,10 @@ public class CrazyPhoneLeftClickEmptyHandler {
     public static void onLeftClickEmpty(PlayerInteractEvent.LeftClickEmpty event) {
         if (event.getEntity().getItemInHand(InteractionHand.MAIN_HAND).getItem() != ModItems.CRAZY_PHONE.get())
             return;
+        //? if >=1.20.5 {
         PacketDistributor.sendToServer(new CrazyPhoneTakePhotoRequestPacket());
+        //? } else {
+        /*PacketDistributor.SERVER.noArg().send(new CrazyPhoneTakePhotoRequestPacket());
+        *///?}
     }
 }

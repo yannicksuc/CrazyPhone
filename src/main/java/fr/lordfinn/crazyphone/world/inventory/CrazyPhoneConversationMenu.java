@@ -1,14 +1,16 @@
 package fr.lordfinn.crazyphone.world.inventory;
 
 import net.minecraft.ChatFormatting;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.component.ResolvableProfile;
+import net.minecraft.network.FriendlyByteBuf;
+//? if >=1.20.5 {
 import net.minecraft.network.RegistryFriendlyByteBuf;
+//? }
 import fr.lordfinn.crazyphone.init.ModMenus;
+import fr.lordfinn.crazyphone.utils.PhoneTagAccess;
 import fr.lordfinn.crazyphone.utils.Contact;
 import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
 import fr.lordfinn.crazyphone.utils.ScreenMenuUtils;
@@ -42,7 +44,11 @@ public class CrazyPhoneConversationMenu extends CrazyPhoneDefaultScreenMenu {
     private ItemStack groupIcon = ItemStack.EMPTY;
     private String groupAdmin = "";
 
+    //? if >=1.20.5 {
     public CrazyPhoneConversationMenu(int id, Inventory inv, RegistryFriendlyByteBuf extraData) {
+    //? } else {
+    /*public CrazyPhoneConversationMenu(int id, Inventory inv, FriendlyByteBuf extraData) {
+    *///?}
         super(ModMenus.CRAZY_PHONE_CONVERSATION.get(), id, inv, extraData);
         if (extraData.readableBytes() > 0)
             conversationId = extraData.readUtf();
@@ -86,13 +92,12 @@ public class CrazyPhoneConversationMenu extends CrazyPhoneDefaultScreenMenu {
         ItemStack head = new ItemStack(net.minecraft.world.item.Items.PLAYER_HEAD);
         MutableComponent displayName = Component.translatable("gui.crazyphone.crazy_phone_conversation.tooltip_group_settings")
                 .withStyle(style -> style.withColor(ChatFormatting.GOLD).withBold(true));
-        head.set(DataComponents.CUSTOM_NAME, displayName);
+        PhoneTagAccess.setCustomName(head, displayName);
 
         GameProfile profile = new GameProfile(UUID.randomUUID(), "CustomHead");
         PropertyMap properties = profile.getProperties();
         properties.put("textures", new Property("textures", COG_TEXTURE));
-        ResolvableProfile resolvableProfile = new ResolvableProfile(profile);
-        head.set(DataComponents.PROFILE, resolvableProfile);
+        PhoneTagAccess.setSkullOwner(head, profile);
 
         return head;
     }

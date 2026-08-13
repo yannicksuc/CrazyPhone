@@ -1,16 +1,27 @@
 package fr.lordfinn.crazyphone.network;
 
+//? if >=1.20.5 {
 import net.neoforged.neoforge.network.handling.IPayloadContext;
+//? } else {
+/*import net.neoforged.neoforge.network.handling.PlayPayloadContext;
+*///?}
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
+//? if >=1.20.5 {
 import net.neoforged.fml.common.EventBusSubscriber;
+//? } else {
+/*import net.neoforged.fml.common.Mod.EventBusSubscriber;
+*///?}
 import net.neoforged.bus.api.SubscribeEvent;
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.network.protocol.PacketFlow;
+//? if >=1.20.5 {
 import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.chat.Component;
 import net.minecraft.network.RegistryFriendlyByteBuf;
+//? }
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
 
@@ -33,8 +44,9 @@ import java.util.UUID;
  */
 public record VoiceMessageAudioRequestPacket(UUID voiceMessageId, float speed, int startTick) implements CustomPacketPayload {
 
+    //? if >=1.20.5 {
     public static final Type<VoiceMessageAudioRequestPacket> TYPE = new Type<>(
-            ResourceLocation.fromNamespaceAndPath(Crazyphone.MODID, "voice_message_audio_request")
+            Crazyphone.resource("voice_message_audio_request")
     );
 
     public static final StreamCodec<RegistryFriendlyByteBuf, VoiceMessageAudioRequestPacket> STREAM_CODEC =
@@ -51,41 +63,80 @@ public record VoiceMessageAudioRequestPacket(UUID voiceMessageId, float speed, i
     public Type<VoiceMessageAudioRequestPacket> type() {
         return TYPE;
     }
+    //? } else {
+    /*public static final ResourceLocation ID = Crazyphone.resource("voice_message_audio_request");
 
+    public VoiceMessageAudioRequestPacket(FriendlyByteBuf buffer) {
+        this(buffer.readUUID(), buffer.readFloat(), buffer.readVarInt());
+    }
+
+    public void write(FriendlyByteBuf buffer) {
+        buffer.writeUUID(voiceMessageId);
+        buffer.writeFloat(speed);
+        buffer.writeVarInt(startTick);
+    }
+
+    @Override
+    public ResourceLocation id() {
+        return ID;
+    }
+    *///?}
+
+    private static void handle(ServerPlayer player, UUID voiceMessageId, float speedIn, int startTick) {
+        if (!VoicechatIntegration.isAvailable())
+            return;
+
+        Level world = player.level();
+        ConversationSavedData.VoiceAudioEntry entry = ConversationSavedData.get(world).getVoiceAudio(voiceMessageId);
+        if (entry == null)
+            return;
+
+        // Ownership is checked against the conversationId stored server-side at upload time, never a
+        // client-supplied one - same live-membership pattern used by every other conversation packet.
+        String requesterNumber = GetCrazyPhoneNumberFromMainHandProcedure.execute(player, null);
+        if (requesterNumber.isEmpty() || !CrazyPhoneHelper.getGroupMembers(world, entry.conversationId()).contains(requesterNumber))
+            return;
+
+        short[] pcm = bytesToPcm(entry.bytes());
+        int startSample = Math.max(0, Math.min(pcm.length, startTick * SAMPLE_RATE / 20));
+        short[] fromStart = startSample == 0 ? pcm : java.util.Arrays.copyOfRange(pcm, startSample, pcm.length);
+        float speed = speedIn <= 0 ? 1f : speedIn;
+        short[] toPlay = speed == 1f ? fromStart : resample(fromStart, speed);
+
+        // Changing speed mid-playback (or replaying from a seek point) always supersedes whatever this
+        // player already has playing - without stopping it first the old and new AudioPlayer would
+        // overlap and play simultaneously until the old one finishes on its own.
+        SvcCallBridge.stopVoiceMessagePlayback(player);
+        SvcCallBridge.playAudioToPlayer(player, padToFrameBoundary(toPlay));
+    }
+
+    //? if >=1.20.5 {
     public static void handleData(final VoiceMessageAudioRequestPacket message, final IPayloadContext context) {
         if (context.flow() != PacketFlow.SERVERBOUND)
             return;
         context.enqueueWork(() -> {
-            if (!(context.player() instanceof ServerPlayer player) || !VoicechatIntegration.isAvailable())
+            if (!(context.player() instanceof ServerPlayer player))
                 return;
-
-            Level world = player.level();
-            ConversationSavedData.VoiceAudioEntry entry = ConversationSavedData.get(world).getVoiceAudio(message.voiceMessageId);
-            if (entry == null)
-                return;
-
-            // Ownership is checked against the conversationId stored server-side at upload time, never a
-            // client-supplied one - same live-membership pattern used by every other conversation packet.
-            String requesterNumber = GetCrazyPhoneNumberFromMainHandProcedure.execute(player, null);
-            if (requesterNumber.isEmpty() || !CrazyPhoneHelper.getGroupMembers(world, entry.conversationId()).contains(requesterNumber))
-                return;
-
-            short[] pcm = bytesToPcm(entry.bytes());
-            int startSample = Math.max(0, Math.min(pcm.length, message.startTick * SAMPLE_RATE / 20));
-            short[] fromStart = startSample == 0 ? pcm : java.util.Arrays.copyOfRange(pcm, startSample, pcm.length);
-            float speed = message.speed <= 0 ? 1f : message.speed;
-            short[] toPlay = speed == 1f ? fromStart : resample(fromStart, speed);
-
-            // Changing speed mid-playback (or replaying from a seek point) always supersedes whatever this
-            // player already has playing - without stopping it first the old and new AudioPlayer would
-            // overlap and play simultaneously until the old one finishes on its own.
-            SvcCallBridge.stopVoiceMessagePlayback(player);
-            SvcCallBridge.playAudioToPlayer(player, padToFrameBoundary(toPlay));
+            handle(player, message.voiceMessageId, message.speed, message.startTick);
         }).exceptionally(e -> {
             context.connection().disconnect(Component.literal(e.getMessage()));
             return null;
         });
     }
+    //? } else {
+    /*public static void handleData(final VoiceMessageAudioRequestPacket message, final PlayPayloadContext context) {
+        if (context.flow() != PacketFlow.SERVERBOUND)
+            return;
+        context.workHandler().submitAsync(() -> {
+            if (!(context.player().orElse(null) instanceof ServerPlayer player))
+                return;
+            handle(player, message.voiceMessageId, message.speed, message.startTick);
+        }).exceptionally(e -> {
+            context.packetHandler().disconnect(Component.literal(e.getMessage()));
+            return null;
+        });
+    }
+    *///?}
 
     /** Matches VoiceMessageRecorder's own capture rate. */
     private static final int SAMPLE_RATE = 48000;
@@ -133,7 +184,11 @@ public record VoiceMessageAudioRequestPacket(UUID voiceMessageId, float speed, i
     public static class Registration {
         @SubscribeEvent
         public static void register(FMLCommonSetupEvent event) {
+            //? if >=1.20.5 {
             Crazyphone.addNetworkMessage(TYPE, STREAM_CODEC, VoiceMessageAudioRequestPacket::handleData);
+            //? } else {
+            /*Crazyphone.addNetworkMessage(ID, VoiceMessageAudioRequestPacket::new, VoiceMessageAudioRequestPacket::handleData);
+            *///?}
         }
     }
 }

@@ -4,7 +4,11 @@ import fr.lordfinn.crazyphone.client.gui.PhoneScreen;
 import net.minecraft.client.Minecraft;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
+//? if >=1.20.5 {
 import net.neoforged.fml.common.EventBusSubscriber;
+//? } else {
+/*import net.neoforged.fml.common.Mod.EventBusSubscriber;
+*///?}
 import net.neoforged.neoforge.client.event.ScreenEvent;
 import org.lwjgl.glfw.GLFW;
 

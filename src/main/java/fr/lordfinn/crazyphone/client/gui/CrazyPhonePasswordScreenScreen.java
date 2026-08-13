@@ -1,5 +1,8 @@
 package fr.lordfinn.crazyphone.client.gui;
 
+import fr.lordfinn.crazyphone.Crazyphone;
+
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -23,12 +26,24 @@ import java.util.HashMap;
 
 public class CrazyPhonePasswordScreenScreen extends CrazyPhoneDefaultScreenScreen<CrazyPhonePasswordScreenMenu> {
     private static final HashMap<String, Object> guistate = CrazyPhonePasswordScreenMenu.guistate;
+    private static final int STEP_IDENTITY = 0;
+    private static final int STEP_PASSWORD = 1;
 
     private EditBox number;
     private EditBox name;
     private EditBox password;
-    private Button buttonValider;
+    private Button buttonAction;
     private ImageButton buttonReset;
+
+    /** Which half of registration is showing - number/name first, then password on its own page (kept out
+     * of the first page so the admin-visibility warning below can't be missed by someone rushing through).
+     * Back/home/lock stay disabled on both steps (see init()) - registration has no valid "previous
+     * screen" to return to, and once it completes the player lands fresh on the home screen, never through
+     * back-button-reachable history. */
+    private int step = STEP_IDENTITY;
+    /** Result of the last "Suivant" attempt on the identity step - the password step reuses the existing
+     * guistate-driven message instead, see renderLabels(). */
+    private String identityStepMessage = "";
 
     public CrazyPhonePasswordScreenScreen(CrazyPhonePasswordScreenMenu container, Inventory inventory, Component text) {
         super(container, inventory, text);
@@ -53,10 +68,15 @@ public class CrazyPhonePasswordScreenScreen extends CrazyPhoneDefaultScreenScree
         renderBackground(guiGraphics, mouseX, mouseY, partialTicks);
         super.render(guiGraphics, mouseX, mouseY, partialTicks);
         renderHeader(guiGraphics, new ItemStack(fr.lordfinn.crazyphone.init.ModItems.CRAZY_PHONE.get()),
-                Component.translatable("gui.crazyphone.crazy_phone_password_screen.title"));
-        number.render(guiGraphics, mouseX, mouseY, partialTicks);
-        name.render(guiGraphics, mouseX, mouseY, partialTicks);
-        password.render(guiGraphics, mouseX, mouseY, partialTicks);
+                Component.translatable(step == STEP_PASSWORD
+                        ? "gui.crazyphone.crazy_phone_password_screen.title_password_step"
+                        : "gui.crazyphone.crazy_phone_password_screen.title"));
+        if (step == STEP_IDENTITY) {
+            number.render(guiGraphics, mouseX, mouseY, partialTicks);
+            name.render(guiGraphics, mouseX, mouseY, partialTicks);
+        } else {
+            password.render(guiGraphics, mouseX, mouseY, partialTicks);
+        }
         renderTooltip(guiGraphics, mouseX, mouseY);
     }
 
@@ -73,24 +93,36 @@ public class CrazyPhonePasswordScreenScreen extends CrazyPhoneDefaultScreenScree
 
     @Override
     protected void renderLabels(GuiGraphics guiGraphics, int mouseX, int mouseY) {
-        guiGraphics.drawString(font, Component.translatable("gui.crazyphone.crazy_phone_password_screen.label_numero_associe_au_telephone"), 8, 29, -12829636, false);
-        guiGraphics.drawString(font, GetCrazyPhoneNumberFromMainHandProcedure.execute(entity, guistate), -153, -111, -12829636, false);
-        guiGraphics.drawString(font, Component.translatable("gui.crazyphone.crazy_phone_password_screen.label_nom"), 8, 61, -12829636, false);
-        guiGraphics.drawString(font, Component.translatable("gui.crazyphone.crazy_phone_password_screen.label_mot_de_passe"), 8, 93, -12829636, false);
-        guiGraphics.drawString(font, CrazyPhoneGetInitialFormValidationMessageProcedure.execute(world, entity, guistate), 8, 128, -12829636, false);
+        if (step == STEP_IDENTITY) {
+            guiGraphics.drawString(font, Component.translatable("gui.crazyphone.crazy_phone_password_screen.label_numero_associe_au_telephone"), 8, 29, -12829636, false);
+            guiGraphics.drawString(font, GetCrazyPhoneNumberFromMainHandProcedure.execute(entity, guistate), -153, -111, -12829636, false);
+            guiGraphics.drawString(font, Component.translatable("gui.crazyphone.crazy_phone_password_screen.label_nom"), 8, 61, -12829636, false);
+            if (!identityStepMessage.isEmpty())
+                guiGraphics.drawString(font, identityStepMessage, 8, 128, -12829636, false);
+        } else {
+            Component warning = Component.translatable("gui.crazyphone.crazy_phone_password_screen.warning_admin_visible")
+                    .copy().withStyle(ChatFormatting.BOLD, ChatFormatting.RED);
+            guiGraphics.drawWordWrap(font, warning, 8, 32, 106, 0xFF5555);
+            guiGraphics.drawString(font, Component.translatable("gui.crazyphone.crazy_phone_password_screen.label_mot_de_passe"), 8, 96, -12829636, false);
+            guiGraphics.drawString(font, CrazyPhoneGetInitialFormValidationMessageProcedure.execute(world, entity, guistate), 8, 128, -12829636, false);
+        }
     }
 
     @Override
     public void init() {
         super.init();
-		setBackButtonActive(false);
-		setHomeButtonActive(false);
-		setLockButtonActive(false);
-        initNumberField();
-        initNameField();
-        initPasswordField();
-        initValidateButton();
-        initResetButton();
+        setBackButtonActive(false);
+        setHomeButtonActive(false);
+        setLockButtonActive(false);
+        if (step == STEP_IDENTITY) {
+            initNumberField();
+            initNameField();
+            initResetButton();
+            initNextButton();
+        } else {
+            initPasswordField();
+            initValidateButton();
+        }
     }
 
     private void initNumberField() {
@@ -134,7 +166,7 @@ public class CrazyPhonePasswordScreenScreen extends CrazyPhoneDefaultScreenScree
     }
 
     private void initPasswordField() {
-        password = new PasswordEditBox(font, leftPos + 8, topPos + 104, 106, 18, Component.translatable("gui.crazyphone.crazy_phone_password_screen.password")) {
+        password = new PasswordEditBox(font, leftPos + 8, topPos + 107, 106, 18, Component.translatable("gui.crazyphone.crazy_phone_password_screen.password")) {
             @Override
             public void insertText(String text) {
                 super.insertText(text);
@@ -157,23 +189,55 @@ public class CrazyPhonePasswordScreenScreen extends CrazyPhoneDefaultScreenScree
         addWidget(password);
     }
 
+    /** Advances to the password step once the number/name are locally valid - checked client-side against
+     * the already-synced phone registry, no server round trip needed just to flip pages. */
+    private void initNextButton() {
+        buttonAction = actionButton(Component.translatable("gui.crazyphone.crazy_phone_password_screen.button_suivant"),
+                ACTION_BUTTON_X, ACTION_BUTTON_FULL_WIDTH,
+                Tooltip.create(Component.translatable("gui.crazyphone.crazy_phone_password_screen.tooltip_suivant")),
+                e -> {
+                    HashMap<String, String> localState = new HashMap<>();
+                    localState.put("textin:name", name.getValue());
+                    localState.put("textin:number", number.getValue());
+                    String validation = CrazyPhoneGetInitialFormValidationMessageProcedure.execute(world, entity, localState, true);
+                    if (validation.equals("Ok!")) {
+                        identityStepMessage = "";
+                        step = STEP_PASSWORD;
+                        this.init(this.minecraft, this.width, this.height);
+                    } else {
+                        identityStepMessage = validation;
+                    }
+                });
+        guistate.put("button:button_suivant", buttonAction);
+        addRenderableWidget(buttonAction);
+    }
+
     private void initValidateButton() {
-        buttonValider = Button.builder(Component.translatable("gui.crazyphone.crazy_phone_password_screen.button_valider"), e -> {
-            PacketDistributor.sendToServer(new CrazyPhonePasswordScreenButtonMessage(0, x, y, z, getEditBoxAndCheckBoxValues()));
-            CrazyPhonePasswordScreenButtonMessage.handleButtonAction(entity, 0, x, y, z, getEditBoxAndCheckBoxValues());
-        }).bounds(leftPos + 31, topPos + 150, 61, 20)
-                .tooltip(Tooltip.create(Component.translatable("gui.crazyphone.crazy_phone_password_screen.tooltip_valider")))
-                .build();
-        guistate.put("button:button_valider", buttonValider);
-        addRenderableWidget(buttonValider);
+        buttonAction = actionButton(Component.translatable("gui.crazyphone.crazy_phone_password_screen.button_valider"),
+                ACTION_BUTTON_X, ACTION_BUTTON_FULL_WIDTH,
+                Tooltip.create(Component.translatable("gui.crazyphone.crazy_phone_password_screen.tooltip_valider")),
+                e -> {
+                    //? if >=1.20.5 {
+                    PacketDistributor.sendToServer(new CrazyPhonePasswordScreenButtonMessage(0, x, y, z, getEditBoxAndCheckBoxValues()));
+                    //? } else {
+                    /*PacketDistributor.SERVER.noArg().send(new CrazyPhonePasswordScreenButtonMessage(0, x, y, z, getEditBoxAndCheckBoxValues()));
+                    *///?}
+                    CrazyPhonePasswordScreenButtonMessage.handleButtonAction(entity, 0, x, y, z, getEditBoxAndCheckBoxValues());
+                });
+        guistate.put("button:button_valider", buttonAction);
+        addRenderableWidget(buttonAction);
     }
 
     private void initResetButton() {
         buttonReset = new ImageButton(leftPos + 96, topPos + 40, 18, 18,
-            new WidgetSprites(ResourceLocation.parse("crazyphone:textures/screens/reset.png"),
-                              ResourceLocation.parse("crazyphone:textures/screens/reset.png")),
+            new WidgetSprites(Crazyphone.parseId("crazyphone:textures/screens/reset.png"),
+                              Crazyphone.parseId("crazyphone:textures/screens/reset.png")),
             e -> {
+                //? if >=1.20.5 {
                 PacketDistributor.sendToServer(new CrazyPhonePasswordScreenButtonMessage(1, x, y, z, getEditBoxAndCheckBoxValues()));
+                //? } else {
+                /*PacketDistributor.SERVER.noArg().send(new CrazyPhonePasswordScreenButtonMessage(1, x, y, z, getEditBoxAndCheckBoxValues()));
+                *///?}
                 CrazyPhonePasswordScreenButtonMessage.handleButtonAction(entity, 1, x, y, z, getEditBoxAndCheckBoxValues());
             }) {
             {

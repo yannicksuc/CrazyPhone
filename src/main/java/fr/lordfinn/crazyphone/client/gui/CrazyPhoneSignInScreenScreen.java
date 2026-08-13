@@ -88,7 +88,11 @@ public class CrazyPhoneSignInScreenScreen extends CrazyPhoneDefaultScreenScreen<
 		guistate.put("text:password", password);
 		this.addWidget(this.password);
 		button_deverrouiller = Button.builder(Component.translatable("gui.crazyphone.crazy_phone_sign_in_screen.button_deverrouiller"), e -> {
+			//? if >=1.20.5 {
 			PacketDistributor.sendToServer(new CrazyPhoneSignInScreenButtonMessage(0, x, y, z, getEditBoxAndCheckBoxValues()));
+			//? } else {
+			/*PacketDistributor.SERVER.noArg().send(new CrazyPhoneSignInScreenButtonMessage(0, x, y, z, getEditBoxAndCheckBoxValues()));
+			*///?}
 			CrazyPhoneSignInScreenButtonMessage.handleButtonAction(entity, 0, x, y, z, getEditBoxAndCheckBoxValues());
 		}).bounds(this.leftPos + 7, this.topPos + 100, 108, 20)
 				.tooltip(net.minecraft.client.gui.components.Tooltip.create(

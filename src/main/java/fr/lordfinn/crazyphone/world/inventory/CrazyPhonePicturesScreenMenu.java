@@ -54,7 +54,11 @@ public class CrazyPhonePicturesScreenMenu extends CrazyPhoneDefaultScreenMenu {
 			ItemStack album = CrazyPhoneHelper.decodeItemStack(this.world, albumTag != null ? albumTag : new CompoundTag());
 			this.albumStack = album;
 			if (!album.isEmpty()) {
-				AlbumInventory pictures = new AlbumInventory(entity.registryAccess(), album);
+				//? if >=1.20.5 {
+				AlbumInventory pictures = new AlbumInventory(entity.level().registryAccess(), album);
+				//? } else {
+				/*AlbumInventory pictures = new AlbumInventory(album);
+				*///?}
 				this.albumHandler = new AlbumInventoryItemHandler(pictures);
 				this.internal = albumHandler;
 

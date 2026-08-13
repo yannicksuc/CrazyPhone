@@ -2,18 +2,17 @@
 package fr.lordfinn.crazyphone.world.inventory;
 
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.component.ResolvableProfile;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.ChatFormatting;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import fr.lordfinn.crazyphone.init.ModMenus;
 import fr.lordfinn.crazyphone.utils.Contact;
 import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
+import fr.lordfinn.crazyphone.utils.PhoneTagAccess;
 
 import java.util.Map;
 import java.util.UUID;
@@ -124,13 +123,12 @@ public class CrazyPhoneContactsScreenMenu extends CrazyPhoneDefaultScreenMenu {
         MutableComponent displayName = Component.translatable("gui.crazyphone.crazy_phone_contacts_screen.tooltip_add_contact")
                 .withStyle(style -> style.withColor(ChatFormatting.GOLD).withBold(true));
 
-        head.set(DataComponents.CUSTOM_NAME, displayName);
+        PhoneTagAccess.setCustomName(head, displayName);
 
         GameProfile profile = new GameProfile(ADD_CONTACT_HEAD_PROFILE_ID, "CustomHead");
         PropertyMap properties = profile.getProperties();
         properties.put("textures", new Property("textures", CONTACT_TEXTURE));
-        ResolvableProfile resolvableProfile = new ResolvableProfile(profile);
-        head.set(DataComponents.PROFILE, resolvableProfile);
+        PhoneTagAccess.setSkullOwner(head, profile);
 
         return head;
     }

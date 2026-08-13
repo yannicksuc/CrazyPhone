@@ -4,7 +4,11 @@ import net.neoforged.neoforge.attachment.AttachmentType;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.registries.NeoForgeRegistries;
 import net.neoforged.neoforge.registries.DeferredRegister;
+//? if >=1.20.5 {
 import net.neoforged.fml.common.EventBusSubscriber;
+//? } else {
+/*import net.neoforged.fml.common.Mod.EventBusSubscriber;
+*///?}
 import net.neoforged.bus.api.SubscribeEvent;
 
 import net.minecraft.server.level.ServerPlayer;

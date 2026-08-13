@@ -77,8 +77,7 @@ public class CrazyPhoneContactInfoScreenScreen extends CrazyPhoneDefaultScreenSc
 	private ItemStack resolveHeaderIcon() {
 		ItemStack head = new ItemStack(net.minecraft.world.item.Items.PLAYER_HEAD);
 		if (profile != null) {
-			head.set(net.minecraft.core.component.DataComponents.PROFILE,
-					new net.minecraft.world.item.component.ResolvableProfile(profile));
+			fr.lordfinn.crazyphone.utils.PhoneTagAccess.setSkullOwner(head, profile);
 		}
 		return head;
 	}
@@ -168,7 +167,11 @@ public class CrazyPhoneContactInfoScreenScreen extends CrazyPhoneDefaultScreenSc
 		number.setSuggestion(Component.translatable("gui.crazyphone.crazy_phone_contact_info_screen.number").getString());
 		number.setResponder(text -> {
 			if (entity != null) {
+				//? if >=1.20.5 {
 				PacketDistributor.sendToServer(new CrazyPhoneContactInfoScreenButtonMessage(1, x, y, z, getEditBoxAndCheckBoxValues()));
+				//? } else {
+				/*PacketDistributor.SERVER.noArg().send(new CrazyPhoneContactInfoScreenButtonMessage(1, x, y, z, getEditBoxAndCheckBoxValues()));
+				*///?}
 				CrazyPhoneContactInfoScreenButtonMessage.handleButtonAction(entity, 1, x, y, z, getEditBoxAndCheckBoxValues());
 			}
 		});
@@ -176,7 +179,11 @@ public class CrazyPhoneContactInfoScreenScreen extends CrazyPhoneDefaultScreenSc
 		this.addWidget(this.number);
 
 		button_ajouter = Button.builder(Component.translatable("gui.crazyphone.crazy_phone_contact_info_screen.button_ajouter"), e -> {
+			//? if >=1.20.5 {
 			PacketDistributor.sendToServer(new CrazyPhoneContactInfoScreenButtonMessage(0, x, y, z, getEditBoxAndCheckBoxValues()));
+			//? } else {
+			/*PacketDistributor.SERVER.noArg().send(new CrazyPhoneContactInfoScreenButtonMessage(0, x, y, z, getEditBoxAndCheckBoxValues()));
+			*///?}
 			CrazyPhoneContactInfoScreenButtonMessage.handleButtonAction(entity, 0, x, y, z, getEditBoxAndCheckBoxValues());
 		}).bounds(this.leftPos + CONTENT_X, this.topPos + BUTTON_Y, CONTENT_WIDTH, 14)
 				.tooltip(net.minecraft.client.gui.components.Tooltip.create(

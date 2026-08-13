@@ -1,7 +1,11 @@
 package fr.lordfinn.crazyphone.init;
 
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
+//? if >=1.20.5 {
 import net.neoforged.fml.common.EventBusSubscriber;
+//? } else {
+/*import net.neoforged.fml.common.Mod.EventBusSubscriber;
+*///?}
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.api.distmarker.Dist;
 

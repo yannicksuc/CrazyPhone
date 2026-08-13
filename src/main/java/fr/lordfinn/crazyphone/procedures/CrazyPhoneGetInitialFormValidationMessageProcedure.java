@@ -9,6 +9,12 @@ import java.util.HashMap;
 
 public class CrazyPhoneGetInitialFormValidationMessageProcedure {
 	public static String execute(LevelAccessor world, Entity entity, HashMap guistate) {
+		return execute(world, entity, guistate, false);
+	}
+
+	/** @param skipPasswordCheck true when validating just the number/name step of registration, before the
+	 *                            separate password step has anything to check yet. */
+	public static String execute(LevelAccessor world, Entity entity, HashMap guistate, boolean skipPasswordCheck) {
 		if (entity == null || guistate == null || guistate.isEmpty())
 			return "";
 		if (IsPhoneItemStackInUseProcedure.execute(world, CrazyPhoneHelper.getMainHandItemOrEmpty(entity))) {
@@ -20,7 +26,7 @@ public class CrazyPhoneGetInitialFormValidationMessageProcedure {
 		// player's own Minecraft username (already shown as the field's ghosted placeholder).
 		} else if ((guistate.containsKey("textin:name") ? (String) guistate.get("textin:name") : "").length() > 25) {
 			return "Nom trop long";
-		} else if ((guistate.containsKey("textin:password") ? (String) guistate.get("textin:password") : "").isEmpty()) {
+		} else if (!skipPasswordCheck && (guistate.containsKey("textin:password") ? (String) guistate.get("textin:password") : "").isEmpty()) {
 			return "Mot de passe requis";
 		} else if (IsPhoneInUseProcedure.execute(world, guistate.containsKey("textin:number") ? (String) guistate.get("textin:number") : "")) {
 			// The item's OWN number tag is still empty at this point (checked above), so this is a

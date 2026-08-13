@@ -1,5 +1,7 @@
 package fr.lordfinn.crazyphone.client.gui;
 
+import fr.lordfinn.crazyphone.Crazyphone;
+
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import net.minecraft.client.gui.GuiGraphics;
@@ -54,12 +56,16 @@ public class CrazyphoneHomeScreenScreen extends CrazyPhoneDefaultScreenScreen<Cr
 
     // No tooltips on these - the home screen's 4 icon buttons are meant to be read at a glance, not hovered.
     private void addImageButton(String key, int buttonId, String baseIconName, int x, int y, int width, int height) {
-        ResourceLocation normal = ResourceLocation.parse("crazyphone:textures/screens/" + baseIconName + ".png");
-        ResourceLocation hover = ResourceLocation.parse("crazyphone:textures/screens/" + baseIconName + "-hover.png");
+        ResourceLocation normal = Crazyphone.parseId("crazyphone:textures/screens/" + baseIconName + ".png");
+        ResourceLocation hover = Crazyphone.parseId("crazyphone:textures/screens/" + baseIconName + "-hover.png");
 
         ImageButton button = new ImageButton(x, y, width, height, new net.minecraft.client.gui.components.WidgetSprites(normal, hover), e -> {
             var values = getEditBoxAndCheckBoxValues();
+            //? if >=1.20.5 {
             PacketDistributor.sendToServer(new CrazyphoneHomeScreenButtonMessage(buttonId, this.x, this.y, this.z, values));
+            //? } else {
+            /*PacketDistributor.SERVER.noArg().send(new CrazyphoneHomeScreenButtonMessage(buttonId, this.x, this.y, this.z, values));
+            *///?}
             CrazyphoneHomeScreenButtonMessage.handleButtonAction(this.entity, buttonId, this.x, this.y, this.z, values);
         }) {
             @Override

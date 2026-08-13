@@ -13,16 +13,23 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+//? if >=1.20.5 {
 import net.neoforged.neoforge.common.util.TriState;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
-import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
+//? } else {
+/*import net.neoforged.bus.api.Event;
+import net.neoforged.neoforge.event.TickEvent;
+import net.neoforged.neoforge.event.entity.living.LivingAttackEvent;
+*///?}
+import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 
 import org.spongepowered.asm.mixin.injection.At;
 
 @Mixin(ServerEvents.class)
 public class CameraModServerEventsMixin {
 
+    //? if >=1.20.5 {
     @Inject(method = "onTick", at = @At("HEAD"), cancellable = true)
     private static void injectOnTick(PlayerTickEvent.Pre event, CallbackInfo ci) {
         // Replace original check with your flexible one
@@ -31,6 +38,16 @@ public class CameraModServerEventsMixin {
             ci.cancel(); // Cancel the rest of the method to prevent disabling your custom camera
         }
     }
+    //? } else {
+    /*@Inject(method = "onTick", at = @At("HEAD"), cancellable = true)
+    private static void injectOnTick(TickEvent.PlayerTickEvent event, CallbackInfo ci) {
+        if (event.phase != TickEvent.Phase.START) return;
+        if (CameraModHelper.isSupportedCamera(event.player.getMainHandItem()) ||
+            CameraModHelper.isSupportedCamera(event.player.getOffhandItem())) {
+            ci.cancel();
+        }
+    }
+    *///?}
     @Inject(method = "disableCamera", at = @At("HEAD"), cancellable = true)
     private static void injectDisableCamera(ItemStack stack, CallbackInfo ci) {
         if (CameraModHelper.isSupportedCamera(stack)) {
@@ -48,7 +65,11 @@ public class CameraModServerEventsMixin {
             ItemStack item = player.getItemInHand(hand);
             if (CameraModHelper.isSupportedCamera(item) &&
                 ((CameraItem) Main.CAMERA.get()).isActive(item)) {
+                //? if >=1.20.5 {
                 event.setUseBlock(TriState.FALSE);
+                //? } else {
+                /*event.setUseBlock(Event.Result.DENY);
+                *///?}
                 event.setCanceled(true);
                 ci.cancel();
                 break;
@@ -56,6 +77,7 @@ public class CameraModServerEventsMixin {
         }
     }
 
+    //? if >=1.20.5 {
     @Inject(method = "onHit", at = @At("HEAD"), cancellable = true)
     private static void injectOnHit(LivingIncomingDamageEvent event, CallbackInfo ci) {
         Entity source = event.getSource().getDirectEntity();
@@ -71,4 +93,21 @@ public class CameraModServerEventsMixin {
             }
         }
     }
+    //? } else {
+    /*@Inject(method = "onHit", at = @At("HEAD"), cancellable = true)
+    private static void injectOnHit(LivingAttackEvent event, CallbackInfo ci) {
+        Entity source = event.getSource().getDirectEntity();
+        if (source instanceof Player player) {
+            for (InteractionHand hand : InteractionHand.values()) {
+                ItemStack stack = player.getItemInHand(hand);
+                if (CameraModHelper.isSupportedCamera(stack) &&
+                    ((CameraItem) Main.CAMERA.get()).isActive(stack)) {
+                    event.setCanceled(true);
+                    ci.cancel();
+                    break;
+                }
+            }
+        }
+    }
+    *///?}
 }

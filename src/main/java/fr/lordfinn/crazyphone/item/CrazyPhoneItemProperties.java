@@ -5,7 +5,11 @@ import net.minecraft.resources.ResourceLocation;
 
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
+//? if >=1.20.5 {
 import net.neoforged.fml.common.EventBusSubscriber;
+//? } else {
+/*import net.neoforged.fml.common.Mod.EventBusSubscriber;
+*///?}
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 
 import fr.lordfinn.crazyphone.Crazyphone;
@@ -36,7 +40,7 @@ public class CrazyPhoneItemProperties {
         event.enqueueWork(() -> {
             ItemProperties.register(
                     ModItems.CRAZY_PHONE.get(),
-                    ResourceLocation.fromNamespaceAndPath(Crazyphone.MODID, "screen_on"),
+                    Crazyphone.resource("screen_on"),
                     (stack, level, entity, seed) -> CrazyPhoneHelper.isPhoneScreenOpen(stack) ? 1.0f : 0.0f
             );
             registerCallState("calling", State.CALLING);
@@ -48,7 +52,7 @@ public class CrazyPhoneItemProperties {
     private static void registerCallState(String propertyName, State targetState) {
         ItemProperties.register(
                 ModItems.CRAZY_PHONE.get(),
-                ResourceLocation.fromNamespaceAndPath(Crazyphone.MODID, propertyName),
+                Crazyphone.resource(propertyName),
                 (stack, level, entity, seed) -> targetState.name().equals(CrazyPhoneHelper.getPhoneCallState(stack)) ? 1.0f : 0.0f
         );
     }

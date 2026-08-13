@@ -73,7 +73,11 @@ public class CrazyPhoneInCallScreenScreen extends CrazyPhoneDefaultScreenScreen<
         updateParticipants(menu.getParticipants());
 
         button_hangup = Button.builder(Component.translatable("gui.crazyphone.crazy_phone_in_call_screen.button_hangup"), e -> {
+            //? if >=1.20.5 {
             PacketDistributor.sendToServer(new CrazyPhoneCallActionMessage(CrazyPhoneCallActionMessage.HANGUP, menu.getConversationId()));
+            //? } else {
+            /*PacketDistributor.SERVER.noArg().send(new CrazyPhoneCallActionMessage(CrazyPhoneCallActionMessage.HANGUP, menu.getConversationId()));
+            *///?}
         }).bounds(this.leftPos + 8, this.topPos + 158, 106, 14).build();
         this.addRenderableWidget(button_hangup);
     }

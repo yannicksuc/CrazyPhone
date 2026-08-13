@@ -1,16 +1,27 @@
 package fr.lordfinn.crazyphone.network;
 
+//? if >=1.20.5 {
 import net.neoforged.neoforge.network.handling.IPayloadContext;
+//? } else {
+/*import net.neoforged.neoforge.network.handling.PlayPayloadContext;
+*///?}
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
+//? if >=1.20.5 {
 import net.neoforged.fml.common.EventBusSubscriber;
+//? } else {
+/*import net.neoforged.fml.common.Mod.EventBusSubscriber;
+*///?}
 import net.neoforged.bus.api.SubscribeEvent;
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.network.protocol.PacketFlow;
+//? if >=1.20.5 {
 import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.chat.Component;
 import net.minecraft.network.RegistryFriendlyByteBuf;
+//? }
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
 
@@ -39,8 +50,9 @@ public record CrazyPhoneCallActionMessage(int action, String conversationId) imp
     public static final int OPEN_CALL_SCREEN = 2;
     public static final int ANSWER = 3;
 
+    //? if >=1.20.5 {
     public static final Type<CrazyPhoneCallActionMessage> TYPE = new Type<>(
-            ResourceLocation.fromNamespaceAndPath(Crazyphone.MODID, "call_action")
+            Crazyphone.resource("call_action")
     );
 
     public static final StreamCodec<RegistryFriendlyByteBuf, CrazyPhoneCallActionMessage> STREAM_CODEC =
@@ -56,7 +68,25 @@ public record CrazyPhoneCallActionMessage(int action, String conversationId) imp
     public Type<CrazyPhoneCallActionMessage> type() {
         return TYPE;
     }
+    //? } else {
+    /*public static final ResourceLocation ID = new ResourceLocation(Crazyphone.MODID, "call_action");
 
+    public CrazyPhoneCallActionMessage(FriendlyByteBuf buffer) {
+        this(buffer.readVarInt(), buffer.readUtf());
+    }
+
+    public void write(FriendlyByteBuf buffer) {
+        buffer.writeVarInt(action);
+        buffer.writeUtf(conversationId);
+    }
+
+    @Override
+    public ResourceLocation id() {
+        return ID;
+    }
+    *///?}
+
+    //? if >=1.20.5 {
     public static void handleData(final CrazyPhoneCallActionMessage message, final IPayloadContext context) {
         if (context.flow() != PacketFlow.SERVERBOUND)
             return;
@@ -68,6 +98,19 @@ public record CrazyPhoneCallActionMessage(int action, String conversationId) imp
             return null;
         });
     }
+    //? } else {
+    /*public static void handleData(final CrazyPhoneCallActionMessage message, final PlayPayloadContext context) {
+        if (context.flow() != PacketFlow.SERVERBOUND)
+            return;
+        context.workHandler().submitAsync(() -> {
+            if (context.player().orElse(null) instanceof ServerPlayer player)
+                handleAction(player, message.action, message.conversationId);
+        }).exceptionally(e -> {
+            context.packetHandler().disconnect(Component.literal(e.getMessage()));
+            return null;
+        });
+    }
+    *///?}
 
     public static void handleAction(ServerPlayer player, int action, String conversationId) {
         if (!VoicechatIntegration.isAvailable())
@@ -125,7 +168,11 @@ public record CrazyPhoneCallActionMessage(int action, String conversationId) imp
     public static class Registration {
         @SubscribeEvent
         public static void register(FMLCommonSetupEvent event) {
+            //? if >=1.20.5 {
             Crazyphone.addNetworkMessage(TYPE, STREAM_CODEC, CrazyPhoneCallActionMessage::handleData);
+            //? } else {
+            /*Crazyphone.addNetworkMessage(ID, CrazyPhoneCallActionMessage::new, CrazyPhoneCallActionMessage::handleData);
+            *///?}
         }
     }
 }

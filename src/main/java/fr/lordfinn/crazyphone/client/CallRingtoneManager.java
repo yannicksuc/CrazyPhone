@@ -2,8 +2,16 @@ package fr.lordfinn.crazyphone.client;
 
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
+//? if >=1.20.5 {
 import net.neoforged.fml.common.EventBusSubscriber;
+//? } else {
+/*import net.neoforged.fml.common.Mod.EventBusSubscriber;
+*///?}
+//? if >=1.20.5 {
 import net.neoforged.neoforge.client.event.ClientTickEvent;
+//? } else {
+/*import net.neoforged.neoforge.event.TickEvent;
+*///?}
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
@@ -40,7 +48,12 @@ public class CallRingtoneManager {
     private static long ringingStartedGameTime = -1;
 
     @SubscribeEvent
+    //? if >=1.20.5 {
     public static void onClientTick(ClientTickEvent.Post event) {
+    //? } else {
+    /*public static void onClientTick(TickEvent.ClientTickEvent event) {
+        if (event.phase != TickEvent.Phase.END) return;
+    *///?}
         Minecraft mc = Minecraft.getInstance();
         LocalPlayer player = mc.player;
         if (player == null) {

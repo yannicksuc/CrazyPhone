@@ -2,11 +2,20 @@ package fr.lordfinn.crazyphone.init;
 
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.neoforged.neoforge.registries.DeferredHolder;
+//? if >=1.20.5 {
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import net.neoforged.neoforge.network.PacketDistributor;
+//? } else {
+/*import net.neoforged.neoforge.network.handling.PlayPayloadContext;
+import net.neoforged.neoforge.network.PacketDistributor;
+*///?}
 import net.neoforged.neoforge.common.extensions.IMenuTypeExtension;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
+//? if >=1.20.5 {
 import net.neoforged.fml.common.EventBusSubscriber;
+//? } else {
+/*import net.neoforged.fml.common.Mod.EventBusSubscriber;
+*///?}
 import net.neoforged.bus.api.SubscribeEvent;
 
 import net.minecraft.world.inventory.MenuType;
@@ -14,10 +23,13 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.network.protocol.PacketFlow;
+//? if >=1.20.5 {
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.chat.ComponentSerialization;
-import net.minecraft.network.chat.Component;
 import net.minecraft.network.RegistryFriendlyByteBuf;
+//? }
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.chat.Component;
 import net.minecraft.core.registries.Registries;
 
 import fr.lordfinn.crazyphone.world.inventory.CrazyphoneHomeScreenMenu;
@@ -67,11 +79,20 @@ public class ModMenus {
 
 	/** Always targeted at one player - a textbox value belongs to whoever is looking at that screen, never broadcast it. */
 	public static void setText(String boxname, String value, ServerPlayer player) {
+		//? if >=1.20.5 {
+		//? if >=1.20.5 {
 		PacketDistributor.sendToPlayer(player, new GuiSyncMessage(boxname, value));
+		//? } else {
+		/*PacketDistributor.PLAYER.with(player).send(new GuiSyncMessage(boxname, value));
+		*///?}
+		//? } else {
+		/*PacketDistributor.PLAYER.with(player).send(new GuiSyncMessage(boxname, value));
+		*///?}
 	}
 
 	public static record GuiSyncMessage(String editbox, String value) implements CustomPacketPayload {
-		public static final Type<GuiSyncMessage> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(Crazyphone.MODID, "gui_sync"));
+		//? if >=1.20.5 {
+		public static final Type<GuiSyncMessage> TYPE = new Type<>(Crazyphone.resource("gui_sync"));
 		public static final StreamCodec<RegistryFriendlyByteBuf, GuiSyncMessage> STREAM_CODEC = StreamCodec.of((RegistryFriendlyByteBuf buffer, GuiSyncMessage message) -> {
 			ComponentSerialization.TRUSTED_STREAM_CODEC.encode(buffer, Component.literal(message.editbox));
 			ComponentSerialization.TRUSTED_STREAM_CODEC.encode(buffer, Component.literal(message.value));
@@ -85,7 +106,25 @@ public class ModMenus {
 		public @NotNull Type<GuiSyncMessage> type() {
 			return TYPE;
 		}
+		//? } else {
+		/*public static final ResourceLocation ID = new ResourceLocation(Crazyphone.MODID, "gui_sync");
 
+		public GuiSyncMessage(FriendlyByteBuf buffer) {
+			this(buffer.readUtf(), buffer.readUtf());
+		}
+
+		public void write(FriendlyByteBuf buffer) {
+			buffer.writeUtf(editbox);
+			buffer.writeUtf(value);
+		}
+
+		@Override
+		public ResourceLocation id() {
+			return ID;
+		}
+		*///?}
+
+		//? if >=1.20.5 {
 		public static void handleData(final GuiSyncMessage message, final IPayloadContext context) {
 			if (context.flow() == PacketFlow.CLIENTBOUND) {
 				context.enqueueWork(() -> {
@@ -96,10 +135,26 @@ public class ModMenus {
 				});
 			}
 		}
+		//? } else {
+		/*public static void handleData(final GuiSyncMessage message, final PlayPayloadContext context) {
+			if (context.flow() == PacketFlow.CLIENTBOUND) {
+				context.workHandler().submitAsync(() -> {
+					ModScreens.handleTextBoxMessage(message);
+				}).exceptionally(e -> {
+					context.packetHandler().disconnect(Component.literal(e.getMessage()));
+					return null;
+				});
+			}
+		}
+		*///?}
 	}
 
 	@SubscribeEvent
 	public static void init(FMLCommonSetupEvent event) {
+		//? if >=1.20.5 {
 		Crazyphone.addNetworkMessage(GuiSyncMessage.TYPE, GuiSyncMessage.STREAM_CODEC, GuiSyncMessage::handleData);
+		//? } else {
+		/*Crazyphone.addNetworkMessage(GuiSyncMessage.ID, GuiSyncMessage::new, GuiSyncMessage::handleData);
+		*///?}
 	}
 }

@@ -1,5 +1,7 @@
 package fr.lordfinn.crazyphone.procedures;
 
+import fr.lordfinn.crazyphone.Crazyphone;
+
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.item.ItemStack;
@@ -31,7 +33,7 @@ public class CrazyPhoneRightclickedProcedure {
 				if (world instanceof Level _level) {
 					if (playerIn instanceof ServerPlayer serverPlayer) {
 						SoundEvent sound = BuiltInRegistries.SOUND_EVENT
-								.get(ResourceLocation.parse("crazyphone:pokedex"));
+								.get(Crazyphone.parseId("crazyphone:pokedex"));
 						if (sound != null) {
 							serverPlayer.playNotifySound(sound, SoundSource.PLAYERS, 0.2f, 1f);
 						}

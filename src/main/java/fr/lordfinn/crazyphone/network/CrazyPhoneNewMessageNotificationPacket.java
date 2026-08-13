@@ -1,22 +1,31 @@
 package fr.lordfinn.crazyphone.network;
 
+//? if >=1.20.5 {
 import net.neoforged.neoforge.network.handling.IPayloadContext;
+//? } else {
+/*import net.neoforged.neoforge.network.handling.PlayPayloadContext;
+*///?}
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
+//? if >=1.20.5 {
 import net.neoforged.fml.common.EventBusSubscriber;
+//? } else {
+/*import net.neoforged.fml.common.Mod.EventBusSubscriber;
+*///?}
 import net.neoforged.bus.api.SubscribeEvent;
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.network.protocol.PacketFlow;
+//? if >=1.20.5 {
 import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+//? }
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.ComponentSerialization;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.sounds.SoundEvent;
-import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 
 import fr.lordfinn.crazyphone.Crazyphone;
@@ -37,8 +46,9 @@ public record CrazyPhoneNewMessageNotificationPacket(
     String senderName
 ) implements CustomPacketPayload {
 
+    //? if >=1.20.5 {
     public static final Type<CrazyPhoneNewMessageNotificationPacket> TYPE = new Type<>(
-        ResourceLocation.fromNamespaceAndPath(Crazyphone.MODID, "new_message_notification")
+        Crazyphone.resource("new_message_notification")
     );
 
     public static final StreamCodec<RegistryFriendlyByteBuf, CrazyPhoneNewMessageNotificationPacket> STREAM_CODEC =
@@ -57,50 +67,73 @@ public record CrazyPhoneNewMessageNotificationPacket(
     public Type<CrazyPhoneNewMessageNotificationPacket> type() {
         return TYPE;
     }
+    //? } else {
+    /*public static final ResourceLocation ID = new ResourceLocation(Crazyphone.MODID, "new_message_notification");
 
-    public static void handleData(final CrazyPhoneNewMessageNotificationPacket messagePacket, final IPayloadContext context) {
-        if (context.flow() == PacketFlow.CLIENTBOUND) {
-            context.enqueueWork(() -> {
-                Minecraft mc = Minecraft.getInstance();
-                if (mc.player == null) return;
-                MessageData message = CrazyPhoneHelper.getMessageFromTag(messagePacket.messageTag);
-                if (message == null) return;
+    public CrazyPhoneNewMessageNotificationPacket(FriendlyByteBuf buffer) {
+        this(buffer.readNbt(), buffer.readUtf());
+    }
 
-                // System events (group renamed/icon changed/member excluded/admin reassigned) aren't
-                // "a message received from someone" - they get their own in-feed entry, not this toast.
-                if (!message.isSystem()) {
-                    mc.player.sendSystemMessage(Component.literal("📨 Nouveau message reçu de ")
-                        .withStyle(style -> style.withColor(0x55FFFF).withItalic(true))
-                        .append(Component.literal(messagePacket.senderName)
-                            .withStyle(style -> style.withBold(true).withColor(0x00FF55)))
-                    );
+    public void write(FriendlyByteBuf buffer) {
+        buffer.writeNbt(messageTag != null ? messageTag : new CompoundTag());
+        buffer.writeUtf(senderName);
+    }
 
-                    SoundEvent sound = BuiltInRegistries.SOUND_EVENT.get(ResourceLocation.parse("block.note_block.pling"));
-                    if (sound != null) {
-                        mc.player.playNotifySound(sound, SoundSource.PLAYERS, 0.6f, 1.0f);
-                    }
-                }
-                // Mise à jour de l'écran s'il est ouvert
-                if (mc.screen instanceof CrazyPhoneConversationScreen screen) {
-                    screen.addMessage(
-                        messagePacket.senderName,
-                        message
-                    );
-                }
-            });
+    @Override
+    public ResourceLocation id() {
+        return ID;
+    }
+    *///?}
+
+    private static void applyNotification(CrazyPhoneNewMessageNotificationPacket messagePacket) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null) return;
+        MessageData message = CrazyPhoneHelper.getMessageFromTag(messagePacket.messageTag);
+        if (message == null) return;
+
+        // System events (group renamed/icon changed/member excluded/admin reassigned) aren't
+        // "a message received from someone" - they get their own in-feed entry, not this toast.
+        if (!message.isSystem()) {
+            mc.player.sendSystemMessage(Component.literal("📨 Nouveau message reçu de ")
+                .withStyle(style -> style.withColor(0x55FFFF).withItalic(true))
+                .append(Component.literal(messagePacket.senderName)
+                    .withStyle(style -> style.withBold(true).withColor(0x00FF55)))
+            );
+
+            SoundEvent sound = BuiltInRegistries.SOUND_EVENT.get(Crazyphone.parseId("block.note_block.pling"));
+            if (sound != null) {
+                mc.player.playNotifySound(sound, SoundSource.PLAYERS, 0.6f, 1.0f);
+            }
+        }
+        // Mise a jour de l'ecran s'il est ouvert
+        if (mc.screen instanceof CrazyPhoneConversationScreen screen) {
+            screen.addMessage(
+                messagePacket.senderName,
+                message
+            );
         }
     }
 
-    private static Component readComponent(RegistryFriendlyByteBuf buffer) {
-        return ComponentSerialization.TRUSTED_STREAM_CODEC.decode(buffer);
+    //? if >=1.20.5 {
+    public static void handleData(final CrazyPhoneNewMessageNotificationPacket messagePacket, final IPayloadContext context) {
+        if (context.flow() == PacketFlow.CLIENTBOUND) {
+            context.enqueueWork(() -> applyNotification(messagePacket));
+        }
     }
-
-    private static void writeComponent(RegistryFriendlyByteBuf buffer, Component component) {
-        ComponentSerialization.TRUSTED_STREAM_CODEC.encode(buffer, component);
+    //? } else {
+    /*public static void handleData(final CrazyPhoneNewMessageNotificationPacket messagePacket, final PlayPayloadContext context) {
+        if (context.flow() == PacketFlow.CLIENTBOUND) {
+            context.workHandler().submitAsync(() -> applyNotification(messagePacket));
+        }
     }
+    *///?}
 
     @SubscribeEvent
     public static void registerMessage(FMLCommonSetupEvent event) {
+        //? if >=1.20.5 {
         Crazyphone.addNetworkMessage(TYPE, STREAM_CODEC, CrazyPhoneNewMessageNotificationPacket::handleData);
+        //? } else {
+        /*Crazyphone.addNetworkMessage(ID, CrazyPhoneNewMessageNotificationPacket::new, CrazyPhoneNewMessageNotificationPacket::handleData);
+        *///?}
     }
 }

@@ -33,7 +33,9 @@ election, and an optional Simple Voice Chat integration (calls + voice messages)
 
 ## ✨ Features
 
-**Phone basics** - registration + PIN sign-in, home screen launcher, lock screen, back/home navigation.
+**Phone basics** - two-step registration (number/name, then a dedicated password step with a clear warning
+that the password is visible to server admins) + PIN sign-in, home screen launcher, lock screen, back/home
+navigation.
 
 **Messaging** - contacts, favorites, and groups in one scrollable, recency-sorted screen; group
 conversations with their own settings (rename, custom icon, invite/exclude, admin); real-time text;
@@ -292,7 +294,7 @@ src/main/java/fr/lordfinn/crazyphone/
 
 - **[Camera](https://github.com/henkelmax/camera)** by [Max Henkel](https://github.com/henkelmax): the photography engine CrazyPhone builds its camera/album features on top of.
 - **[Simple Voice Chat](https://modrepo.de/minecraft/voicechat)** by [henkelmax](https://github.com/henkelmax): the voice engine calls and voice messages are built on top of.
-- Original `crazythings` project: source of the feature set and assets this mod ports and rebuilds.
+- Original `crazythings` project: source of the feature set and assets this mod ports and rebuilds. Made by me ;)
 
 ## 📄 License
 

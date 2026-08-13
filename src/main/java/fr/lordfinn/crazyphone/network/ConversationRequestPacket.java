@@ -1,17 +1,28 @@
 package fr.lordfinn.crazyphone.network;
 
+//? if >=1.20.5 {
 import net.neoforged.neoforge.network.handling.IPayloadContext;
+//? } else {
+/*import net.neoforged.neoforge.network.handling.PlayPayloadContext;
+*///?}
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
+//? if >=1.20.5 {
 import net.neoforged.fml.common.EventBusSubscriber;
+//? } else {
+/*import net.neoforged.fml.common.Mod.EventBusSubscriber;
+*///?}
 import net.neoforged.bus.api.SubscribeEvent;
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.network.protocol.PacketFlow;
+//? if >=1.20.5 {
 import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.chat.Component;
 import net.minecraft.network.RegistryFriendlyByteBuf;
+//? }
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.chat.Component;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.server.level.ServerPlayer;
@@ -30,7 +41,8 @@ import java.util.List;
  * client already having every message because it was included in the full-world sync blob.
  */
 public record ConversationRequestPacket(String conversationId, int skipFromEnd) implements CustomPacketPayload {
-    public static final Type<ConversationRequestPacket> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(Crazyphone.MODID, "conversation_request"));
+    //? if >=1.20.5 {
+    public static final Type<ConversationRequestPacket> TYPE = new Type<>(Crazyphone.resource("conversation_request"));
 
     public static final StreamCodec<RegistryFriendlyByteBuf, ConversationRequestPacket> STREAM_CODEC = StreamCodec.of(
             (RegistryFriendlyByteBuf buffer, ConversationRequestPacket message) -> {
@@ -43,7 +55,25 @@ public record ConversationRequestPacket(String conversationId, int skipFromEnd) 
     public Type<ConversationRequestPacket> type() {
         return TYPE;
     }
+    //? } else {
+    /*public static final ResourceLocation ID = new ResourceLocation(Crazyphone.MODID, "conversation_request");
 
+    public ConversationRequestPacket(FriendlyByteBuf buffer) {
+        this(buffer.readUtf(), buffer.readVarInt());
+    }
+
+    public void write(FriendlyByteBuf buffer) {
+        buffer.writeUtf(conversationId);
+        buffer.writeVarInt(skipFromEnd);
+    }
+
+    @Override
+    public ResourceLocation id() {
+        return ID;
+    }
+    *///?}
+
+    //? if >=1.20.5 {
     public static void handleData(final ConversationRequestPacket message, final IPayloadContext context) {
         if (context.flow() != PacketFlow.SERVERBOUND)
             return;
@@ -73,12 +103,41 @@ public record ConversationRequestPacket(String conversationId, int skipFromEnd) 
             return null;
         });
     }
+    //? } else {
+    /*public static void handleData(final ConversationRequestPacket message, final PlayPayloadContext context) {
+        if (context.flow() != PacketFlow.SERVERBOUND)
+            return;
+        context.workHandler().submitAsync(() -> {
+            if (!(context.player().orElse(null) instanceof ServerPlayer player))
+                return;
+            String requesterNumber = GetCrazyPhoneNumberFromMainHandProcedure.execute(player, null);
+            if (requesterNumber.isEmpty() || !CrazyPhoneHelper.getGroupMembers(player.level(), message.conversationId).contains(requesterNumber))
+                return;
+            ConversationSavedData conversations = ConversationSavedData.get(player.level());
+            int limit = Config.maxMessagesSentPerRequest;
+            List<CompoundTag> page = conversations.getPage(message.conversationId, message.skipFromEnd, limit);
+            boolean hasMore = message.skipFromEnd + page.size() < conversations.getMessageCount(message.conversationId);
+
+            ListTag pageTag = new ListTag();
+            page.forEach(pageTag::add);
+
+            PacketDistributor.PLAYER.with(player).send(new ConversationResponsePacket(message.conversationId, message.skipFromEnd, pageTag, hasMore));
+        }).exceptionally(e -> {
+            context.packetHandler().disconnect(Component.literal(e.getMessage()));
+            return null;
+        });
+    }
+    *///?}
 
     @EventBusSubscriber
     public static class Registration {
         @SubscribeEvent
         public static void register(FMLCommonSetupEvent event) {
+            //? if >=1.20.5 {
             Crazyphone.addNetworkMessage(TYPE, STREAM_CODEC, ConversationRequestPacket::handleData);
+            //? } else {
+            /*Crazyphone.addNetworkMessage(ID, ConversationRequestPacket::new, ConversationRequestPacket::handleData);
+            *///?}
         }
     }
 }

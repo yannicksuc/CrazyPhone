@@ -138,6 +138,7 @@ public class MessageDisplayManager {
 
     private MessageEntry buildTextEntry(MessageData newMessage) {
         boolean isSender = ownerNumber.equals(newMessage.getSender());
+
         // Empty text: WrappedTextWidget treats a blank message as "no background" (used for image messages,
         // which draw their own content edge-to-edge) - a voice message still wants the normal colored
         // chat-bubble background though, just with custom content (play icon/time/waveform/speed) drawn

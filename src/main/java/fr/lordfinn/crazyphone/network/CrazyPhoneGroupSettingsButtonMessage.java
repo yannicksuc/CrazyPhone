@@ -1,9 +1,17 @@
 
 package fr.lordfinn.crazyphone.network;
 
+//? if >=1.20.5 {
 import net.neoforged.neoforge.network.handling.IPayloadContext;
+//? } else {
+/*import net.neoforged.neoforge.network.handling.PlayPayloadContext;
+*///?}
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
+//? if >=1.20.5 {
 import net.neoforged.fml.common.EventBusSubscriber;
+//? } else {
+/*import net.neoforged.fml.common.Mod.EventBusSubscriber;
+*///?}
 import net.neoforged.bus.api.SubscribeEvent;
 
 import net.minecraft.world.InteractionHand;
@@ -16,9 +24,12 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.TagParser;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.network.protocol.PacketFlow;
+//? if >=1.20.5 {
 import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.chat.Component;
 import net.minecraft.network.RegistryFriendlyByteBuf;
+//? }
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.chat.Component;
 import net.minecraft.core.BlockPos;
 
 import fr.lordfinn.crazyphone.procedures.GetCrazyPhoneNumberFromMainHandProcedure;
@@ -40,7 +51,8 @@ import java.util.Map;
 @EventBusSubscriber
 public record CrazyPhoneGroupSettingsButtonMessage(int buttonID, int x, int y, int z, HashMap<String, String> textstate) implements CustomPacketPayload {
 
-	public static final Type<CrazyPhoneGroupSettingsButtonMessage> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(Crazyphone.MODID, "crazy_phone_group_settings_buttons"));
+	//? if >=1.20.5 {
+	public static final Type<CrazyPhoneGroupSettingsButtonMessage> TYPE = new Type<>(Crazyphone.resource("crazy_phone_group_settings_buttons"));
 	public static final StreamCodec<RegistryFriendlyByteBuf, CrazyPhoneGroupSettingsButtonMessage> STREAM_CODEC = StreamCodec.of((RegistryFriendlyByteBuf buffer, CrazyPhoneGroupSettingsButtonMessage message) -> {
 		buffer.writeInt(message.buttonID);
 		buffer.writeInt(message.x);
@@ -53,7 +65,28 @@ public record CrazyPhoneGroupSettingsButtonMessage(int buttonID, int x, int y, i
 	public Type<CrazyPhoneGroupSettingsButtonMessage> type() {
 		return TYPE;
 	}
+	//? } else {
+	/*public static final ResourceLocation ID = new ResourceLocation(Crazyphone.MODID, "crazy_phone_group_settings_buttons");
 
+	public CrazyPhoneGroupSettingsButtonMessage(FriendlyByteBuf buffer) {
+		this(buffer.readInt(), buffer.readInt(), buffer.readInt(), buffer.readInt(), readTextState(buffer));
+	}
+
+	public void write(FriendlyByteBuf buffer) {
+		buffer.writeInt(buttonID);
+		buffer.writeInt(x);
+		buffer.writeInt(y);
+		buffer.writeInt(z);
+		writeTextState(textstate, buffer);
+	}
+
+	@Override
+	public ResourceLocation id() {
+		return ID;
+	}
+	*///?}
+
+	//? if >=1.20.5 {
 	public static void handleData(final CrazyPhoneGroupSettingsButtonMessage message, final IPayloadContext context) {
 		if (context.flow() == PacketFlow.SERVERBOUND) {
 			context.enqueueWork(() -> handleButtonAction(context.player(), message.buttonID, message.x, message.y, message.z, message.textstate))
@@ -63,6 +96,17 @@ public record CrazyPhoneGroupSettingsButtonMessage(int buttonID, int x, int y, i
 				});
 		}
 	}
+	//? } else {
+	/*public static void handleData(final CrazyPhoneGroupSettingsButtonMessage message, final PlayPayloadContext context) {
+		if (context.flow() == PacketFlow.SERVERBOUND) {
+			context.workHandler().submitAsync(() -> handleButtonAction(context.player().orElse(null), message.buttonID, message.x, message.y, message.z, message.textstate))
+				.exceptionally(e -> {
+					context.packetHandler().disconnect(Component.literal(e.getMessage()));
+					return null;
+				});
+		}
+	}
+	*///?}
 
 	public static void handleButtonAction(Player entity, int buttonID, int x, int y, int z, HashMap<String, String> textstate) {
 		if (buttonID != 0 || entity == null || entity.level().isClientSide())
@@ -108,8 +152,13 @@ public record CrazyPhoneGroupSettingsButtonMessage(int buttonID, int x, int y, i
 
 	private static void applyIconChange(Level world, String conversationId, CrazyPhoneHelper.GroupMeta meta, HashMap<String, String> textstate, String requesterName) {
 		ItemStack newIcon = decodeIconFromTextState(world, textstate);
+		//? if >=1.20.5 {
 		if (ItemStack.isSameItemSameComponents(newIcon, meta.icon()))
 			return;
+		//? } else {
+		/*if (ItemStack.isSameItemSameTags(newIcon, meta.icon()))
+			return;
+		*///?}
 		CrazyPhoneHelper.setGroupIcon(world, conversationId, newIcon);
 		Component text = Component.translatable("gui.crazyphone.crazy_phone_group_settings.system_icon_changed", requesterName);
 		CrazyPhoneHelper.addSystemMessage(world, conversationId, text, newIcon);
@@ -206,7 +255,11 @@ public record CrazyPhoneGroupSettingsButtonMessage(int buttonID, int x, int y, i
 		return contact != null ? contact.getName() : number;
 	}
 
+	//? if >=1.20.5 {
 	private static void writeTextState(HashMap<String, String> map, RegistryFriendlyByteBuf buffer) {
+	//? } else {
+	/*private static void writeTextState(HashMap<String, String> map, FriendlyByteBuf buffer) {
+	*///?}
 		buffer.writeInt(map.size());
 		for (Map.Entry<String, String> entry : map.entrySet()) {
 			buffer.writeUtf(entry.getKey());
@@ -214,7 +267,11 @@ public record CrazyPhoneGroupSettingsButtonMessage(int buttonID, int x, int y, i
 		}
 	}
 
+	//? if >=1.20.5 {
 	private static HashMap<String, String> readTextState(RegistryFriendlyByteBuf buffer) {
+	//? } else {
+	/*private static HashMap<String, String> readTextState(FriendlyByteBuf buffer) {
+	*///?}
 		int size = buffer.readInt();
 		HashMap<String, String> map = new HashMap<>();
 		for (int i = 0; i < size; i++) {
@@ -227,6 +284,10 @@ public record CrazyPhoneGroupSettingsButtonMessage(int buttonID, int x, int y, i
 
 	@SubscribeEvent
 	public static void registerMessage(FMLCommonSetupEvent event) {
+		//? if >=1.20.5 {
 		Crazyphone.addNetworkMessage(CrazyPhoneGroupSettingsButtonMessage.TYPE, CrazyPhoneGroupSettingsButtonMessage.STREAM_CODEC, CrazyPhoneGroupSettingsButtonMessage::handleData);
+		//? } else {
+		/*Crazyphone.addNetworkMessage(CrazyPhoneGroupSettingsButtonMessage.ID, CrazyPhoneGroupSettingsButtonMessage::new, CrazyPhoneGroupSettingsButtonMessage::handleData);
+		*///?}
 	}
 }

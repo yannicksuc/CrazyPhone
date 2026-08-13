@@ -1,5 +1,7 @@
 package fr.lordfinn.crazyphone.client.gui;
 
+import fr.lordfinn.crazyphone.Crazyphone;
+
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import net.minecraft.world.level.Level;
@@ -11,6 +13,7 @@ import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.components.WidgetSprites;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.ImageButton;
+import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.world.item.ItemStack;
@@ -58,11 +61,32 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 		this.imageHeight = 195;
 	}
 
-	private static final ResourceLocation HEADER_BANNER_IMAGE = ResourceLocation.parse("crazyphone:textures/screens/crazyphone-header-background.png");
+	private static final ResourceLocation HEADER_BANNER_IMAGE = Crazyphone.parseId("crazyphone:textures/screens/crazyphone-header-background.png");
 	/** Height in pixels of the header strip drawn by {@link #renderHeader}, measured from the top of the phone background - every screen that shows one must start its own content at this y offset. */
 	protected static final int HEADER_HEIGHT = 27;
 
 	public abstract HashMap<String, Object> getWidgets();
+
+	/** Shared bottom action-button row geometry, matching what every phone screen (contacts, group
+	 * settings, calls, album...) already draws its own confirm/cancel buttons at - factored
+	 * out here so a screen reaches for these instead of inventing its own button size/position. */
+	protected static final int ACTION_BUTTON_Y = 158;
+	protected static final int ACTION_BUTTON_HEIGHT = 14;
+	protected static final int ACTION_BUTTON_X = 8;
+	/** Width of a single button spanning the whole row alone (e.g. one "Send"/"Validate" action). */
+	protected static final int ACTION_BUTTON_FULL_WIDTH = 106;
+
+	/** Builds one bottom-row action button at the shared size/position above. Pass the button's own
+	 * xOffset/width when it shares the row with another (see e.g. CrazyPhoneIncomingCallScreenScreen's
+	 * accept/decline pair); use {@link #ACTION_BUTTON_X}/{@link #ACTION_BUTTON_FULL_WIDTH} for a lone
+	 * button spanning the row by itself. */
+	protected Button actionButton(Component label, int xOffset, int width, Tooltip tooltip, Button.OnPress onPress) {
+		Button.Builder builder = Button.builder(label, onPress)
+				.bounds(this.leftPos + xOffset, this.topPos + ACTION_BUTTON_Y, width, ACTION_BUTTON_HEIGHT);
+		if (tooltip != null)
+			builder.tooltip(tooltip);
+		return builder.build();
+	}
 
 	/** Where the header icon sits, and where the title text starts just past it - both relative to leftPos. */
 	private static final int HEADER_ICON_X = 7;
@@ -126,7 +150,7 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 		RenderSystem.enableBlend();
 		RenderSystem.defaultBlendFunc();
 
-		guiGraphics.blit(ResourceLocation.parse("crazyphone:textures/screens/phone-background.png"), this.leftPos + 0,
+		guiGraphics.blit(Crazyphone.parseId("crazyphone:textures/screens/phone-background.png"), this.leftPos + 0,
 				this.topPos + 0, 0,0, 0, 122, 195, 122, 195);
 
 		RenderSystem.disableBlend();
@@ -179,11 +203,16 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 		super.init();
 		HashMap<String, Object> guistate = getWidgets();
 		imagebutton_crazyphoneback = new ImageButton(this.leftPos + 14, this.topPos + 180, 29, 12,
-				new WidgetSprites(ResourceLocation.parse("crazyphone:textures/screens/crazyphone-back.png"),
-						ResourceLocation.parse("crazyphone:textures/screens/crazyphone-back-hover.png")),
+				new WidgetSprites(Crazyphone.parseId("crazyphone:textures/screens/crazyphone-back.png"),
+						Crazyphone.parseId("crazyphone:textures/screens/crazyphone-back-hover.png")),
 				e -> {
+					//? if >=1.20.5 {
 					PacketDistributor.sendToServer(
 							new CrazyPhoneDefaultScreenButtonMessage(0, x, y, z, getEditBoxAndCheckBoxValues()));
+					//? } else {
+					/*PacketDistributor.SERVER.noArg().send(
+							new CrazyPhoneDefaultScreenButtonMessage(0, x, y, z, getEditBoxAndCheckBoxValues()));
+					*///?}
 					CrazyPhoneDefaultScreenButtonMessage.handleButtonAction(entity, 0, x, y, z,
 							getEditBoxAndCheckBoxValues());
 				}) {
@@ -198,11 +227,16 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 		this.addRenderableWidget(imagebutton_crazyphoneback);
 
 		imagebutton_crazyphonehome = new ImageButton(this.leftPos + 46, this.topPos + 180, 29, 12,
-				new WidgetSprites(ResourceLocation.parse("crazyphone:textures/screens/crazyphone-home.png"),
-						ResourceLocation.parse("crazyphone:textures/screens/crazyphone-home-hover.png")),
+				new WidgetSprites(Crazyphone.parseId("crazyphone:textures/screens/crazyphone-home.png"),
+						Crazyphone.parseId("crazyphone:textures/screens/crazyphone-home-hover.png")),
 				e -> {
+					//? if >=1.20.5 {
 					PacketDistributor.sendToServer(
 							new CrazyPhoneDefaultScreenButtonMessage(1, x, y, z, getEditBoxAndCheckBoxValues()));
+					//? } else {
+					/*PacketDistributor.SERVER.noArg().send(
+							new CrazyPhoneDefaultScreenButtonMessage(1, x, y, z, getEditBoxAndCheckBoxValues()));
+					*///?}
 					CrazyPhoneDefaultScreenButtonMessage.handleButtonAction(entity, 1, x, y, z,
 							getEditBoxAndCheckBoxValues());
 				}) {
@@ -217,11 +251,16 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 		this.addRenderableWidget(imagebutton_crazyphonehome);
 
 		imagebutton_crazyphonelock = new ImageButton(this.leftPos + 78, this.topPos + 180, 29, 12,
-				new WidgetSprites(ResourceLocation.parse("crazyphone:textures/screens/crazyphone-lock.png"),
-						ResourceLocation.parse("crazyphone:textures/screens/crazyphone-lock-hover.png")),
+				new WidgetSprites(Crazyphone.parseId("crazyphone:textures/screens/crazyphone-lock.png"),
+						Crazyphone.parseId("crazyphone:textures/screens/crazyphone-lock-hover.png")),
 				e -> {
+					//? if >=1.20.5 {
 					PacketDistributor.sendToServer(
 							new CrazyPhoneDefaultScreenButtonMessage(2, x, y, z, getEditBoxAndCheckBoxValues()));
+					//? } else {
+					/*PacketDistributor.SERVER.noArg().send(
+							new CrazyPhoneDefaultScreenButtonMessage(2, x, y, z, getEditBoxAndCheckBoxValues()));
+					*///?}
 					CrazyPhoneDefaultScreenButtonMessage.handleButtonAction(entity, 2, x, y, z,
 							getEditBoxAndCheckBoxValues());
 				}) {

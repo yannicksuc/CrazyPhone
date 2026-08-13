@@ -1,15 +1,14 @@
 package fr.lordfinn.crazyphone.procedures;
 
 import net.minecraft.world.level.LevelAccessor;
-import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.core.component.DataComponents;
 
 import fr.lordfinn.crazyphone.data.PhoneRegistrySavedData;
 import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
+import fr.lordfinn.crazyphone.utils.PhoneTagAccess;
 
 import java.util.HashMap;
 
@@ -65,7 +64,7 @@ public class RegisterNewPhoneFromFormProcedure {
 
         // Update itemstack with name and number from GUI state again
         updateItemStackTag(itemstack, textstate, "textin:number", "number");
-        CustomData.update(DataComponents.CUSTOM_DATA, itemstack, tag -> tag.putString("name", resolvedName));
+        PhoneTagAccess.updateTag(itemstack, tag -> tag.putString("name", resolvedName));
 
         // Sync the data with the world
         PhoneRegistrySavedData.get(world).syncToAll(world);
@@ -73,6 +72,6 @@ public class RegisterNewPhoneFromFormProcedure {
 
     private static void updateItemStackTag(ItemStack itemstack, HashMap guistate, String guiKey, String tagName) {
         String _tagValue = guistate.containsKey(guiKey) ? ((String) guistate.get(guiKey)) : "";
-        CustomData.update(DataComponents.CUSTOM_DATA, itemstack, tag -> tag.putString(tagName, _tagValue));
+        PhoneTagAccess.updateTag(itemstack, tag -> tag.putString(tagName, _tagValue));
     }
 }

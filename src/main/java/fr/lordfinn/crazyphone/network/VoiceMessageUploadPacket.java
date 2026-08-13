@@ -1,16 +1,27 @@
 package fr.lordfinn.crazyphone.network;
 
+//? if >=1.20.5 {
 import net.neoforged.neoforge.network.handling.IPayloadContext;
+//? } else {
+/*import net.neoforged.neoforge.network.handling.PlayPayloadContext;
+*///?}
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
+//? if >=1.20.5 {
 import net.neoforged.fml.common.EventBusSubscriber;
+//? } else {
+/*import net.neoforged.fml.common.Mod.EventBusSubscriber;
+*///?}
 import net.neoforged.bus.api.SubscribeEvent;
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.network.protocol.PacketFlow;
+//? if >=1.20.5 {
 import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.chat.Component;
 import net.minecraft.network.RegistryFriendlyByteBuf;
+//? }
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
 
@@ -39,8 +50,9 @@ public record VoiceMessageUploadPacket(String conversationId, UUID voiceId, byte
     /** Matches VoiceMessageRecorder's own capture rate. */
     private static final int SAMPLE_RATE = 48000;
 
+    //? if >=1.20.5 {
     public static final Type<VoiceMessageUploadPacket> TYPE = new Type<>(
-            ResourceLocation.fromNamespaceAndPath(Crazyphone.MODID, "voice_message_upload")
+            Crazyphone.resource("voice_message_upload")
     );
 
     public static final StreamCodec<RegistryFriendlyByteBuf, VoiceMessageUploadPacket> STREAM_CODEC =
@@ -65,44 +77,91 @@ public record VoiceMessageUploadPacket(String conversationId, UUID voiceId, byte
     public Type<VoiceMessageUploadPacket> type() {
         return TYPE;
     }
+    //? } else {
+    /*public static final ResourceLocation ID = Crazyphone.resource("voice_message_upload");
 
+    public VoiceMessageUploadPacket(FriendlyByteBuf buffer) {
+        this(
+                buffer.readUtf(),
+                buffer.readUUID(),
+                buffer.readByteArray(),
+                buffer.readVarInt(),
+                buffer.readByteArray()
+        );
+    }
+
+    public void write(FriendlyByteBuf buffer) {
+        buffer.writeUtf(conversationId);
+        buffer.writeUUID(voiceId);
+        buffer.writeByteArray(audioPcm);
+        buffer.writeVarInt(durationTicks);
+        buffer.writeByteArray(envelope);
+    }
+
+    @Override
+    public ResourceLocation id() {
+        return ID;
+    }
+    *///?}
+
+    private static void handle(ServerPlayer player, String conversationId, UUID voiceId, byte[] audioPcm, int durationTicks, byte[] envelope) {
+        if (!VoicechatIntegration.isAvailable())
+            return;
+        if (!FeatureFlag.VOICE_MESSAGES.isEnabledFor(player))
+            return;
+        if (audioPcm.length == 0)
+            return;
+
+        // Defense in depth: the client already auto-stops a recording at maxVoiceMessageRecordingSeconds
+        // (CrazyPhoneConversationScreen's render loop), but a modified client could skip that and upload
+        // an arbitrarily long clip - reject anything meaningfully over the cap here too. A few seconds
+        // of slack accounts for the client's own check being per-frame, not sample-exact.
+        long maxSamples = (long) (Config.maxVoiceMessageRecordingSeconds + 2) * SAMPLE_RATE;
+        if (audioPcm.length / 2L > maxSamples) {
+            LOGGER.warn("Voice message upload rejected: {} samples exceeds the {}s cap", audioPcm.length / 2, Config.maxVoiceMessageRecordingSeconds);
+            return;
+        }
+
+        Level world = player.level();
+        String senderNumber = GetCrazyPhoneNumberFromMainHandProcedure.execute(player, null);
+        if (senderNumber.isEmpty() || !CrazyPhoneHelper.getGroupMembers(world, conversationId).contains(senderNumber))
+            return;
+
+        LOGGER.info("Voice message upload: {} bytes ({} samples), {}", audioPcm.length,
+                audioPcm.length / 2, describeAmplitude(audioPcm));
+
+        int timestampInMinutes = (int) (Instant.now().getEpochSecond() / 60);
+        CrazyPhoneHelper.addVoiceMessage(world, conversationId, senderNumber, voiceId, audioPcm,
+                durationTicks, envelope, timestampInMinutes);
+    }
+
+    //? if >=1.20.5 {
     public static void handleData(final VoiceMessageUploadPacket message, final IPayloadContext context) {
         if (context.flow() != PacketFlow.SERVERBOUND)
             return;
         context.enqueueWork(() -> {
-            if (!(context.player() instanceof ServerPlayer player) || !VoicechatIntegration.isAvailable())
+            if (!(context.player() instanceof ServerPlayer player))
                 return;
-            if (!FeatureFlag.VOICE_MESSAGES.isEnabledFor(player))
-                return;
-            if (message.audioPcm.length == 0)
-                return;
-
-            // Defense in depth: the client already auto-stops a recording at maxVoiceMessageRecordingSeconds
-            // (CrazyPhoneConversationScreen's render loop), but a modified client could skip that and upload
-            // an arbitrarily long clip - reject anything meaningfully over the cap here too. A few seconds
-            // of slack accounts for the client's own check being per-frame, not sample-exact.
-            long maxSamples = (long) (Config.maxVoiceMessageRecordingSeconds + 2) * SAMPLE_RATE;
-            if (message.audioPcm.length / 2L > maxSamples) {
-                LOGGER.warn("Voice message upload rejected: {} samples exceeds the {}s cap", message.audioPcm.length / 2, Config.maxVoiceMessageRecordingSeconds);
-                return;
-            }
-
-            Level world = player.level();
-            String senderNumber = GetCrazyPhoneNumberFromMainHandProcedure.execute(player, null);
-            if (senderNumber.isEmpty() || !CrazyPhoneHelper.getGroupMembers(world, message.conversationId).contains(senderNumber))
-                return;
-
-            LOGGER.info("Voice message upload: {} bytes ({} samples), {}", message.audioPcm.length,
-                    message.audioPcm.length / 2, describeAmplitude(message.audioPcm));
-
-            int timestampInMinutes = (int) (Instant.now().getEpochSecond() / 60);
-            CrazyPhoneHelper.addVoiceMessage(world, message.conversationId, senderNumber, message.voiceId, message.audioPcm,
-                    message.durationTicks, message.envelope, timestampInMinutes);
+            handle(player, message.conversationId, message.voiceId, message.audioPcm, message.durationTicks, message.envelope);
         }).exceptionally(e -> {
             context.connection().disconnect(Component.literal(e.getMessage()));
             return null;
         });
     }
+    //? } else {
+    /*public static void handleData(final VoiceMessageUploadPacket message, final PlayPayloadContext context) {
+        if (context.flow() != PacketFlow.SERVERBOUND)
+            return;
+        context.workHandler().submitAsync(() -> {
+            if (!(context.player().orElse(null) instanceof ServerPlayer player))
+                return;
+            handle(player, message.conversationId, message.voiceId, message.audioPcm, message.durationTicks, message.envelope);
+        }).exceptionally(e -> {
+            context.packetHandler().disconnect(Component.literal(e.getMessage()));
+            return null;
+        });
+    }
+    *///?}
 
     /** min/max/first-few sample values - a quick sanity check that captured audio looks like real speech
      * (varying values in a plausible range) rather than silence (all ~0) or garbage (implausible values). */
@@ -122,7 +181,11 @@ public record VoiceMessageUploadPacket(String conversationId, UUID voiceId, byte
     public static class Registration {
         @SubscribeEvent
         public static void register(FMLCommonSetupEvent event) {
+            //? if >=1.20.5 {
             Crazyphone.addNetworkMessage(TYPE, STREAM_CODEC, VoiceMessageUploadPacket::handleData);
+            //? } else {
+            /*Crazyphone.addNetworkMessage(ID, VoiceMessageUploadPacket::new, VoiceMessageUploadPacket::handleData);
+            *///?}
         }
     }
 }

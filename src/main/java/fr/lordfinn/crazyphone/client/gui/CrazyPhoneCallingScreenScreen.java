@@ -55,7 +55,11 @@ public class CrazyPhoneCallingScreenScreen extends CrazyPhoneDefaultScreenScreen
             bustPreview.ensure(callee.id(), callee.name(), callee.helmet(), callee.chestplate(), callee.leggings(), callee.boots());
 
         button_cancel = Button.builder(Component.translatable("gui.crazyphone.crazy_phone_calling_screen.button_cancel"), e -> {
+            //? if >=1.20.5 {
             PacketDistributor.sendToServer(new CrazyPhoneCallActionMessage(CrazyPhoneCallActionMessage.HANGUP, menu.getConversationId()));
+            //? } else {
+            /*PacketDistributor.SERVER.noArg().send(new CrazyPhoneCallActionMessage(CrazyPhoneCallActionMessage.HANGUP, menu.getConversationId()));
+            *///?}
         }).bounds(this.leftPos + 8, this.topPos + 158, 106, 14).build();
         this.addRenderableWidget(button_cancel);
     }
@@ -72,7 +76,11 @@ public class CrazyPhoneCallingScreenScreen extends CrazyPhoneDefaultScreenScreen
             return;
         if (packet.state() == CrazyPhoneCallStateSyncPacket.State.ACTIVE) {
             // Someone answered - hand off to the server to reopen us as the InCall screen.
+            //? if >=1.20.5 {
             PacketDistributor.sendToServer(new CrazyPhoneCallActionMessage(CrazyPhoneCallActionMessage.OPEN_CALL_SCREEN, menu.getConversationId()));
+            //? } else {
+            /*PacketDistributor.SERVER.noArg().send(new CrazyPhoneCallActionMessage(CrazyPhoneCallActionMessage.OPEN_CALL_SCREEN, menu.getConversationId()));
+            *///?}
         } else if (packet.state() == CrazyPhoneCallStateSyncPacket.State.ENDED) {
             if (this.minecraft != null && this.minecraft.player != null)
                 this.minecraft.player.closeContainer();

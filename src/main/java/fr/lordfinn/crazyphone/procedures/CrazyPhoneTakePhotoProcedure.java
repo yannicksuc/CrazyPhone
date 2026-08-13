@@ -29,7 +29,11 @@ public class CrazyPhoneTakePhotoProcedure {
 
         if (playerIn.isShiftKeyDown() && !CameraModHelper.isActive(stack)) {
             if (worldIn.isClientSide) {
+                //? if >=1.20.5 {
                 openClientGui(stack.get(Main.SHADER_DATA_COMPONENT));
+                //? } else {
+                /*openClientGui(Main.CAMERA.get().getShader(stack));
+                *///?}
             }
             return;
         }
@@ -44,7 +48,11 @@ public class CrazyPhoneTakePhotoProcedure {
         } else if (Main.PACKET_MANAGER.canTakeImage(playerIn.getUUID())) {
             worldIn.playSound(null, playerIn.blockPosition(), ModSounds.TAKE_IMAGE.get(), SoundSource.AMBIENT, 1F, 1F);
             UUID uuid = UUID.randomUUID();
+            //? if >=1.20.5 {
             PacketDistributor.sendToPlayer(serverPlayer, new MessageTakeImage(uuid));
+            //? } else {
+            /*PacketDistributor.PLAYER.with(serverPlayer).send(new MessageTakeImage(uuid));
+            *///?}
             Main.CAMERA.get().setActive(stack, false);
         } else {
             playerIn.displayClientMessage(Component.translatable("message.image_cooldown"), true);

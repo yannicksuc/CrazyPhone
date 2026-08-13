@@ -1,8 +1,15 @@
 package fr.lordfinn.crazyphone.voicechat;
 
+import fr.lordfinn.crazyphone.Crazyphone;
+
 import net.neoforged.neoforge.event.entity.item.ItemTossEvent;
+//? if >=1.20.5 {
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+//? } else {
+/*import net.neoforged.neoforge.event.TickEvent;
+import net.neoforged.fml.common.Mod.EventBusSubscriber;
+*///?}
 import net.neoforged.bus.api.SubscribeEvent;
 
 import net.minecraft.server.MinecraftServer;
@@ -59,6 +66,7 @@ public class CallTerminationListener {
         }
     }
 
+    //? if >=1.20.5 {
     @SubscribeEvent
     public static void onServerTick(ServerTickEvent.Post event) {
         MinecraftServer server = event.getServer();
@@ -68,6 +76,18 @@ public class CallTerminationListener {
         sweepAloneParticipants(server);
         sweepRingTimeouts(server);
     }
+    //? } else {
+    /*@SubscribeEvent
+    public static void onServerTick(TickEvent.ServerTickEvent event) {
+        if (event.phase != TickEvent.Phase.END) return;
+        MinecraftServer server = event.getServer();
+        if (server.getTickCount() % SWEEP_INTERVAL_TICKS != 0)
+            return;
+        sweepInventoryPossession(server);
+        sweepAloneParticipants(server);
+        sweepRingTimeouts(server);
+    }
+    *///?}
 
     private static void sweepInventoryPossession(MinecraftServer server) {
         long currentGameTime = server.overworld().getGameTime();
@@ -176,7 +196,7 @@ public class CallTerminationListener {
     }
 
     private static void playDisconnectSound(ServerPlayer player) {
-        SoundEvent sound = BuiltInRegistries.SOUND_EVENT.get(ResourceLocation.parse("minecraft:entity.villager.no"));
+        SoundEvent sound = BuiltInRegistries.SOUND_EVENT.get(Crazyphone.parseId("minecraft:entity.villager.no"));
         if (sound != null)
             player.playNotifySound(sound, SoundSource.PLAYERS, 0.8f, 0.8f);
     }

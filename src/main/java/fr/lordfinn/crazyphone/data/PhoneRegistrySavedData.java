@@ -8,6 +8,9 @@ import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.level.saveddata.SavedData;
 import net.neoforged.neoforge.network.PacketDistributor;
+//? if <1.20.5 {
+/*import net.minecraft.util.datafix.DataFixTypes;
+*///?}
 
 import fr.lordfinn.crazyphone.network.PhoneRegistrySyncPacket;
 import org.jetbrains.annotations.NotNull;
@@ -41,11 +44,19 @@ public class PhoneRegistrySavedData extends SavedData {
      * contacts grid. Bounded by contact count, so it's safe alongside the rest of this always-synced registry. */
     public CompoundTag favorites = new CompoundTag();
 
+    //? if >=1.20.5 {
     public static PhoneRegistrySavedData load(CompoundTag tag, HolderLookup.Provider lookupProvider) {
         PhoneRegistrySavedData data = new PhoneRegistrySavedData();
         data.read(tag);
         return data;
     }
+    //? } else {
+    /*public static PhoneRegistrySavedData load(CompoundTag tag) {
+        PhoneRegistrySavedData data = new PhoneRegistrySavedData();
+        data.read(tag);
+        return data;
+    }
+    *///?}
 
     private void read(CompoundTag nbt) {
         this.phones = nbt.get("phones") instanceof CompoundTag t ? t : new CompoundTag();
@@ -59,8 +70,13 @@ public class PhoneRegistrySavedData extends SavedData {
         this.favorites = nbt.get("favorites") instanceof CompoundTag t ? t : new CompoundTag();
     }
 
+    //? if >=1.20.5 {
     @Override
     public @NotNull CompoundTag save(CompoundTag nbt, HolderLookup.@NotNull Provider lookupProvider) {
+    //? } else {
+    /*@Override
+    public @NotNull CompoundTag save(CompoundTag nbt) {
+    *///?}
         nbt.put("phones", this.phones);
         nbt.put("contacts", this.contacts);
         nbt.put("mayorVotes", this.mayorVotes);
@@ -77,13 +93,21 @@ public class PhoneRegistrySavedData extends SavedData {
     public void syncToAll(LevelAccessor world) {
         this.setDirty();
         if (world instanceof Level level && !level.isClientSide())
+            //? if >=1.20.5 {
             PacketDistributor.sendToAllPlayers(new PhoneRegistrySyncPacket(this));
+            //? } else {
+            /*PacketDistributor.ALL.noArg().send(new PhoneRegistrySyncPacket(this));
+            *///?}
     }
 
     /** Marks dirty for disk persistence and pushes the registry to a single player, e.g. right after they join. */
     public void syncTo(ServerPlayer player) {
         this.setDirty();
+        //? if >=1.20.5 {
         PacketDistributor.sendToPlayer(player, new PhoneRegistrySyncPacket(this));
+        //? } else {
+        /*PacketDistributor.PLAYER.with(player).send(new PhoneRegistrySyncPacket(this));
+        *///?}
     }
 
     static final PhoneRegistrySavedData CLIENT_SIDE = new PhoneRegistrySavedData();
@@ -91,7 +115,11 @@ public class PhoneRegistrySavedData extends SavedData {
     public static PhoneRegistrySavedData get(LevelAccessor world) {
         if (world instanceof ServerLevelAccessor serverLevelAcc) {
             return serverLevelAcc.getLevel().getServer().overworld().getDataStorage()
+                    //? if >=1.20.5 {
                     .computeIfAbsent(new SavedData.Factory<>(PhoneRegistrySavedData::new, PhoneRegistrySavedData::load), DATA_NAME);
+                    //? } else {
+                    /*.computeIfAbsent(new SavedData.Factory<>(PhoneRegistrySavedData::new, PhoneRegistrySavedData::load, DataFixTypes.LEVEL), DATA_NAME);
+                    *///?}
         }
         return CLIENT_SIDE;
     }

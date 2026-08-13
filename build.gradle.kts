@@ -1,31 +1,32 @@
 plugins {
-    id 'java-library'
-    id 'maven-publish'
-    id 'idea'
-    id 'jvm-test-suite'
-    id 'net.neoforged.moddev' version '2.0.143'
+    `java-library`
+    `maven-publish`
+    idea
+    `jvm-test-suite`
+    id("net.neoforged.moddev") version "2.0.143"
 }
 
-version = mod_version
-group = mod_group_id
+version = property("mod_version") as String
+group = property("mod_group_id") as String
 
 repositories {
     mavenLocal()
-    maven { url = 'https://maven.maxhenkel.de/repository/public' }
+    maven("https://maven.maxhenkel.de/repository/public")
 }
 
 base {
-    archivesName = mod_id
+    archivesName = property("mod_id") as String
 }
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 
+val modId = property("mod_id") as String
+val minecraftVersion = property("minecraft_version") as String
+val cameraJarVersion = property("camera_jar_version") as String
+
 neoForge {
     // Specify the version of NeoForge to use.
-    version = project.neo_version
-
-    // This line is optional. Access Transformers are automatically detected
-    // accessTransformers.add('src/main/resources/META-INF/accesstransformer.cfg')
+    version = property("neo_version") as String
 
     // Default run configurations.
     // These can be tweaked, removed, or duplicated as needed.
@@ -41,26 +42,34 @@ neoForge {
         // that only needs a name, not an authenticated session, since skin data is public. Real Microsoft
         // sessions (for an online-mode server) are handled in-game by In-Game Account Switcher, not here -
         // see the mods folder in run/ and run-client2/.
-        client {
+        create("client") {
             client()
-            systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
-            programArguments.addAll '--username', 'LordFinn', '--uuid', '60b30ab6-a3a3-3980-9bfe-b84bc32ce8d0',
-                    '--quickPlayMultiplayer', 'localhost:25565'
+            systemProperty("neoforge.enabledGameTestNamespaces", modId)
+            // Explicit, not the moddev default - that default resolves relative to THIS subproject's own
+            // directory (versions/1.21.1/run), not the shared repo-root "run" every earlier dev session's
+            // world/config/ops lives in.
+            gameDirectory = rootProject.file("run")
+            programArguments.addAll(
+                "--username", "LordFinn", "--uuid", "60b30ab6-a3a3-3980-9bfe-b84bc32ce8d0",
+                "--quickPlayMultiplayer", "localhost:25565"
+            )
         }
 
-        client2 {
+        create("client2") {
             client()
-            systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
-            gameDirectory = project.file('run-client2')
-            programArguments.addAll '--username', 'Bouteilles', '--uuid', '94f877fb-ab97-3a21-a67f-715f0a12f124',
-                    '--quickPlayMultiplayer', 'localhost:25565'
+            systemProperty("neoforge.enabledGameTestNamespaces", modId)
+            gameDirectory = rootProject.file("run-client2")
+            programArguments.addAll(
+                "--username", "Bouteilles", "--uuid", "94f877fb-ab97-3a21-a67f-715f0a12f124",
+                "--quickPlayMultiplayer", "localhost:25565"
+            )
         }
 
-        server {
+        create("server") {
             server()
-            programArgument '--nogui'
-            systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
-            gameDirectory = project.file('run-server')
+            programArgument("--nogui")
+            systemProperty("neoforge.enabledGameTestNamespaces", modId)
+            gameDirectory = rootProject.file("run-server")
         }
 
         // This run config launches GameTestServer and runs all registered gametests, then exits.
@@ -71,20 +80,23 @@ neoForge {
         // dev conveniences (In-Game Account Switcher, Sodium, Iris) - IAS specifically crashes on that dist
         // ("Attempted to load class net/minecraft/client/gui/screens/Screen for invalid dist
         // DEDICATED_SERVER"), discovered the hard way when it landed in "run/mods" for the client run.
-        gameTestServer {
+        create("gameTestServer") {
             type = "gameTestServer"
-            systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
-            gameDirectory = project.file('run-gametest')
+            systemProperty("neoforge.enabledGameTestNamespaces", modId)
+            gameDirectory = rootProject.file("run-gametest")
         }
 
-        data {
+        create("data") {
             data()
-
-            // example of overriding the workingDirectory set in configureEach above, uncomment if you want to use it
-            // gameDirectory = project.file('run-data')
+            // Matches the original single-module setup: no dedicated gameDirectory override here, so this
+            // shares the "client" run's own "run" folder (see gameDirectory above) rather than a new one.
+            gameDirectory = rootProject.file("run")
 
             // Specify the modid for data generation, where to output the resulting resource, and where to look for existing resources.
-            programArguments.addAll '--mod', project.mod_id, '--all', '--output', file('src/generated/resources/').getAbsolutePath(), '--existing', file('src/main/resources/').getAbsolutePath()
+            programArguments.addAll(
+                "--mod", modId, "--all", "--output", rootProject.file("src/generated/resources/").absolutePath,
+                "--existing", rootProject.file("src/main/resources/").absolutePath
+            )
         }
 
         // applies to all the run configs above
@@ -94,7 +106,7 @@ neoForge {
             // "SCAN": For mods scan.
             // "REGISTRIES": For firing of registry events.
             // "REGISTRYDUMP": For getting the contents of all registries.
-            systemProperty 'forge.logging.markers', 'REGISTRIES'
+            systemProperty("forge.logging.markers", "REGISTRIES")
 
             // Recommended logging level for the console
             // You can set various levels here.
@@ -108,80 +120,87 @@ neoForge {
         // these are used to tell the game which sources are for which mod
         // mostly optional in a single mod project
         // but multi mod projects should define one per mod
-        "${mod_id}" {
-            sourceSet(sourceSets.main)
+        create(modId) {
+            sourceSet(sourceSets["main"])
         }
     }
 
     // Runs `src/test/java` tests with the real game bootstrapped (registries, data components, etc.)
     // so tests can use ItemStack/CompoundTag/DataComponents the same way the mod's own runtime code does.
     unitTest {
-        testedMod = mods.named(mod_id)
+        testedMod = mods.named(modId)
         enable()
     }
 }
 
 testing {
     suites {
-        test {
-            useJUnitJupiter('5.10.2')
+        named<JvmTestSuite>("test") {
+            useJUnitJupiter("5.10.2")
             dependencies {
                 // Only needed for the handful of procedures/helpers that take a LevelAccessor purely to
                 // reach registryAccess() (encodeItemStack/decodeItemStack/getGroupMeta) - mocking that one
                 // method avoids needing a real ServerLevel just to exercise otherwise-pure NBT logic.
-                implementation 'org.mockito:mockito-core:5.11.0'
+                implementation("org.mockito:mockito-core:5.11.0")
             }
         }
     }
 }
 
 // Include resources generated by data generators.
-sourceSets.main.resources { srcDir 'src/generated/resources' }
-
+sourceSets.main {
+    resources.srcDir(rootProject.file("src/generated/resources"))
+}
 
 dependencies {
-    implementation files('libs/camera-neoforge-1.21.1-1.0.21.jar')
+    // Shared libs/ folder at the repo root (not per-version) - one Camera jar per target Minecraft
+    // version, all gitignored and dropped in manually by whoever builds this, see README.
+    implementation(files(rootProject.file("libs/camera-neoforge-${minecraftVersion}-${cameraJarVersion}.jar")))
     // Optional Simple Voice Chat addon API - compileOnly so the mod doesn't require SVC to be present at
     // runtime; availability is checked via ModList at runtime (see VoicechatIntegration.isAvailable()).
-    compileOnly "de.maxhenkel.voicechat:voicechat-api:${voicechat_api_version}"
+    compileOnly("de.maxhenkel.voicechat:voicechat-api:${property("voicechat_api_version")}")
 }
 
 // This block of code expands all declared replace properties in the specified resource targets.
 // A missing property will result in an error. Properties are expanded using ${} Groovy notation.
-var generateModMetadata = tasks.register("generateModMetadata", ProcessResources) {
-    var replaceProperties = [minecraft_version      : minecraft_version,
-                             minecraft_version_range: minecraft_version_range,
-                             neo_version            : neo_version,
-                             neo_version_range      : neo_version_range,
-                             loader_version_range   : loader_version_range,
-                             mod_id                 : mod_id,
-                             mod_name               : mod_name,
-                             mod_license            : mod_license,
-                             mod_version            : mod_version,
-                             mod_authors            : mod_authors,
-                             mod_description        : mod_description]
-    inputs.properties replaceProperties
-    expand replaceProperties
-    from "src/main/templates"
-    into "build/generated/sources/modMetadata"
+val modMetadataProperties = mapOf(
+    "minecraft_version" to property("minecraft_version"),
+    "minecraft_version_range" to property("minecraft_version_range"),
+    "neo_version" to property("neo_version"),
+    "neo_version_range" to property("neo_version_range"),
+    "loader_version_range" to property("loader_version_range"),
+    "mod_id" to property("mod_id"),
+    "mod_name" to property("mod_name"),
+    "mod_license" to property("mod_license"),
+    "mod_version" to property("mod_version"),
+    "mod_authors" to property("mod_authors"),
+    "mod_description" to property("mod_description")
+)
+val generateModMetadata = tasks.register<ProcessResources>("generateModMetadata") {
+    inputs.properties(modMetadataProperties)
+    expand(modMetadataProperties)
+    from(rootProject.file("src/main/templates"))
+    into("build/generated/sources/modMetadata")
 }
 
 // Include the output of "generateModMetadata" as an input directory for the build
 // this works with both building through Gradle and the IDE.
-sourceSets.main.resources.srcDir generateModMetadata
+sourceSets.main {
+    resources.srcDir(generateModMetadata)
+}
 // To avoid having to run "generateModMetadata" manually, make it run on every project reload
-neoForge.ideSyncTask generateModMetadata
+neoForge.ideSyncTask(generateModMetadata)
 
 // Example configuration to allow publishing using the maven-publish plugin
 publishing {
     publications {
-        register('mavenJava', MavenPublication) {
-            from components.java
+        register<MavenPublication>("mavenJava") {
+            from(components["java"])
         }
     }
     repositories {
         maven {
-            url "file://${project.projectDir}/repo"
+            url = uri(layout.projectDirectory.dir("repo"))
         }
     }
 }
@@ -189,7 +208,7 @@ publishing {
 // IDEA no longer automatically downloads sources/javadoc jars for dependencies, so we need to explicitly enable the behavior.
 idea {
     module {
-        downloadSources = true
-        downloadJavadoc = true
+        isDownloadSources = true
+        isDownloadJavadoc = true
     }
 }

@@ -1,7 +1,11 @@
 package fr.lordfinn.crazyphone;
 
 import net.neoforged.bus.api.SubscribeEvent;
+//? if >=1.20.5 {
 import net.neoforged.fml.common.EventBusSubscriber;
+//? } else {
+/*import net.neoforged.fml.common.Mod.EventBusSubscriber;
+*///?}
 import net.neoforged.fml.event.config.ModConfigEvent;
 import net.neoforged.neoforge.common.ModConfigSpec;
 
@@ -116,7 +120,7 @@ public class Config {
         maxVoiceMessageRecordingSeconds = MAX_VOICE_MESSAGE_RECORDING_SECONDS.get();
     }
 
-    /** Setters for the 5 toggleable-features below, used by /crazyphone feature to change them at runtime
+    /** Setters for the toggleable features below, used by /crazyphone feature to change them at runtime
      * (not just at startup). ConfigValue#set() ALONE only updates its own internal cache and the in-memory
      * backing config - per its own javadoc, it does so "without firing events or writing the config to
      * disk". Config.onLoad (which populates the mirror fields FeatureFlag actually reads) only re-fires, and
@@ -147,4 +151,5 @@ public class Config {
         CAMERA_FEATURE_ENABLED.set(enabled);
         SPEC.save();
     }
+
 }

@@ -4,13 +4,12 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.component.CustomData;
 import net.neoforged.neoforge.network.PacketDistributor;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 
 import fr.lordfinn.crazyphone.data.PhoneRegistrySavedData;
 import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
+import fr.lordfinn.crazyphone.utils.PhoneTagAccess;
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneMayorsCandidatesListMenu;
 import fr.lordfinn.crazyphone.network.CrazyPhoneMayorsCandidatesButtonMessage;
 import fr.lordfinn.crazyphone.utils.Contact;
@@ -87,9 +86,13 @@ public class CrazyPhoneMayorsCandidatesListScreen extends CrazyPhoneDefaultScree
 		HashMap<String, String> textstate = getEditBoxAndCheckBoxValues();
 		for (RenderSlot rs : renderSlots) {
 			if (isHovering(rs, mouseX, mouseY)) {
-				String candidateNumber = rs.stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag().getString("number");
+				String candidateNumber = PhoneTagAccess.getTag(rs.stack).getString("number");
 				textstate.put(	"candidateNumber", candidateNumber);
+                //? if >=1.20.5 {
                 PacketDistributor.sendToServer(new CrazyPhoneMayorsCandidatesButtonMessage(0, x, y, z, textstate));
+                //? } else {
+                /*PacketDistributor.SERVER.noArg().send(new CrazyPhoneMayorsCandidatesButtonMessage(0, x, y, z, textstate));
+                *///?}
                 CrazyPhoneMayorsCandidatesButtonMessage.handleButtonAction(entity, 0, x, y, z, textstate);
 				break;
 			}

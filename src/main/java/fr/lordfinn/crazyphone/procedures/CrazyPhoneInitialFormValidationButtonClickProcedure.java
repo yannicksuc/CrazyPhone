@@ -1,9 +1,9 @@
 package fr.lordfinn.crazyphone.procedures;
 
 import net.minecraft.world.level.LevelAccessor;
-import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.item.ItemStack;
 import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
+import fr.lordfinn.crazyphone.utils.PhoneTagAccess;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
@@ -13,7 +13,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundSoundPacket;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.Holder;
 
 import java.util.HashMap;
@@ -38,8 +37,8 @@ public static void execute(LevelAccessor world, double x, double y, double z, En
             serverPlayer.connection.send(new ClientboundSoundPacket(successSoundHolder, SoundSource.NEUTRAL, x, y, z, 1.0F, 1.2F, 1));
         }
 
-        (CrazyPhoneHelper.getMainHandItemOrEmpty(entity)).set(DataComponents.CUSTOM_NAME,
-                Component.literal(("CrazyPhone de " + ((CrazyPhoneHelper.getMainHandItemOrEmpty(entity)).getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag().getString("name")))));
+        PhoneTagAccess.setCustomName(CrazyPhoneHelper.getMainHandItemOrEmpty(entity),
+                Component.literal(("CrazyPhone de " + PhoneTagAccess.getTag(CrazyPhoneHelper.getMainHandItemOrEmpty(entity)).getString("name"))));
         CrazyPhoneOnUseProcedure.execute(world, x, y, z, entity);
     } else {
         if (entity instanceof ServerPlayer serverPlayer) {

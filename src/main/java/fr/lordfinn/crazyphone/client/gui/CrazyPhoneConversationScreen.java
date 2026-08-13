@@ -1,5 +1,7 @@
 package fr.lordfinn.crazyphone.client.gui;
 
+import fr.lordfinn.crazyphone.Crazyphone;
+
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -13,6 +15,7 @@ import java.util.function.BiConsumer;
 import fr.lordfinn.crazyphone.Config;
 import fr.lordfinn.crazyphone.FeatureFlag;
 import fr.lordfinn.crazyphone.client.ClientCallState;
+import fr.lordfinn.crazyphone.client.ClientMessageDraft;
 import fr.lordfinn.crazyphone.client.gui.components.CrazyPhoneColors;
 import fr.lordfinn.crazyphone.client.ClientFeatureFlagState;
 import fr.lordfinn.crazyphone.client.ConversationClientCache;
@@ -223,7 +226,7 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
             return;
         for (MessageEntry entry : messageManager.getMessages()) {
             if (entry.widget().isHeadHovered(mouseX, mouseY)) {
-                // Same "Name • number" format as the contact heads in the contacts menu.
+                // Same "Name â€¢ number" format as the contact heads in the contacts menu.
                 guiGraphics.renderComponentTooltip(this.font, List.of(
                         CrazyPhoneHelper.formatContactDisplayName(entry.widget().getContactName(), entry.widget().getContactNumber())
                 ), mouseX, mouseY);
@@ -329,7 +332,7 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
             color = CrazyPhoneColors.ACCENT_YELLOW; // same "you could join/rejoin this" color as the contacts-list badge
         else
             color = 0xFFFFFFFF;
-        guiGraphics.drawString(this.font, "📞", iconX + 4, iconY + 4, color, true);
+        guiGraphics.drawString(this.font, "ðŸ“ž", iconX + 4, iconY + 4, color, true);
     }
 
     private boolean isHoveringCallIcon(double mouseX, double mouseY) {
@@ -356,7 +359,11 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
         if (isCallStartDisabled())
             return;
         int action = hasMyActiveCallHere() ? CrazyPhoneCallActionMessage.OPEN_CALL_SCREEN : CrazyPhoneCallActionMessage.START_CALL;
+        //? if >=1.20.5 {
         PacketDistributor.sendToServer(new CrazyPhoneCallActionMessage(action, menu.getConversationId()));
+        //? } else {
+        /*PacketDistributor.SERVER.noArg().send(new CrazyPhoneCallActionMessage(action, menu.getConversationId()));
+        *///?}
     }
 
     private void onMicIconClicked() {
@@ -440,7 +447,11 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
                 // waiting on a server round-trip would mean the sender briefly sees a message they can't
                 // click play on. A random UUID is collision-safe for this (128 bits, nothing brute-forceable).
                 UUID voiceId = UUID.randomUUID();
+                //? if >=1.20.5 {
                 PacketDistributor.sendToServer(new VoiceMessageUploadPacket(menu.getConversationId(), voiceId, recordedAudio, durationTicks, envelope));
+                //? } else {
+                /*PacketDistributor.SERVER.noArg().send(new VoiceMessageUploadPacket(menu.getConversationId(), voiceId, recordedAudio, durationTicks, envelope));
+                *///?}
 
                 String ownerNumber = GetCrazyPhoneNumberFromMainHandProcedure.execute(this.menu.entity, null);
                 int timestampInMinutes = (int) (Instant.now().getEpochSecond() / 60);
@@ -518,7 +529,11 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
         if (messageManager.getTotalHeight() > 132 && scrollPosition < messageManager.getTotalHeight() - 132)
             return;
         loadingOlderMessages = true;
+        //? if >=1.20.5 {
         PacketDistributor.sendToServer(new ConversationRequestPacket(this.menu.getConversationId(), receivedMessages.size()));
+        //? } else {
+        /*PacketDistributor.SERVER.noArg().send(new ConversationRequestPacket(this.menu.getConversationId(), receivedMessages.size()));
+        *///?}
     }
 
     @Override
@@ -560,7 +575,11 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
             return;
         firstPageRequested = true;
         ConversationClientCache.setListener(conversationListener);
+        //? if >=1.20.5 {
         PacketDistributor.sendToServer(new ConversationRequestPacket(this.menu.getConversationId(), 0));
+        //? } else {
+        /*PacketDistributor.SERVER.noArg().send(new ConversationRequestPacket(this.menu.getConversationId(), 0));
+        *///?}
     }
 
     private void onConversationPageReceived(String conversationId, ConversationPage page) {
@@ -617,6 +636,22 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
             VoiceMessageRecorder.discard();
     }
 
+    /**
+     * {@code onClose()} above is NOT reliably called for every way this screen goes away - it's only
+     * ever invoked by code that explicitly calls it (Escape, an explicit "back" handler), never by the
+     * far more common path here: the SERVER opening a different phone screen (contacts,
+     * back button, closing the phone entirely...), which just replaces this screen out from under the
+     * player via {@code Minecraft#setScreen(...)} - that's exactly the "typed something, navigated away,
+     * came back and it was gone" bug this was. {@code removed()}, unlike {@code onClose()}, IS called by
+     * vanilla on every single one of those paths (it's how {@code Minecraft#setScreen} always tears down
+     * whatever screen it's replacing), making it the one reliable place to persist the draft.
+     */
+    @Override
+    public void removed() {
+        super.removed();
+        ClientMessageDraft.saveOnClose(this.menu.getConversationId(), message.getValue());
+    }
+
     private void initializeEditBox() {
         message = new SmallTextEditBox(this.font, this.leftPos + 8, this.topPos + 158, 91, 14,
                 Component.translatable("gui.crazyphone.crazy_phone_conversation.message")) {
@@ -642,6 +677,11 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
         };
         message.setMaxLength(32767);
         message.setSuggestion(Component.translatable("gui.crazyphone.crazy_phone_conversation.message").getString());
+        // Restores whatever was saved for this conversation the last time it was closed/navigated away
+        // from with unsent text (see onClose).
+        String restoredDraft = ClientMessageDraft.restore(this.menu.getConversationId());
+        if (!restoredDraft.isEmpty())
+            message.setValue(restoredDraft);
         guistate.put("text:message", message);
         this.addWidget(this.message);
     }
@@ -657,9 +697,19 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
             button_voicepause = createSquareIconButton(this.leftPos + PAUSE_SEND_X, this.topPos + RECORDING_ROW_Y,
                     Component.translatable("gui.crazyphone.crazy_phone_conversation.button_voice_pause"),
                     e -> onPauseSendClicked());
-            button_voicesend = createSquareIconButton(this.leftPos + PAUSE_SEND_X, this.topPos + RECORDING_ROW_Y,
-                    Component.translatable("gui.crazyphone.crazy_phone_conversation.button_envoyer").withStyle(ChatFormatting.GREEN),
-                    e -> onPauseSendClicked());
+            // Same crazyphone-send-message.png button as the main send button - every "send" action in
+            // this mod uses this one texture now, not the glyph-only square style trash/pause still use.
+            button_voicesend = new ImageButton(this.leftPos + PAUSE_SEND_X, this.topPos + RECORDING_ROW_Y, 14, 14,
+                    new WidgetSprites(Crazyphone.parseId("crazyphone:textures/screens/crazyphone-send-message.png"),
+                            Crazyphone.parseId("crazyphone:textures/screens/crazyphone-send-message-hover.png")),
+                    e -> onPauseSendClicked()) {
+                @Override
+                public void renderWidget(GuiGraphics guiGraphics, int x, int y, float partialTicks) {
+                    // Manual blit, not vanilla ImageButton's default GUI-sprite-atlas lookup - same reason
+                    // as every other send-style icon button in this class (see createSendMessageButton).
+                    guiGraphics.blit(sprites.get(isActive(), isHoveredOrFocused()), getX(), getY(), 300, 0, 0, width, height, width, height);
+                }
+            };
         }
     }
 
@@ -693,8 +743,8 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
     }
 
     private ImageButton createSendMessageButton() {
-    ResourceLocation sendButtonImage = ResourceLocation.parse("crazyphone:textures/screens/crazyphone-send-message.png");
-    ResourceLocation sendButtonHoverImage = ResourceLocation.parse("crazyphone:textures/screens/crazyphone-send-message-hover.png");
+    ResourceLocation sendButtonImage = Crazyphone.parseId("crazyphone:textures/screens/crazyphone-send-message.png");
+    ResourceLocation sendButtonHoverImage = Crazyphone.parseId("crazyphone:textures/screens/crazyphone-send-message-hover.png");
 
     ImageButton button = new ImageButton(this.leftPos + 100, this.topPos + 158, 14, 14,
         new WidgetSprites(sendButtonImage, sendButtonHoverImage),
@@ -727,7 +777,11 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
             return;
 
         String text = message.getValue();
+        //? if >=1.20.5 {
         PacketDistributor.sendToServer(new CrazyPhoneConversationButtonMessage(0, x, y, z, getEditBoxAndCheckBoxValues()));
+        //? } else {
+        /*PacketDistributor.SERVER.noArg().send(new CrazyPhoneConversationButtonMessage(0, x, y, z, getEditBoxAndCheckBoxValues()));
+        *///?}
         CrazyPhoneConversationButtonMessage.handleButtonAction(entity, 0, x, y, z, getEditBoxAndCheckBoxValues());
 
         String ownerNumber = GetCrazyPhoneNumberFromMainHandProcedure.execute(this.menu.entity, null);
@@ -743,10 +797,14 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
 
     private ImageButton createImageButton() {
         ImageButton button = new ImageButton(this.leftPos + 100, this.topPos + 143, 14, 15,
-                new WidgetSprites(ResourceLocation.parse("crazyphone:textures/screens/crazyphone-add-image.png"),
-                        ResourceLocation.parse("crazyphone:textures/screens/crazyphone-add-hover.png")),
+                new WidgetSprites(Crazyphone.parseId("crazyphone:textures/screens/crazyphone-add-image.png"),
+                        Crazyphone.parseId("crazyphone:textures/screens/crazyphone-add-hover.png")),
                 e -> {
+                    //? if >=1.20.5 {
                     PacketDistributor.sendToServer(new CrazyPhoneConversationButtonMessage(1, x, y, z, getEditBoxAndCheckBoxValues()));
+                    //? } else {
+                    /*PacketDistributor.SERVER.noArg().send(new CrazyPhoneConversationButtonMessage(1, x, y, z, getEditBoxAndCheckBoxValues()));
+                    *///?}
                     CrazyPhoneConversationButtonMessage.handleButtonAction(entity, 1, x, y, z, getEditBoxAndCheckBoxValues());
                 }) {
             @Override
@@ -771,8 +829,8 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
      * updateButtonVisibility). Only ever constructed when SVC is available. */
     private ImageButton createVoiceMessageButton() {
         ImageButton button = new ImageButton(this.leftPos + 100, this.topPos + MIC_ICON_Y, 14, 15,
-                new WidgetSprites(ResourceLocation.parse("crazyphone:textures/screens/crazyphone-send-voice.png"),
-                        ResourceLocation.parse("crazyphone:textures/screens/crazyphone-send-voice-hover.png")),
+                new WidgetSprites(Crazyphone.parseId("crazyphone:textures/screens/crazyphone-send-voice.png"),
+                        Crazyphone.parseId("crazyphone:textures/screens/crazyphone-send-voice-hover.png")),
                 e -> onMicIconClicked()) {
             @Override
             public void renderWidget(GuiGraphics guiGraphics, int x, int y, float partialTicks) {
@@ -808,7 +866,11 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
 
         if (button == 0 && menu.isGroup() && isHoveringGroupSettingsIcon(mouseX, mouseY)) {
             HashMap<String, String> textstate = getEditBoxAndCheckBoxValues();
+            //? if >=1.20.5 {
             PacketDistributor.sendToServer(new CrazyPhoneConversationButtonMessage(2, x, y, z, textstate));
+            //? } else {
+            /*PacketDistributor.SERVER.noArg().send(new CrazyPhoneConversationButtonMessage(2, x, y, z, textstate));
+            *///?}
             CrazyPhoneConversationButtonMessage.handleButtonAction(entity, 2, x, y, z, textstate);
             return true;
         }

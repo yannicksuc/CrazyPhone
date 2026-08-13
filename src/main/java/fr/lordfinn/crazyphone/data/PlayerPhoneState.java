@@ -15,6 +15,7 @@ public class PlayerPhoneState implements INBTSerializable<CompoundTag> {
     public String currentCrazyPhoneScreenOpened = "";
     public String crazyPhoneScreenHistory = "";
 
+    //? if >=1.20.5 {
     @Override
     public CompoundTag serializeNBT(HolderLookup.@NotNull Provider lookupProvider) {
         CompoundTag nbt = new CompoundTag();
@@ -28,9 +29,28 @@ public class PlayerPhoneState implements INBTSerializable<CompoundTag> {
         currentCrazyPhoneScreenOpened = nbt.getString("currentCrazyPhoneScreenOpened");
         crazyPhoneScreenHistory = nbt.getString("crazyPhoneScreenHistory");
     }
+    //? } else {
+    /*@Override
+    public CompoundTag serializeNBT() {
+        CompoundTag nbt = new CompoundTag();
+        nbt.putString("currentCrazyPhoneScreenOpened", currentCrazyPhoneScreenOpened);
+        nbt.putString("crazyPhoneScreenHistory", crazyPhoneScreenHistory);
+        return nbt;
+    }
+
+    @Override
+    public void deserializeNBT(CompoundTag nbt) {
+        currentCrazyPhoneScreenOpened = nbt.getString("currentCrazyPhoneScreenOpened");
+        crazyPhoneScreenHistory = nbt.getString("crazyPhoneScreenHistory");
+    }
+    *///?}
 
     public void syncTo(Entity entity) {
         if (entity instanceof ServerPlayer serverPlayer)
+            //? if >=1.20.5 {
             PacketDistributor.sendToPlayer(serverPlayer, new PlayerPhoneStateSyncPacket(this));
+            //? } else {
+            /*PacketDistributor.PLAYER.with(serverPlayer).send(new PlayerPhoneStateSyncPacket(this));
+            *///?}
     }
 }

@@ -142,8 +142,13 @@ public final class CallRegistry {
             session.ringing.add(callee.getUUID());
             PLAYER_TO_CALL.put(callee.getUUID(), callId);
             notifySafe(callee, session, CrazyPhoneCallStateSyncPacket.State.RINGING);
+            //? if >=1.20.5 {
             PacketDistributor.sendToPlayer(callee,
                     new CrazyPhoneIncomingCallNotificationPacket(conversationId, initiator.getGameProfile().getName(), callId));
+            //? } else {
+            /*PacketDistributor.PLAYER.with(callee).send(
+                    new CrazyPhoneIncomingCallNotificationPacket(conversationId, initiator.getGameProfile().getName(), callId));
+            *///?}
         }
         return session;
     }
@@ -345,7 +350,11 @@ public final class CallRegistry {
                 ? List.of()
                 : session.participants.stream().filter(id -> !id.equals(target.getUUID())).toList();
         List<String> participantNames = participantIds.stream().map(id -> resolvePlayerName(target, id)).toList();
+        //? if >=1.20.5 {
         PacketDistributor.sendToPlayer(target, new CrazyPhoneCallStateSyncPacket(session.conversationId, session.callId, state, callNumbers, participantIds, participantNames));
+        //? } else {
+        /*PacketDistributor.PLAYER.with(target).send(new CrazyPhoneCallStateSyncPacket(session.conversationId, session.callId, state, callNumbers, participantIds, participantNames));
+        *///?}
         // Also written into the actual held phone's own item data, not just this targeted packet - vanilla's
         // equipment sync then carries it to nearby bystanders for free (see CrazyPhoneHelper), which the
         // packet above (sent only to this one player) never would.

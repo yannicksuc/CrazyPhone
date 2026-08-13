@@ -37,7 +37,11 @@ public class CameraModHelper {
 		if (player.level().isClientSide) {
 			List<UUID> images = new java.util.ArrayList<>();
 			List<ItemStack> imageStacks = new java.util.ArrayList<>();
+			//? if >=1.20.5 {
 			AlbumInventory inventory = new AlbumInventory(player.level().registryAccess(), album);
+			//? } else {
+			/*AlbumInventory inventory = new AlbumInventory(album);
+			*///?}
 			for (int i = 0; i < inventory.getContainerSize(); i++) {
 				ItemStack stack = inventory.getItem(i);
 				de.maxhenkel.camera.ImageData imageData = de.maxhenkel.camera.ImageData.fromStack(stack);
@@ -112,7 +116,11 @@ public class CameraModHelper {
     }
 
     private static boolean tryAddImageToAlbum(ServerPlayer player, ItemStack albumStack, ItemStack imageStack) {
+        //? if >=1.20.5 {
         AlbumInventory inventory = new AlbumInventory(player.level().registryAccess(), albumStack);
+        //? } else {
+        /*AlbumInventory inventory = new AlbumInventory(albumStack);
+        *///?}
 
         // maxAlbumSlotsPerPhone's config range goes up to 97, but AlbumInventory's own backing storage is a
         // fixed-size (54-slot) vanilla container (the same NonNullList a shulker box uses) - without this

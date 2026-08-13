@@ -42,7 +42,6 @@ import fr.lordfinn.crazyphone.procedures.CrazyPhoneGetContactsProcedure;
 import fr.lordfinn.crazyphone.procedures.GetCrazyPhoneNumberFromMainHandProcedure;
 import fr.lordfinn.crazyphone.procedures.GetCrazyPhoneNumberProcedure;
 import net.minecraft.ChatFormatting;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtAccounter;
@@ -50,7 +49,9 @@ import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.FriendlyByteBuf;
+//? if >=1.20.5 {
 import net.minecraft.network.RegistryFriendlyByteBuf;
+//? }
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.ComponentSerialization;
 import net.minecraft.network.chat.MutableComponent;
@@ -63,8 +64,6 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.component.CustomData;
-import net.minecraft.world.item.component.ResolvableProfile;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.resources.RegistryOps;
@@ -100,7 +99,11 @@ public class CrazyPhoneHelper {
         if (!(albumStack.getItem() instanceof AlbumItem))
             return;
 
+        //? if >=1.20.5 {
         AlbumInventory inventory = new AlbumInventory(world.registryAccess(), albumStack);
+        //? } else {
+        /*AlbumInventory inventory = new AlbumInventory(albumStack);
+        *///?}
         deleteSlotsFromAlbum(inventory, slots);
 
         handler.setStackInSlot(albumId, albumStack);
@@ -176,18 +179,18 @@ public class CrazyPhoneHelper {
     }
 
     /**
-     * The "Name • number" format used for contact head display names in the contacts menu (and,
+     * The "Name â€¢ number" format used for contact head display names in the contacts menu (and,
      * reused here, for the conversation screen's head-hover tooltip - so both show the exact same
      * formatting instead of drifting apart).
      */
     public static MutableComponent formatContactDisplayName(String name, String number) {
         return Component.literal(name == null ? "Inconnu" : name).withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD)
-                .append(Component.literal(" • ").withStyle(ChatFormatting.WHITE))
+                .append(Component.literal(" â€¢ ").withStyle(ChatFormatting.WHITE))
                 .append(Component.literal(number == null ? "" : number).withStyle(ChatFormatting.GRAY));
     }
 
     /**
-     * Same layout as {@link #formatContactDisplayName} ("Name • detail") so a group entry reads
+     * Same layout as {@link #formatContactDisplayName} ("Name â€¢ detail") so a group entry reads
      * consistently with an individual contact, but in cyan instead of gold to tell the two apart at a
      * glance, and with the literal word "Group" (translated) standing in for the phone number.
      */
@@ -196,7 +199,7 @@ public class CrazyPhoneHelper {
                 ? customName
                 : members.stream().map(Contact::getName).collect(java.util.stream.Collectors.joining(","));
         return Component.literal(names).withStyle(ChatFormatting.AQUA, ChatFormatting.BOLD)
-                .append(Component.literal(" • ").withStyle(ChatFormatting.WHITE))
+                .append(Component.literal(" â€¢ ").withStyle(ChatFormatting.WHITE))
                 .append(Component.translatable("gui.crazyphone.crazy_phone_contacts_screen.label_group").withStyle(ChatFormatting.GRAY));
     }
 
@@ -204,21 +207,20 @@ public class CrazyPhoneHelper {
         ItemStack head = new ItemStack(net.minecraft.world.item.Items.PLAYER_HEAD);
 
         MutableComponent displayName = formatContactDisplayName(contact.getName(), contact.getNumber());
-        head.set(DataComponents.CUSTOM_NAME, displayName);
+        PhoneTagAccess.setCustomName(head, displayName);
 
-        CustomData.update(DataComponents.CUSTOM_DATA, head, tag -> tag.putString("number", contact.getNumber()));
-        CustomData.update(DataComponents.CUSTOM_DATA, head, tag -> tag.putString("name", contact.getName()));
+        PhoneTagAccess.updateTag(head, tag -> tag.putString("number", contact.getNumber()));
+        PhoneTagAccess.updateTag(head, tag -> tag.putString("name", contact.getName()));
 
         if (contact.getUuid() != null && !contact.getUuid().isEmpty()) {
             try {
-                CustomData.update(DataComponents.CUSTOM_DATA, head, tag -> tag.putString("uuid", contact.getUuid()));
+                PhoneTagAccess.updateTag(head, tag -> tag.putString("uuid", contact.getUuid()));
                 GameProfile profile = new GameProfile(UUID.fromString(contact.getUuid()), "CustomHead");
                 PropertyMap properties = profile.getProperties();
                 if (contact.getSkin() != null || !contact.getSkin().isEmpty()) {
                     properties.put("textures", new Property("textures", contact.getSkin()));
                 }
-                ResolvableProfile resolvableProfile = new ResolvableProfile(profile);
-                head.set(DataComponents.PROFILE, resolvableProfile);
+                PhoneTagAccess.setSkullOwner(head, profile);
             } catch (Exception e) {
             }
         }
@@ -272,7 +274,7 @@ public class CrazyPhoneHelper {
 
             data.appendMessage(conversationId, messageTag);
             List<String> numbers = getGroupMembers(world, conversationId);
-            notifyContacts(world, messageTag, numbers, senderNumber, "🎤", timestampInMinutes, conversationId);
+            notifyContacts(world, messageTag, numbers, senderNumber, "ðŸŽ¤", timestampInMinutes, conversationId);
         }
     }
 
@@ -367,7 +369,11 @@ public class CrazyPhoneHelper {
                 continue;
             ServerPlayer receiverPlayer = server.getPlayerList().getPlayer(UUID.fromString(receiver.getUuid()));
             if (receiverPlayer != null)
+                //? if >=1.20.5 {
                 PacketDistributor.sendToPlayer(receiverPlayer, new fr.lordfinn.crazyphone.network.CrazyPhoneNewCallDurationNotificationPacket(conversationId, callId, durationMillis));
+                //? } else {
+                /*PacketDistributor.PLAYER.with(receiverPlayer).send(new fr.lordfinn.crazyphone.network.CrazyPhoneNewCallDurationNotificationPacket(conversationId, callId, durationMillis));
+                *///?}
         }
     }
 
@@ -408,7 +414,11 @@ public class CrazyPhoneHelper {
                 continue;
             ServerPlayer receiverPlayer = server.getPlayerList().getPlayer(UUID.fromString(receiver.getUuid()));
             if (receiverPlayer != null) {
+                //? if >=1.20.5 {
                 PacketDistributor.sendToPlayer(receiverPlayer, new CrazyPhoneNewMessageNotificationPacket(messageTag, ""));
+                //? } else {
+                /*PacketDistributor.PLAYER.with(receiverPlayer).send(new CrazyPhoneNewMessageNotificationPacket(messageTag, ""));
+                *///?}
             }
             addNotificationBadge(registry, number, conversationId, receiverPlayer);
         }
@@ -421,11 +431,18 @@ public class CrazyPhoneHelper {
         tag.putString("value", message);
         tag.putInt("timecode", timestampInMinutes);
         if (image != null && !image.isEmpty() && image.getItem() instanceof ImageItem) {
+            //? if >=1.20.5 {
             if (image.has(Main.IMAGE_DATA_COMPONENT)) {
                 ImageData imageData = image.get(Main.IMAGE_DATA_COMPONENT);
                 CompoundTag data = imageDataToCompoundTag(imageData);
                 tag.put("image", data);
             }
+            //? } else {
+            /*CompoundTag stackTag = image.getTag();
+            if (stackTag != null && stackTag.contains("image", Tag.TAG_COMPOUND)) {
+                tag.put("image", stackTag.getCompound("image").copy());
+            }
+            *///?}
         }
         return tag;
     }
@@ -434,7 +451,11 @@ public class CrazyPhoneHelper {
         CompoundTag tag = new CompoundTag();
         tag.putBoolean("system", true);
         tag.putInt("timecode", timestampInMinutes);
+        //? if >=1.20.5 {
         tag.put("systemText", ComponentSerialization.CODEC.encodeStart(NbtOps.INSTANCE, text).getOrThrow());
+        //? } else {
+        /*tag.put("systemText", ComponentSerialization.CODEC.encodeStart(NbtOps.INSTANCE, text).getOrThrow(false, s -> {}));
+        *///?}
         if (icon != null && !icon.isEmpty()) {
             ResourceLocation id = BuiltInRegistries.ITEM.getKey(icon.getItem());
             tag.putString("systemIcon", id.toString());
@@ -499,7 +520,11 @@ public class CrazyPhoneHelper {
 
             ServerPlayer receiverPlayer = server.getPlayerList().getPlayer(UUID.fromString(receiver.getUuid()));
             if (receiverPlayer != null) {
+                //? if >=1.20.5 {
                 PacketDistributor.sendToPlayer(receiverPlayer, new CrazyPhoneNewMessageNotificationPacket(messageTag,sender.getName()));
+                //? } else {
+                /*PacketDistributor.PLAYER.with(receiverPlayer).send(new CrazyPhoneNewMessageNotificationPacket(messageTag,sender.getName()));
+                *///?}
             }
 
             addNotificationBadge(registry, receiverNumber, conversationId, receiverPlayer);
@@ -565,17 +590,25 @@ public class CrazyPhoneHelper {
     public static CompoundTag encodeItemStack(LevelAccessor world, ItemStack stack) {
         if (stack == null || stack.isEmpty())
             return new CompoundTag();
+        //? if >=1.20.5 {
         RegistryOps<Tag> ops = world.registryAccess().createSerializationContext(NbtOps.INSTANCE);
         Tag encoded = ItemStack.CODEC.encodeStart(ops, stack).result().orElse(null);
         return encoded instanceof CompoundTag compound ? compound : new CompoundTag();
+        //? } else {
+        /*return stack.save(new CompoundTag());
+        *///?}
     }
 
     /** The inverse of {@link #encodeItemStack} - an empty/absent tag decodes back to {@link ItemStack#EMPTY}. */
     public static ItemStack decodeItemStack(LevelAccessor world, CompoundTag tag) {
         if (tag == null || tag.isEmpty())
             return ItemStack.EMPTY;
+        //? if >=1.20.5 {
         RegistryOps<Tag> ops = world.registryAccess().createSerializationContext(NbtOps.INSTANCE);
         return ItemStack.CODEC.parse(ops, tag).result().orElse(ItemStack.EMPTY);
+        //? } else {
+        /*return ItemStack.of(tag);
+        *///?}
     }
 
     /** Whether {@code conversationId} IS a group - i.e. {@link #createGroup} was ever called for it -
@@ -632,29 +665,29 @@ public class CrazyPhoneHelper {
     private static final String TAG_CALL_STATE = "callState";
 
     public static void setPhoneScreenOpen(ItemStack phone, boolean open) {
-        CompoundTag tag = phone.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
-        if (open)
-            tag.putBoolean(TAG_SCREEN_OPEN, true);
-        else
-            tag.remove(TAG_SCREEN_OPEN);
-        phone.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
+        PhoneTagAccess.updateTag(phone, tag -> {
+            if (open)
+                tag.putBoolean(TAG_SCREEN_OPEN, true);
+            else
+                tag.remove(TAG_SCREEN_OPEN);
+        });
     }
 
     public static boolean isPhoneScreenOpen(ItemStack phone) {
-        return phone.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag().getBoolean(TAG_SCREEN_OPEN);
+        return PhoneTagAccess.getTag(phone).getBoolean(TAG_SCREEN_OPEN);
     }
 
     private static void setPhoneCallState(ItemStack phone, String state) {
-        CompoundTag tag = phone.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
-        if (state.isEmpty())
-            tag.remove(TAG_CALL_STATE);
-        else
-            tag.putString(TAG_CALL_STATE, state);
-        phone.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
+        PhoneTagAccess.updateTag(phone, tag -> {
+            if (state.isEmpty())
+                tag.remove(TAG_CALL_STATE);
+            else
+                tag.putString(TAG_CALL_STATE, state);
+        });
     }
 
     public static String getPhoneCallState(ItemStack phone) {
-        return phone.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag().getString(TAG_CALL_STATE);
+        return PhoneTagAccess.getTag(phone).getString(TAG_CALL_STATE);
     }
 
     /** Applies {@code state} to every CrazyPhone anywhere in {@code player}'s inventory whose OWN registered
@@ -726,7 +759,11 @@ public class CrazyPhoneHelper {
                 continue;
             ServerPlayer player = server.getPlayerList().getPlayer(UUID.fromString(member.getUuid()));
             if (player != null)
+                //? if >=1.20.5 {
                 PacketDistributor.sendToPlayer(player, new ConversationCallActivitySyncPacket(conversationId, active));
+                //? } else {
+                /*PacketDistributor.PLAYER.with(player).send(new ConversationCallActivitySyncPacket(conversationId, active));
+                *///?}
         }
     }
 
@@ -890,7 +927,11 @@ public class CrazyPhoneHelper {
             return;
         ServerPlayer memberPlayer = server.getPlayerList().getPlayer(UUID.fromString(memberContact.getUuid()));
         if (memberPlayer != null)
+            //? if >=1.20.5 {
             PacketDistributor.sendToPlayer(memberPlayer, new CrazyPhoneGroupMembershipNotificationPacket(groupLabel, actorName, added));
+            //? } else {
+            /*PacketDistributor.PLAYER.with(memberPlayer).send(new CrazyPhoneGroupMembershipNotificationPacket(groupLabel, actorName, added));
+            *///?}
     }
 
     public static void renameGroup(Level world, String conversationId, String newName) {
@@ -979,9 +1020,14 @@ public class CrazyPhoneHelper {
         registry.setDirty();
     }
 
+    //? if >=1.20.5 {
     public static List<MessageData> getMessagesFromBuf(RegistryFriendlyByteBuf buffer) {
-        List<MessageData> messageDatas = new ArrayList<>();
         Tag rawTag = RegistryFriendlyByteBuf.readNbt(buffer, NbtAccounter.create(2097152L));
+    //? } else {
+    /*public static List<MessageData> getMessagesFromBuf(FriendlyByteBuf buffer) {
+        Tag rawTag = buffer.readNbt(NbtAccounter.create(2097152L));
+    *///?}
+        List<MessageData> messageDatas = new ArrayList<>();
 
         if (!(rawTag instanceof ListTag listTag)) {
             return messageDatas;
@@ -1039,11 +1085,16 @@ public class CrazyPhoneHelper {
         ItemStack stack = ItemStack.EMPTY;
         if (messageTag.contains("image", Tag.TAG_COMPOUND)) {
             CompoundTag imageTag = messageTag.getCompound("image");
+            //? if >=1.20.5 {
             ImageData imageData = ImageData.fromImageTag(imageTag);
             if (imageData != null) {
                 stack = new ItemStack(Main.IMAGE.get());
                 imageData.addToImage(stack);
             }
+            //? } else {
+            /*stack = new ItemStack(Main.IMAGE.get());
+            stack.getOrCreateTag().put("image", imageTag.copy());
+            *///?}
         }
 
         return new MessageData(timecode, value, sender, stack);
@@ -1111,7 +1162,11 @@ public class CrazyPhoneHelper {
         if (!(albumStack.getItem() instanceof AlbumItem))
             return;
 
+        //? if >=1.20.5 {
         AlbumInventory inventory = new AlbumInventory(world.registryAccess(), albumStack);
+        //? } else {
+        /*AlbumInventory inventory = new AlbumInventory(albumStack);
+        *///?}
 
         for (int slot : slotsToCopy) {
             if (slot < 0 || slot >= inventory.getContainerSize())
@@ -1146,7 +1201,11 @@ public class CrazyPhoneHelper {
         if (!(albumStack.getItem() instanceof AlbumItem))
             return;
         String senderNumber = GetCrazyPhoneNumberFromMainHandProcedure.execute(entity, null);
+        //? if >=1.20.5 {
         AlbumInventory inventory = new AlbumInventory(world.registryAccess(), albumStack);
+        //? } else {
+        /*AlbumInventory inventory = new AlbumInventory(albumStack);
+        *///?}
 		int timestampInMinutes = (int) (Instant.now().getEpochSecond() / 60);
 
         for (int slot : selectedSlots) {

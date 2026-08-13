@@ -6,23 +6,29 @@ import fr.lordfinn.crazyphone.data.PhoneAttachmentTypes;
 import fr.lordfinn.crazyphone.data.PhoneRegistrySavedData;
 import fr.lordfinn.crazyphone.init.ModItems;
 import fr.lordfinn.crazyphone.procedures.CrazyPhoneOnUseProcedure;
+import fr.lordfinn.crazyphone.procedures.CrazyPhoneTakePhotoProcedure;
 import fr.lordfinn.crazyphone.procedures.GetCrazyPhoneNumberFromMainHandProcedure;
+import fr.lordfinn.crazyphone.utils.CameraModHelper;
+import fr.lordfinn.crazyphone.utils.ScreenMenuUtils;
 import fr.lordfinn.crazyphone.voicechat.CallRegistry;
 
+import fr.lordfinn.crazyphone.utils.PhoneTagAccess;
+
 import net.minecraft.commands.CommandSourceStack;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.component.CustomData;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Real-world integration coverage the unit tests deliberately can't reach: an actual ServerLevel + real
@@ -59,6 +65,16 @@ public class CrazyPhoneGameTests {
 
     private static String votedFor(PhoneRegistrySavedData registry, String voterNumber) {
         return registry.mayorVotes.get(voterNumber) instanceof StringTag tag ? tag.getAsString() : null;
+    }
+
+    /** {@code GameTestHelper#assertValueEqual} doesn't exist pre-1.20.5 - falls back to a plain
+     *  equals-check through {@code assertTrue}, which both versions have. */
+    private static void assertValueEqual(GameTestHelper helper, String actual, String expected, String message) {
+        //? if >=1.20.5 {
+        helper.assertValueEqual(actual, expected, message);
+        //? } else {
+        /*helper.assertTrue(java.util.Objects.equals(actual, expected), message);
+        *///?}
     }
 
     /** The mock player's connection (see makeTestPlayer) never completed a real handshake, so NeoForge's
@@ -123,7 +139,7 @@ public class CrazyPhoneGameTests {
         resetRegistry(helper);
         ServerPlayer player = makeTestPlayer(helper);
         ItemStack phone = freshCrazyPhone();
-        CustomData.update(DataComponents.CUSTOM_DATA, phone, tag -> {
+        PhoneTagAccess.updateTag(phone, tag -> {
             tag.putString("name", "Alice");
             tag.putString("number", "555");
             tag.putBoolean("isOpen", true);
@@ -185,7 +201,7 @@ public class CrazyPhoneGameTests {
         ServerPlayer voter = makeTestPlayer(helper);
 
         ItemStack voterPhone = freshCrazyPhone();
-        CustomData.update(DataComponents.CUSTOM_DATA, voterPhone, tag -> {
+        PhoneTagAccess.updateTag(voterPhone, tag -> {
             tag.putString("name", "Voter");
             tag.putString("number", "555");
         });
@@ -201,7 +217,7 @@ public class CrazyPhoneGameTests {
         CommandSourceStack source = voter.createCommandSourceStack();
         helper.getLevel().getServer().getCommands().performPrefixedCommand(source, "crazyphone mayor vote 666");
 
-        helper.assertValueEqual(votedFor(registry, "555"), "666", "vote must be recorded for the voter's own number, pointing at the candidate");
+        assertValueEqual(helper, votedFor(registry, "555"), "666", "vote must be recorded for the voter's own number, pointing at the candidate");
 
         // Immediately re-vote for a DIFFERENT candidate - must be rejected by the 600-tick cooldown, not
         // silently accepted as a changed vote.
@@ -209,7 +225,7 @@ public class CrazyPhoneGameTests {
         registry.mayorsCandidates.put("777", new CompoundTag());
         helper.getLevel().getServer().getCommands().performPrefixedCommand(voter.createCommandSourceStack(), "crazyphone mayor vote 777");
 
-        helper.assertValueEqual(votedFor(registry, "555"), "666", "an immediate re-vote must be blocked by the cooldown - the original vote must still stand");
+        assertValueEqual(helper, votedFor(registry, "555"), "666", "an immediate re-vote must be blocked by the cooldown - the original vote must still stand");
         helper.succeed();
     }
 
@@ -221,7 +237,7 @@ public class CrazyPhoneGameTests {
         resetRegistry(helper);
         ServerPlayer voter = makeTestPlayer(helper);
         ItemStack voterPhone = freshCrazyPhone();
-        CustomData.update(DataComponents.CUSTOM_DATA, voterPhone, tag -> {
+        PhoneTagAccess.updateTag(voterPhone, tag -> {
             tag.putString("name", "Voter");
             tag.putString("number", "555");
         });
@@ -257,7 +273,7 @@ public class CrazyPhoneGameTests {
         resetRegistry(helper);
         ServerPlayer voter = makeTestPlayer(helper);
         ItemStack voterPhone = freshCrazyPhone();
-        CustomData.update(DataComponents.CUSTOM_DATA, voterPhone, tag -> {
+        PhoneTagAccess.updateTag(voterPhone, tag -> {
             tag.putString("name", "Voter");
             tag.putString("number", "555");
         });
@@ -276,7 +292,7 @@ public class CrazyPhoneGameTests {
         helper.assertTrue(registry.mayorsCandidates.contains("666"), "candidate add must register the candidate");
 
         helper.getLevel().getServer().getCommands().performPrefixedCommand(voter.createCommandSourceStack(), "crazyphone mayor vote 666");
-        helper.assertValueEqual(votedFor(registry, "555"), "666", "vote must be recorded before it's cleared");
+        assertValueEqual(helper, votedFor(registry, "555"), "666", "vote must be recorded before it's cleared");
 
         ignoringMockConnectionPacketLimits(() ->
                 helper.getLevel().getServer().getCommands().performPrefixedCommand(console, "crazyphone mayor votes clear 555"));
@@ -296,12 +312,101 @@ public class CrazyPhoneGameTests {
     public static void heldPhoneNumber_resolvesCorrectly(GameTestHelper helper) {
         ServerPlayer player = makeTestPlayer(helper);
         ItemStack phone = freshCrazyPhone();
-        CustomData.update(DataComponents.CUSTOM_DATA, phone, tag -> tag.putString("number", "999"));
+        PhoneTagAccess.updateTag(phone, tag -> tag.putString("number", "999"));
         player.getInventory().setItem(0, phone);
         player.getInventory().selected = 0;
 
         String number = GetCrazyPhoneNumberFromMainHandProcedure.execute(player, null);
-        helper.assertValueEqual(number, "999", "held phone number");
+        assertValueEqual(helper, number, "999", "held phone number");
+        helper.succeed();
+    }
+
+    /** Covers CrazyPhoneLeftClickInterceptor's actual effect: left-clicking (attacking/punching) while
+     * holding the phone must activate the camera instead of performing the normal attack/block-break
+     * action - see that class's own javadoc for why it calls this exact procedure. The interceptor itself
+     * is a pure client/server event-cancellation shim with nothing to unit-test in isolation; what's
+     * actually worth verifying is the server-side state change it triggers, which this exercises directly
+     * via {@link CrazyPhoneTakePhotoProcedure} (the same procedure the interceptor calls). */
+    @GameTest(template = "platform", batch = "leftClickActivatesCamera")
+    public static void leftClickingWithPhoneHeld_activatesCamera_insteadOfNormalAction(GameTestHelper helper) {
+        ServerPlayer player = makeTestPlayer(helper);
+        ItemStack phone = freshCrazyPhone();
+        PhoneTagAccess.updateTag(phone, tag -> tag.putString("number", "111"));
+        player.getInventory().setItem(0, phone);
+        player.getInventory().selected = 0;
+
+        helper.assertTrue(!CameraModHelper.isActive(phone), "camera must start inactive on a freshly given phone");
+
+        ignoringMockConnectionPacketLimits(() -> CrazyPhoneTakePhotoProcedure.execute(helper.getLevel(), player));
+
+        helper.assertTrue(CameraModHelper.isActive(phone),
+                "left-clicking with the phone in hand must activate the camera mode on that exact phone item");
+        helper.succeed();
+    }
+
+    /** Regression coverage for the "navigation must keep working while in a call" fix: screen push/pop
+     * (back/home button handling) must not silently break or get blocked just because CallRegistry
+     * considers this player to be in an active call - the two systems (screen history, call state) are
+     * independent and neither should gate the other. */
+    @GameTest(template = "platform", batch = "navigateWhileInCall")
+    public static void screenNavigation_stillWorksNormally_whileInCall(GameTestHelper helper) {
+        ServerPlayer caller = makeTestPlayer(helper);
+        ServerPlayer callee = makeTestPlayer(helper);
+
+        ignoringMockConnectionPacketLimits(() -> CallRegistry.startCall("777.888", caller, List.of(callee)));
+
+        ScreenMenuUtils.pushScreen(caller, "crazyphone:crazyphone_home_screen", "");
+        ScreenMenuUtils.pushScreen(caller, "crazyphone:crazy_phone_contacts_screen", "");
+        String beforePop = currentScreenOf(caller);
+        helper.assertTrue(beforePop != null && beforePop.contains("crazy_phone_contacts_screen"),
+                "sanity: contacts screen must be current before testing the back action, got " + beforePop);
+
+        ScreenMenuUtils.popScreen(caller);
+
+        String afterPop = currentScreenOf(caller);
+        helper.assertTrue(afterPop != null && afterPop.contains("crazyphone_home_screen"),
+                "the back action must still return to the previous screen for a player with an active call session, got " + afterPop);
+
+        ignoringMockConnectionPacketLimits(() -> CallRegistry.leave(caller));
+        ignoringMockConnectionPacketLimits(() -> CallRegistry.leave(callee));
+        helper.succeed();
+    }
+
+    /** Full round trip through the real menu-opening path (base class pushes the screen id onto history,
+     * the group-settings constructor tags it with the conversationId) - none of the group-settings screen
+     * plumbing (#52-72) had a real-player GameTest before, only the underlying procedures via
+     * GroupProceduresTest's mocked LevelAccessor. */
+    @GameTest(template = "platform", batch = "openGroupSettingsMenu")
+    public static void groupSettingsMenu_opensViaRealMenuPath_taggedWithConversationId(GameTestHelper helper) {
+        resetRegistry(helper);
+        ServerPlayer admin = makeTestPlayer(helper);
+        ItemStack adminPhone = freshCrazyPhone();
+        PhoneTagAccess.updateTag(adminPhone, tag -> {
+            tag.putString("name", "Admin");
+            tag.putString("number", "555");
+        });
+        admin.getInventory().setItem(0, adminPhone);
+        admin.getInventory().selected = 0;
+
+        String conversationId = "group-gametest-" + UUID.randomUUID();
+        PhoneRegistrySavedData registry = PhoneRegistrySavedData.get(helper.getLevel());
+        registry.phones.put("555", new CompoundTag());
+        CompoundTag meta = new CompoundTag();
+        meta.putString("name", "Test Squad");
+        meta.putString("admin", "555");
+        ListTag members = new ListTag();
+        members.add(StringTag.valueOf("555"));
+        meta.put("members", members);
+        registry.groupMeta.put(conversationId, meta);
+
+        ignoringMockConnectionPacketLimits(() ->
+                ScreenMenuUtils.openGroupSettingsMenu(admin, InteractionHand.MAIN_HAND, conversationId));
+
+        String opened = currentScreenOf(admin);
+        helper.assertTrue(opened != null && opened.contains("crazy_phone_group_settings_screen"),
+                "opening group settings must push the group settings screen id onto the navigation history, got " + opened);
+        helper.assertTrue(opened.contains(conversationId),
+                "the opened screen tag must carry the conversationId as its data, got " + opened);
         helper.succeed();
     }
 }

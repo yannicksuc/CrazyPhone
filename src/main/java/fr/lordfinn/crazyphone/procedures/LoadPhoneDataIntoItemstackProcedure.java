@@ -2,12 +2,11 @@ package fr.lordfinn.crazyphone.procedures;
 
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.component.CustomData;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.Entity;
 import fr.lordfinn.crazyphone.data.PhoneRegistrySavedData;
+import fr.lordfinn.crazyphone.utils.PhoneTagAccess;
 
 public class LoadPhoneDataIntoItemstackProcedure {
     public static void execute(LevelAccessor world, Entity entity, ItemStack itemstack, String phoneNumber) {
@@ -28,11 +27,11 @@ public class LoadPhoneDataIntoItemstackProcedure {
 
         // This only reads the registry (into the itemstack's own data), it never mutates it - broadcasting
         // an unchanged registry to every online player here was pure waste.
-        itemstack.set(DataComponents.CUSTOM_NAME,
+        PhoneTagAccess.setCustomName(itemstack,
                 Component.literal(("CrazyPhone de " + phoneData.getString("name"))));
     }
 
     private static void updateItemStackTag(ItemStack itemstack, String tagName, String tagValue) {
-        CustomData.update(DataComponents.CUSTOM_DATA, itemstack, tag -> tag.putString(tagName, tagValue));
+        PhoneTagAccess.updateTag(itemstack, tag -> tag.putString(tagName, tagValue));
     }
 }

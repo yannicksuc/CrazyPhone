@@ -4,11 +4,13 @@ import fr.lordfinn.crazyphone.init.ModItems;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.inventory.InventoryMenu;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
 import org.junit.jupiter.api.Test;
 
+import java.lang.reflect.Field;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -37,6 +39,16 @@ class CrazyPhoneHelperCallStateTest {
             when(inventory.getItem(index)).thenReturn(items[index]);
         }
         when(player.getInventory()).thenReturn(inventory);
+        // inventoryMenu is a real final field, not a method, so Mockito never initializes it and
+        // it can't be assigned directly: reflection is the only way to give it a non-null value,
+        // or CrazyPhoneHelper's broadcastChanges() call NPEs against the mock.
+        try {
+            Field field = net.minecraft.world.entity.player.Player.class.getField("inventoryMenu");
+            field.setAccessible(true);
+            field.set(player, mock(InventoryMenu.class));
+        } catch (ReflectiveOperationException e) {
+            throw new RuntimeException(e);
+        }
         return player;
     }
 
