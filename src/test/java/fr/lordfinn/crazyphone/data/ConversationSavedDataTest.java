@@ -178,8 +178,13 @@ class ConversationSavedDataTest {
         data.appendMessage(CONVO, textMessage("111", "hello", 0));
         data.appendMessage(CONVO, textMessage("222", "hi back", 1));
 
-        CompoundTag saved = data.save(new CompoundTag(), RegistryAccess.EMPTY);
+        //? if >=1.20.5 {
+        /*CompoundTag saved = data.save(new CompoundTag(), RegistryAccess.EMPTY);
         ConversationSavedData loaded = ConversationSavedData.load(saved, RegistryAccess.EMPTY);
+        *///? } else {
+        CompoundTag saved = data.save(new CompoundTag());
+        ConversationSavedData loaded = ConversationSavedData.load(saved);
+        //?}
 
         assertEquals(2, loaded.getMessageCount(CONVO));
         List<CompoundTag> page = loaded.getPage(CONVO, 0, 10);

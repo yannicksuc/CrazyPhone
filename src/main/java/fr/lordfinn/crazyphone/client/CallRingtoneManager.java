@@ -3,15 +3,15 @@ package fr.lordfinn.crazyphone.client;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 //? if >=1.20.5 {
-import net.neoforged.fml.common.EventBusSubscriber;
-//? } else {
-/*import net.neoforged.fml.common.Mod.EventBusSubscriber;
-*///?}
+/*import net.neoforged.fml.common.EventBusSubscriber;
+*///? } else {
+import net.neoforged.fml.common.Mod.EventBusSubscriber;
+//?}
 //? if >=1.20.5 {
-import net.neoforged.neoforge.client.event.ClientTickEvent;
-//? } else {
-/*import net.neoforged.neoforge.event.TickEvent;
-*///?}
+/*import net.neoforged.neoforge.client.event.ClientTickEvent;
+*///? } else {
+import net.neoforged.neoforge.event.TickEvent;
+//?}
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
@@ -49,11 +49,11 @@ public class CallRingtoneManager {
 
     @SubscribeEvent
     //? if >=1.20.5 {
-    public static void onClientTick(ClientTickEvent.Post event) {
-    //? } else {
-    /*public static void onClientTick(TickEvent.ClientTickEvent event) {
+    /*public static void onClientTick(ClientTickEvent.Post event) {
+    *///? } else {
+    public static void onClientTick(TickEvent.ClientTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
-    *///?}
+    //?}
         Minecraft mc = Minecraft.getInstance();
         LocalPlayer player = mc.player;
         if (player == null) {
@@ -115,7 +115,7 @@ public class CallRingtoneManager {
         for (int i = 0; i < inventory.getContainerSize(); i++) {
             ItemStack stack = inventory.getItem(i);
             if (stack.getItem() == ModItems.CRAZY_PHONE.get()
-                    && ClientCallState.numberHasState(GetCrazyPhoneNumberProcedure.execute(stack), state))
+                    && ClientCallState.numberHasState(GetCrazyPhoneNumberProcedure.execute(stack, player.level()), state))
                 return true;
         }
         return false;

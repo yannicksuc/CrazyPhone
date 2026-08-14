@@ -1,13 +1,11 @@
 package fr.lordfinn.crazyphone.utils;
 
 import fr.lordfinn.crazyphone.init.ModItems;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.InventoryMenu;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.component.CustomData;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Field;
@@ -26,7 +24,7 @@ class CrazyPhoneHelperCallStateTest {
 
     private static ItemStack crazyPhone(String number) {
         ItemStack stack = new ItemStack(ModItems.CRAZY_PHONE.get());
-        CustomData.update(DataComponents.CUSTOM_DATA, stack, tag -> tag.putString("number", number));
+        PhoneTagAccess.updateTag(stack, tag -> tag.putString("number", number));
         return stack;
     }
 

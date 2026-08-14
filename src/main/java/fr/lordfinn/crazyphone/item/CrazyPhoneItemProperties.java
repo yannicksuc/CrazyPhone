@@ -6,10 +6,10 @@ import net.minecraft.resources.ResourceLocation;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 //? if >=1.20.5 {
-import net.neoforged.fml.common.EventBusSubscriber;
-//? } else {
-/*import net.neoforged.fml.common.Mod.EventBusSubscriber;
-*///?}
+/*import net.neoforged.fml.common.EventBusSubscriber;
+*///? } else {
+import net.neoforged.fml.common.Mod.EventBusSubscriber;
+//?}
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 
 import fr.lordfinn.crazyphone.Crazyphone;
@@ -33,7 +33,11 @@ import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
  * CrazyPhoneDefaultScreenMenu and CallRegistry) makes it visible to bystanders for free, with zero new
  * packets.
  */
-@EventBusSubscriber(value = Dist.CLIENT)
+//? if <1.20.5 {
+@EventBusSubscriber(value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)
+//?} else {
+/*@EventBusSubscriber(value = Dist.CLIENT)
+*///?}
 public class CrazyPhoneItemProperties {
     @SubscribeEvent
     public static void onClientSetup(FMLClientSetupEvent event) {

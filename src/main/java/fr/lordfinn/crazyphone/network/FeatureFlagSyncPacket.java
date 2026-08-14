@@ -1,26 +1,26 @@
 package fr.lordfinn.crazyphone.network;
 
 //? if >=1.20.5 {
-import net.neoforged.neoforge.network.handling.IPayloadContext;
-//? } else {
-/*import net.neoforged.neoforge.network.handling.PlayPayloadContext;
-*///?}
+/*import net.neoforged.neoforge.network.handling.IPayloadContext;
+*///? } else {
+import net.neoforged.neoforge.network.handling.PlayPayloadContext;
+//?}
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 //? if >=1.20.5 {
-import net.neoforged.fml.common.EventBusSubscriber;
-//? } else {
-/*import net.neoforged.fml.common.Mod.EventBusSubscriber;
-*///?}
+/*import net.neoforged.fml.common.EventBusSubscriber;
+*///? } else {
+import net.neoforged.fml.common.Mod.EventBusSubscriber;
+//?}
 import net.neoforged.bus.api.SubscribeEvent;
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.network.protocol.PacketFlow;
 //? if >=1.20.5 {
-import net.minecraft.network.codec.StreamCodec;
+/*import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.RegistryFriendlyByteBuf;
-//? }
+*///? }
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
@@ -44,7 +44,7 @@ import java.util.Map;
 public record FeatureFlagSyncPacket(Map<String, Boolean> enabledStates) implements CustomPacketPayload {
 
     //? if >=1.20.5 {
-    public static final Type<FeatureFlagSyncPacket> TYPE = new Type<>(
+    /*public static final Type<FeatureFlagSyncPacket> TYPE = new Type<>(
             Crazyphone.resource("feature_flag_sync"));
 
     public static final StreamCodec<RegistryFriendlyByteBuf, FeatureFlagSyncPacket> STREAM_CODEC = StreamCodec.of(
@@ -67,8 +67,8 @@ public record FeatureFlagSyncPacket(Map<String, Boolean> enabledStates) implemen
     public Type<FeatureFlagSyncPacket> type() {
         return TYPE;
     }
-    //? } else {
-    /*public static final ResourceLocation ID = new ResourceLocation(Crazyphone.MODID, "feature_flag_sync");
+    *///? } else {
+    public static final ResourceLocation ID = new ResourceLocation(Crazyphone.MODID, "feature_flag_sync");
 
     public FeatureFlagSyncPacket(FriendlyByteBuf buffer) {
         this(readStates(buffer));
@@ -94,10 +94,10 @@ public record FeatureFlagSyncPacket(Map<String, Boolean> enabledStates) implemen
     public ResourceLocation id() {
         return ID;
     }
-    *///?}
+    //?}
 
     //? if >=1.20.5 {
-    public static void handleData(final FeatureFlagSyncPacket message, final IPayloadContext context) {
+    /*public static void handleData(final FeatureFlagSyncPacket message, final IPayloadContext context) {
         if (context.flow() != PacketFlow.CLIENTBOUND)
             return;
         context.enqueueWork(() -> ClientFeatureFlagState.onPacket(message)).exceptionally(e -> {
@@ -105,8 +105,8 @@ public record FeatureFlagSyncPacket(Map<String, Boolean> enabledStates) implemen
             return null;
         });
     }
-    //? } else {
-    /*public static void handleData(final FeatureFlagSyncPacket message, final PlayPayloadContext context) {
+    *///? } else {
+    public static void handleData(final FeatureFlagSyncPacket message, final PlayPayloadContext context) {
         if (context.flow() != PacketFlow.CLIENTBOUND)
             return;
         context.workHandler().submitAsync(() -> ClientFeatureFlagState.onPacket(message)).exceptionally(e -> {
@@ -114,7 +114,7 @@ public record FeatureFlagSyncPacket(Map<String, Boolean> enabledStates) implemen
             return null;
         });
     }
-    *///?}
+    //?}
 
     private static Map<String, Boolean> computeFor(ServerPlayer player) {
         Map<String, Boolean> states = new HashMap<>();
@@ -126,10 +126,10 @@ public record FeatureFlagSyncPacket(Map<String, Boolean> enabledStates) implemen
     /** Sent right after login (see PhoneAttachmentTypes#onPlayerLoggedIn). */
     public static void syncTo(ServerPlayer player) {
         //? if >=1.20.5 {
-        PacketDistributor.sendToPlayer(player, new FeatureFlagSyncPacket(computeFor(player)));
-        //? } else {
-        /*PacketDistributor.PLAYER.with(player).send(new FeatureFlagSyncPacket(computeFor(player)));
-        *///?}
+        /*PacketDistributor.sendToPlayer(player, new FeatureFlagSyncPacket(computeFor(player)));
+        *///? } else {
+        PacketDistributor.PLAYER.with(player).send(new FeatureFlagSyncPacket(computeFor(player)));
+        //?}
     }
 
     /** Sent whenever a global switch changes via /crazyphone feature - each online player gets their own
@@ -139,15 +139,19 @@ public record FeatureFlagSyncPacket(Map<String, Boolean> enabledStates) implemen
             syncTo(player);
     }
 
-    @EventBusSubscriber
+    //? if <1.20.5 {
+    @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
+    //?} else {
+    /*@EventBusSubscriber
+    *///?}
     public static class Registration {
         @SubscribeEvent
         public static void register(FMLCommonSetupEvent event) {
             //? if >=1.20.5 {
-            Crazyphone.addNetworkMessage(TYPE, STREAM_CODEC, FeatureFlagSyncPacket::handleData);
-            //? } else {
-            /*Crazyphone.addNetworkMessage(ID, FeatureFlagSyncPacket::new, FeatureFlagSyncPacket::handleData);
-            *///?}
+            /*Crazyphone.addNetworkMessage(TYPE, STREAM_CODEC, FeatureFlagSyncPacket::handleData);
+            *///? } else {
+            Crazyphone.addNetworkMessage(ID, FeatureFlagSyncPacket::new, FeatureFlagSyncPacket::handleData);
+            //?}
         }
     }
 }

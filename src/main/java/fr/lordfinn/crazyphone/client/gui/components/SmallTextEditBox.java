@@ -1,5 +1,7 @@
 package fr.lordfinn.crazyphone.client.gui.components;
 
+import fr.lordfinn.crazyphone.utils.GuiCompat;
+
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
@@ -34,9 +36,9 @@ public class SmallTextEditBox extends EditBox {
         int y = this.getY();
         float renderedHeight = this.getHeight() * SCALE_FACTOR;
         float bottomAlignOffset = requestedHeight - renderedHeight;
-        guiGraphics.pose().pushPose();
-		guiGraphics.pose().translate(x, y + bottomAlignOffset, 0); // move to position, bottom-aligned to the requested height
-		guiGraphics.pose().scale(SCALE_FACTOR, SCALE_FACTOR, 1.0f); // shrink by 50%
+        GuiCompat.pushPose(guiGraphics);
+		GuiCompat.translate(guiGraphics, x, y + bottomAlignOffset); // move to position, bottom-aligned to the requested height
+		GuiCompat.scale(guiGraphics, SCALE_FACTOR, SCALE_FACTOR); // shrink by 50%
 
 		// Render at 0,0 now that we've translated
 		this.setX(0);
@@ -45,7 +47,7 @@ public class SmallTextEditBox extends EditBox {
         // Adjust the rendering position to account for scaling
         super.renderWidget(guiGraphics, (int)(mouseX * (1/SCALE_FACTOR) - x * (1/SCALE_FACTOR)),(int)(mouseY * (1/SCALE_FACTOR) - y * (1/SCALE_FACTOR)), partialTick);
 
-        guiGraphics.pose().popPose();
+        GuiCompat.popPose(guiGraphics);
         this.setX(x);
 		this.setY(y);
     }

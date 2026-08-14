@@ -4,12 +4,12 @@ import fr.lordfinn.crazyphone.Crazyphone;
 
 import net.neoforged.neoforge.event.entity.item.ItemTossEvent;
 //? if >=1.20.5 {
-import net.neoforged.neoforge.event.tick.ServerTickEvent;
+/*import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-//? } else {
-/*import net.neoforged.neoforge.event.TickEvent;
+*///? } else {
+import net.neoforged.neoforge.event.TickEvent;
 import net.neoforged.fml.common.Mod.EventBusSubscriber;
-*///?}
+//?}
 import net.neoforged.bus.api.SubscribeEvent;
 
 import net.minecraft.server.MinecraftServer;
@@ -67,7 +67,7 @@ public class CallTerminationListener {
     }
 
     //? if >=1.20.5 {
-    @SubscribeEvent
+    /*@SubscribeEvent
     public static void onServerTick(ServerTickEvent.Post event) {
         MinecraftServer server = event.getServer();
         if (server.getTickCount() % SWEEP_INTERVAL_TICKS != 0)
@@ -76,8 +76,8 @@ public class CallTerminationListener {
         sweepAloneParticipants(server);
         sweepRingTimeouts(server);
     }
-    //? } else {
-    /*@SubscribeEvent
+    *///? } else {
+    @SubscribeEvent
     public static void onServerTick(TickEvent.ServerTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
         MinecraftServer server = event.getServer();
@@ -87,7 +87,7 @@ public class CallTerminationListener {
         sweepAloneParticipants(server);
         sweepRingTimeouts(server);
     }
-    *///?}
+    //?}
 
     private static void sweepInventoryPossession(MinecraftServer server) {
         long currentGameTime = server.overworld().getGameTime();

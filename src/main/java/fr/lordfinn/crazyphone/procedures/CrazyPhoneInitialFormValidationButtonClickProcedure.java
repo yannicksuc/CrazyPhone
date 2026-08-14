@@ -29,7 +29,7 @@ public static void execute(LevelAccessor world, double x, double y, double z, En
 		Holder<SoundEvent> failSoundHolder = world.registryAccess().registryOrThrow(Registries.SOUND_EVENT).getHolderOrThrow(failSoundKey);
 
 
-    if (("Ok!").equals(CrazyPhoneGetInitialFormValidationMessageProcedure.execute(world, entity, textstate))) {
+    if (CrazyPhoneGetInitialFormValidationMessageProcedure.OK.equals(CrazyPhoneGetInitialFormValidationMessageProcedure.execute(world, entity, textstate))) {
         RegisterNewPhoneFromFormProcedure.execute(world, entity, CrazyPhoneHelper.getMainHandItemOrEmpty(entity), textstate);
 
         if (entity instanceof ServerPlayer serverPlayer) {
@@ -37,8 +37,17 @@ public static void execute(LevelAccessor world, double x, double y, double z, En
             serverPlayer.connection.send(new ClientboundSoundPacket(successSoundHolder, SoundSource.NEUTRAL, x, y, z, 1.0F, 1.2F, 1));
         }
 
-        PhoneTagAccess.setCustomName(CrazyPhoneHelper.getMainHandItemOrEmpty(entity),
-                Component.literal(("CrazyPhone de " + PhoneTagAccess.getTag(CrazyPhoneHelper.getMainHandItemOrEmpty(entity)).getString("name"))));
+        PhoneTagAccess.setPhoneDisplayName(CrazyPhoneHelper.getMainHandItemOrEmpty(entity),
+                PhoneTagAccess.getTag(CrazyPhoneHelper.getMainHandItemOrEmpty(entity)).getString("name"));
+
+        // The password/identity form is a custom no-slots menu (CrazyPhoneDefaultScreenMenu), so while it's
+        // still open, vanilla's per-tick hotbar sync never looks at the mainhand slot - see that class's own
+        // constructor/removed() for the same workaround. Without this, the name/number/display-name tags
+        // just written above are correct on the server (visible via /crazyphone list) but never reach the
+        // client, so the held phone keeps rendering as an unregistered, unnamed item.
+        if (entity instanceof ServerPlayer serverPlayer)
+            serverPlayer.inventoryMenu.broadcastChanges();
+
         CrazyPhoneOnUseProcedure.execute(world, x, y, z, entity);
     } else {
         if (entity instanceof ServerPlayer serverPlayer) {

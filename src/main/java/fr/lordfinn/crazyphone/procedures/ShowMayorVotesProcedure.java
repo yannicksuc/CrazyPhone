@@ -32,12 +32,12 @@ public class ShowMayorVotesProcedure {
 
 		// Afficher les résultats
 		if (sortedVotes.isEmpty()) {
-			player.displayClientMessage(Component.literal("Aucun vote n'a encore été enregistré.")
+			player.displayClientMessage(Component.translatable("message.crazyphone.no_votes_yet")
 				.withStyle(ChatFormatting.GRAY), false);
 			return;
 		}
 
-		player.displayClientMessage(Component.literal("📊 Résultats des votes pour le maire :")
+		player.displayClientMessage(Component.translatable("message.crazyphone.vote_results_title")
 			.withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD), false);
 
 		for (Map.Entry<String, Integer> entry : sortedVotes) {
@@ -45,34 +45,34 @@ public class ShowMayorVotesProcedure {
 			int count = entry.getValue();
 
 			Contact contact = CrazyPhoneHelper.getContact((Level)world, number);
-			String displayName = contact != null ? contact.getName() : ("Numéro inconnu: " + number);
+			String displayName = contact != null ? contact.getName() : Component.translatable("message.crazyphone.unknown_number", number).getString();
 
 			player.displayClientMessage(
 				Component.literal("• ").append(Component.literal(displayName)
 					.withStyle(ChatFormatting.AQUA))
-					.append(Component.literal(" - " + count + " vote(s)").withStyle(ChatFormatting.WHITE)),
+					.append(Component.translatable("message.crazyphone.vote_count", count).withStyle(ChatFormatting.WHITE)),
 				false
 			);
 		}
 		// Ligne vide pour séparer
 		player.displayClientMessage(Component.literal(""), false);
 
-		player.displayClientMessage(Component.literal("🗳️ Détail des votes :")
+		player.displayClientMessage(Component.translatable("message.crazyphone.vote_details_title")
 			.withStyle(ChatFormatting.YELLOW, ChatFormatting.BOLD), false);
 
 		for (String voter : votes.getAllKeys()) {
 			String candidateNumber = votes.get(voter).getAsString();
 
 			Contact voterContact = CrazyPhoneHelper.getContact(world, voter);
-			String voterName = voterContact != null ? voterContact.getName() : ("Inconnu: " + voter);
+			String voterName = voterContact != null ? voterContact.getName() : Component.translatable("message.crazyphone.unknown_voter", voter).getString();
 
 			Contact candidateContact = CrazyPhoneHelper.getContact(world, candidateNumber);
-			String candidateName = candidateContact != null ? candidateContact.getName() : ("Numéro inconnu: " + candidateNumber);
+			String candidateName = candidateContact != null ? candidateContact.getName() : Component.translatable("message.crazyphone.unknown_number", candidateNumber).getString();
 
 			player.displayClientMessage(
 				Component.literal("• ")
 					.append(Component.literal(voterName).withStyle(ChatFormatting.GREEN))
-					.append(Component.literal(" a voté pour "))
+					.append(Component.translatable("message.crazyphone.vote_detail_line"))
 					.append(Component.literal(candidateName).withStyle(ChatFormatting.AQUA)),
 				false
 			);

@@ -15,7 +15,7 @@ public class GetCrazyPhoneNumberFromMainHandProcedure {
 			return "";
 		String number = "";
 		if ((CrazyPhoneHelper.getMainHandItemOrEmpty(entity)).getItem() == ModItems.CRAZY_PHONE.get()) {
-			number = GetCrazyPhoneNumberProcedure.execute(CrazyPhoneHelper.getMainHandItemOrEmpty(entity));
+			number = GetCrazyPhoneNumberProcedure.execute(CrazyPhoneHelper.getMainHandItemOrEmpty(entity), entity.level());
 			if (guistate != null && guistate.get("text:number") instanceof EditBox _tf)
 				_tf.setValue(number);
 			return number;

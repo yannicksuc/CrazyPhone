@@ -178,10 +178,10 @@ abstract public class CrazyPhoneDefaultScreenMenu extends AbstractContainerMenu 
 				Slot slot = this.slots.get(i);
 				ItemStack itemstack = slot.getItem();
 				//? if >=1.20.5 {
-				if (slot.mayPlace(itemstack) && !itemstack.isEmpty() && ItemStack.isSameItemSameComponents(p_38904_, itemstack)) {
-				//? } else {
-				/*if (slot.mayPlace(itemstack) && !itemstack.isEmpty() && ItemStack.isSameItemSameTags(p_38904_, itemstack)) {
-				*///?}
+				/*if (slot.mayPlace(itemstack) && !itemstack.isEmpty() && ItemStack.isSameItemSameComponents(p_38904_, itemstack)) {
+				*///? } else {
+				if (slot.mayPlace(itemstack) && !itemstack.isEmpty() && ItemStack.isSameItemSameTags(p_38904_, itemstack)) {
+				//?}
 					int j = itemstack.getCount() + p_38904_.getCount();
 					int k = slot.getMaxStackSize(itemstack);
 					if (j <= k) {

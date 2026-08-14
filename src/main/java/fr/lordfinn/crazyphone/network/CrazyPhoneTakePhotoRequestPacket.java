@@ -1,25 +1,25 @@
 package fr.lordfinn.crazyphone.network;
 
 //? if >=1.20.5 {
-import net.neoforged.neoforge.network.handling.IPayloadContext;
-//? } else {
-/*import net.neoforged.neoforge.network.handling.PlayPayloadContext;
-*///?}
+/*import net.neoforged.neoforge.network.handling.IPayloadContext;
+*///? } else {
+import net.neoforged.neoforge.network.handling.PlayPayloadContext;
+//?}
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 //? if >=1.20.5 {
-import net.neoforged.fml.common.EventBusSubscriber;
-//? } else {
-/*import net.neoforged.fml.common.Mod.EventBusSubscriber;
-*///?}
+/*import net.neoforged.fml.common.EventBusSubscriber;
+*///? } else {
+import net.neoforged.fml.common.Mod.EventBusSubscriber;
+//?}
 import net.neoforged.bus.api.SubscribeEvent;
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.network.protocol.PacketFlow;
 //? if >=1.20.5 {
-import net.minecraft.network.codec.StreamCodec;
+/*import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.RegistryFriendlyByteBuf;
-//? }
+*///? }
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -41,7 +41,7 @@ import fr.lordfinn.crazyphone.procedures.CrazyPhoneTakePhotoProcedure;
 public record CrazyPhoneTakePhotoRequestPacket() implements CustomPacketPayload {
 
     //? if >=1.20.5 {
-    public static final Type<CrazyPhoneTakePhotoRequestPacket> TYPE = new Type<>(
+    /*public static final Type<CrazyPhoneTakePhotoRequestPacket> TYPE = new Type<>(
             Crazyphone.resource("crazy_phone_take_photo_request")
     );
 
@@ -52,8 +52,8 @@ public record CrazyPhoneTakePhotoRequestPacket() implements CustomPacketPayload 
     public Type<CrazyPhoneTakePhotoRequestPacket> type() {
         return TYPE;
     }
-    //? } else {
-    /*public static final ResourceLocation ID = Crazyphone.resource("crazy_phone_take_photo_request");
+    *///? } else {
+    public static final ResourceLocation ID = Crazyphone.resource("crazy_phone_take_photo_request");
 
     public CrazyPhoneTakePhotoRequestPacket(FriendlyByteBuf buffer) {
         this();
@@ -66,7 +66,7 @@ public record CrazyPhoneTakePhotoRequestPacket() implements CustomPacketPayload 
     public ResourceLocation id() {
         return ID;
     }
-    *///?}
+    //?}
 
     private static void handle(ServerPlayer player) {
         if (player.getItemInHand(InteractionHand.MAIN_HAND).getItem() != ModItems.CRAZY_PHONE.get())
@@ -75,7 +75,7 @@ public record CrazyPhoneTakePhotoRequestPacket() implements CustomPacketPayload 
     }
 
     //? if >=1.20.5 {
-    public static void handleData(final CrazyPhoneTakePhotoRequestPacket message, final IPayloadContext context) {
+    /*public static void handleData(final CrazyPhoneTakePhotoRequestPacket message, final IPayloadContext context) {
         if (context.flow() != PacketFlow.SERVERBOUND)
             return;
         context.enqueueWork(() -> {
@@ -87,8 +87,8 @@ public record CrazyPhoneTakePhotoRequestPacket() implements CustomPacketPayload 
             return null;
         });
     }
-    //? } else {
-    /*public static void handleData(final CrazyPhoneTakePhotoRequestPacket message, final PlayPayloadContext context) {
+    *///? } else {
+    public static void handleData(final CrazyPhoneTakePhotoRequestPacket message, final PlayPayloadContext context) {
         if (context.flow() != PacketFlow.SERVERBOUND)
             return;
         context.workHandler().submitAsync(() -> {
@@ -100,17 +100,21 @@ public record CrazyPhoneTakePhotoRequestPacket() implements CustomPacketPayload 
             return null;
         });
     }
-    *///?}
+    //?}
 
-    @EventBusSubscriber
+    //? if <1.20.5 {
+    @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
+    //?} else {
+    /*@EventBusSubscriber
+    *///?}
     public static class Registration {
         @SubscribeEvent
         public static void register(FMLCommonSetupEvent event) {
             //? if >=1.20.5 {
-            Crazyphone.addNetworkMessage(TYPE, STREAM_CODEC, CrazyPhoneTakePhotoRequestPacket::handleData);
-            //? } else {
-            /*Crazyphone.addNetworkMessage(ID, CrazyPhoneTakePhotoRequestPacket::new, CrazyPhoneTakePhotoRequestPacket::handleData);
-            *///?}
+            /*Crazyphone.addNetworkMessage(TYPE, STREAM_CODEC, CrazyPhoneTakePhotoRequestPacket::handleData);
+            *///? } else {
+            Crazyphone.addNetworkMessage(ID, CrazyPhoneTakePhotoRequestPacket::new, CrazyPhoneTakePhotoRequestPacket::handleData);
+            //?}
         }
     }
 }

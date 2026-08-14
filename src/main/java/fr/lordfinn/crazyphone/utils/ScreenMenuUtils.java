@@ -38,8 +38,8 @@ import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.FriendlyByteBuf;
 //? if >=1.20.5 {
-import net.minecraft.network.RegistryFriendlyByteBuf;
-//? }
+/*import net.minecraft.network.RegistryFriendlyByteBuf;
+*///? }
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.level.Level;
@@ -537,9 +537,9 @@ public class ScreenMenuUtils {
                 }
 
                 //? if >=1.20.5 {
-                RegistryAccess registryAccess = player.registryAccess();
+                /*RegistryAccess registryAccess = player.registryAccess();
                 ConnectionType connectionType = ConnectionType.NEOFORGE;
-                //? }
+                *///? }
                 player.openMenu(new MenuProvider() {
                     @Override
                     public Component getDisplayName() {
@@ -549,10 +549,10 @@ public class ScreenMenuUtils {
                     @Override
                     public AbstractContainerMenu createMenu(int id, Inventory inventory, Player player) {
                         //? if >=1.20.5 {
-                        RegistryFriendlyByteBuf packetBuffer = new RegistryFriendlyByteBuf(Unpooled.buffer(), registryAccess, connectionType);
-                        //? } else {
-                        /*FriendlyByteBuf packetBuffer = new FriendlyByteBuf(Unpooled.buffer());
-                        *///?}
+                        /*RegistryFriendlyByteBuf packetBuffer = new RegistryFriendlyByteBuf(Unpooled.buffer(), registryAccess, connectionType);
+                        *///? } else {
+                        FriendlyByteBuf packetBuffer = new FriendlyByteBuf(Unpooled.buffer());
+                        //?}
                         populateBufferWithConversationData(packetBuffer, player, hand, conversationId);
 
                         try {
@@ -566,10 +566,10 @@ public class ScreenMenuUtils {
     }
 
     //? if >=1.20.5 {
-    protected static void populateBufferWithConversationData(RegistryFriendlyByteBuf packetBuffer, Player player,
-    //? } else {
-    /*protected static void populateBufferWithConversationData(FriendlyByteBuf packetBuffer, Player player,
-    *///?}
+    /*protected static void populateBufferWithConversationData(RegistryFriendlyByteBuf packetBuffer, Player player,
+    *///? } else {
+    protected static void populateBufferWithConversationData(FriendlyByteBuf packetBuffer, Player player,
+    //?}
             InteractionHand hand, String conversationId) {
 
         writePlayerAndConversationInfo(packetBuffer, player, conversationId);
@@ -586,10 +586,10 @@ public class ScreenMenuUtils {
      * degrading into looking like an ordinary 1:1 chat. Empty name/icon means "unset" - the client falls
      * back to member names / cycling heads, same convention as the contacts screen's group entries. */
     //? if >=1.20.5 {
-    private static void writeGroupMetaToBuffer(RegistryFriendlyByteBuf buffer, Player player, String conversationId) {
-    //? } else {
-    /*private static void writeGroupMetaToBuffer(FriendlyByteBuf buffer, Player player, String conversationId) {
-    *///?}
+    /*private static void writeGroupMetaToBuffer(RegistryFriendlyByteBuf buffer, Player player, String conversationId) {
+    *///? } else {
+    private static void writeGroupMetaToBuffer(FriendlyByteBuf buffer, Player player, String conversationId) {
+    //?}
         boolean isGroup = CrazyPhoneHelper.hasGroupMeta(player.level(), conversationId);
         CrazyPhoneHelper.GroupMeta meta = CrazyPhoneHelper.getGroupMeta(player.level(), conversationId);
         buffer.writeBoolean(isGroup);
@@ -599,20 +599,20 @@ public class ScreenMenuUtils {
     }
 
     //? if >=1.20.5 {
-    private static void writePlayerAndConversationInfo(RegistryFriendlyByteBuf buffer, Player player, String conversationId) {
-    //? } else {
-    /*private static void writePlayerAndConversationInfo(FriendlyByteBuf buffer, Player player, String conversationId) {
-    *///?}
+    /*private static void writePlayerAndConversationInfo(RegistryFriendlyByteBuf buffer, Player player, String conversationId) {
+    *///? } else {
+    private static void writePlayerAndConversationInfo(FriendlyByteBuf buffer, Player player, String conversationId) {
+    //?}
         buffer.writeBlockPos(player.blockPosition());
         buffer.writeByte(0); // Always Main Hand
         buffer.writeUtf(conversationId);
     }
 
     //? if >=1.20.5 {
-    private static void writeParticipantsToBuffer(RegistryFriendlyByteBuf buffer, Player player, String conversationId) {
-    //? } else {
-    /*private static void writeParticipantsToBuffer(FriendlyByteBuf buffer, Player player, String conversationId) {
-    *///?}
+    /*private static void writeParticipantsToBuffer(RegistryFriendlyByteBuf buffer, Player player, String conversationId) {
+    *///? } else {
+    private static void writeParticipantsToBuffer(FriendlyByteBuf buffer, Player player, String conversationId) {
+    //?}
         List<String> participantNumbers = CrazyPhoneHelper.getGroupMembers(player.level(), conversationId);
         List<Contact> participants = new ArrayList<>();
 

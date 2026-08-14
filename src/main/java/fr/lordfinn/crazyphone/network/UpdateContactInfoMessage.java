@@ -1,36 +1,40 @@
 package fr.lordfinn.crazyphone.network;
 
 //? if >=1.20.5 {
-import net.neoforged.neoforge.network.handling.IPayloadContext;
-//? } else {
-/*import net.neoforged.neoforge.network.handling.PlayPayloadContext;
-*///?}
+/*import net.neoforged.neoforge.network.handling.IPayloadContext;
+*///? } else {
+import net.neoforged.neoforge.network.handling.PlayPayloadContext;
+//?}
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 //? if >=1.20.5 {
-import net.neoforged.fml.common.EventBusSubscriber;
-//? } else {
-/*import net.neoforged.fml.common.Mod.EventBusSubscriber;
-*///?}
+/*import net.neoforged.fml.common.EventBusSubscriber;
+*///? } else {
+import net.neoforged.fml.common.Mod.EventBusSubscriber;
+//?}
 import net.neoforged.bus.api.SubscribeEvent;
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.network.protocol.PacketFlow;
 //? if >=1.20.5 {
-import net.minecraft.network.codec.StreamCodec;
+/*import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.RegistryFriendlyByteBuf;
-//? }
+*///? }
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.client.Minecraft;
 
 import fr.lordfinn.crazyphone.Crazyphone;
 import fr.lordfinn.crazyphone.client.gui.CrazyPhoneContactInfoScreenScreen;
 
-@EventBusSubscriber
+//? if <1.20.5 {
+@EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
+//?} else {
+/*@EventBusSubscriber
+*///?}
 public record UpdateContactInfoMessage(String name, String uuid, String number) implements CustomPacketPayload {
 
     //? if >=1.20.5 {
-    public static final Type<UpdateContactInfoMessage> TYPE = new Type<>(
+    /*public static final Type<UpdateContactInfoMessage> TYPE = new Type<>(
         Crazyphone.resource("update_contact_info")
     );
 
@@ -52,8 +56,8 @@ public record UpdateContactInfoMessage(String name, String uuid, String number) 
     public Type<UpdateContactInfoMessage> type() {
         return TYPE;
     }
-    //? } else {
-    /*public static final ResourceLocation ID = Crazyphone.resource("update_contact_info");
+    *///? } else {
+    public static final ResourceLocation ID = Crazyphone.resource("update_contact_info");
 
     public UpdateContactInfoMessage(FriendlyByteBuf buffer) {
         this(buffer.readUtf(), buffer.readUtf(), buffer.readUtf());
@@ -69,10 +73,10 @@ public record UpdateContactInfoMessage(String name, String uuid, String number) 
     public ResourceLocation id() {
         return ID;
     }
-    *///?}
+    //?}
 
     //? if >=1.20.5 {
-    public static void handleData(final UpdateContactInfoMessage message, final IPayloadContext context) {
+    /*public static void handleData(final UpdateContactInfoMessage message, final IPayloadContext context) {
         if (context.flow() == PacketFlow.CLIENTBOUND) {
             context.enqueueWork(() -> {
                 Minecraft mc = Minecraft.getInstance();
@@ -82,8 +86,8 @@ public record UpdateContactInfoMessage(String name, String uuid, String number) 
             });
         }
     }
-    //? } else {
-    /*public static void handleData(final UpdateContactInfoMessage message, final PlayPayloadContext context) {
+    *///? } else {
+    public static void handleData(final UpdateContactInfoMessage message, final PlayPayloadContext context) {
         if (context.flow() == PacketFlow.CLIENTBOUND) {
             context.workHandler().submitAsync(() -> {
                 Minecraft mc = Minecraft.getInstance();
@@ -93,14 +97,14 @@ public record UpdateContactInfoMessage(String name, String uuid, String number) 
             });
         }
     }
-    *///?}
+    //?}
 
     @SubscribeEvent
     public static void registerMessage(FMLCommonSetupEvent event) {
         //? if >=1.20.5 {
-        Crazyphone.addNetworkMessage(UpdateContactInfoMessage.TYPE, UpdateContactInfoMessage.STREAM_CODEC, UpdateContactInfoMessage::handleData);
-        //? } else {
-        /*Crazyphone.addNetworkMessage(UpdateContactInfoMessage.ID, UpdateContactInfoMessage::new, UpdateContactInfoMessage::handleData);
-        *///?}
+        /*Crazyphone.addNetworkMessage(UpdateContactInfoMessage.TYPE, UpdateContactInfoMessage.STREAM_CODEC, UpdateContactInfoMessage::handleData);
+        *///? } else {
+        Crazyphone.addNetworkMessage(UpdateContactInfoMessage.ID, UpdateContactInfoMessage::new, UpdateContactInfoMessage::handleData);
+        //?}
     }
 }

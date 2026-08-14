@@ -1,26 +1,26 @@
 package fr.lordfinn.crazyphone.network;
 
 //? if >=1.20.5 {
-import net.neoforged.neoforge.network.handling.IPayloadContext;
-//? } else {
-/*import net.neoforged.neoforge.network.handling.PlayPayloadContext;
-*///?}
+/*import net.neoforged.neoforge.network.handling.IPayloadContext;
+*///? } else {
+import net.neoforged.neoforge.network.handling.PlayPayloadContext;
+//?}
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 //? if >=1.20.5 {
-import net.neoforged.fml.common.EventBusSubscriber;
-//? } else {
-/*import net.neoforged.fml.common.Mod.EventBusSubscriber;
-*///?}
+/*import net.neoforged.fml.common.EventBusSubscriber;
+*///? } else {
+import net.neoforged.fml.common.Mod.EventBusSubscriber;
+//?}
 import net.neoforged.bus.api.SubscribeEvent;
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.network.protocol.PacketFlow;
 //? if >=1.20.5 {
-import net.minecraft.network.codec.StreamCodec;
+/*import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.RegistryFriendlyByteBuf;
-//? }
+*///? }
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.nbt.CompoundTag;
@@ -42,7 +42,7 @@ import java.util.List;
  */
 public record ConversationRequestPacket(String conversationId, int skipFromEnd) implements CustomPacketPayload {
     //? if >=1.20.5 {
-    public static final Type<ConversationRequestPacket> TYPE = new Type<>(Crazyphone.resource("conversation_request"));
+    /*public static final Type<ConversationRequestPacket> TYPE = new Type<>(Crazyphone.resource("conversation_request"));
 
     public static final StreamCodec<RegistryFriendlyByteBuf, ConversationRequestPacket> STREAM_CODEC = StreamCodec.of(
             (RegistryFriendlyByteBuf buffer, ConversationRequestPacket message) -> {
@@ -55,8 +55,8 @@ public record ConversationRequestPacket(String conversationId, int skipFromEnd) 
     public Type<ConversationRequestPacket> type() {
         return TYPE;
     }
-    //? } else {
-    /*public static final ResourceLocation ID = new ResourceLocation(Crazyphone.MODID, "conversation_request");
+    *///? } else {
+    public static final ResourceLocation ID = new ResourceLocation(Crazyphone.MODID, "conversation_request");
 
     public ConversationRequestPacket(FriendlyByteBuf buffer) {
         this(buffer.readUtf(), buffer.readVarInt());
@@ -71,10 +71,10 @@ public record ConversationRequestPacket(String conversationId, int skipFromEnd) 
     public ResourceLocation id() {
         return ID;
     }
-    *///?}
+    //?}
 
     //? if >=1.20.5 {
-    public static void handleData(final ConversationRequestPacket message, final IPayloadContext context) {
+    /*public static void handleData(final ConversationRequestPacket message, final IPayloadContext context) {
         if (context.flow() != PacketFlow.SERVERBOUND)
             return;
         context.enqueueWork(() -> {
@@ -103,8 +103,8 @@ public record ConversationRequestPacket(String conversationId, int skipFromEnd) 
             return null;
         });
     }
-    //? } else {
-    /*public static void handleData(final ConversationRequestPacket message, final PlayPayloadContext context) {
+    *///? } else {
+    public static void handleData(final ConversationRequestPacket message, final PlayPayloadContext context) {
         if (context.flow() != PacketFlow.SERVERBOUND)
             return;
         context.workHandler().submitAsync(() -> {
@@ -127,17 +127,21 @@ public record ConversationRequestPacket(String conversationId, int skipFromEnd) 
             return null;
         });
     }
-    *///?}
+    //?}
 
-    @EventBusSubscriber
+    //? if <1.20.5 {
+    @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
+    //?} else {
+    /*@EventBusSubscriber
+    *///?}
     public static class Registration {
         @SubscribeEvent
         public static void register(FMLCommonSetupEvent event) {
             //? if >=1.20.5 {
-            Crazyphone.addNetworkMessage(TYPE, STREAM_CODEC, ConversationRequestPacket::handleData);
-            //? } else {
-            /*Crazyphone.addNetworkMessage(ID, ConversationRequestPacket::new, ConversationRequestPacket::handleData);
-            *///?}
+            /*Crazyphone.addNetworkMessage(TYPE, STREAM_CODEC, ConversationRequestPacket::handleData);
+            *///? } else {
+            Crazyphone.addNetworkMessage(ID, ConversationRequestPacket::new, ConversationRequestPacket::handleData);
+            //?}
         }
     }
 }

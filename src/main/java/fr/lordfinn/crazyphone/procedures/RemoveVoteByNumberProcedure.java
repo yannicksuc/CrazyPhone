@@ -32,7 +32,7 @@ public class RemoveVoteByNumberProcedure {
 
 			if (entity instanceof Player player) {
 				player.displayClientMessage(
-					Component.literal("✅ Le vote du numéro " + numberStr + " a été supprimé.")
+					Component.translatable("message.crazyphone.vote_removed", numberStr)
 						.withStyle(ChatFormatting.GREEN),
 					false
 				);
@@ -40,7 +40,7 @@ public class RemoveVoteByNumberProcedure {
 		} else {
 			if (entity instanceof Player player) {
 				player.displayClientMessage(
-					Component.literal("ℹ️ Le numéro " + numberStr + " n'a pas voté.")
+					Component.translatable("message.crazyphone.vote_not_found", numberStr)
 						.withStyle(ChatFormatting.GRAY),
 					false
 				);

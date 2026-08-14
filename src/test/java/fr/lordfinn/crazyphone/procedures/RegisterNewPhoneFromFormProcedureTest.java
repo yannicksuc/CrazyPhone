@@ -1,13 +1,12 @@
 package fr.lordfinn.crazyphone.procedures;
 
 import fr.lordfinn.crazyphone.data.PhoneRegistrySavedData;
-import net.minecraft.core.component.DataComponents;
+import fr.lordfinn.crazyphone.utils.PhoneTagAccess;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.component.CustomData;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -46,7 +45,7 @@ class RegisterNewPhoneFromFormProcedureTest {
     }
 
     private static String storedTag(ItemStack stack, String key) {
-        return stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag().getString(key);
+        return PhoneTagAccess.getTag(stack).getString(key);
     }
 
     @Test

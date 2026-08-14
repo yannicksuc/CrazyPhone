@@ -2,12 +2,11 @@ package fr.lordfinn.crazyphone.procedures;
 
 import fr.lordfinn.crazyphone.data.PhoneRegistrySavedData;
 import fr.lordfinn.crazyphone.init.ModItems;
-import net.minecraft.core.component.DataComponents;
+import fr.lordfinn.crazyphone.utils.PhoneTagAccess;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.component.CustomData;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -27,7 +26,7 @@ class MainHandProceduresTest {
     }
 
     private static String storedNumber(ItemStack stack) {
-        return stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag().getString("number");
+        return PhoneTagAccess.getTag(stack).getString("number");
     }
 
     // --- ResetCrazyPhoneNumberFromMainHandProcedure ---
@@ -51,7 +50,7 @@ class MainHandProceduresTest {
     @Test
     void resetFromMainHand_alreadySetUpPhone_returnsExistingNumberWithoutRegenerating() {
         ItemStack stack = new ItemStack(Items.STICK);
-        CustomData.update(DataComponents.CUSTOM_DATA, stack, tag -> {
+        PhoneTagAccess.updateTag(stack, tag -> {
             tag.putString("name", "Alice"); // IsPhoneSetupProcedure checks for "name"
             tag.putString("number", "555");
         });
@@ -66,7 +65,7 @@ class MainHandProceduresTest {
     @Test
     void isPhoneItemStackInUse_unregisteredNumber_returnsFalse() {
         ItemStack stack = new ItemStack(Items.STICK);
-        CustomData.update(DataComponents.CUSTOM_DATA, stack, tag -> tag.putString("number", "555"));
+        PhoneTagAccess.updateTag(stack, tag -> tag.putString("number", "555"));
         assertFalse(IsPhoneItemStackInUseProcedure.execute(null, stack));
     }
 
@@ -74,7 +73,7 @@ class MainHandProceduresTest {
     void isPhoneItemStackInUse_registeredNumber_returnsTrue() {
         PhoneRegistrySavedData.get(null).phones.put("555", new CompoundTag());
         ItemStack stack = new ItemStack(Items.STICK);
-        CustomData.update(DataComponents.CUSTOM_DATA, stack, tag -> tag.putString("number", "555"));
+        PhoneTagAccess.updateTag(stack, tag -> tag.putString("number", "555"));
         assertTrue(IsPhoneItemStackInUseProcedure.execute(null, stack));
     }
 
@@ -99,7 +98,7 @@ class MainHandProceduresTest {
     @Test
     void getFromMainHand_crazyPhoneHeld_returnsItsStoredNumber() {
         ItemStack phone = new ItemStack(ModItems.CRAZY_PHONE.get());
-        CustomData.update(DataComponents.CUSTOM_DATA, phone, tag -> tag.putString("number", "555"));
+        PhoneTagAccess.updateTag(phone, tag -> tag.putString("number", "555"));
         when(entity.getMainHandItem()).thenReturn(phone);
 
         assertEquals("555", GetCrazyPhoneNumberFromMainHandProcedure.execute(entity, null));

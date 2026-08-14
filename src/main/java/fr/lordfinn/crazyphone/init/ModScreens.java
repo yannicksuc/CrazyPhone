@@ -2,10 +2,10 @@ package fr.lordfinn.crazyphone.init;
 
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 //? if >=1.20.5 {
-import net.neoforged.fml.common.EventBusSubscriber;
-//? } else {
-/*import net.neoforged.fml.common.Mod.EventBusSubscriber;
-*///?}
+/*import net.neoforged.fml.common.EventBusSubscriber;
+*///? } else {
+import net.neoforged.fml.common.Mod.EventBusSubscriber;
+//?}
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.api.distmarker.Dist;
 
@@ -45,7 +45,11 @@ import java.util.HashMap;
  * {@code getWidgets()} is declared directly on {@link CrazyPhoneDefaultScreenScreen} instead, so the check
  * below is {@code instanceof CrazyPhoneDefaultScreenScreen} (see that class's javadoc for the same note).
  */
-@EventBusSubscriber(value = Dist.CLIENT)
+//? if <1.20.5 {
+@EventBusSubscriber(value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)
+//?} else {
+/*@EventBusSubscriber(value = Dist.CLIENT)
+*///?}
 public class ModScreens {
 	@SubscribeEvent
 	public static void clientLoad(RegisterMenuScreensEvent event) {

@@ -5,10 +5,10 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.registries.NeoForgeRegistries;
 import net.neoforged.neoforge.registries.DeferredRegister;
 //? if >=1.20.5 {
-import net.neoforged.fml.common.EventBusSubscriber;
-//? } else {
-/*import net.neoforged.fml.common.Mod.EventBusSubscriber;
-*///?}
+/*import net.neoforged.fml.common.EventBusSubscriber;
+*///? } else {
+import net.neoforged.fml.common.Mod.EventBusSubscriber;
+//?}
 import net.neoforged.bus.api.SubscribeEvent;
 
 import net.minecraft.server.level.ServerPlayer;
@@ -27,6 +27,11 @@ public class PhoneAttachmentTypes {
 
     public static final Supplier<AttachmentType<PlayerPhoneState>> PLAYER_PHONE_STATE =
             ATTACHMENT_TYPES.register("player_phone_state", () -> AttachmentType.serializable(PlayerPhoneState::new).build());
+
+    /** See {@link SoulboundStash} - only ever non-empty for the brief window between a death that pulled
+     * soulbound items out of the drops and the respawn that reinserts them. */
+    public static final Supplier<AttachmentType<SoulboundStash>> SOULBOUND_STASH =
+            ATTACHMENT_TYPES.register("soulbound_stash", () -> AttachmentType.serializable(SoulboundStash::new).build());
 
     @SubscribeEvent
     public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {

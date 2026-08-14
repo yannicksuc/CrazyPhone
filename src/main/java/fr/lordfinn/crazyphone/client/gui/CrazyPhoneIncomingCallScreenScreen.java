@@ -1,6 +1,7 @@
 package fr.lordfinn.crazyphone.client.gui;
 
 import net.neoforged.neoforge.network.PacketDistributor;
+import fr.lordfinn.crazyphone.utils.NetworkAccess;
 
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.network.chat.Component;
@@ -58,19 +59,19 @@ public class CrazyPhoneIncomingCallScreenScreen extends CrazyPhoneDefaultScreenS
 
         button_accept = Button.builder(Component.translatable("gui.crazyphone.crazy_phone_incoming_call_screen.button_accept"), e -> {
             //? if >=1.20.5 {
-            PacketDistributor.sendToServer(new CrazyPhoneCallActionMessage(CrazyPhoneCallActionMessage.ANSWER, menu.getConversationId()));
-            //? } else {
-            /*PacketDistributor.SERVER.noArg().send(new CrazyPhoneCallActionMessage(CrazyPhoneCallActionMessage.ANSWER, menu.getConversationId()));
-            *///?}
+            /*NetworkAccess.sendToServer(new CrazyPhoneCallActionMessage(CrazyPhoneCallActionMessage.ANSWER, menu.getConversationId()));
+            *///? } else {
+            PacketDistributor.SERVER.noArg().send(new CrazyPhoneCallActionMessage(CrazyPhoneCallActionMessage.ANSWER, menu.getConversationId()));
+            //?}
         }).bounds(this.leftPos + 8, this.topPos + 158, 52, 14).build();
         this.addRenderableWidget(button_accept);
 
         button_decline = Button.builder(Component.translatable("gui.crazyphone.crazy_phone_incoming_call_screen.button_decline"), e -> {
             //? if >=1.20.5 {
-            PacketDistributor.sendToServer(new CrazyPhoneCallActionMessage(CrazyPhoneCallActionMessage.HANGUP, menu.getConversationId()));
-            //? } else {
-            /*PacketDistributor.SERVER.noArg().send(new CrazyPhoneCallActionMessage(CrazyPhoneCallActionMessage.HANGUP, menu.getConversationId()));
-            *///?}
+            /*NetworkAccess.sendToServer(new CrazyPhoneCallActionMessage(CrazyPhoneCallActionMessage.HANGUP, menu.getConversationId()));
+            *///? } else {
+            PacketDistributor.SERVER.noArg().send(new CrazyPhoneCallActionMessage(CrazyPhoneCallActionMessage.HANGUP, menu.getConversationId()));
+            //?}
         }).bounds(this.leftPos + 62, this.topPos + 158, 52, 14).build();
         this.addRenderableWidget(button_decline);
     }

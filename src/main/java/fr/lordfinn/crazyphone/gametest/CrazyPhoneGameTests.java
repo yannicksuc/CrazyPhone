@@ -71,10 +71,10 @@ public class CrazyPhoneGameTests {
      *  equals-check through {@code assertTrue}, which both versions have. */
     private static void assertValueEqual(GameTestHelper helper, String actual, String expected, String message) {
         //? if >=1.20.5 {
-        helper.assertValueEqual(actual, expected, message);
-        //? } else {
-        /*helper.assertTrue(java.util.Objects.equals(actual, expected), message);
-        *///?}
+        /*helper.assertValueEqual(actual, expected, message);
+        *///? } else {
+        helper.assertTrue(java.util.Objects.equals(actual, expected), message);
+        //?}
     }
 
     /** The mock player's connection (see makeTestPlayer) never completed a real handshake, so NeoForge's

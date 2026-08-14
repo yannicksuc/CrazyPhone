@@ -5,10 +5,10 @@ import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 import net.neoforged.neoforge.capabilities.Capabilities;
 //? if >=1.20.5 {
-import net.neoforged.fml.common.EventBusSubscriber;
-//? } else {
-/*import net.neoforged.fml.common.Mod.EventBusSubscriber;
-*///?}
+/*import net.neoforged.fml.common.EventBusSubscriber;
+*///? } else {
+import net.neoforged.fml.common.Mod.EventBusSubscriber;
+//?}
 import net.neoforged.bus.api.SubscribeEvent;
 
 import net.minecraft.world.item.Item;
@@ -17,7 +17,11 @@ import fr.lordfinn.crazyphone.Crazyphone;
 import fr.lordfinn.crazyphone.item.CrazyPhoneItem;
 import fr.lordfinn.crazyphone.item.inventory.CrazyPhoneInventoryCapability;
 
-@EventBusSubscriber
+//? if <1.20.5 {
+@EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
+//?} else {
+/*@EventBusSubscriber
+*///?}
 public class ModItems {
     public static final DeferredRegister.Items REGISTRY = DeferredRegister.createItems(Crazyphone.MODID);
 

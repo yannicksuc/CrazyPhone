@@ -2,14 +2,18 @@ package fr.lordfinn.crazyphone;
 
 import net.neoforged.bus.api.SubscribeEvent;
 //? if >=1.20.5 {
-import net.neoforged.fml.common.EventBusSubscriber;
-//? } else {
-/*import net.neoforged.fml.common.Mod.EventBusSubscriber;
-*///?}
+/*import net.neoforged.fml.common.EventBusSubscriber;
+*///? } else {
+import net.neoforged.fml.common.Mod.EventBusSubscriber;
+//?}
 import net.neoforged.fml.event.config.ModConfigEvent;
 import net.neoforged.neoforge.common.ModConfigSpec;
 
-@EventBusSubscriber(modid = Crazyphone.MODID)
+//? if <1.20.5 {
+@EventBusSubscriber(modid = Crazyphone.MODID, bus = EventBusSubscriber.Bus.MOD)
+//?} else {
+/*@EventBusSubscriber(modid = Crazyphone.MODID)
+*///?}
 public class Config {
     private static final ModConfigSpec.Builder BUILDER = new ModConfigSpec.Builder();
 
@@ -83,6 +87,15 @@ public class Config {
             .comment("Maximum length of a single voice message recording, in seconds - recording auto-stops once this is reached.")
             .defineInRange("maxVoiceMessageRecordingSeconds", 60, 5, 600);
 
+    // The Soulbound enchantment (Ancient City loot only) keeps enchanted tools/the phone out of death drops
+    // and back in the owner's inventory on respawn - see fr.lordfinn.crazyphone.enchantment.SoulboundHandler.
+    // This toggle disables that behavior server-wide (the enchantment can still be found/applied, it just
+    // stops doing anything) without needing to touch the loot tables or item tags.
+
+    private static final ModConfigSpec.BooleanValue SOULBOUND_ENCHANTMENT_ENABLED = BUILDER
+            .comment("Whether the Soulbound enchantment actually keeps enchanted items on death. Does not affect whether it can still be found or applied.")
+            .define("soulboundEnchantmentEnabled", true);
+
     static final ModConfigSpec SPEC = BUILDER.build();
 
     public static int maxStoredMessagesPerConversation;
@@ -100,6 +113,7 @@ public class Config {
     public static int phoneDropGraceSeconds;
     public static int maxVoiceMessagesStoredPerConversation;
     public static int maxVoiceMessageRecordingSeconds;
+    public static boolean soulboundEnchantmentEnabled;
 
     @SubscribeEvent
     static void onLoad(final ModConfigEvent event) {
@@ -118,6 +132,7 @@ public class Config {
         phoneDropGraceSeconds = PHONE_DROP_GRACE_SECONDS.get();
         maxVoiceMessagesStoredPerConversation = MAX_VOICE_MESSAGES_STORED_PER_CONVERSATION.get();
         maxVoiceMessageRecordingSeconds = MAX_VOICE_MESSAGE_RECORDING_SECONDS.get();
+        soulboundEnchantmentEnabled = SOULBOUND_ENCHANTMENT_ENABLED.get();
     }
 
     /** Setters for the toggleable features below, used by /crazyphone feature to change them at runtime

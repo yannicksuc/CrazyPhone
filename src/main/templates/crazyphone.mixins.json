@@ -2,7 +2,7 @@
   "required": true,
   "minVersion": "0.8",
   "package": "fr.lordfinn.crazyphone.mixin",
-  "compatibilityLevel": "JAVA_21",
+  "compatibilityLevel": "${mixin_compatibility_level}",
   "mixins": [
     "CameraModServerEventsMixin",
     "CameraModMessageDisableCameraModeMixin",

@@ -1,5 +1,7 @@
 package fr.lordfinn.crazyphone.client.gui;
 
+import fr.lordfinn.crazyphone.utils.GuiCompat;
+
 import fr.lordfinn.crazyphone.Crazyphone;
 
 import java.time.Instant;
@@ -49,6 +51,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.network.PacketDistributor;
+import fr.lordfinn.crazyphone.utils.NetworkAccess;
 import org.lwjgl.glfw.GLFW;
 
 /**
@@ -226,7 +229,7 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
             return;
         for (MessageEntry entry : messageManager.getMessages()) {
             if (entry.widget().isHeadHovered(mouseX, mouseY)) {
-                // Same "Name â€¢ number" format as the contact heads in the contacts menu.
+                // Same "Name • number" format as the contact heads in the contacts menu.
                 guiGraphics.renderComponentTooltip(this.font, List.of(
                         CrazyPhoneHelper.formatContactDisplayName(entry.widget().getContactName(), entry.widget().getContactNumber())
                 ), mouseX, mouseY);
@@ -360,10 +363,10 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
             return;
         int action = hasMyActiveCallHere() ? CrazyPhoneCallActionMessage.OPEN_CALL_SCREEN : CrazyPhoneCallActionMessage.START_CALL;
         //? if >=1.20.5 {
-        PacketDistributor.sendToServer(new CrazyPhoneCallActionMessage(action, menu.getConversationId()));
-        //? } else {
-        /*PacketDistributor.SERVER.noArg().send(new CrazyPhoneCallActionMessage(action, menu.getConversationId()));
-        *///?}
+        /*NetworkAccess.sendToServer(new CrazyPhoneCallActionMessage(action, menu.getConversationId()));
+        *///? } else {
+        PacketDistributor.SERVER.noArg().send(new CrazyPhoneCallActionMessage(action, menu.getConversationId()));
+        //?}
     }
 
     private void onMicIconClicked() {
@@ -412,15 +415,15 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
         // even-height (14) rectangle, integer math can only center a bar exactly when its own height is
         // also even, otherwise the leftover pixel gets dumped entirely on one side. Doubling Y precision
         // here lets a bar's edges land on a half-pixel boundary and render genuinely centered regardless.
-        guiGraphics.pose().pushPose();
-        guiGraphics.pose().scale(1f, 0.5f, 1f);
+        GuiCompat.pushPose(guiGraphics);
+        GuiCompat.scale(guiGraphics, 1f, 0.5f);
         int centerY2x = centerY * 2;
         for (int i = 0; i < barCount; i++) {
             int barHeight = Math.max(1, Math.round(levels[i] * 10));
             int barX = startX + i * barWidth;
             guiGraphics.fill(barX, centerY2x - barHeight, barX + Math.max(1, barWidth - 1), centerY2x + barHeight, 0xFFFFFFFF);
         }
-        guiGraphics.pose().popPose();
+        GuiCompat.popPose(guiGraphics);
     }
 
     private void onTrashClicked() {
@@ -448,10 +451,10 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
                 // click play on. A random UUID is collision-safe for this (128 bits, nothing brute-forceable).
                 UUID voiceId = UUID.randomUUID();
                 //? if >=1.20.5 {
-                PacketDistributor.sendToServer(new VoiceMessageUploadPacket(menu.getConversationId(), voiceId, recordedAudio, durationTicks, envelope));
-                //? } else {
-                /*PacketDistributor.SERVER.noArg().send(new VoiceMessageUploadPacket(menu.getConversationId(), voiceId, recordedAudio, durationTicks, envelope));
-                *///?}
+                /*NetworkAccess.sendToServer(new VoiceMessageUploadPacket(menu.getConversationId(), voiceId, recordedAudio, durationTicks, envelope));
+                *///? } else {
+                PacketDistributor.SERVER.noArg().send(new VoiceMessageUploadPacket(menu.getConversationId(), voiceId, recordedAudio, durationTicks, envelope));
+                //?}
 
                 String ownerNumber = GetCrazyPhoneNumberFromMainHandProcedure.execute(this.menu.entity, null);
                 int timestampInMinutes = (int) (Instant.now().getEpochSecond() / 60);
@@ -530,10 +533,10 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
             return;
         loadingOlderMessages = true;
         //? if >=1.20.5 {
-        PacketDistributor.sendToServer(new ConversationRequestPacket(this.menu.getConversationId(), receivedMessages.size()));
-        //? } else {
-        /*PacketDistributor.SERVER.noArg().send(new ConversationRequestPacket(this.menu.getConversationId(), receivedMessages.size()));
-        *///?}
+        /*NetworkAccess.sendToServer(new ConversationRequestPacket(this.menu.getConversationId(), receivedMessages.size()));
+        *///? } else {
+        PacketDistributor.SERVER.noArg().send(new ConversationRequestPacket(this.menu.getConversationId(), receivedMessages.size()));
+        //?}
     }
 
     @Override
@@ -576,10 +579,10 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
         firstPageRequested = true;
         ConversationClientCache.setListener(conversationListener);
         //? if >=1.20.5 {
-        PacketDistributor.sendToServer(new ConversationRequestPacket(this.menu.getConversationId(), 0));
-        //? } else {
-        /*PacketDistributor.SERVER.noArg().send(new ConversationRequestPacket(this.menu.getConversationId(), 0));
-        *///?}
+        /*NetworkAccess.sendToServer(new ConversationRequestPacket(this.menu.getConversationId(), 0));
+        *///? } else {
+        PacketDistributor.SERVER.noArg().send(new ConversationRequestPacket(this.menu.getConversationId(), 0));
+        //?}
     }
 
     private void onConversationPageReceived(String conversationId, ConversationPage page) {
@@ -734,10 +737,10 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
                 int textWidth = font.width(message);
                 int drawX = getX() + (getWidth() - textWidth) / 2;
                 int drawY = getY() + (getHeight() - 8) / 2;
-                guiGraphics.pose().pushPose();
-                guiGraphics.pose().translate(0.5f, 0f, 0f);
+                GuiCompat.pushPose(guiGraphics);
+                GuiCompat.translate(guiGraphics, 0.5f, 0f);
                 guiGraphics.drawString(font, message, drawX, drawY, 0xFFFFFF, true);
-                guiGraphics.pose().popPose();
+                GuiCompat.popPose(guiGraphics);
             }
         };
     }
@@ -778,10 +781,10 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
 
         String text = message.getValue();
         //? if >=1.20.5 {
-        PacketDistributor.sendToServer(new CrazyPhoneConversationButtonMessage(0, x, y, z, getEditBoxAndCheckBoxValues()));
-        //? } else {
-        /*PacketDistributor.SERVER.noArg().send(new CrazyPhoneConversationButtonMessage(0, x, y, z, getEditBoxAndCheckBoxValues()));
-        *///?}
+        /*NetworkAccess.sendToServer(new CrazyPhoneConversationButtonMessage(0, x, y, z, getEditBoxAndCheckBoxValues()));
+        *///? } else {
+        PacketDistributor.SERVER.noArg().send(new CrazyPhoneConversationButtonMessage(0, x, y, z, getEditBoxAndCheckBoxValues()));
+        //?}
         CrazyPhoneConversationButtonMessage.handleButtonAction(entity, 0, x, y, z, getEditBoxAndCheckBoxValues());
 
         String ownerNumber = GetCrazyPhoneNumberFromMainHandProcedure.execute(this.menu.entity, null);
@@ -801,10 +804,10 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
                         Crazyphone.parseId("crazyphone:textures/screens/crazyphone-add-hover.png")),
                 e -> {
                     //? if >=1.20.5 {
-                    PacketDistributor.sendToServer(new CrazyPhoneConversationButtonMessage(1, x, y, z, getEditBoxAndCheckBoxValues()));
-                    //? } else {
-                    /*PacketDistributor.SERVER.noArg().send(new CrazyPhoneConversationButtonMessage(1, x, y, z, getEditBoxAndCheckBoxValues()));
-                    *///?}
+                    /*NetworkAccess.sendToServer(new CrazyPhoneConversationButtonMessage(1, x, y, z, getEditBoxAndCheckBoxValues()));
+                    *///? } else {
+                    PacketDistributor.SERVER.noArg().send(new CrazyPhoneConversationButtonMessage(1, x, y, z, getEditBoxAndCheckBoxValues()));
+                    //?}
                     CrazyPhoneConversationButtonMessage.handleButtonAction(entity, 1, x, y, z, getEditBoxAndCheckBoxValues());
                 }) {
             @Override
@@ -867,10 +870,10 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
         if (button == 0 && menu.isGroup() && isHoveringGroupSettingsIcon(mouseX, mouseY)) {
             HashMap<String, String> textstate = getEditBoxAndCheckBoxValues();
             //? if >=1.20.5 {
-            PacketDistributor.sendToServer(new CrazyPhoneConversationButtonMessage(2, x, y, z, textstate));
-            //? } else {
-            /*PacketDistributor.SERVER.noArg().send(new CrazyPhoneConversationButtonMessage(2, x, y, z, textstate));
-            *///?}
+            /*NetworkAccess.sendToServer(new CrazyPhoneConversationButtonMessage(2, x, y, z, textstate));
+            *///? } else {
+            PacketDistributor.SERVER.noArg().send(new CrazyPhoneConversationButtonMessage(2, x, y, z, textstate));
+            //?}
             CrazyPhoneConversationButtonMessage.handleButtonAction(entity, 2, x, y, z, textstate);
             return true;
         }

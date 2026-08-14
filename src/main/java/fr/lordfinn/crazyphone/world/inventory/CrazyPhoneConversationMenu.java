@@ -7,8 +7,8 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.network.FriendlyByteBuf;
 //? if >=1.20.5 {
-import net.minecraft.network.RegistryFriendlyByteBuf;
-//? }
+/*import net.minecraft.network.RegistryFriendlyByteBuf;
+*///? }
 import fr.lordfinn.crazyphone.init.ModMenus;
 import fr.lordfinn.crazyphone.utils.PhoneTagAccess;
 import fr.lordfinn.crazyphone.utils.Contact;
@@ -45,10 +45,10 @@ public class CrazyPhoneConversationMenu extends CrazyPhoneDefaultScreenMenu {
     private String groupAdmin = "";
 
     //? if >=1.20.5 {
-    public CrazyPhoneConversationMenu(int id, Inventory inv, RegistryFriendlyByteBuf extraData) {
-    //? } else {
-    /*public CrazyPhoneConversationMenu(int id, Inventory inv, FriendlyByteBuf extraData) {
-    *///?}
+    /*public CrazyPhoneConversationMenu(int id, Inventory inv, RegistryFriendlyByteBuf extraData) {
+    *///? } else {
+    public CrazyPhoneConversationMenu(int id, Inventory inv, FriendlyByteBuf extraData) {
+    //?}
         super(ModMenus.CRAZY_PHONE_CONVERSATION.get(), id, inv, extraData);
         if (extraData.readableBytes() > 0)
             conversationId = extraData.readUtf();

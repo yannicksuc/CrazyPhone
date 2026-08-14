@@ -6,6 +6,13 @@
   "item_group.crazyphone.crazy_phone_tab": "CrazyPhone",
 
   "item.crazyphone.crazy_phone": "Crazy Phone",
+  "item.crazyphone.custom_name": "CrazyPhone de %s",
+  "item.crazyphone.lore_number": "Numéro : %s",
+  "item.crazyphone.lore_owner": "Proprio : %s",
+
+  "message.crazyphone.unknown_contact": "Inconnu",
+  "message.crazyphone.unknown_number": "Numéro inconnu : %s",
+  "message.crazyphone.unknown_voter": "Inconnu : %s",
 
   "message.crazyphone.image_upload_success": "✅ L'image a bien été uploadée dans le CrazyPhone.",
   "message.crazyphone.image_upload_failed": "❌ Échec de l'upload de l'image dans le CrazyPhone.",
@@ -14,6 +21,52 @@
   "message.crazyphone.call_in_progress": "📞 Appel en cours - %s · %s",
   "message.crazyphone.call_summary": "📞 Appel - %s · %s",
   "message.crazyphone.call_interrupted": "📞 Appel - %s (interrompu)",
+
+  "message.crazyphone.group_added": "👥 %s vous a ajouté au groupe %s",
+  "message.crazyphone.group_removed": "🚪 %s vous a retiré du groupe %s",
+  "message.crazyphone.incoming_call_toast": "📞 %s vous appelle",
+  "message.crazyphone.new_message_received": "📨 Nouveau message reçu de %s",
+
+  "message.crazyphone.candidate_not_found": "Candidat introuvable",
+  "message.crazyphone.candidate_poster_added": "Affiche ajoutée au candidat avec succès !",
+  "message.crazyphone.candidate_not_exist": "Le candidat n'existe pas",
+  "message.crazyphone.candidate_added": "Nouveau candidat ajouté !",
+  "message.crazyphone.candidate_already_registered": "Candidat déjà enregistré",
+  "message.crazyphone.candidate_removed": "Candidat supprimé !",
+
+  "message.crazyphone.form_already_configured": "Téléphone configuré !",
+  "message.crazyphone.form_number_already_used": "Numéro déjà utilisé",
+  "message.crazyphone.form_name_too_long": "Nom trop long",
+  "message.crazyphone.form_password_required": "Mot de passe requis",
+  "message.crazyphone.form_number_taken": "Numéro déjà pris",
+
+  "command.crazyphone.phone_deleted": "Téléphone %s supprimé.",
+  "command.crazyphone.phone_not_registered": "Aucun téléphone enregistré avec le numéro %s.",
+  "command.crazyphone.unknown_feature": "Fonctionnalité inconnue : %s (essaie /crazyphone feature list)",
+  "command.crazyphone.state_enabled": "activée",
+  "command.crazyphone.state_disabled": "désactivée",
+  "command.crazyphone.feature_status_line": "%s : ",
+  "command.crazyphone.feature_now": "%s est maintenant ",
+
+  "message.crazyphone.vote_removed": "✅ Le vote du numéro %s a été supprimé.",
+  "message.crazyphone.vote_not_found": "ℹ️ Le numéro %s n'a pas voté.",
+  "message.crazyphone.no_votes_yet": "Aucun vote n'a encore été enregistré.",
+  "message.crazyphone.vote_results_title": "📊 Résultats des votes pour le maire :",
+  "message.crazyphone.vote_count": " - %s vote(s)",
+  "message.crazyphone.vote_details_title": "🗳️ Détail des votes :",
+  "message.crazyphone.vote_detail_line": " a voté pour ",
+  "message.crazyphone.vote_cooldown": "⏱ Vous devez attendre encore %s seconde(s) avant de revoter.",
+  "message.crazyphone.candidate_not_found_vote": "Candidat introuvable !",
+  "message.crazyphone.vote_registered": "🗳 %s a voté !",
+  "message.crazyphone.vote_changed": "🔄 %s a changé d'avis et a voté pour quelqu'un d'autre !",
+  "message.crazyphone.vote_success": "Vote enregistré avec succès !",
+
+  "command.crazyphone.list_separator": "--------------------------------------------",
+  "command.crazyphone.list_copy_password": "Cliquez pour copier le mot de passe : %s",
+  "command.crazyphone.list_copy_skin": "Cliquez pour copier l'apparence",
+  "command.crazyphone.list_copy_uuid": "Cliquez pour copier l'UUID",
+  "command.crazyphone.list_take_phone": "Cliquez pour prendre ce téléphone",
+  "command.crazyphone.list_delete_phone": "Cliquez pour supprimer ce téléphone",
 
   "gui.crazyphone.crazyphone_home_screen.button_photo": "Photo",
   "gui.crazyphone.crazyphone_home_screen.button_contacts": "Contacts",
@@ -145,5 +198,7 @@
   "gui.crazyphone.crazy_phone_picture_folders_screen.title": "Albums",
   "gui.crazyphone.crazy_phone_picture_folders_screen.button_retour": "Retour",
 
-  "gui.crazyphone.crazy_phone_default_screen.button_oui": "oui"
+  "gui.crazyphone.crazy_phone_default_screen.button_oui": "oui",
+
+  "enchantment.crazyphone.soulbound": "Lié à l'âme"
 }

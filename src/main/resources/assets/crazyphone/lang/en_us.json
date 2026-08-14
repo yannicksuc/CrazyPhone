@@ -6,6 +6,13 @@
   "item_group.crazyphone.crazy_phone_tab": "CrazyPhone",
 
   "item.crazyphone.crazy_phone": "Crazy Phone",
+  "item.crazyphone.custom_name": "CrazyPhone of %s",
+  "item.crazyphone.lore_number": "Number: %s",
+  "item.crazyphone.lore_owner": "Owner: %s",
+
+  "message.crazyphone.unknown_contact": "Unknown",
+  "message.crazyphone.unknown_number": "Unknown number: %s",
+  "message.crazyphone.unknown_voter": "Unknown: %s",
 
   "message.crazyphone.image_upload_success": "✅ The image was successfully uploaded to the CrazyPhone.",
   "message.crazyphone.image_upload_failed": "❌ Failed to upload the image to the CrazyPhone.",
@@ -14,6 +21,52 @@
   "message.crazyphone.call_in_progress": "📞 Call in progress - %s · %s",
   "message.crazyphone.call_summary": "📞 Call - %s · %s",
   "message.crazyphone.call_interrupted": "📞 Call - %s (interrupted)",
+
+  "message.crazyphone.group_added": "👥 %s added you to the group %s",
+  "message.crazyphone.group_removed": "🚪 %s removed you from the group %s",
+  "message.crazyphone.incoming_call_toast": "📞 %s is calling you",
+  "message.crazyphone.new_message_received": "📨 New message received from %s",
+
+  "message.crazyphone.candidate_not_found": "Candidate not found",
+  "message.crazyphone.candidate_poster_added": "Poster successfully added to candidate!",
+  "message.crazyphone.candidate_not_exist": "Candidate doesn't exist",
+  "message.crazyphone.candidate_added": "New candidate added!",
+  "message.crazyphone.candidate_already_registered": "Candidate already registered",
+  "message.crazyphone.candidate_removed": "Candidate removed!",
+
+  "message.crazyphone.form_already_configured": "Phone configured!",
+  "message.crazyphone.form_number_already_used": "Number already in use",
+  "message.crazyphone.form_name_too_long": "Name too long",
+  "message.crazyphone.form_password_required": "Password required",
+  "message.crazyphone.form_number_taken": "Number already taken",
+
+  "command.crazyphone.phone_deleted": "Phone %s deleted.",
+  "command.crazyphone.phone_not_registered": "No phone registered with number %s.",
+  "command.crazyphone.unknown_feature": "Unknown feature: %s (try /crazyphone feature list)",
+  "command.crazyphone.state_enabled": "enabled",
+  "command.crazyphone.state_disabled": "disabled",
+  "command.crazyphone.feature_status_line": "%s: ",
+  "command.crazyphone.feature_now": "%s is now ",
+
+  "message.crazyphone.vote_removed": "✅ The vote for number %s has been removed.",
+  "message.crazyphone.vote_not_found": "ℹ️ Number %s hasn't voted.",
+  "message.crazyphone.no_votes_yet": "No votes have been recorded yet.",
+  "message.crazyphone.vote_results_title": "📊 Mayor vote results:",
+  "message.crazyphone.vote_count": " - %s vote(s)",
+  "message.crazyphone.vote_details_title": "🗳️ Vote details:",
+  "message.crazyphone.vote_detail_line": " voted for ",
+  "message.crazyphone.vote_cooldown": "⏱ You must wait %s more second(s) before voting again.",
+  "message.crazyphone.candidate_not_found_vote": "Candidate not found!",
+  "message.crazyphone.vote_registered": "🗳 %s voted!",
+  "message.crazyphone.vote_changed": "🔄 %s changed their mind and voted for someone else!",
+  "message.crazyphone.vote_success": "Vote registered successfully!",
+
+  "command.crazyphone.list_separator": "--------------------------------------------",
+  "command.crazyphone.list_copy_password": "Click to copy the password: %s",
+  "command.crazyphone.list_copy_skin": "Click to copy the skin",
+  "command.crazyphone.list_copy_uuid": "Click to copy the UUID",
+  "command.crazyphone.list_take_phone": "Click to take this phone",
+  "command.crazyphone.list_delete_phone": "Click to delete this phone",
 
   "gui.crazyphone.crazyphone_home_screen.button_photo": "Photo",
   "gui.crazyphone.crazyphone_home_screen.button_contacts": "Contacts",
@@ -145,5 +198,7 @@
   "gui.crazyphone.crazy_phone_picture_folders_screen.title": "Albums",
   "gui.crazyphone.crazy_phone_picture_folders_screen.button_retour": "Back",
 
-  "gui.crazyphone.crazy_phone_default_screen.button_oui": "yes"
+  "gui.crazyphone.crazy_phone_default_screen.button_oui": "yes",
+
+  "enchantment.crazyphone.soulbound": "Soulbound"
 }

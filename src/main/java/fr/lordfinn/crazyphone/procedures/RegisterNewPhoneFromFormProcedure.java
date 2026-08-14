@@ -22,10 +22,6 @@ public class RegisterNewPhoneFromFormProcedure {
 
         CompoundTag phone;
 
-        // Update itemstack with name and number from GUI state
-        updateItemStackTag(itemstack, textstate, "text:name", "name");
-        updateItemStackTag(itemstack, textstate, "text:number", "number");
-
         // An empty/never-typed name field falls back to the player's own Minecraft username rather than
         // being stored blank - the client-side EditBox already suggests it as a placeholder (see
         // CrazyPhonePasswordScreenScreen), but this is the actual write path, so it can't just trust the

@@ -3,6 +3,7 @@ package fr.lordfinn.crazyphone.client.gui;
 import fr.lordfinn.crazyphone.Crazyphone;
 
 import net.neoforged.neoforge.network.PacketDistributor;
+import fr.lordfinn.crazyphone.utils.NetworkAccess;
 
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.ImageButton;
@@ -62,10 +63,10 @@ public class CrazyphoneHomeScreenScreen extends CrazyPhoneDefaultScreenScreen<Cr
         ImageButton button = new ImageButton(x, y, width, height, new net.minecraft.client.gui.components.WidgetSprites(normal, hover), e -> {
             var values = getEditBoxAndCheckBoxValues();
             //? if >=1.20.5 {
-            PacketDistributor.sendToServer(new CrazyphoneHomeScreenButtonMessage(buttonId, this.x, this.y, this.z, values));
-            //? } else {
-            /*PacketDistributor.SERVER.noArg().send(new CrazyphoneHomeScreenButtonMessage(buttonId, this.x, this.y, this.z, values));
-            *///?}
+            /*NetworkAccess.sendToServer(new CrazyphoneHomeScreenButtonMessage(buttonId, this.x, this.y, this.z, values));
+            *///? } else {
+            PacketDistributor.SERVER.noArg().send(new CrazyphoneHomeScreenButtonMessage(buttonId, this.x, this.y, this.z, values));
+            //?}
             CrazyphoneHomeScreenButtonMessage.handleButtonAction(this.entity, buttonId, this.x, this.y, this.z, values);
         }) {
             @Override

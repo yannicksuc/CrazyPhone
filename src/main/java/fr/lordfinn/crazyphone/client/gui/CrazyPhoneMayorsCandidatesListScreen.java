@@ -5,6 +5,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.network.PacketDistributor;
+import fr.lordfinn.crazyphone.utils.NetworkAccess;
 import net.minecraft.nbt.CompoundTag;
 
 import fr.lordfinn.crazyphone.data.PhoneRegistrySavedData;
@@ -89,10 +90,10 @@ public class CrazyPhoneMayorsCandidatesListScreen extends CrazyPhoneDefaultScree
 				String candidateNumber = PhoneTagAccess.getTag(rs.stack).getString("number");
 				textstate.put(	"candidateNumber", candidateNumber);
                 //? if >=1.20.5 {
-                PacketDistributor.sendToServer(new CrazyPhoneMayorsCandidatesButtonMessage(0, x, y, z, textstate));
-                //? } else {
-                /*PacketDistributor.SERVER.noArg().send(new CrazyPhoneMayorsCandidatesButtonMessage(0, x, y, z, textstate));
-                *///?}
+                /*NetworkAccess.sendToServer(new CrazyPhoneMayorsCandidatesButtonMessage(0, x, y, z, textstate));
+                *///? } else {
+                PacketDistributor.SERVER.noArg().send(new CrazyPhoneMayorsCandidatesButtonMessage(0, x, y, z, textstate));
+                //?}
                 CrazyPhoneMayorsCandidatesButtonMessage.handleButtonAction(entity, 0, x, y, z, textstate);
 				break;
 			}

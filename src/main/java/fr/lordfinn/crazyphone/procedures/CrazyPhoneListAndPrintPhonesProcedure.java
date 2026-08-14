@@ -39,7 +39,7 @@ public class CrazyPhoneListAndPrintPhonesProcedure {
 		}
 
 		ServerPlayer player = (ServerPlayer) entity;
-		player.sendSystemMessage(Component.literal("--------------------------------------------"));
+		player.sendSystemMessage(Component.translatable("command.crazyphone.list_separator"));
 		for (String phoneKey : PhoneRegistrySavedData.get(world).phones.getAllKeys()) {
 			CompoundTag phone = (PhoneRegistrySavedData.get(world).phones
 					.get(phoneKey)) instanceof CompoundTag _compoundTag
@@ -67,7 +67,7 @@ public class CrazyPhoneListAndPrintPhonesProcedure {
 			} else {
 				// Cache miss, fetch asynchrone
 				fetchPlayerNameFromUUIDAsync(uuid).thenAccept(fetchedName -> {
-					String finalName = (fetchedName != null && !fetchedName.isEmpty()) ? fetchedName : "Inconnu";
+					String finalName = (fetchedName != null && !fetchedName.isEmpty()) ? fetchedName : Component.translatable("message.crazyphone.unknown_contact").getString();
 					uuidToNameCache.put(uuid, finalName);
 
 					// Filtrer ici aussi avec la recherche
@@ -137,7 +137,7 @@ public class CrazyPhoneListAndPrintPhonesProcedure {
 						.withColor(ChatFormatting.YELLOW)
 						.withBold(true)
 						.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-								Component.literal("Cliquez pour copier le mot de passe : " + password)))
+								Component.translatable("command.crazyphone.list_copy_password", password)))
 						.withClickEvent(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, password))));
 
 		// Séparateur
@@ -148,7 +148,7 @@ public class CrazyPhoneListAndPrintPhonesProcedure {
 				.withStyle(style -> style
 						.withColor(ChatFormatting.GRAY)
 						.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-								Component.literal("Cliquez pour copier l'apparence")))
+								Component.translatable("command.crazyphone.list_copy_skin")))
 						.withClickEvent(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, skin))));
 
 		// Séparateur
@@ -159,7 +159,7 @@ public class CrazyPhoneListAndPrintPhonesProcedure {
 				.withStyle(style -> style
 						.withColor(ChatFormatting.GRAY)
 						.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-								Component.literal("Cliquez pour copier l'UUID")))
+								Component.translatable("command.crazyphone.list_copy_uuid")))
 						.withClickEvent(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, uuid))));
 
 		// Séparateur
@@ -171,7 +171,7 @@ public class CrazyPhoneListAndPrintPhonesProcedure {
 						.withColor(ChatFormatting.GREEN)
 						.withBold(true)
 						.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-								Component.literal("Cliquez pour prendre ce téléphone")))
+								Component.translatable("command.crazyphone.list_take_phone")))
 						.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/crazyphone give " + number))));
 
 		// Séparateur
@@ -183,7 +183,7 @@ public class CrazyPhoneListAndPrintPhonesProcedure {
 						.withColor(ChatFormatting.RED)
 						.withBold(true)
 						.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-								Component.literal("Cliquez pour supprimer ce téléphone")))
+								Component.translatable("command.crazyphone.list_delete_phone")))
 						.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/crazyphone delete " + number))));
 
 		return msg;

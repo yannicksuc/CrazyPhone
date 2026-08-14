@@ -17,11 +17,12 @@ out/
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 
-# Common working directory
+# Common working directory (legacy shared names, and per-version run-<mc_version>[-client2|-server|-gametest])
 run
 run-client2
 run-server
 run-gametest
+run-*
 
 # Third-party jars not owned by this project - fetch/place them locally, see README
 libs/

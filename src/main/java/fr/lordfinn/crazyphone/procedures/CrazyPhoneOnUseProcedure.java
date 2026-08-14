@@ -12,6 +12,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import fr.lordfinn.crazyphone.utils.ScreenMenuUtils;
+import fr.lordfinn.crazyphone.utils.PhoneTagAccess;
 import fr.lordfinn.crazyphone.voicechat.CallRegistry;
 
 public class CrazyPhoneOnUseProcedure {
@@ -34,6 +35,15 @@ public class CrazyPhoneOnUseProcedure {
 		if (entity instanceof ServerPlayer serverPlayer && isHeldPhoneInThisCall(serverPlayer, world)) {
 			ScreenMenuUtils.openCallScreenForPlayer(serverPlayer);
 			return;
+		}
+		// IsPhoneSetupProcedure only trusts the item's OWN cached "name" tag, which can desync from the
+		// registry (the actual source of truth) if an earlier write to the item was ever interrupted -
+		// resyncing here whenever the registry disagrees means the item self-heals on its very next open
+		// instead of being stuck showing the registration screen forever despite already being registered.
+		ItemStack heldPhone = CrazyPhoneHelper.getMainHandItemOrEmpty(entity);
+		if (IsPhoneItemStackInUseProcedure.execute(world, heldPhone) && !IsPhoneSetupProcedure.execute(heldPhone)) {
+			String heldNumber = PhoneTagAccess.getTag(heldPhone).getString("number");
+			LoadPhoneDataIntoItemstackProcedure.execute(world, entity, heldPhone, heldNumber);
 		}
 		if (!IsPhoneSetupProcedure.execute(CrazyPhoneHelper.getMainHandItemOrEmpty(entity))) {
 			CrazyPhoneOpenPasswordScreenProcedure.execute(world, x, y, z, entity);

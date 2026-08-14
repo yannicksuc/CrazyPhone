@@ -1,5 +1,7 @@
 package fr.lordfinn.crazyphone.client.gui;
 
+import fr.lordfinn.crazyphone.utils.GuiCompat;
+
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
@@ -8,6 +10,7 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.network.PacketDistributor;
+import fr.lordfinn.crazyphone.utils.NetworkAccess;
 
 import fr.lordfinn.crazyphone.client.CursorEffects;
 import fr.lordfinn.crazyphone.network.CrazyPhoneGroupSettingsButtonMessage;
@@ -147,10 +150,10 @@ public class CrazyPhoneGroupSettingsScreenScreen extends CrazyPhoneDefaultScreen
         // vanilla itself uses for its own cursor-carried-item rendering (AbstractContainerScreen) is what
         // actually guarantees it wins.
         if (!cursorCarriedIcon.isEmpty()) {
-            guiGraphics.pose().pushPose();
-            guiGraphics.pose().translate(0, 0, 232);
+            GuiCompat.pushPose(guiGraphics);
+            GuiCompat.translate(guiGraphics, 0, 0);
             guiGraphics.renderItem(cursorCarriedIcon, mouseX - 8, mouseY - 8);
-            guiGraphics.pose().popPose();
+            GuiCompat.popPose(guiGraphics);
         }
     }
 
@@ -260,10 +263,10 @@ public class CrazyPhoneGroupSettingsScreenScreen extends CrazyPhoneDefaultScreen
 
     private void drawToggleSymbol(GuiGraphics guiGraphics, int toggleX, int toggleY, String symbol, int color, float extraXOffset) {
         int symbolWidth = this.font.width(symbol);
-        guiGraphics.pose().pushPose();
-        guiGraphics.pose().translate(0.5f + extraXOffset, 0.5f, 0);
+        GuiCompat.pushPose(guiGraphics);
+        GuiCompat.translate(guiGraphics, 0.5f + extraXOffset, 0.5f);
         guiGraphics.drawString(this.font, symbol, toggleX + (TOGGLE_SIZE - symbolWidth) / 2, toggleY + 2, color, false);
-        guiGraphics.pose().popPose();
+        GuiCompat.popPose(guiGraphics);
     }
 
     /** The same two icons cover both toggle rows: a cross means clicking will exclude/cancel, an arrow
@@ -437,9 +440,9 @@ public class CrazyPhoneGroupSettingsScreenScreen extends CrazyPhoneDefaultScreen
         textstate.put("excludedNumbers", String.join(",", stagedExcluded));
         textstate.put("addedNumbers", String.join(",", stagedAdded));
         //? if >=1.20.5 {
-        PacketDistributor.sendToServer(new CrazyPhoneGroupSettingsButtonMessage(0, x, y, z, textstate));
-        //? } else {
-        /*PacketDistributor.SERVER.noArg().send(new CrazyPhoneGroupSettingsButtonMessage(0, x, y, z, textstate));
-        *///?}
+        /*NetworkAccess.sendToServer(new CrazyPhoneGroupSettingsButtonMessage(0, x, y, z, textstate));
+        *///? } else {
+        PacketDistributor.SERVER.noArg().send(new CrazyPhoneGroupSettingsButtonMessage(0, x, y, z, textstate));
+        //?}
     }
 }

@@ -1,25 +1,25 @@
 package fr.lordfinn.crazyphone.network;
 
 //? if >=1.20.5 {
-import net.neoforged.neoforge.network.handling.IPayloadContext;
-//? } else {
-/*import net.neoforged.neoforge.network.handling.PlayPayloadContext;
-*///?}
+/*import net.neoforged.neoforge.network.handling.IPayloadContext;
+*///? } else {
+import net.neoforged.neoforge.network.handling.PlayPayloadContext;
+//?}
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 //? if >=1.20.5 {
-import net.neoforged.fml.common.EventBusSubscriber;
-//? } else {
-/*import net.neoforged.fml.common.Mod.EventBusSubscriber;
-*///?}
+/*import net.neoforged.fml.common.EventBusSubscriber;
+*///? } else {
+import net.neoforged.fml.common.Mod.EventBusSubscriber;
+//?}
 import net.neoforged.bus.api.SubscribeEvent;
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.network.protocol.PacketFlow;
 //? if >=1.20.5 {
-import net.minecraft.network.codec.StreamCodec;
+/*import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.RegistryFriendlyByteBuf;
-//? }
+*///? }
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 
@@ -47,7 +47,7 @@ public record CallParticipantHeadRotationSyncPacket(String conversationId, List<
                                                       List<Float> walkAnimationSpeeds) implements CustomPacketPayload {
 
     //? if >=1.20.5 {
-    public static final Type<CallParticipantHeadRotationSyncPacket> TYPE = new Type<>(
+    /*public static final Type<CallParticipantHeadRotationSyncPacket> TYPE = new Type<>(
             Crazyphone.resource("call_participant_head_rotation_sync")
     );
 
@@ -81,8 +81,8 @@ public record CallParticipantHeadRotationSyncPacket(String conversationId, List<
     public Type<CallParticipantHeadRotationSyncPacket> type() {
         return TYPE;
     }
-    //? } else {
-    /*public static final ResourceLocation ID = new ResourceLocation(Crazyphone.MODID, "call_participant_head_rotation_sync");
+    *///? } else {
+    public static final ResourceLocation ID = new ResourceLocation(Crazyphone.MODID, "call_participant_head_rotation_sync");
 
     public CallParticipantHeadRotationSyncPacket(FriendlyByteBuf buffer) {
         this(
@@ -114,10 +114,10 @@ public record CallParticipantHeadRotationSyncPacket(String conversationId, List<
     public ResourceLocation id() {
         return ID;
     }
-    *///?}
+    //?}
 
     //? if >=1.20.5 {
-    public static void handleData(final CallParticipantHeadRotationSyncPacket message, final IPayloadContext context) {
+    /*public static void handleData(final CallParticipantHeadRotationSyncPacket message, final IPayloadContext context) {
         if (context.flow() != PacketFlow.CLIENTBOUND)
             return;
         context.enqueueWork(() -> {
@@ -130,8 +130,8 @@ public record CallParticipantHeadRotationSyncPacket(String conversationId, List<
             return null;
         });
     }
-    //? } else {
-    /*public static void handleData(final CallParticipantHeadRotationSyncPacket message, final PlayPayloadContext context) {
+    *///? } else {
+    public static void handleData(final CallParticipantHeadRotationSyncPacket message, final PlayPayloadContext context) {
         if (context.flow() != PacketFlow.CLIENTBOUND)
             return;
         context.workHandler().submitAsync(() -> {
@@ -144,17 +144,21 @@ public record CallParticipantHeadRotationSyncPacket(String conversationId, List<
             return null;
         });
     }
-    *///?}
+    //?}
 
-    @EventBusSubscriber
+    //? if <1.20.5 {
+    @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
+    //?} else {
+    /*@EventBusSubscriber
+    *///?}
     public static class Registration {
         @SubscribeEvent
         public static void register(FMLCommonSetupEvent event) {
             //? if >=1.20.5 {
-            Crazyphone.addNetworkMessage(TYPE, STREAM_CODEC, CallParticipantHeadRotationSyncPacket::handleData);
-            //? } else {
-            /*Crazyphone.addNetworkMessage(ID, CallParticipantHeadRotationSyncPacket::new, CallParticipantHeadRotationSyncPacket::handleData);
-            *///?}
+            /*Crazyphone.addNetworkMessage(TYPE, STREAM_CODEC, CallParticipantHeadRotationSyncPacket::handleData);
+            *///? } else {
+            Crazyphone.addNetworkMessage(ID, CallParticipantHeadRotationSyncPacket::new, CallParticipantHeadRotationSyncPacket::handleData);
+            //?}
         }
     }
 }

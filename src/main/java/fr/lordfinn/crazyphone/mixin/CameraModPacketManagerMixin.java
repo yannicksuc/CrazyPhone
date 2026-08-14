@@ -12,8 +12,8 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 
 import de.maxhenkel.camera.ImageData;
 import de.maxhenkel.camera.ImageTools;
-import de.maxhenkel.camera.Main;
 import de.maxhenkel.camera.net.PacketManager;
+import fr.lordfinn.crazyphone.utils.CameraModAccess;
 import fr.lordfinn.crazyphone.utils.CameraModHelper;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Containers;
@@ -71,7 +71,7 @@ public abstract class CameraModPacketManagerMixin {
             ImageTools.saveImage(player, imageID, image);
 
             player.getServer().submitAsync(() -> {
-                ItemStack imageStack = new ItemStack(Main.IMAGE.get());
+                ItemStack imageStack = new ItemStack(CameraModAccess.imageItem());
                 ImageData imageData = ImageData.create(player, imageID);
                 imageData.addToImage(imageStack);
 

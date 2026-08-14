@@ -8,10 +8,10 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.network.PacketDistributor;
 import java.util.UUID;
-import de.maxhenkel.camera.Main;
 import de.maxhenkel.camera.ModSounds;
 import de.maxhenkel.camera.gui.CameraScreen;
 import de.maxhenkel.camera.net.MessageTakeImage;
+import fr.lordfinn.crazyphone.utils.CameraModAccess;
 import fr.lordfinn.crazyphone.utils.CameraModHelper;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
@@ -30,10 +30,10 @@ public class CrazyPhoneTakePhotoProcedure {
         if (playerIn.isShiftKeyDown() && !CameraModHelper.isActive(stack)) {
             if (worldIn.isClientSide) {
                 //? if >=1.20.5 {
-                openClientGui(stack.get(Main.SHADER_DATA_COMPONENT));
-                //? } else {
-                /*openClientGui(Main.CAMERA.get().getShader(stack));
-                *///?}
+                /*openClientGui(stack.get(CameraModAccess.shaderDataComponent()));
+                *///? } else {
+                openClientGui(CameraModAccess.cameraItem().getShader(stack));
+                //?}
             }
             return;
         }
@@ -44,16 +44,16 @@ public class CrazyPhoneTakePhotoProcedure {
 
         if (!CameraModHelper.isActive(stack)) {
             playerIn.closeContainer();
-            Main.CAMERA.get().setActive(stack, true);
-        } else if (Main.PACKET_MANAGER.canTakeImage(playerIn.getUUID())) {
+            CameraModAccess.cameraItem().setActive(stack, true);
+        } else if (CameraModAccess.packetManager().canTakeImage(playerIn.getUUID())) {
             worldIn.playSound(null, playerIn.blockPosition(), ModSounds.TAKE_IMAGE.get(), SoundSource.AMBIENT, 1F, 1F);
             UUID uuid = UUID.randomUUID();
             //? if >=1.20.5 {
-            PacketDistributor.sendToPlayer(serverPlayer, new MessageTakeImage(uuid));
-            //? } else {
-            /*PacketDistributor.PLAYER.with(serverPlayer).send(new MessageTakeImage(uuid));
-            *///?}
-            Main.CAMERA.get().setActive(stack, false);
+            /*PacketDistributor.sendToPlayer(serverPlayer, new MessageTakeImage(uuid));
+            *///? } else {
+            PacketDistributor.PLAYER.with(serverPlayer).send(new MessageTakeImage(uuid));
+            //?}
+            CameraModAccess.cameraItem().setActive(stack, false);
         } else {
             playerIn.displayClientMessage(Component.translatable("message.image_cooldown"), true);
         }

@@ -5,6 +5,7 @@ import org.joml.Quaternionf;
 import org.slf4j.LoggerFactory;
 
 import net.neoforged.neoforge.network.PacketDistributor;
+import fr.lordfinn.crazyphone.utils.NetworkAccess;
 
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.player.Inventory;
@@ -88,13 +89,13 @@ public class CrazyPhoneContactInfoScreenScreen extends CrazyPhoneDefaultScreenSc
 		renderHeader(guiGraphics, resolveHeaderIcon(),
 				Component.translatable("gui.crazyphone.crazy_phone_contact_info_screen.title"));
 		number.render(guiGraphics, mouseX, mouseY, partialTicks);
-		if (fakePlayer instanceof LivingEntity livingEntity) {
+		if (fakePlayer != null) {
 			// Centered in the space between the header and the number field/button, matching every other
 			// screen's 8px side margins and giving the preview its own clear band instead of overlapping
 			// the label/input below it.
 			this.renderEntityInInventoryFollowsAngle(guiGraphics, this.leftPos + 61, this.topPos + 118, 40,
 				(float) Math.atan((this.leftPos + 85 - mouseX) / 40.0),
-				(float) Math.atan((this.topPos + 35 - mouseY) / 40.0), livingEntity);
+				(float) Math.atan((this.topPos + 35 - mouseY) / 40.0), fakePlayer);
 		}
 		this.renderTooltip(guiGraphics, mouseX, mouseY);
 	}
@@ -168,10 +169,10 @@ public class CrazyPhoneContactInfoScreenScreen extends CrazyPhoneDefaultScreenSc
 		number.setResponder(text -> {
 			if (entity != null) {
 				//? if >=1.20.5 {
-				PacketDistributor.sendToServer(new CrazyPhoneContactInfoScreenButtonMessage(1, x, y, z, getEditBoxAndCheckBoxValues()));
-				//? } else {
-				/*PacketDistributor.SERVER.noArg().send(new CrazyPhoneContactInfoScreenButtonMessage(1, x, y, z, getEditBoxAndCheckBoxValues()));
-				*///?}
+				/*NetworkAccess.sendToServer(new CrazyPhoneContactInfoScreenButtonMessage(1, x, y, z, getEditBoxAndCheckBoxValues()));
+				*///? } else {
+				PacketDistributor.SERVER.noArg().send(new CrazyPhoneContactInfoScreenButtonMessage(1, x, y, z, getEditBoxAndCheckBoxValues()));
+				//?}
 				CrazyPhoneContactInfoScreenButtonMessage.handleButtonAction(entity, 1, x, y, z, getEditBoxAndCheckBoxValues());
 			}
 		});
@@ -180,10 +181,10 @@ public class CrazyPhoneContactInfoScreenScreen extends CrazyPhoneDefaultScreenSc
 
 		button_ajouter = Button.builder(Component.translatable("gui.crazyphone.crazy_phone_contact_info_screen.button_ajouter"), e -> {
 			//? if >=1.20.5 {
-			PacketDistributor.sendToServer(new CrazyPhoneContactInfoScreenButtonMessage(0, x, y, z, getEditBoxAndCheckBoxValues()));
-			//? } else {
-			/*PacketDistributor.SERVER.noArg().send(new CrazyPhoneContactInfoScreenButtonMessage(0, x, y, z, getEditBoxAndCheckBoxValues()));
-			*///?}
+			/*NetworkAccess.sendToServer(new CrazyPhoneContactInfoScreenButtonMessage(0, x, y, z, getEditBoxAndCheckBoxValues()));
+			*///? } else {
+			PacketDistributor.SERVER.noArg().send(new CrazyPhoneContactInfoScreenButtonMessage(0, x, y, z, getEditBoxAndCheckBoxValues()));
+			//?}
 			CrazyPhoneContactInfoScreenButtonMessage.handleButtonAction(entity, 0, x, y, z, getEditBoxAndCheckBoxValues());
 		}).bounds(this.leftPos + CONTENT_X, this.topPos + BUTTON_Y, CONTENT_WIDTH, 14)
 				.tooltip(net.minecraft.client.gui.components.Tooltip.create(

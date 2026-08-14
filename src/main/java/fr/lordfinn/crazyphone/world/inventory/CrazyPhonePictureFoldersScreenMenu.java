@@ -67,7 +67,7 @@ public class CrazyPhonePictureFoldersScreenMenu extends CrazyPhoneDefaultScreenM
 	}
 
 	public void handleSlotClick(int slotIndex) {
-		if ((entity instanceof LivingEntity _livEnt ? _livEnt.getMainHandItem() : ItemStack.EMPTY).getCapability(Capabilities.ItemHandler.ITEM, null) instanceof IItemHandlerModifiable itemHandler) {
+		if (entity.getMainHandItem().getCapability(Capabilities.ItemHandler.ITEM, null) instanceof IItemHandlerModifiable itemHandler) {
 			if (entity instanceof ServerPlayer serverPlayer) {
 				ScreenMenuUtils.openPhoneAlbumMenu(serverPlayer, InteractionHand.MAIN_HAND, slotIndex);
 			}

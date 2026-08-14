@@ -3,12 +3,13 @@ package fr.lordfinn.crazyphone.client;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 //? if >=1.20.5 {
-import net.neoforged.fml.common.EventBusSubscriber;
-//? } else {
-/*import net.neoforged.fml.common.Mod.EventBusSubscriber;
-*///?}
+/*import net.neoforged.fml.common.EventBusSubscriber;
+*///? } else {
+import net.neoforged.fml.common.Mod.EventBusSubscriber;
+//?}
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
+import fr.lordfinn.crazyphone.utils.NetworkAccess;
 
 import net.minecraft.world.InteractionHand;
 
@@ -28,9 +29,9 @@ public class CrazyPhoneLeftClickEmptyHandler {
         if (event.getEntity().getItemInHand(InteractionHand.MAIN_HAND).getItem() != ModItems.CRAZY_PHONE.get())
             return;
         //? if >=1.20.5 {
-        PacketDistributor.sendToServer(new CrazyPhoneTakePhotoRequestPacket());
-        //? } else {
-        /*PacketDistributor.SERVER.noArg().send(new CrazyPhoneTakePhotoRequestPacket());
-        *///?}
+        /*NetworkAccess.sendToServer(new CrazyPhoneTakePhotoRequestPacket());
+        *///? } else {
+        PacketDistributor.SERVER.noArg().send(new CrazyPhoneTakePhotoRequestPacket());
+        //?}
     }
 }

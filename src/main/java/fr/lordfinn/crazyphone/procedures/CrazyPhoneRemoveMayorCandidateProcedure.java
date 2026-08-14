@@ -19,10 +19,10 @@ public class CrazyPhoneRemoveMayorCandidateProcedure {
 			PhoneRegistrySavedData.get(world).mayorsCandidates.remove(numberStr);
 			PhoneRegistrySavedData.get(world).syncToAll(world);
 			if (entity instanceof Player _player && !_player.level().isClientSide())
-				_player.displayClientMessage(Component.literal("Candidate removed !"), false);
+				_player.displayClientMessage(Component.translatable("message.crazyphone.candidate_removed"), false);
 		} else {
 			if (entity instanceof Player _player && !_player.level().isClientSide())
-				_player.displayClientMessage(Component.literal("Candidate doesn't exist"), false);
+				_player.displayClientMessage(Component.translatable("message.crazyphone.candidate_not_exist"), false);
 		}
 	}
 }

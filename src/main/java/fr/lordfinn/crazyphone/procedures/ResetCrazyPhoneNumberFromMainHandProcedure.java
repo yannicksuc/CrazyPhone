@@ -9,8 +9,8 @@ public class ResetCrazyPhoneNumberFromMainHandProcedure {
 		if (entity == null)
 			return "";
 		if (IsPhoneSetupProcedure.execute(CrazyPhoneHelper.getMainHandItemOrEmpty(entity))) {
-			return GetCrazyPhoneNumberProcedure.execute(CrazyPhoneHelper.getMainHandItemOrEmpty(entity));
+			return GetCrazyPhoneNumberProcedure.execute(CrazyPhoneHelper.getMainHandItemOrEmpty(entity), entity.level());
 		}
-		return ResetCrazyPhoneNumberProcedure.execute(CrazyPhoneHelper.getMainHandItemOrEmpty(entity));
+		return ResetCrazyPhoneNumberProcedure.execute(CrazyPhoneHelper.getMainHandItemOrEmpty(entity), entity.level());
 	}
 }

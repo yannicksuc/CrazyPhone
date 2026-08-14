@@ -14,10 +14,17 @@ class PlayerPhoneStateTest {
         state.currentCrazyPhoneScreenOpened = "crazyphone:crazy_phone_conversation;111.222";
         state.crazyPhoneScreenHistory = "crazyphone:crazyphone_home_screen|crazyphone:crazy_phone_contacts_screen";
 
-        CompoundTag nbt = state.serializeNBT(RegistryAccess.EMPTY);
+        //? if >=1.20.5 {
+        /*CompoundTag nbt = state.serializeNBT(RegistryAccess.EMPTY);
 
         PlayerPhoneState restored = new PlayerPhoneState();
         restored.deserializeNBT(RegistryAccess.EMPTY, nbt);
+        *///? } else {
+        CompoundTag nbt = state.serializeNBT();
+
+        PlayerPhoneState restored = new PlayerPhoneState();
+        restored.deserializeNBT(nbt);
+        //?}
 
         assertEquals(state.currentCrazyPhoneScreenOpened, restored.currentCrazyPhoneScreenOpened);
         assertEquals(state.crazyPhoneScreenHistory, restored.crazyPhoneScreenHistory);

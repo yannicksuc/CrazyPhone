@@ -3,6 +3,7 @@ package fr.lordfinn.crazyphone.client.gui;
 import fr.lordfinn.crazyphone.Crazyphone;
 
 import net.neoforged.neoforge.network.PacketDistributor;
+import fr.lordfinn.crazyphone.utils.NetworkAccess;
 
 import net.minecraft.world.level.Level;
 import net.minecraft.world.entity.player.Player;
@@ -184,6 +185,22 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 		}
 	}
 
+	/** Default back-button behaviour: pop one entry off the server-tracked screen history. Subclasses with
+	 * their own local, non-history navigation (e.g. a multi-step form's "previous step") should override
+	 * this instead of touching the button itself - AbstractWidget.OnPress has no way to be reassigned once
+	 * a Button is constructed, so this indirection is what makes that overridable at all. */
+	protected void onBackButtonPressed() {
+		//? if >=1.20.5 {
+		/*NetworkAccess.sendToServer(
+				new CrazyPhoneDefaultScreenButtonMessage(0, x, y, z, getEditBoxAndCheckBoxValues()));
+		*///? } else {
+		PacketDistributor.SERVER.noArg().send(
+				new CrazyPhoneDefaultScreenButtonMessage(0, x, y, z, getEditBoxAndCheckBoxValues()));
+		//?}
+		CrazyPhoneDefaultScreenButtonMessage.handleButtonAction(entity, 0, x, y, z,
+				getEditBoxAndCheckBoxValues());
+	}
+
 	protected void setHomeButtonActive(boolean active) {
 		isHomeButtonActive = active;
 		if (imagebutton_crazyphonehome != null) {
@@ -205,17 +222,7 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 		imagebutton_crazyphoneback = new ImageButton(this.leftPos + 14, this.topPos + 180, 29, 12,
 				new WidgetSprites(Crazyphone.parseId("crazyphone:textures/screens/crazyphone-back.png"),
 						Crazyphone.parseId("crazyphone:textures/screens/crazyphone-back-hover.png")),
-				e -> {
-					//? if >=1.20.5 {
-					PacketDistributor.sendToServer(
-							new CrazyPhoneDefaultScreenButtonMessage(0, x, y, z, getEditBoxAndCheckBoxValues()));
-					//? } else {
-					/*PacketDistributor.SERVER.noArg().send(
-							new CrazyPhoneDefaultScreenButtonMessage(0, x, y, z, getEditBoxAndCheckBoxValues()));
-					*///?}
-					CrazyPhoneDefaultScreenButtonMessage.handleButtonAction(entity, 0, x, y, z,
-							getEditBoxAndCheckBoxValues());
-				}) {
+				e -> onBackButtonPressed()) {
 			@Override
 			public void renderWidget(GuiGraphics guiGraphics, int x, int y, float partialTicks) {
 				guiGraphics.blit(sprites.get(isActive(), isHoveredOrFocused()), getX(), getY(), 0, 0, width, height,
@@ -231,12 +238,12 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 						Crazyphone.parseId("crazyphone:textures/screens/crazyphone-home-hover.png")),
 				e -> {
 					//? if >=1.20.5 {
-					PacketDistributor.sendToServer(
+					/*NetworkAccess.sendToServer(
 							new CrazyPhoneDefaultScreenButtonMessage(1, x, y, z, getEditBoxAndCheckBoxValues()));
-					//? } else {
-					/*PacketDistributor.SERVER.noArg().send(
+					*///? } else {
+					PacketDistributor.SERVER.noArg().send(
 							new CrazyPhoneDefaultScreenButtonMessage(1, x, y, z, getEditBoxAndCheckBoxValues()));
-					*///?}
+					//?}
 					CrazyPhoneDefaultScreenButtonMessage.handleButtonAction(entity, 1, x, y, z,
 							getEditBoxAndCheckBoxValues());
 				}) {
@@ -255,12 +262,12 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 						Crazyphone.parseId("crazyphone:textures/screens/crazyphone-lock-hover.png")),
 				e -> {
 					//? if >=1.20.5 {
-					PacketDistributor.sendToServer(
+					/*NetworkAccess.sendToServer(
 							new CrazyPhoneDefaultScreenButtonMessage(2, x, y, z, getEditBoxAndCheckBoxValues()));
-					//? } else {
-					/*PacketDistributor.SERVER.noArg().send(
+					*///? } else {
+					PacketDistributor.SERVER.noArg().send(
 							new CrazyPhoneDefaultScreenButtonMessage(2, x, y, z, getEditBoxAndCheckBoxValues()));
-					*///?}
+					//?}
 					CrazyPhoneDefaultScreenButtonMessage.handleButtonAction(entity, 2, x, y, z,
 							getEditBoxAndCheckBoxValues());
 				}) {

@@ -1,7 +1,10 @@
 package fr.lordfinn.crazyphone.client.gui;
 
+import fr.lordfinn.crazyphone.utils.GuiCompat;
+
 import net.neoforged.neoforge.items.IItemHandlerModifiable;
 import net.neoforged.neoforge.network.PacketDistributor;
+import fr.lordfinn.crazyphone.utils.NetworkAccess;
 
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
@@ -42,7 +45,6 @@ import net.minecraft.client.renderer.GameRenderer;
 import org.joml.Matrix4f;
 
 import de.maxhenkel.camera.ImageData;
-import de.maxhenkel.camera.Main;
 import de.maxhenkel.camera.TextureCache;
 import de.maxhenkel.camera.gui.ImageScreen;
 import de.maxhenkel.camera.items.AlbumItem;
@@ -162,8 +164,8 @@ public class CrazyPhonePicturesScreenScreen extends CrazyPhoneDefaultScreenScree
 	 * so the extra dimension gets cropped off rather than shown letterboxed. Center-pivoted per the spec:
 	 * for a wider-than-tall source the left/right edges are trimmed equally, and vice versa for taller. */
 	private static void drawCroppedImage(GuiGraphics guiGraphics, int x, int y, int width, int height, UUID uuid) {
-		guiGraphics.pose().pushPose();
-		guiGraphics.pose().translate(x, y, 0);
+		GuiCompat.pushPose(guiGraphics);
+		GuiCompat.translate(guiGraphics, x, y);
 
 		RenderSystem.setShader(GameRenderer::getPositionTexShader);
 		RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
@@ -193,30 +195,31 @@ public class CrazyPhonePicturesScreenScreen extends CrazyPhoneDefaultScreenScree
 
 		Matrix4f matrix = guiGraphics.pose().last().pose();
 		//? if >=1.20.5 {
-		BufferBuilder buffer = Tesselator.getInstance().begin(Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
+		/*BufferBuilder buffer = Tesselator.getInstance().begin(Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
 		buffer.addVertex(matrix, 0, 0, 0).setUv(uOffset, vOffset);
 		buffer.addVertex(matrix, 0, height, 0).setUv(uOffset, vOffset + vSpan);
 		buffer.addVertex(matrix, width, height, 0).setUv(uOffset + uSpan, vOffset + vSpan);
 		buffer.addVertex(matrix, width, 0, 0).setUv(uOffset + uSpan, vOffset);
 		BufferUploader.drawWithShader(buffer.buildOrThrow());
-		//? } else {
-		/*BufferBuilder buffer = Tesselator.getInstance().getBuilder();
+		*///? } else {
+		BufferBuilder buffer = Tesselator.getInstance().getBuilder();
 		buffer.begin(Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
 		buffer.vertex(matrix, 0, 0, 0).uv(uOffset, vOffset).endVertex();
 		buffer.vertex(matrix, 0, height, 0).uv(uOffset, vOffset + vSpan).endVertex();
 		buffer.vertex(matrix, width, height, 0).uv(uOffset + uSpan, vOffset + vSpan).endVertex();
 		buffer.vertex(matrix, width, 0, 0).uv(uOffset + uSpan, vOffset).endVertex();
 		Tesselator.getInstance().end();
-		*///?}
+		//?}
 
-		guiGraphics.pose().popPose();
+		GuiCompat.popPose(guiGraphics);
 	}
 
 	@Override
 	public boolean mouseClicked(double mouseX, double mouseY, int button) {
 		for (Map.Entry<Integer, Slot> entry : this.menu.get().entrySet()) {
 			Slot slot = entry.getValue();
-			if (isHoveringSlot(slot, mouseX, mouseY) && slot.getItem() instanceof ItemStack stack && !stack.isEmpty()) {
+			ItemStack stack = slot.getItem();
+			if (isHoveringSlot(slot, mouseX, mouseY) && !stack.isEmpty()) {
 				int index = entry.getKey();
 				if (button == 0) { // Left-click -> select
 					playToggleSound();
@@ -291,7 +294,7 @@ public class CrazyPhonePicturesScreenScreen extends CrazyPhoneDefaultScreenScree
 						// SELECTED_BORDER_COLOR is ARGB (0xAARRGGBB, for guiGraphics.fill) - Style.withColor(int)
 						// wants plain RGB, so the alpha byte has to be masked off or it corrupts the color.
 						.withStyle(style -> style.withColor(SELECTED_BORDER_COLOR & 0xFFFFFF)))
-				.append(Component.literal(" Â· ").withStyle(net.minecraft.ChatFormatting.GRAY))
+				.append(Component.literal(" · ").withStyle(net.minecraft.ChatFormatting.GRAY))
 				.append(Component.translatable("gui.crazyphone.crazy_phone_pictures_screen.tooltip_right_click")
 						.withStyle(net.minecraft.ChatFormatting.GRAY))
 				.append(Component.literal(" "))
@@ -318,10 +321,10 @@ public class CrazyPhonePicturesScreenScreen extends CrazyPhoneDefaultScreenScree
 					values.put("selectedSlots", slotList.toString());
 					values.put("albumIndex", String.valueOf(albumId));
 					//? if >=1.20.5 {
-					PacketDistributor.sendToServer(new CrazyPhonePicturesScreenButtonMessage(2, x, y, z, values));
-					//? } else {
-					/*PacketDistributor.SERVER.noArg().send(new CrazyPhonePicturesScreenButtonMessage(2, x, y, z, values));
-					*///?}
+					/*NetworkAccess.sendToServer(new CrazyPhonePicturesScreenButtonMessage(2, x, y, z, values));
+					*///? } else {
+					PacketDistributor.SERVER.noArg().send(new CrazyPhonePicturesScreenButtonMessage(2, x, y, z, values));
+					//?}
 					Minecraft.getInstance().player.playSound(SoundEvents.EXPERIENCE_ORB_PICKUP, 1.0F, 1.0F);
 				}
 				selectedSlots.clear();
@@ -347,10 +350,10 @@ public class CrazyPhonePicturesScreenScreen extends CrazyPhoneDefaultScreenScree
 				values.put("selectedSlots", slotList.toString());
 				values.put("albumIndex", String.valueOf(albumId));
 				//? if >=1.20.5 {
-				PacketDistributor.sendToServer(new CrazyPhonePicturesScreenButtonMessage(0, x, y, z, values));
-				//? } else {
-				/*PacketDistributor.SERVER.noArg().send(new CrazyPhonePicturesScreenButtonMessage(0, x, y, z, values));
-				*///?}
+				/*NetworkAccess.sendToServer(new CrazyPhonePicturesScreenButtonMessage(0, x, y, z, values));
+				*///? } else {
+				PacketDistributor.SERVER.noArg().send(new CrazyPhonePicturesScreenButtonMessage(0, x, y, z, values));
+				//?}
 				CrazyPhoneHelper.deleteSelectedAlbumSlotsFromHeldPhone(entity, world, selectedSlots, albumId);
 			}
 			selectedSlots.clear(); // Clear selection client-side for UI
@@ -373,10 +376,10 @@ public class CrazyPhonePicturesScreenScreen extends CrazyPhoneDefaultScreenScree
 				values.put("selectedSlots", slotList.toString());
 				values.put("albumIndex", String.valueOf(albumId));
 				//? if >=1.20.5 {
-				PacketDistributor.sendToServer(new CrazyPhonePicturesScreenButtonMessage(1, x, y, z, values));
-				//? } else {
-				/*PacketDistributor.SERVER.noArg().send(new CrazyPhonePicturesScreenButtonMessage(1, x, y, z, values));
-				*///?}
+				/*NetworkAccess.sendToServer(new CrazyPhonePicturesScreenButtonMessage(1, x, y, z, values));
+				*///? } else {
+				PacketDistributor.SERVER.noArg().send(new CrazyPhonePicturesScreenButtonMessage(1, x, y, z, values));
+				//?}
 				Minecraft.getInstance().player.playSound(SoundEvents.ITEM_PICKUP, 1.0F, 1.0F);
 			}
 			selectedSlots.clear();

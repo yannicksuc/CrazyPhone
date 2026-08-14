@@ -1,34 +1,35 @@
 package fr.lordfinn.crazyphone.network;
 
 //? if >=1.20.5 {
-import net.neoforged.neoforge.network.handling.IPayloadContext;
-//? } else {
-/*import net.neoforged.neoforge.network.handling.PlayPayloadContext;
-*///?}
+/*import net.neoforged.neoforge.network.handling.IPayloadContext;
+*///? } else {
+import net.neoforged.neoforge.network.handling.PlayPayloadContext;
+//?}
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 //? if >=1.20.5 {
-import net.neoforged.fml.common.EventBusSubscriber;
-//? } else {
-/*import net.neoforged.fml.common.Mod.EventBusSubscriber;
-*///?}
+/*import net.neoforged.fml.common.EventBusSubscriber;
+*///? } else {
+import net.neoforged.fml.common.Mod.EventBusSubscriber;
+//?}
 import net.neoforged.bus.api.SubscribeEvent;
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.network.protocol.PacketFlow;
 //? if >=1.20.5 {
-import net.minecraft.network.codec.StreamCodec;
+/*import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.RegistryFriendlyByteBuf;
-//? }
+*///? }
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
+import net.minecraft.client.Minecraft;
 
 import fr.lordfinn.crazyphone.Crazyphone;
 import fr.lordfinn.crazyphone.data.PlayerPhoneState;
 
 public record PlayerPhoneStateSyncPacket(PlayerPhoneState data) implements CustomPacketPayload {
     //? if >=1.20.5 {
-    public static final Type<PlayerPhoneStateSyncPacket> TYPE = new Type<>(Crazyphone.resource("player_phone_state_sync"));
+    /*public static final Type<PlayerPhoneStateSyncPacket> TYPE = new Type<>(Crazyphone.resource("player_phone_state_sync"));
 
     public static final StreamCodec<RegistryFriendlyByteBuf, PlayerPhoneStateSyncPacket> STREAM_CODEC = StreamCodec.of(
             (RegistryFriendlyByteBuf buffer, PlayerPhoneStateSyncPacket message) -> buffer.writeNbt(message.data().serializeNBT(buffer.registryAccess())),
@@ -42,8 +43,8 @@ public record PlayerPhoneStateSyncPacket(PlayerPhoneState data) implements Custo
     public Type<PlayerPhoneStateSyncPacket> type() {
         return TYPE;
     }
-    //? } else {
-    /*public static final ResourceLocation ID = Crazyphone.resource("player_phone_state_sync");
+    *///? } else {
+    public static final ResourceLocation ID = Crazyphone.resource("player_phone_state_sync");
 
     public PlayerPhoneStateSyncPacket(FriendlyByteBuf buffer) {
         this(readState(buffer));
@@ -63,10 +64,10 @@ public record PlayerPhoneStateSyncPacket(PlayerPhoneState data) implements Custo
     public ResourceLocation id() {
         return ID;
     }
-    *///?}
+    //?}
 
     //? if >=1.20.5 {
-    public static void handleData(final PlayerPhoneStateSyncPacket message, final IPayloadContext context) {
+    /*public static void handleData(final PlayerPhoneStateSyncPacket message, final IPayloadContext context) {
         if (context.flow() == PacketFlow.CLIENTBOUND) {
             context.enqueueWork(() -> context.player().getData(fr.lordfinn.crazyphone.data.PhoneAttachmentTypes.PLAYER_PHONE_STATE)
                     .deserializeNBT(context.player().registryAccess(), message.data.serializeNBT(context.player().registryAccess()))).exceptionally(e -> {
@@ -75,27 +76,31 @@ public record PlayerPhoneStateSyncPacket(PlayerPhoneState data) implements Custo
             });
         }
     }
-    //? } else {
-    /*public static void handleData(final PlayerPhoneStateSyncPacket message, final PlayPayloadContext context) {
+    *///? } else {
+    public static void handleData(final PlayerPhoneStateSyncPacket message, final PlayPayloadContext context) {
         if (context.flow() == PacketFlow.CLIENTBOUND) {
-            context.workHandler().submitAsync(() -> context.player().orElseThrow().getData(fr.lordfinn.crazyphone.data.PhoneAttachmentTypes.PLAYER_PHONE_STATE)
+            context.workHandler().submitAsync(() -> Minecraft.getInstance().player.getData(fr.lordfinn.crazyphone.data.PhoneAttachmentTypes.PLAYER_PHONE_STATE)
                     .deserializeNBT(message.data.serializeNBT())).exceptionally(e -> {
                 context.packetHandler().disconnect(Component.literal(e.getMessage()));
                 return null;
             });
         }
     }
-    *///?}
+    //?}
 
-    @EventBusSubscriber
+    //? if <1.20.5 {
+    @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
+    //?} else {
+    /*@EventBusSubscriber
+    *///?}
     public static class Registration {
         @SubscribeEvent
         public static void register(FMLCommonSetupEvent event) {
             //? if >=1.20.5 {
-            Crazyphone.addNetworkMessage(TYPE, STREAM_CODEC, PlayerPhoneStateSyncPacket::handleData);
-            //? } else {
-            /*Crazyphone.addNetworkMessage(ID, PlayerPhoneStateSyncPacket::new, PlayerPhoneStateSyncPacket::handleData);
-            *///?}
+            /*Crazyphone.addNetworkMessage(TYPE, STREAM_CODEC, PlayerPhoneStateSyncPacket::handleData);
+            *///? } else {
+            Crazyphone.addNetworkMessage(ID, PlayerPhoneStateSyncPacket::new, PlayerPhoneStateSyncPacket::handleData);
+            //?}
         }
     }
 }

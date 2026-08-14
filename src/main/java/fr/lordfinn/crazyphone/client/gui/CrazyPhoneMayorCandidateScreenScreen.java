@@ -8,6 +8,7 @@ import fr.lordfinn.crazyphone.client.ClientFeatureFlagState;
 import fr.lordfinn.crazyphone.data.PhoneRegistrySavedData;
 import fr.lordfinn.crazyphone.utils.Contact;
 import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
+import fr.lordfinn.crazyphone.utils.GuiCompat;
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneMayorCandidateScreenMenu;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -67,12 +68,12 @@ public class CrazyPhoneMayorCandidateScreenScreen extends CrazyPhoneDefaultScree
 		Tag potentialImage = PhoneRegistrySavedData.get(world).mayorsCandidates.get(mayorNumber);
         if (potentialImage instanceof CompoundTag) {
             //? if >=1.20.5 {
-            candidatePosterData = ImageData.fromImageTag((CompoundTag) potentialImage);
-            //? } else {
-            /*ItemStack tempImageStack = new ItemStack(de.maxhenkel.camera.Main.IMAGE.get());
+            /*candidatePosterData = ImageData.fromImageTag((CompoundTag) potentialImage);
+            *///? } else {
+            ItemStack tempImageStack = new ItemStack(de.maxhenkel.camera.Main.IMAGE.get());
             tempImageStack.getOrCreateTag().put("image", ((CompoundTag) potentialImage).copy());
             candidatePosterData = ImageData.fromStack(tempImageStack);
-            *///?}
+            //?}
         }
 		this.imageWidth = 0;
 		this.imageHeight = 0;
@@ -158,8 +159,8 @@ public class CrazyPhoneMayorCandidateScreenScreen extends CrazyPhoneDefaultScree
     }
 
     public static void drawImage(GuiGraphics guiGraphics, Minecraft minecraft, int x, int y, int width, int height, float zLevel, UUID uuid) {
-    guiGraphics.pose().pushPose();
-    guiGraphics.pose().translate(x, y, 0);
+    GuiCompat.pushPose(guiGraphics);
+    GuiCompat.translate(guiGraphics, x, y);
 
     RenderSystem.setShader(GameRenderer::getPositionTexShader);
     RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
@@ -201,7 +202,7 @@ public class CrazyPhoneMayorCandidateScreenScreen extends CrazyPhoneDefaultScree
 
     Matrix4f matrix = guiGraphics.pose().last().pose();
     //? if >=1.20.5 {
-    BufferBuilder buffer = Tesselator.getInstance().begin(Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
+    /*BufferBuilder buffer = Tesselator.getInstance().begin(Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
 
     buffer.addVertex(matrix, left, top, zLevel).setUv(0.0F, 0.0F);
     buffer.addVertex(matrix, left, top + hnew, zLevel).setUv(0.0F, 1.0F);
@@ -209,8 +210,8 @@ public class CrazyPhoneMayorCandidateScreenScreen extends CrazyPhoneDefaultScree
     buffer.addVertex(matrix, left + wnew, top, zLevel).setUv(1.0F, 0.0F);
 
     BufferUploader.drawWithShader(buffer.buildOrThrow());
-    //? } else {
-    /*BufferBuilder buffer = Tesselator.getInstance().getBuilder();
+    *///? } else {
+    BufferBuilder buffer = Tesselator.getInstance().getBuilder();
     buffer.begin(Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
 
     buffer.vertex(matrix, left, top, zLevel).uv(0.0F, 0.0F).endVertex();
@@ -219,9 +220,9 @@ public class CrazyPhoneMayorCandidateScreenScreen extends CrazyPhoneDefaultScree
     buffer.vertex(matrix, left + wnew, top, zLevel).uv(1.0F, 0.0F).endVertex();
 
     Tesselator.getInstance().end();
-    *///?}
+    //?}
 
-    guiGraphics.pose().popPose();
+    GuiCompat.popPose(guiGraphics);
 }
 
 	@Override

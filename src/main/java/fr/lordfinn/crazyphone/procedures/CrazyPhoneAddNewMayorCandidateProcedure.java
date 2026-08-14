@@ -19,16 +19,16 @@ public class CrazyPhoneAddNewMayorCandidateProcedure {
 		if ((PhoneRegistrySavedData.get(world).mayorsCandidates.get(numberStr)) == null) {
 			if ((PhoneRegistrySavedData.get(world).phones.get(numberStr)) == null) {
 				if (entity instanceof Player _player && !_player.level().isClientSide())
-					_player.displayClientMessage(Component.literal("Candidate doesn't exist"), false);
+					_player.displayClientMessage(Component.translatable("message.crazyphone.candidate_not_exist"), false);
 			} else {
 				PhoneRegistrySavedData.get(world).mayorsCandidates.put(numberStr, (new CompoundTag()));
 				if (entity instanceof Player _player && !_player.level().isClientSide())
-					_player.displayClientMessage(Component.literal("New Candidate added !"), false);
+					_player.displayClientMessage(Component.translatable("message.crazyphone.candidate_added"), false);
 				PhoneRegistrySavedData.get(world).syncToAll(world);
 			}
 		} else {
 			if (entity instanceof Player _player && !_player.level().isClientSide())
-				_player.displayClientMessage(Component.literal("Candidate already registered"), false);
+				_player.displayClientMessage(Component.translatable("message.crazyphone.candidate_already_registered"), false);
 		}
 	}
 }

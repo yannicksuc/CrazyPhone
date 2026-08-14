@@ -51,7 +51,7 @@ public class VoteForMayorProcedure {
 				if (entity instanceof Player _player && !_player.level().isClientSide()) {
 					long remainingSeconds = (600 - (currentTime - lastVoteTime)) / 20;
 					_player.displayClientMessage(
-						Component.literal("⏱ Vous devez attendre encore " + remainingSeconds + " seconde(s) avant de revoter.")
+						Component.translatable("message.crazyphone.vote_cooldown", remainingSeconds)
 							.withStyle(ChatFormatting.RED),
 						false
 					);
@@ -71,7 +71,7 @@ public class VoteForMayorProcedure {
 		if (PhoneRegistrySavedData.get(world).mayorsCandidates.get(numberStr) == null) {
 			if (entity instanceof Player _player && !_player.level().isClientSide()) {
 				_player.displayClientMessage(
-					Component.literal("Candidat introuvable !").withStyle(ChatFormatting.RED, ChatFormatting.BOLD),
+					Component.translatable("message.crazyphone.candidate_not_found_vote").withStyle(ChatFormatting.RED, ChatFormatting.BOLD),
 					false
 				);
 				world.playSound(
@@ -88,17 +88,15 @@ public class VoteForMayorProcedure {
 			boolean isNewVote = PhoneRegistrySavedData.get(world).mayorVotes.get(myNumber) == null;
 
 			Contact contact = CrazyPhoneHelper.getContact((Level) world, myNumber);
-			String playerName = (contact != null) ? contact.getName() : "Inconnu";
+			String playerName = (contact != null) ? contact.getName() : Component.translatable("message.crazyphone.unknown_contact").getString();
 			MutableComponent broadcastMessage;
 
 			if (isNewVote) {
-				broadcastMessage = Component.literal("🗳 ")
-					.append(Component.literal(playerName).withStyle(ChatFormatting.GOLD))
-					.append(" a voté !");
+				broadcastMessage = Component.translatable("message.crazyphone.vote_registered",
+					Component.literal(playerName).withStyle(ChatFormatting.GOLD));
 			} else {
-				broadcastMessage = Component.literal("🔄 ")
-					.append(Component.literal(playerName).withStyle(ChatFormatting.YELLOW))
-					.append(" a changé d'avis et a voté pour quelqu'un d'autre !");
+				broadcastMessage = Component.translatable("message.crazyphone.vote_changed",
+					Component.literal(playerName).withStyle(ChatFormatting.YELLOW));
 			}
 			world.getServer().getPlayerList().broadcastSystemMessage(broadcastMessage.withStyle(ChatFormatting.AQUA), false);
 
@@ -111,7 +109,7 @@ public class VoteForMayorProcedure {
 
 			if (entity instanceof ServerPlayer _player) {
 				_player.displayClientMessage(
-					Component.literal("Vote enregistré avec succès !").withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD),
+					Component.translatable("message.crazyphone.vote_success").withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD),
 					false
 				);
 				world.playSound(

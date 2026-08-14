@@ -1,25 +1,25 @@
 package fr.lordfinn.crazyphone.network;
 
 //? if >=1.20.5 {
-import net.neoforged.neoforge.network.handling.IPayloadContext;
-//? } else {
-/*import net.neoforged.neoforge.network.handling.PlayPayloadContext;
-*///?}
+/*import net.neoforged.neoforge.network.handling.IPayloadContext;
+*///? } else {
+import net.neoforged.neoforge.network.handling.PlayPayloadContext;
+//?}
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 //? if >=1.20.5 {
-import net.neoforged.fml.common.EventBusSubscriber;
-//? } else {
-/*import net.neoforged.fml.common.Mod.EventBusSubscriber;
-*///?}
+/*import net.neoforged.fml.common.EventBusSubscriber;
+*///? } else {
+import net.neoforged.fml.common.Mod.EventBusSubscriber;
+//?}
 import net.neoforged.bus.api.SubscribeEvent;
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.network.protocol.PacketFlow;
 //? if >=1.20.5 {
-import net.minecraft.network.codec.StreamCodec;
+/*import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.RegistryFriendlyByteBuf;
-//? }
+*///? }
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.client.Minecraft;
@@ -36,11 +36,15 @@ import fr.lordfinn.crazyphone.Crazyphone;
  * {@link CrazyPhoneNewMessageNotificationPacket}'s toast/sound so it reads as the same kind of phone
  * notification - always sent via a targeted {@code PacketDistributor.sendToPlayer} call, never broadcast.
  */
-@EventBusSubscriber
+//? if <1.20.5 {
+@EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
+//?} else {
+/*@EventBusSubscriber
+*///?}
 public record CrazyPhoneGroupMembershipNotificationPacket(String groupLabel, String actorName, boolean added) implements CustomPacketPayload {
 
     //? if >=1.20.5 {
-    public static final Type<CrazyPhoneGroupMembershipNotificationPacket> TYPE = new Type<>(
+    /*public static final Type<CrazyPhoneGroupMembershipNotificationPacket> TYPE = new Type<>(
         Crazyphone.resource("group_membership_notification")
     );
 
@@ -62,8 +66,8 @@ public record CrazyPhoneGroupMembershipNotificationPacket(String groupLabel, Str
     public Type<CrazyPhoneGroupMembershipNotificationPacket> type() {
         return TYPE;
     }
-    //? } else {
-    /*public static final ResourceLocation ID = new ResourceLocation(Crazyphone.MODID, "group_membership_notification");
+    *///? } else {
+    public static final ResourceLocation ID = new ResourceLocation(Crazyphone.MODID, "group_membership_notification");
 
     public CrazyPhoneGroupMembershipNotificationPacket(FriendlyByteBuf buffer) {
         this(buffer.readUtf(), buffer.readUtf(), buffer.readBoolean());
@@ -79,27 +83,20 @@ public record CrazyPhoneGroupMembershipNotificationPacket(String groupLabel, Str
     public ResourceLocation id() {
         return ID;
     }
-    *///?}
+    //?}
 
     private static void showToast(CrazyPhoneGroupMembershipNotificationPacket messagePacket) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
 
-        Component toast = messagePacket.added
-            ? Component.literal("👥 ")
-                .append(Component.literal(messagePacket.actorName)
-                    .withStyle(style -> style.withBold(true).withColor(0x00FF55)))
-                .append(Component.literal(" vous a ajouté au groupe ")
-                    .withStyle(style -> style.withColor(0x55FFFF).withItalic(true)))
-                .append(Component.literal(messagePacket.groupLabel)
-                    .withStyle(style -> style.withBold(true).withColor(0xFFAA00)))
-            : Component.literal("🚪 ")
-                .append(Component.literal(messagePacket.actorName)
-                    .withStyle(style -> style.withBold(true).withColor(0xFF5555)))
-                .append(Component.literal(" vous a retiré du groupe ")
-                    .withStyle(style -> style.withColor(0xFF5555).withItalic(true)))
-                .append(Component.literal(messagePacket.groupLabel)
-                    .withStyle(style -> style.withBold(true).withColor(0xFFAA00)));
+        Component actorName = Component.literal(messagePacket.actorName)
+                .withStyle(style -> style.withBold(true).withColor(messagePacket.added ? 0x00FF55 : 0xFF5555));
+        Component groupLabel = Component.literal(messagePacket.groupLabel)
+                .withStyle(style -> style.withBold(true).withColor(0xFFAA00));
+        Component toast = Component.translatable(
+                messagePacket.added ? "message.crazyphone.group_added" : "message.crazyphone.group_removed",
+                actorName, groupLabel)
+            .withStyle(style -> style.withColor(messagePacket.added ? 0x55FFFF : 0xFF5555).withItalic(true));
         mc.player.sendSystemMessage(toast);
 
         ResourceLocation soundId = messagePacket.added
@@ -112,25 +109,25 @@ public record CrazyPhoneGroupMembershipNotificationPacket(String groupLabel, Str
     }
 
     //? if >=1.20.5 {
-    public static void handleData(final CrazyPhoneGroupMembershipNotificationPacket messagePacket, final IPayloadContext context) {
+    /*public static void handleData(final CrazyPhoneGroupMembershipNotificationPacket messagePacket, final IPayloadContext context) {
         if (context.flow() == PacketFlow.CLIENTBOUND) {
             context.enqueueWork(() -> showToast(messagePacket));
         }
     }
-    //? } else {
-    /*public static void handleData(final CrazyPhoneGroupMembershipNotificationPacket messagePacket, final PlayPayloadContext context) {
+    *///? } else {
+    public static void handleData(final CrazyPhoneGroupMembershipNotificationPacket messagePacket, final PlayPayloadContext context) {
         if (context.flow() == PacketFlow.CLIENTBOUND) {
             context.workHandler().submitAsync(() -> showToast(messagePacket));
         }
     }
-    *///?}
+    //?}
 
     @SubscribeEvent
     public static void registerMessage(FMLCommonSetupEvent event) {
         //? if >=1.20.5 {
-        Crazyphone.addNetworkMessage(TYPE, STREAM_CODEC, CrazyPhoneGroupMembershipNotificationPacket::handleData);
-        //? } else {
-        /*Crazyphone.addNetworkMessage(ID, CrazyPhoneGroupMembershipNotificationPacket::new, CrazyPhoneGroupMembershipNotificationPacket::handleData);
-        *///?}
+        /*Crazyphone.addNetworkMessage(TYPE, STREAM_CODEC, CrazyPhoneGroupMembershipNotificationPacket::handleData);
+        *///? } else {
+        Crazyphone.addNetworkMessage(ID, CrazyPhoneGroupMembershipNotificationPacket::new, CrazyPhoneGroupMembershipNotificationPacket::handleData);
+        //?}
     }
 }

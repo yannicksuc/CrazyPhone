@@ -1,5 +1,7 @@
 package fr.lordfinn.crazyphone.client.gui;
 
+import fr.lordfinn.crazyphone.utils.GuiCompat;
+
 import fr.lordfinn.crazyphone.Crazyphone;
 
 import net.minecraft.ChatFormatting;
@@ -7,6 +9,7 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.neoforged.neoforge.network.PacketDistributor;
+import fr.lordfinn.crazyphone.utils.NetworkAccess;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
@@ -139,10 +142,10 @@ public class CrazyPhoneContactsScreenScreen extends CrazyPhoneDefaultScreenScree
 				HashMap<String, String> textstate = getEditBoxAndCheckBoxValues();
 				textstate.put("selectedNumbers", joinSelectedNumbers());
 				//? if >=1.20.5 {
-				PacketDistributor.sendToServer(new CrazyPhoneContactsScreenButtonMessage(2, x, y, z, textstate));
-				//? } else {
-				/*PacketDistributor.SERVER.noArg().send(new CrazyPhoneContactsScreenButtonMessage(2, x, y, z, textstate));
-				*///?}
+				/*NetworkAccess.sendToServer(new CrazyPhoneContactsScreenButtonMessage(2, x, y, z, textstate));
+				*///? } else {
+				PacketDistributor.SERVER.noArg().send(new CrazyPhoneContactsScreenButtonMessage(2, x, y, z, textstate));
+				//?}
 				CrazyPhoneContactsScreenButtonMessage.handleButtonAction(entity, 2, x, y, z, textstate);
 			}
 		}).bounds(this.leftPos + 8, this.topPos + 158, 74, 14).build();
@@ -155,10 +158,10 @@ public class CrazyPhoneContactsScreenScreen extends CrazyPhoneDefaultScreenScree
 				HashMap<String, String> textstate = getEditBoxAndCheckBoxValues();
 				textstate.put("selectedNumbers", joinSelectedNumbers());
 				//? if >=1.20.5 {
-				PacketDistributor.sendToServer(new CrazyPhoneContactsScreenButtonMessage(3, x, y, z, textstate));
-				//? } else {
-				/*PacketDistributor.SERVER.noArg().send(new CrazyPhoneContactsScreenButtonMessage(3, x, y, z, textstate));
-				*///?}
+				/*NetworkAccess.sendToServer(new CrazyPhoneContactsScreenButtonMessage(3, x, y, z, textstate));
+				*///? } else {
+				PacketDistributor.SERVER.noArg().send(new CrazyPhoneContactsScreenButtonMessage(3, x, y, z, textstate));
+				//?}
 				CrazyPhoneContactsScreenButtonMessage.handleButtonAction(entity, 3, x, y, z, textstate);
 			}
 			selectedSlots.clear();
@@ -173,10 +176,10 @@ public class CrazyPhoneContactsScreenScreen extends CrazyPhoneDefaultScreenScree
 				HashMap<String, String> textstate = getEditBoxAndCheckBoxValues();
 				textstate.put("selectedNumbers", joinSelectedNumbers());
 				//? if >=1.20.5 {
-				PacketDistributor.sendToServer(new CrazyPhoneContactsScreenButtonMessage(5, x, y, z, textstate));
-				//? } else {
-				/*PacketDistributor.SERVER.noArg().send(new CrazyPhoneContactsScreenButtonMessage(5, x, y, z, textstate));
-				*///?}
+				/*NetworkAccess.sendToServer(new CrazyPhoneContactsScreenButtonMessage(5, x, y, z, textstate));
+				*///? } else {
+				PacketDistributor.SERVER.noArg().send(new CrazyPhoneContactsScreenButtonMessage(5, x, y, z, textstate));
+				//?}
 				CrazyPhoneContactsScreenButtonMessage.handleButtonAction(entity, 5, x, y, z, textstate);
 			}
 			selectedSlots.clear();
@@ -209,10 +212,10 @@ public class CrazyPhoneContactsScreenScreen extends CrazyPhoneDefaultScreenScree
 				int textWidth = font.width(message);
 				int drawX = getX() + (getWidth() - textWidth) / 2;
 				int drawY = getY() + (getHeight() - 8) / 2;
-				guiGraphics.pose().pushPose();
-				guiGraphics.pose().translate(0.5f, 0f, 0f);
+				GuiCompat.pushPose(guiGraphics);
+				GuiCompat.translate(guiGraphics, 0.5f, 0f);
 				guiGraphics.drawString(font, message, drawX, drawY, 0xFFFFFF, true);
-				guiGraphics.pose().popPose();
+				GuiCompat.popPose(guiGraphics);
 			}
 		};
 	}
@@ -381,22 +384,22 @@ public class CrazyPhoneContactsScreenScreen extends CrazyPhoneDefaultScreenScree
 		String text = word.getString();
 		int drawX = this.leftPos + GRID_START_X;
 		int drawY = this.topPos + GRID_START_Y + CONTENT_Y_OFFSET + relY - scrollPosition;
-		guiGraphics.pose().pushPose();
-		guiGraphics.pose().translate(drawX, drawY, 0);
-		guiGraphics.pose().scale(SECTION_TITLE_SCALE, SECTION_TITLE_SCALE, 1.0f);
+		GuiCompat.pushPose(guiGraphics);
+		GuiCompat.translate(guiGraphics, drawX, drawY);
+		GuiCompat.scale(guiGraphics, SECTION_TITLE_SCALE, SECTION_TITLE_SCALE);
 		guiGraphics.drawString(this.font, text, 0, 0, SECTION_TITLE_COLOR, false);
-		guiGraphics.pose().popPose();
+		GuiCompat.popPose(guiGraphics);
 
 		int textWidthPx = Math.round(this.font.width(text) * SECTION_TITLE_SCALE);
 		int lineStartX = drawX + textWidthPx + 2;
 		int lineEndX = this.leftPos + TITLE_LINE_END_X;
 		int lineY = drawY + Math.round(TITLE_HEIGHT * SECTION_TITLE_SCALE / 2f);
 		if (lineEndX > lineStartX) {
-			guiGraphics.pose().pushPose();
-			guiGraphics.pose().translate(0f, -0.5f, 0f);
+			GuiCompat.pushPose(guiGraphics);
+			GuiCompat.translate(guiGraphics, 0f, -0.5f);
 			// fill() needs an explicit alpha channel, unlike drawString() - the color constant has none.
 			guiGraphics.fill(lineStartX, lineY, lineEndX, lineY + 1, 0xFF000000 | SECTION_TITLE_COLOR);
-			guiGraphics.pose().popPose();
+			GuiCompat.popPose(guiGraphics);
 		}
 	}
 
@@ -506,12 +509,12 @@ public class CrazyPhoneContactsScreenScreen extends CrazyPhoneDefaultScreenScree
 	private void renderIconScaled(GuiGraphics guiGraphics, int iconX, int iconY, ItemStack stack, float scale) {
 		int centerX = iconX + 8;
 		int centerY = iconY + 8;
-		guiGraphics.pose().pushPose();
-		guiGraphics.pose().translate(centerX, centerY, 0);
-		guiGraphics.pose().scale(scale, scale, 1.0f);
-		guiGraphics.pose().translate(-centerX, -centerY, 0);
+		GuiCompat.pushPose(guiGraphics);
+		GuiCompat.translate(guiGraphics, centerX, centerY);
+		GuiCompat.scale(guiGraphics, scale, scale);
+		GuiCompat.translate(guiGraphics, -centerX, -centerY);
 		guiGraphics.renderItem(stack, iconX, iconY);
-		guiGraphics.pose().popPose();
+		GuiCompat.popPose(guiGraphics);
 	}
 
 	/** The "add contact" tile - always the first cell of the contacts section. Returns whether hovered. */
@@ -641,10 +644,10 @@ public class CrazyPhoneContactsScreenScreen extends CrazyPhoneDefaultScreenScree
 		HashMap<String, String> textstate = getEditBoxAndCheckBoxValues();
 		if (button == 0 && isHoveringAddContactTile(mouseX, mouseY)) {
 			//? if >=1.20.5 {
-			PacketDistributor.sendToServer(new CrazyPhoneContactsScreenButtonMessage(0, x, y, z, textstate));
-			//? } else {
-			/*PacketDistributor.SERVER.noArg().send(new CrazyPhoneContactsScreenButtonMessage(0, x, y, z, textstate));
-			*///?}
+			/*NetworkAccess.sendToServer(new CrazyPhoneContactsScreenButtonMessage(0, x, y, z, textstate));
+			*///? } else {
+			PacketDistributor.SERVER.noArg().send(new CrazyPhoneContactsScreenButtonMessage(0, x, y, z, textstate));
+			//?}
 			CrazyPhoneContactsScreenButtonMessage.handleButtonAction(entity, 0, x, y, z, textstate);
 			return true;
 		}
@@ -653,10 +656,10 @@ public class CrazyPhoneContactsScreenScreen extends CrazyPhoneDefaultScreenScree
 			if (groupIndex >= 0) {
 				textstate.put("conversationId", menu.getGroups().get(groupIndex).conversationId());
 				//? if >=1.20.5 {
-				PacketDistributor.sendToServer(new CrazyPhoneContactsScreenButtonMessage(4, x, y, z, textstate));
-				//? } else {
-				/*PacketDistributor.SERVER.noArg().send(new CrazyPhoneContactsScreenButtonMessage(4, x, y, z, textstate));
-				*///?}
+				/*NetworkAccess.sendToServer(new CrazyPhoneContactsScreenButtonMessage(4, x, y, z, textstate));
+				*///? } else {
+				PacketDistributor.SERVER.noArg().send(new CrazyPhoneContactsScreenButtonMessage(4, x, y, z, textstate));
+				//?}
 				CrazyPhoneContactsScreenButtonMessage.handleButtonAction(entity, 4, x, y, z, textstate);
 				return true;
 			}
@@ -675,10 +678,10 @@ public class CrazyPhoneContactsScreenScreen extends CrazyPhoneDefaultScreenScree
 				if (person != null) {
 					textstate.put("contactNumber", person.getNumber());
 					//? if >=1.20.5 {
-					PacketDistributor.sendToServer(new CrazyPhoneContactsScreenButtonMessage(1, x, y, z, textstate));
-					//? } else {
-					/*PacketDistributor.SERVER.noArg().send(new CrazyPhoneContactsScreenButtonMessage(1, x, y, z, textstate));
-					*///?}
+					/*NetworkAccess.sendToServer(new CrazyPhoneContactsScreenButtonMessage(1, x, y, z, textstate));
+					*///? } else {
+					PacketDistributor.SERVER.noArg().send(new CrazyPhoneContactsScreenButtonMessage(1, x, y, z, textstate));
+					//?}
 					CrazyPhoneContactsScreenButtonMessage.handleButtonAction(entity, 1, x, y, z, textstate);
 				}
 				return true;

@@ -1,5 +1,7 @@
 package fr.lordfinn.crazyphone.client.gui.components;
 
+import fr.lordfinn.crazyphone.utils.GuiCompat;
+
 import java.util.UUID;
 
 import javax.annotation.Nullable;
@@ -24,6 +26,7 @@ import fr.lordfinn.crazyphone.network.VoiceMessageAudioRequestPacket;
 import fr.lordfinn.crazyphone.network.VoiceMessageStopPacket;
 import fr.lordfinn.crazyphone.utils.CameraModHelper;
 import net.neoforged.neoforge.network.PacketDistributor;
+import fr.lordfinn.crazyphone.utils.NetworkAccess;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
@@ -305,12 +308,12 @@ public class MessageWidget extends AbstractWidget {
         // All three labels drawn scaled (matching the surrounding chat text's own size) in one pushPose
         // block, same technique WrappedTextWidget itself uses - coordinates are divided by textScale since
         // the transform re-multiplies them back up to real screen pixels.
-        guiGraphics.pose().pushPose();
-        guiGraphics.pose().scale(textScale, textScale, 1.0F);
+        GuiCompat.pushPose(guiGraphics);
+        GuiCompat.scale(guiGraphics, textScale, textScale);
         guiGraphics.drawString(font, playIcon, (int) (voicePlayIconX / textScale), (int) (voicePlayIconY / textScale), accentColor, false);
         guiGraphics.drawString(font, timeLabel, (int) (timeX / textScale), (int) (voiceLabelY / textScale), accentColor, false);
         guiGraphics.drawString(font, speedLabel, (int) (voiceSpeedLabelX / textScale), (int) (voiceLabelY / textScale), hoveringSpeed ? CrazyPhoneColors.ACCENT_YELLOW : accentColor, false);
-        guiGraphics.pose().popPose();
+        GuiCompat.popPose(guiGraphics);
 
         // Live waveform, to the right of the time - a static preview of the whole clip's envelope normally,
         // scrubbing left-to-right in sync with elapsed playback time while playing.
@@ -335,8 +338,8 @@ public class MessageWidget extends AbstractWidget {
         // land exactly on a half-pixel boundary (straddling a real pixel row) and render genuinely centered
         // on centerY regardless of parity - same pushPose/scale/popPose technique renderVoiceContent already
         // uses for text, just scaling Y only (X stays at 1:1, unaffected) instead of both axes.
-        guiGraphics.pose().pushPose();
-        guiGraphics.pose().scale(1f, 0.5f, 1f);
+        GuiCompat.pushPose(guiGraphics);
+        GuiCompat.scale(guiGraphics, 1f, 0.5f);
         int centerY2x = centerY * 2;
         for (int i = 0; i < barCount; i++) {
             int level = voiceEnvelope[i] & 0xFF;
@@ -345,7 +348,7 @@ public class MessageWidget extends AbstractWidget {
             int color = playing && i < progressBar ? CrazyPhoneColors.ACCENT_YELLOW : accentColor;
             guiGraphics.fill(barX, centerY2x - barHeight, barX + Math.max(1, barWidth - 1), centerY2x + barHeight, color);
         }
-        guiGraphics.pose().popPose();
+        GuiCompat.popPose(guiGraphics);
     }
 
     private boolean isHoveringVoicePlayIcon(double mouseX, double mouseY) {
@@ -412,19 +415,19 @@ public class MessageWidget extends AbstractWidget {
                     // AudioPlayer rather than just resetting the local timer (which would leave the real
                     // audio still playing out even though the icon flipped back to "play").
                     //? if >=1.20.5 {
-                    PacketDistributor.sendToServer(new VoiceMessageStopPacket());
-                    //? } else {
-                    /*PacketDistributor.SERVER.noArg().send(new VoiceMessageStopPacket());
-                    *///?}
+                    /*NetworkAccess.sendToServer(new VoiceMessageStopPacket());
+                    *///? } else {
+                    PacketDistributor.SERVER.noArg().send(new VoiceMessageStopPacket());
+                    //?}
                     voicePlayStartMs = -1;
                 } else {
                     voicePlayStartTick = 0;
                     voicePlayStartMs = System.currentTimeMillis();
                     //? if >=1.20.5 {
-                    PacketDistributor.sendToServer(new VoiceMessageAudioRequestPacket(voiceId, VOICE_SPEEDS[voiceSpeedIndex], 0));
-                    //? } else {
-                    /*PacketDistributor.SERVER.noArg().send(new VoiceMessageAudioRequestPacket(voiceId, VOICE_SPEEDS[voiceSpeedIndex], 0));
-                    *///?}
+                    /*NetworkAccess.sendToServer(new VoiceMessageAudioRequestPacket(voiceId, VOICE_SPEEDS[voiceSpeedIndex], 0));
+                    *///? } else {
+                    PacketDistributor.SERVER.noArg().send(new VoiceMessageAudioRequestPacket(voiceId, VOICE_SPEEDS[voiceSpeedIndex], 0));
+                    //?}
                 }
                 return true;
             }
@@ -444,10 +447,10 @@ public class MessageWidget extends AbstractWidget {
             voicePlayStartTick = resumeTick;
             voicePlayStartMs = System.currentTimeMillis();
             //? if >=1.20.5 {
-            PacketDistributor.sendToServer(new VoiceMessageAudioRequestPacket(voiceId, VOICE_SPEEDS[voiceSpeedIndex], resumeTick));
-            //? } else {
-            /*PacketDistributor.SERVER.noArg().send(new VoiceMessageAudioRequestPacket(voiceId, VOICE_SPEEDS[voiceSpeedIndex], resumeTick));
-            *///?}
+            /*NetworkAccess.sendToServer(new VoiceMessageAudioRequestPacket(voiceId, VOICE_SPEEDS[voiceSpeedIndex], resumeTick));
+            *///? } else {
+            PacketDistributor.SERVER.noArg().send(new VoiceMessageAudioRequestPacket(voiceId, VOICE_SPEEDS[voiceSpeedIndex], resumeTick));
+            //?}
         }
     }
 
@@ -550,8 +553,8 @@ public class MessageWidget extends AbstractWidget {
     }
 
     public static void drawImage(GuiGraphics guiGraphics, Minecraft minecraft, int x, int y, int width, int height, float zLevel, UUID uuid) {
-    guiGraphics.pose().pushPose();
-    guiGraphics.pose().translate(x, y, 0);
+    GuiCompat.pushPose(guiGraphics);
+    GuiCompat.translate(guiGraphics, x, y);
 
     RenderSystem.setShader(GameRenderer::getPositionTexShader);
     RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
@@ -590,21 +593,21 @@ public class MessageWidget extends AbstractWidget {
 
     Matrix4f matrix = guiGraphics.pose().last().pose();
     //? if >=1.20.5 {
-    BufferBuilder buffer = Tesselator.getInstance().begin(Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
+    /*BufferBuilder buffer = Tesselator.getInstance().begin(Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
 
     buffer.addVertex(matrix, left, top, zLevel).setUv(0.0F, 0.0F);
     buffer.addVertex(matrix, left, top + hnew, zLevel).setUv(0.0F, 1.0F);
     buffer.addVertex(matrix, left + wnew, top + hnew, zLevel).setUv(1.0F, 1.0F);
     buffer.addVertex(matrix, left + wnew, top, zLevel).setUv(1.0F, 0.0F);
-    //? } else {
-    /*BufferBuilder buffer = Tesselator.getInstance().getBuilder();
+    *///? } else {
+    BufferBuilder buffer = Tesselator.getInstance().getBuilder();
     buffer.begin(Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
 
     buffer.vertex(matrix, left, top, zLevel).uv(0.0F, 0.0F).endVertex();
     buffer.vertex(matrix, left, top + hnew, zLevel).uv(0.0F, 1.0F).endVertex();
     buffer.vertex(matrix, left + wnew, top + hnew, zLevel).uv(1.0F, 1.0F).endVertex();
     buffer.vertex(matrix, left + wnew, top, zLevel).uv(1.0F, 0.0F).endVertex();
-    *///?}
+    //?}
 
     // This is a raw Tesselator draw that bypasses GuiGraphics's own Z-tracking (used by blit()/fill()/
     // renderTooltip() etc. to guarantee later-drawn elements like tooltips appear on top). Without
@@ -613,13 +616,13 @@ public class MessageWidget extends AbstractWidget {
     // exactly the bug this fixes (tooltips appearing under the send/add-image buttons).
     RenderSystem.disableDepthTest();
     //? if >=1.20.5 {
-    BufferUploader.drawWithShader(buffer.buildOrThrow());
-    //? } else {
-    /*Tesselator.getInstance().end();
-    *///?}
+    /*BufferUploader.drawWithShader(buffer.buildOrThrow());
+    *///? } else {
+    Tesselator.getInstance().end();
+    //?}
     RenderSystem.enableDepthTest();
 
-    guiGraphics.pose().popPose();
+    GuiCompat.popPose(guiGraphics);
 }
 
 }

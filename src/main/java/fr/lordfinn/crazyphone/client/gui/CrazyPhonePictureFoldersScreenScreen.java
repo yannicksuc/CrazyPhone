@@ -1,6 +1,7 @@
 package fr.lordfinn.crazyphone.client.gui;
 
 import net.neoforged.neoforge.network.PacketDistributor;
+import fr.lordfinn.crazyphone.utils.NetworkAccess;
 
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
@@ -13,8 +14,8 @@ import fr.lordfinn.crazyphone.network.PictureFoldersSlotClickMessage;
 
 import java.util.HashMap;
 
-import de.maxhenkel.camera.Main;
 import de.maxhenkel.camera.items.AlbumItem;
+import fr.lordfinn.crazyphone.utils.CameraModAccess;
 
 public class CrazyPhonePictureFoldersScreenScreen extends CrazyPhoneDefaultScreenScreen<CrazyPhonePictureFoldersScreenMenu> {
 	final static private HashMap<String, Object> guistate= CrazyPhonePictureFoldersScreenMenu.guistate;
@@ -34,7 +35,7 @@ public class CrazyPhonePictureFoldersScreenScreen extends CrazyPhoneDefaultScree
 	@Override
 	public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
 		super.render(guiGraphics, mouseX, mouseY, partialTicks);
-		renderHeader(guiGraphics, new ItemStack(Main.ALBUM.get()),
+		renderHeader(guiGraphics, new ItemStack(CameraModAccess.albumItem()),
 				Component.translatable("gui.crazyphone.crazy_phone_picture_folders_screen.title"));
 	}
 
@@ -46,10 +47,10 @@ public class CrazyPhonePictureFoldersScreenScreen extends CrazyPhoneDefaultScree
 				ItemStack clickedStack = slot.getItem();
 				if (clickedStack.getItem() instanceof AlbumItem) {
 					//? if >=1.20.5 {
-					PacketDistributor.sendToServer(new PictureFoldersSlotClickMessage(i));
-					//? } else {
-					/*PacketDistributor.SERVER.noArg().send(new PictureFoldersSlotClickMessage(i));
-					*///?}
+					/*NetworkAccess.sendToServer(new PictureFoldersSlotClickMessage(i));
+					*///? } else {
+					PacketDistributor.SERVER.noArg().send(new PictureFoldersSlotClickMessage(i));
+					//?}
 					return true;
 				}
 			}

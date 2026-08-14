@@ -1,5 +1,7 @@
 package fr.lordfinn.crazyphone.client.gui.components;
 
+import fr.lordfinn.crazyphone.utils.GuiCompat;
+
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
@@ -111,8 +113,8 @@ public class WrappedTextWidget extends AbstractWidget {
         int textBlockHeight = Math.round(lines.size() * font.lineHeight * textScale);
         int textStartY = renderY + Math.max(paddingTop, (renderHeight - textBlockHeight) / 2);
 
-        guiGraphics.pose().pushPose();
-        guiGraphics.pose().scale(textScale, textScale, 1.0F);
+        GuiCompat.pushPose(guiGraphics);
+        GuiCompat.scale(guiGraphics, textScale, textScale);
 
         for (int i = 0; i < lines.size(); i++) {
             FormattedCharSequence line = lines.get(i);
@@ -120,7 +122,7 @@ public class WrappedTextWidget extends AbstractWidget {
             guiGraphics.drawString(font, line, (int) ((getX() + paddingLeft) / textScale), lineY, textColor, false);
         }
 
-        guiGraphics.pose().popPose();
+        GuiCompat.popPose(guiGraphics);
     }
 
     @Override

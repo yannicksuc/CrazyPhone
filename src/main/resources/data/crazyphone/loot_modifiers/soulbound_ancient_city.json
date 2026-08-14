@@ -1,0 +1,10 @@
+{
+  "type": "crazyphone:soulbound_ancient_city",
+  "conditions": [
+    {
+      "condition": "neoforge:loot_table_id",
+      "loot_table_id": "minecraft:chests/ancient_city"
+    }
+  ],
+  "chance": 0.12
+}

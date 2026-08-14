@@ -24,13 +24,13 @@ public class CrazyPhoneAddMayorProgramFromMainHandProcedure {
 		String numberStr = String.valueOf(IntegerArgumentType.getInteger(arguments, "phoneNumber"));
 		if ((PhoneRegistrySavedData.get(world).mayorsCandidates.get(numberStr)) == null) {
 			if (entity instanceof Player _player && !_player.level().isClientSide())
-				_player.displayClientMessage(Component.literal("Candidate not found"), false);
+				_player.displayClientMessage(Component.translatable("message.crazyphone.candidate_not_found"), false);
 		} else {
 			ImageData data = ImageData.fromStack(player.getMainHandItem());
 			CompoundTag tag = CrazyPhoneHelper.imageDataToCompoundTag(data);
 			PhoneRegistrySavedData.get(world).mayorsCandidates.put(numberStr, tag);
 			if (entity instanceof Player _player && !_player.level().isClientSide())
-				_player.displayClientMessage(Component.literal("Poster successfully added to candidate !"), false);
+				_player.displayClientMessage(Component.translatable("message.crazyphone.candidate_poster_added"), false);
 			PhoneRegistrySavedData.get(world).syncToAll(world);
 		}
 	}

@@ -7,20 +7,20 @@ import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
 //? if >=1.20.5 {
-import net.neoforged.neoforge.network.registration.PayloadRegistrar;
+/*import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 import net.neoforged.neoforge.network.handling.IPayloadHandler;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
-//? } else {
-/*import net.neoforged.neoforge.network.registration.IPayloadRegistrar;
+*///? } else {
+import net.neoforged.neoforge.network.registration.IPayloadRegistrar;
 import net.neoforged.neoforge.network.handling.IPlayPayloadHandler;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlerEvent;
-*///?}
+//?}
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 //? if >=1.20.5 {
-import net.minecraft.network.codec.StreamCodec;
-//? }
+/*import net.minecraft.network.codec.StreamCodec;
+*///? }
 import net.minecraft.network.FriendlyByteBuf;
 
 import fr.lordfinn.crazyphone.data.PhoneAttachmentTypes;
@@ -40,22 +40,22 @@ public class Crazyphone {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     //? if >=1.20.5 {
-    public static ResourceLocation resource(String path) {
+    /*public static ResourceLocation resource(String path) {
         return ResourceLocation.fromNamespaceAndPath(MODID, path);
     }
 
     public static ResourceLocation parseId(String id) {
         return ResourceLocation.parse(id);
     }
-    //? } else {
-    /*public static ResourceLocation resource(String path) {
+    *///? } else {
+    public static ResourceLocation resource(String path) {
         return new ResourceLocation(MODID, path);
     }
 
     public static ResourceLocation parseId(String id) {
         return new ResourceLocation(id);
     }
-    *///?}
+    //?}
 
     public Crazyphone(IEventBus modEventBus, ModContainer modContainer) {
         modEventBus.addListener(this::registerNetworking);
@@ -65,17 +65,20 @@ public class Crazyphone {
         ModMenus.REGISTRY.register(modEventBus);
         ModSounds.REGISTRY.register(modEventBus);
         PhoneAttachmentTypes.ATTACHMENT_TYPES.register(modEventBus);
+        //? if >=1.20.5 {
+        /*fr.lordfinn.crazyphone.init.ModLootModifiers.LOOT_MODIFIER_SERIALIZERS.register(modEventBus);
+        *///?}
 
         //? if >=1.20.5 {
-        modContainer.registerConfig(ModConfig.Type.COMMON, Config.SPEC);
-        //? } else {
-        /*net.neoforged.fml.ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, Config.SPEC);
-        *///?}
+        /*modContainer.registerConfig(ModConfig.Type.COMMON, Config.SPEC);
+        *///? } else {
+        net.neoforged.fml.ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, Config.SPEC);
+        //?}
     }
 
     private static boolean networkingRegistered = false;
     //? if >=1.20.5 {
-    private static final Map<CustomPacketPayload.Type<?>, NetworkMessage<?>> MESSAGES = new HashMap<>();
+    /*private static final Map<CustomPacketPayload.Type<?>, NetworkMessage<?>> MESSAGES = new HashMap<>();
 
     private record NetworkMessage<T extends CustomPacketPayload>(StreamCodec<? extends FriendlyByteBuf, T> reader, IPayloadHandler<T> handler) {
     }
@@ -92,8 +95,8 @@ public class Crazyphone {
         MESSAGES.forEach((id, networkMessage) -> registrar.playBidirectional(id, ((NetworkMessage) networkMessage).reader(), ((NetworkMessage) networkMessage).handler()));
         networkingRegistered = true;
     }
-    //? } else {
-    /*private static final Map<ResourceLocation, NetworkMessage<?>> MESSAGES = new HashMap<>();
+    *///? } else {
+    private static final Map<ResourceLocation, NetworkMessage<?>> MESSAGES = new HashMap<>();
 
     private record NetworkMessage<T extends CustomPacketPayload>(FriendlyByteBuf.Reader<T> reader, IPlayPayloadHandler<T> handler) {
     }
@@ -110,5 +113,5 @@ public class Crazyphone {
         MESSAGES.forEach((id, networkMessage) -> registrar.play(id, ((NetworkMessage) networkMessage).reader(), ((NetworkMessage) networkMessage).handler()));
         networkingRegistered = true;
     }
-    *///?}
+    //?}
 }

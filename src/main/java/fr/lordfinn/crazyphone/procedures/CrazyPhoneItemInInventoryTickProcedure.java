@@ -2,10 +2,10 @@ package fr.lordfinn.crazyphone.procedures;
 
 import net.neoforged.neoforge.event.entity.player.ItemTooltipEvent;
 //? if >=1.20.5 {
-import net.neoforged.fml.common.EventBusSubscriber;
-//? } else {
-/*import net.neoforged.fml.common.Mod.EventBusSubscriber;
-*///?}
+/*import net.neoforged.fml.common.EventBusSubscriber;
+*///? } else {
+import net.neoforged.fml.common.Mod.EventBusSubscriber;
+//?}
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.api.distmarker.Dist;
@@ -31,10 +31,10 @@ public class CrazyPhoneItemInInventoryTickProcedure {
 			return;
 		if (itemstack.getItem() == ModItems.CRAZY_PHONE.get()) {
 			if (!(PhoneTagAccess.getTag(itemstack).getString("number")).isEmpty()) {
-				tooltip.add(Component.literal(("NumÃ©ro : " + PhoneTagAccess.getTag(itemstack).getString("number"))));
+				tooltip.add(Component.translatable("item.crazyphone.lore_number", PhoneTagAccess.getTag(itemstack).getString("number")));
 			}
 			if (!(PhoneTagAccess.getTag(itemstack).getString("name")).isEmpty()) {
-				tooltip.add(Component.literal(("Proprio : " + PhoneTagAccess.getTag(itemstack).getString("name"))));
+				tooltip.add(Component.translatable("item.crazyphone.lore_owner", PhoneTagAccess.getTag(itemstack).getString("name")));
 			}
 		}
 	}

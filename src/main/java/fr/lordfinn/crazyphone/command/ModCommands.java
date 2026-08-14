@@ -9,10 +9,10 @@ import com.mojang.brigadier.suggestion.SuggestionProvider;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.common.util.FakePlayerFactory;
 //? if >=1.20.5 {
-import net.neoforged.fml.common.EventBusSubscriber;
-//? } else {
-/*import net.neoforged.fml.common.Mod.EventBusSubscriber;
-*///?}
+/*import net.neoforged.fml.common.EventBusSubscriber;
+*///? } else {
+import net.neoforged.fml.common.Mod.EventBusSubscriber;
+//?}
 import net.neoforged.bus.api.SubscribeEvent;
 
 import net.minecraft.ChatFormatting;
@@ -136,9 +136,9 @@ public class ModCommands {
         String number = StringArgumentType.getString(arguments, "number");
         boolean deleted = CrazyPhoneDeletePhoneByNumberProcedure.execute(world, number);
         if (deleted) {
-            arguments.getSource().sendSuccess(() -> Component.literal("Phone " + number + " deleted.").withStyle(ChatFormatting.GREEN), true);
+            arguments.getSource().sendSuccess(() -> Component.translatable("command.crazyphone.phone_deleted", number).withStyle(ChatFormatting.GREEN), true);
         } else {
-            arguments.getSource().sendFailure(Component.literal("No phone registered with number " + number + ".").withStyle(ChatFormatting.RED));
+            arguments.getSource().sendFailure(Component.translatable("command.crazyphone.phone_not_registered", number).withStyle(ChatFormatting.RED));
         }
         return deleted ? 1 : 0;
     }
@@ -155,9 +155,8 @@ public class ModCommands {
     private static int featureList(CommandContext<CommandSourceStack> arguments) {
         for (FeatureFlag flag : FeatureFlag.values()) {
             boolean enabled = flag.isGloballyEnabled();
-            arguments.getSource().sendSuccess(() -> Component.literal(flag.id + ": ")
-                    .append(Component.literal(enabled ? "enabled" : "disabled")
-                            .withStyle(enabled ? ChatFormatting.GREEN : ChatFormatting.RED)), false);
+            arguments.getSource().sendSuccess(() -> Component.translatable("command.crazyphone.feature_status_line", flag.id)
+                    .append(stateComponent(enabled)), false);
         }
         return 1;
     }
@@ -167,15 +166,21 @@ public class ModCommands {
         boolean enabled = BoolArgumentType.getBool(arguments, "enabled");
         FeatureFlag flag = FeatureFlag.byId(id);
         if (flag == null) {
-            arguments.getSource().sendFailure(Component.literal("Unknown feature: " + id
-                    + " (try /crazyphone feature list)").withStyle(ChatFormatting.RED));
+            arguments.getSource().sendFailure(Component.translatable("command.crazyphone.unknown_feature", id).withStyle(ChatFormatting.RED));
             return 0;
         }
         flag.setGloballyEnabled(enabled);
         FeatureFlagSyncPacket.syncToAll(arguments.getSource().getServer());
-        arguments.getSource().sendSuccess(() -> Component.literal(flag.id + " is now ")
-                .append(Component.literal(enabled ? "enabled" : "disabled").withStyle(enabled ? ChatFormatting.GREEN : ChatFormatting.RED)), true);
+        arguments.getSource().sendSuccess(() -> Component.translatable("command.crazyphone.feature_now", flag.id)
+                .append(stateComponent(enabled)), true);
         return 1;
+    }
+
+    /** The "enabled"/"disabled" word, translated and colored - shared by featureList and featureSet so the
+     * two commands' feedback stays visually consistent. */
+    private static Component stateComponent(boolean enabled) {
+        return Component.translatable(enabled ? "command.crazyphone.state_enabled" : "command.crazyphone.state_disabled")
+                .withStyle(enabled ? ChatFormatting.GREEN : ChatFormatting.RED);
     }
 
     // --- mayor ---

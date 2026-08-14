@@ -16,6 +16,7 @@ import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.network.PacketDistributor;
+import fr.lordfinn.crazyphone.utils.NetworkAccess;
 
 public class CrazyPhoneAlbumScreen extends AlbumScreen implements PhoneScreen {
 
@@ -47,10 +48,10 @@ public class CrazyPhoneAlbumScreen extends AlbumScreen implements PhoneScreen {
                 ItemStack stack = imageStacks.get(this.index);
                 if (!stack.isEmpty()) {
                     //? if >=1.20.5 {
-                    PacketDistributor.sendToServer(new CrazyPhoneImageActionMessage(stack.copy(), ImageActionType.GIVE_PLAYER));
-                    //? } else {
-                    /*PacketDistributor.SERVER.noArg().send(new CrazyPhoneImageActionMessage(stack.copy(), ImageActionType.GIVE_PLAYER));
-                    *///?}
+                    /*NetworkAccess.sendToServer(new CrazyPhoneImageActionMessage(stack.copy(), ImageActionType.GIVE_PLAYER));
+                    *///? } else {
+                    PacketDistributor.SERVER.noArg().send(new CrazyPhoneImageActionMessage(stack.copy(), ImageActionType.GIVE_PLAYER));
+                    //?}
                     Minecraft.getInstance().player.playSound(net.minecraft.sounds.SoundEvents.ITEM_PICKUP, 1.0F, 1.0F);
                 }
             }
@@ -103,9 +104,9 @@ public class CrazyPhoneAlbumScreen extends AlbumScreen implements PhoneScreen {
     public void onClose() {
         super.onClose(); // Call the original onClose to handle cleanup
         //? if >=1.20.5 {
-        PacketDistributor.sendToServer(new CrazyPhoneAlbumClosedMessage());
-        //? } else {
-        /*PacketDistributor.SERVER.noArg().send(new CrazyPhoneAlbumClosedMessage());
-        *///?}
+        /*NetworkAccess.sendToServer(new CrazyPhoneAlbumClosedMessage());
+        *///? } else {
+        PacketDistributor.SERVER.noArg().send(new CrazyPhoneAlbumClosedMessage());
+        //?}
     }
 }

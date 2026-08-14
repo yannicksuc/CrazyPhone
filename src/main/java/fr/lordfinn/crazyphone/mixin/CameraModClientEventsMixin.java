@@ -6,7 +6,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import de.maxhenkel.camera.ClientEvents;
-import de.maxhenkel.camera.Main;
+import fr.lordfinn.crazyphone.utils.CameraModAccess;
 import fr.lordfinn.crazyphone.utils.CameraModHelper;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -14,10 +14,10 @@ import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemStack;
 //? if >=1.20.5 {
-import net.neoforged.neoforge.client.event.RenderGuiLayerEvent;
-//? } else {
-/*import net.neoforged.neoforge.client.event.RenderGuiOverlayEvent;
-*///?}
+/*import net.neoforged.neoforge.client.event.RenderGuiLayerEvent;
+*///? } else {
+import net.neoforged.neoforge.client.event.RenderGuiOverlayEvent;
+//?}
 import net.neoforged.neoforge.client.event.RenderPlayerEvent;
 
 import org.spongepowered.asm.mixin.injection.At;
@@ -33,7 +33,7 @@ public abstract class CameraModClientEventsMixin {
         if (mc.player == null) return;
         for (InteractionHand hand : InteractionHand.values()) {
             ItemStack stack = mc.player.getItemInHand(hand);
-            if (CameraModHelper.isSupportedCamera(stack) && Main.CAMERA.get().isActive(stack)) {
+            if (CameraModHelper.isSupportedCamera(stack) && CameraModAccess.cameraItem().isActive(stack)) {
                 cir.setReturnValue(stack);
                 return;
             }
@@ -52,7 +52,7 @@ public abstract class CameraModClientEventsMixin {
             for (InteractionHand hand : InteractionHand.values()) {
                 ItemStack stack = player.getItemInHand(hand);
                 if (CameraModHelper.isSupportedCamera(stack)) {
-                    if (Main.CAMERA.get().isActive(stack)) {
+                    if (CameraModAccess.cameraItem().isActive(stack)) {
                         player.startUsingItem(hand);
                     } else {
                         player.stopUsingItem();
@@ -64,20 +64,20 @@ public abstract class CameraModClientEventsMixin {
     }
 
     //? if >=1.20.5 {
-    @Inject(method = "renderOverlay", at = @At("HEAD"), cancellable = true)
+    /*@Inject(method = "renderOverlay", at = @At("HEAD"), cancellable = true)
     public void onRenderOverlay(RenderGuiLayerEvent.Pre event, CallbackInfo ci) {
         if (ImageTakerAccessor.getTakeScreenshot()) {
             event.setCanceled(true);
             ci.cancel();
         }
     }
-    //? } else {
-    /*@Inject(method = "renderOverlay", at = @At("HEAD"), cancellable = true)
+    *///? } else {
+    @Inject(method = "renderOverlay", at = @At("HEAD"), cancellable = true)
     public void onRenderOverlay(RenderGuiOverlayEvent.Pre event, CallbackInfo ci) {
         if (ImageTakerAccessor.getTakeScreenshot()) {
             event.setCanceled(true);
             ci.cancel();
         }
     }
-    *///?}
+    //?}
 }

@@ -16,13 +16,13 @@ import fr.lordfinn.crazyphone.utils.ScreenMenuUtils;
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhonePicturesScreenMenu;
 import net.minecraft.core.BlockPos;
 //? if >=1.20.5 {
-import net.minecraft.network.RegistryFriendlyByteBuf;
-//? }
+/*import net.minecraft.network.RegistryFriendlyByteBuf;
+*///? }
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 //? if >=1.20.5 {
-import net.minecraft.network.codec.StreamCodec;
-//? }
+/*import net.minecraft.network.codec.StreamCodec;
+*///? }
 import net.minecraft.network.protocol.PacketFlow;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
@@ -32,22 +32,26 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.neoforged.bus.api.SubscribeEvent;
 //? if >=1.20.5 {
-import net.neoforged.fml.common.EventBusSubscriber;
-//? } else {
-/*import net.neoforged.fml.common.Mod.EventBusSubscriber;
-*///?}
+/*import net.neoforged.fml.common.EventBusSubscriber;
+*///? } else {
+import net.neoforged.fml.common.Mod.EventBusSubscriber;
+//?}
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 //? if >=1.20.5 {
-import net.neoforged.neoforge.network.handling.IPayloadContext;
-//? } else {
-/*import net.neoforged.neoforge.network.handling.PlayPayloadContext;
-*///?}
+/*import net.neoforged.neoforge.network.handling.IPayloadContext;
+*///? } else {
+import net.neoforged.neoforge.network.handling.PlayPayloadContext;
+//?}
 
-@EventBusSubscriber
+//? if <1.20.5 {
+@EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
+//?} else {
+/*@EventBusSubscriber
+*///?}
 public record CrazyPhonePicturesScreenButtonMessage(int buttonID, int x, int y, int z, HashMap<String, String> textstate) implements CustomPacketPayload {
 
 	//? if >=1.20.5 {
-	public static final Type<CrazyPhonePicturesScreenButtonMessage> TYPE = new Type<>(Crazyphone.resource("crazy_phone_pictures_screen_buttons"));
+	/*public static final Type<CrazyPhonePicturesScreenButtonMessage> TYPE = new Type<>(Crazyphone.resource("crazy_phone_pictures_screen_buttons"));
 	public static final StreamCodec<RegistryFriendlyByteBuf, CrazyPhonePicturesScreenButtonMessage> STREAM_CODEC = StreamCodec.of((RegistryFriendlyByteBuf buffer, CrazyPhonePicturesScreenButtonMessage message) -> {
 		buffer.writeInt(message.buttonID);
 		buffer.writeInt(message.x);
@@ -59,8 +63,8 @@ public record CrazyPhonePicturesScreenButtonMessage(int buttonID, int x, int y, 
 	public Type<CrazyPhonePicturesScreenButtonMessage> type() {
 		return TYPE;
 	}
-	//? } else {
-	/*public static final ResourceLocation ID = new ResourceLocation(Crazyphone.MODID, "crazy_phone_pictures_screen_buttons");
+	*///? } else {
+	public static final ResourceLocation ID = new ResourceLocation(Crazyphone.MODID, "crazy_phone_pictures_screen_buttons");
 
 	public CrazyPhonePicturesScreenButtonMessage(FriendlyByteBuf buffer) {
 		this(buffer.readInt(), buffer.readInt(), buffer.readInt(), buffer.readInt(), readTextState(buffer));
@@ -78,10 +82,10 @@ public record CrazyPhonePicturesScreenButtonMessage(int buttonID, int x, int y, 
 	public ResourceLocation id() {
 		return ID;
 	}
-	*///?}
+	//?}
 
 	//? if >=1.20.5 {
-	public static void handleData(final CrazyPhonePicturesScreenButtonMessage message, final IPayloadContext context) {
+	/*public static void handleData(final CrazyPhonePicturesScreenButtonMessage message, final IPayloadContext context) {
 		if (context.flow() == PacketFlow.SERVERBOUND) {
 			context.enqueueWork(() -> {
 				Player entity = context.player();
@@ -97,8 +101,8 @@ public record CrazyPhonePicturesScreenButtonMessage(int buttonID, int x, int y, 
 			});
 		}
 	}
-	//? } else {
-	/*public static void handleData(final CrazyPhonePicturesScreenButtonMessage message, final PlayPayloadContext context) {
+	*///? } else {
+	public static void handleData(final CrazyPhonePicturesScreenButtonMessage message, final PlayPayloadContext context) {
 		if (context.flow() == PacketFlow.SERVERBOUND) {
 			context.workHandler().submitAsync(() -> {
 				Player entity = context.player().orElse(null);
@@ -114,7 +118,7 @@ public record CrazyPhonePicturesScreenButtonMessage(int buttonID, int x, int y, 
 			});
 		}
 	}
-	*///?}
+	//?}
 
 	public static void handleButtonAction(Player entity, int buttonID, int x, int y, int z, HashMap<String, String> textstate) {
 		Level world = entity.level();
@@ -175,10 +179,10 @@ public record CrazyPhonePicturesScreenButtonMessage(int buttonID, int x, int y, 
 }
 
 	//? if >=1.20.5 {
-	private static void writeTextState(HashMap<String, String> map, RegistryFriendlyByteBuf buffer) {
-	//? } else {
-	/*private static void writeTextState(HashMap<String, String> map, FriendlyByteBuf buffer) {
-	*///?}
+	/*private static void writeTextState(HashMap<String, String> map, RegistryFriendlyByteBuf buffer) {
+	*///? } else {
+	private static void writeTextState(HashMap<String, String> map, FriendlyByteBuf buffer) {
+	//?}
 		buffer.writeInt(map.size());
 		for (Map.Entry<String, String> entry : map.entrySet()) {
 			buffer.writeUtf(entry.getKey());
@@ -187,10 +191,10 @@ public record CrazyPhonePicturesScreenButtonMessage(int buttonID, int x, int y, 
 	}
 
 	//? if >=1.20.5 {
-	private static HashMap<String, String> readTextState(RegistryFriendlyByteBuf buffer) {
-	//? } else {
-	/*private static HashMap<String, String> readTextState(FriendlyByteBuf buffer) {
-	*///?}
+	/*private static HashMap<String, String> readTextState(RegistryFriendlyByteBuf buffer) {
+	*///? } else {
+	private static HashMap<String, String> readTextState(FriendlyByteBuf buffer) {
+	//?}
 		int size = buffer.readInt();
 		HashMap<String, String> map = new HashMap<>();
 		for (int i = 0; i < size; i++) {
@@ -204,9 +208,9 @@ public record CrazyPhonePicturesScreenButtonMessage(int buttonID, int x, int y, 
 	@SubscribeEvent
 	public static void registerMessage(FMLCommonSetupEvent event) {
 		//? if >=1.20.5 {
-		Crazyphone.addNetworkMessage(CrazyPhonePicturesScreenButtonMessage.TYPE, CrazyPhonePicturesScreenButtonMessage.STREAM_CODEC, CrazyPhonePicturesScreenButtonMessage::handleData);
-		//? } else {
-		/*Crazyphone.addNetworkMessage(CrazyPhonePicturesScreenButtonMessage.ID, CrazyPhonePicturesScreenButtonMessage::new, CrazyPhonePicturesScreenButtonMessage::handleData);
-		*///?}
+		/*Crazyphone.addNetworkMessage(CrazyPhonePicturesScreenButtonMessage.TYPE, CrazyPhonePicturesScreenButtonMessage.STREAM_CODEC, CrazyPhonePicturesScreenButtonMessage::handleData);
+		*///? } else {
+		Crazyphone.addNetworkMessage(CrazyPhonePicturesScreenButtonMessage.ID, CrazyPhonePicturesScreenButtonMessage::new, CrazyPhonePicturesScreenButtonMessage::handleData);
+		//?}
 	}
 }

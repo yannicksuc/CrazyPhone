@@ -1,25 +1,25 @@
 package fr.lordfinn.crazyphone.network;
 
 //? if >=1.20.5 {
-import net.neoforged.neoforge.network.handling.IPayloadContext;
-//? } else {
-/*import net.neoforged.neoforge.network.handling.PlayPayloadContext;
-*///?}
+/*import net.neoforged.neoforge.network.handling.IPayloadContext;
+*///? } else {
+import net.neoforged.neoforge.network.handling.PlayPayloadContext;
+//?}
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 //? if >=1.20.5 {
-import net.neoforged.fml.common.EventBusSubscriber;
-//? } else {
-/*import net.neoforged.fml.common.Mod.EventBusSubscriber;
-*///?}
+/*import net.neoforged.fml.common.EventBusSubscriber;
+*///? } else {
+import net.neoforged.fml.common.Mod.EventBusSubscriber;
+//?}
 import net.neoforged.bus.api.SubscribeEvent;
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.network.protocol.PacketFlow;
 //? if >=1.20.5 {
-import net.minecraft.network.codec.StreamCodec;
+/*import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.RegistryFriendlyByteBuf;
-//? }
+*///? }
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -45,7 +45,7 @@ import java.util.UUID;
 public record VoiceMessageAudioRequestPacket(UUID voiceMessageId, float speed, int startTick) implements CustomPacketPayload {
 
     //? if >=1.20.5 {
-    public static final Type<VoiceMessageAudioRequestPacket> TYPE = new Type<>(
+    /*public static final Type<VoiceMessageAudioRequestPacket> TYPE = new Type<>(
             Crazyphone.resource("voice_message_audio_request")
     );
 
@@ -63,8 +63,8 @@ public record VoiceMessageAudioRequestPacket(UUID voiceMessageId, float speed, i
     public Type<VoiceMessageAudioRequestPacket> type() {
         return TYPE;
     }
-    //? } else {
-    /*public static final ResourceLocation ID = Crazyphone.resource("voice_message_audio_request");
+    *///? } else {
+    public static final ResourceLocation ID = Crazyphone.resource("voice_message_audio_request");
 
     public VoiceMessageAudioRequestPacket(FriendlyByteBuf buffer) {
         this(buffer.readUUID(), buffer.readFloat(), buffer.readVarInt());
@@ -80,7 +80,7 @@ public record VoiceMessageAudioRequestPacket(UUID voiceMessageId, float speed, i
     public ResourceLocation id() {
         return ID;
     }
-    *///?}
+    //?}
 
     private static void handle(ServerPlayer player, UUID voiceMessageId, float speedIn, int startTick) {
         if (!VoicechatIntegration.isAvailable())
@@ -111,7 +111,7 @@ public record VoiceMessageAudioRequestPacket(UUID voiceMessageId, float speed, i
     }
 
     //? if >=1.20.5 {
-    public static void handleData(final VoiceMessageAudioRequestPacket message, final IPayloadContext context) {
+    /*public static void handleData(final VoiceMessageAudioRequestPacket message, final IPayloadContext context) {
         if (context.flow() != PacketFlow.SERVERBOUND)
             return;
         context.enqueueWork(() -> {
@@ -123,8 +123,8 @@ public record VoiceMessageAudioRequestPacket(UUID voiceMessageId, float speed, i
             return null;
         });
     }
-    //? } else {
-    /*public static void handleData(final VoiceMessageAudioRequestPacket message, final PlayPayloadContext context) {
+    *///? } else {
+    public static void handleData(final VoiceMessageAudioRequestPacket message, final PlayPayloadContext context) {
         if (context.flow() != PacketFlow.SERVERBOUND)
             return;
         context.workHandler().submitAsync(() -> {
@@ -136,7 +136,7 @@ public record VoiceMessageAudioRequestPacket(UUID voiceMessageId, float speed, i
             return null;
         });
     }
-    *///?}
+    //?}
 
     /** Matches VoiceMessageRecorder's own capture rate. */
     private static final int SAMPLE_RATE = 48000;
@@ -180,15 +180,19 @@ public record VoiceMessageAudioRequestPacket(UUID voiceMessageId, float speed, i
         return output;
     }
 
-    @EventBusSubscriber
+    //? if <1.20.5 {
+    @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
+    //?} else {
+    /*@EventBusSubscriber
+    *///?}
     public static class Registration {
         @SubscribeEvent
         public static void register(FMLCommonSetupEvent event) {
             //? if >=1.20.5 {
-            Crazyphone.addNetworkMessage(TYPE, STREAM_CODEC, VoiceMessageAudioRequestPacket::handleData);
-            //? } else {
-            /*Crazyphone.addNetworkMessage(ID, VoiceMessageAudioRequestPacket::new, VoiceMessageAudioRequestPacket::handleData);
-            *///?}
+            /*Crazyphone.addNetworkMessage(TYPE, STREAM_CODEC, VoiceMessageAudioRequestPacket::handleData);
+            *///? } else {
+            Crazyphone.addNetworkMessage(ID, VoiceMessageAudioRequestPacket::new, VoiceMessageAudioRequestPacket::handleData);
+            //?}
         }
     }
 }

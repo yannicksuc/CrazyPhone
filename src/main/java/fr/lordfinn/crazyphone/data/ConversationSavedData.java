@@ -9,8 +9,8 @@ import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.level.saveddata.SavedData;
 //? if <1.20.5 {
-/*import net.minecraft.util.datafix.DataFixTypes;
-*///?}
+import net.minecraft.util.datafix.DataFixTypes;
+//?}
 
 import fr.lordfinn.crazyphone.Config;
 
@@ -40,10 +40,10 @@ public class ConversationSavedData extends SavedData {
     public CompoundTag voiceAudio = new CompoundTag();
 
     //? if >=1.20.5 {
-    public static ConversationSavedData load(CompoundTag tag, HolderLookup.Provider lookupProvider) {
-    //? } else {
-    /*public static ConversationSavedData load(CompoundTag tag) {
-    *///?}
+    /*public static ConversationSavedData load(CompoundTag tag, HolderLookup.Provider lookupProvider) {
+    *///? } else {
+    public static ConversationSavedData load(CompoundTag tag) {
+    //?}
         ConversationSavedData data = new ConversationSavedData();
         data.conversations = tag.get("conversations") instanceof CompoundTag t ? t : new CompoundTag();
         data.voiceAudio = tag.get("voiceAudio") instanceof CompoundTag t ? t : new CompoundTag();
@@ -51,12 +51,12 @@ public class ConversationSavedData extends SavedData {
     }
 
     //? if >=1.20.5 {
-    @Override
-    public CompoundTag save(CompoundTag nbt, HolderLookup.Provider lookupProvider) {
-    //? } else {
     /*@Override
+    public CompoundTag save(CompoundTag nbt, HolderLookup.Provider lookupProvider) {
+    *///? } else {
+    @Override
     public CompoundTag save(CompoundTag nbt) {
-    *///?}
+    //?}
         nbt.put("conversations", this.conversations);
         nbt.put("voiceAudio", this.voiceAudio);
         return nbt;
@@ -86,10 +86,10 @@ public class ConversationSavedData extends SavedData {
         if (world instanceof ServerLevelAccessor serverLevelAcc) {
             return serverLevelAcc.getLevel().getServer().overworld().getDataStorage()
                     //? if >=1.20.5 {
-                    .computeIfAbsent(new SavedData.Factory<>(ConversationSavedData::new, ConversationSavedData::load), DATA_NAME);
-                    //? } else {
-                    /*.computeIfAbsent(new SavedData.Factory<>(ConversationSavedData::new, ConversationSavedData::load, DataFixTypes.LEVEL), DATA_NAME);
-                    *///?}
+                    /*.computeIfAbsent(new SavedData.Factory<>(ConversationSavedData::new, ConversationSavedData::load), DATA_NAME);
+                    *///? } else {
+                    .computeIfAbsent(new SavedData.Factory<>(ConversationSavedData::new, ConversationSavedData::load, DataFixTypes.LEVEL), DATA_NAME);
+                    //?}
         }
         throw new IllegalStateException("ConversationSavedData is server-only; conversations are fetched on demand via network packets, never held client-side in full");
     }

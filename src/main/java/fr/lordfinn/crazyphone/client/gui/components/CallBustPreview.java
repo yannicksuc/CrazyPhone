@@ -127,8 +127,9 @@ public final class CallBustPreview {
 
     public void render(GuiGraphics guiGraphics, UUID participantId, int cellX, int cellY, int cellSize, CropMode cropMode, boolean animated) {
         Player fake = fakePlayers.get(participantId);
-        if (!(fake instanceof LivingEntity entity))
+        if (fake == null)
             return;
+        LivingEntity entity = fake;
 
         guiGraphics.enableScissor(cellX, cellY, cellX + cellSize, cellY + cellSize);
         int anchorX = cellX + cellSize / 2;
