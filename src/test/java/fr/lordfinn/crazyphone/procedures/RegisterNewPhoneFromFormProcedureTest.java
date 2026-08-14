@@ -45,7 +45,7 @@ class RegisterNewPhoneFromFormProcedureTest {
     }
 
     private static String storedTag(ItemStack stack, String key) {
-        return PhoneTagAccess.getTag(stack).getString(key);
+        return fr.lordfinn.crazyphone.utils.NbtCompat.getString(PhoneTagAccess.getTag(stack), key);
     }
 
     @Test
@@ -68,10 +68,10 @@ class RegisterNewPhoneFromFormProcedureTest {
         RegisterNewPhoneFromFormProcedure.execute(null, entity, stack, textstate("555", "Alice", "1234"));
 
         assertTrue(PhoneRegistrySavedData.get(null).phones.contains("555"));
-        CompoundTag phone = PhoneRegistrySavedData.get(null).phones.getCompound("555");
-        assertEquals("Alice", phone.getString("name"));
-        assertEquals("1234", phone.getString("password"));
-        assertEquals("11111111-1111-1111-1111-111111111111", phone.getString("uuid"));
+        CompoundTag phone = fr.lordfinn.crazyphone.utils.NbtCompat.getCompound(PhoneRegistrySavedData.get(null).phones, "555");
+        assertEquals("Alice", fr.lordfinn.crazyphone.utils.NbtCompat.getString(phone, "name"));
+        assertEquals("1234", fr.lordfinn.crazyphone.utils.NbtCompat.getString(phone, "password"));
+        assertEquals("11111111-1111-1111-1111-111111111111", fr.lordfinn.crazyphone.utils.NbtCompat.getString(phone, "uuid"));
     }
 
     @Test
@@ -92,7 +92,7 @@ class RegisterNewPhoneFromFormProcedureTest {
         ItemStack stack = new ItemStack(Items.STICK);
         RegisterNewPhoneFromFormProcedure.execute(null, entity, stack, textstate("555", "Attacker", "0000"));
 
-        assertEquals("Original Owner", PhoneRegistrySavedData.get(null).phones.getCompound("555").getString("name"),
+        assertEquals("Original Owner", fr.lordfinn.crazyphone.utils.NbtCompat.getString(fr.lordfinn.crazyphone.utils.NbtCompat.getCompound(PhoneRegistrySavedData.get(null).phones, "555"), "name"),
                 "must not let a second registration attempt hijack an already-taken number");
     }
 
@@ -126,7 +126,7 @@ class RegisterNewPhoneFromFormProcedureTest {
         ItemStack stack = new ItemStack(Items.STICK);
         RegisterNewPhoneFromFormProcedure.execute(null, entity, stack, textstate("555", "", "1234"));
 
-        assertEquals("EntityFallbackName", PhoneRegistrySavedData.get(null).phones.getCompound("555").getString("name"));
+        assertEquals("EntityFallbackName", fr.lordfinn.crazyphone.utils.NbtCompat.getString(fr.lordfinn.crazyphone.utils.NbtCompat.getCompound(PhoneRegistrySavedData.get(null).phones, "555"), "name"));
         assertEquals("EntityFallbackName", storedTag(stack, "name"));
     }
 
@@ -137,6 +137,6 @@ class RegisterNewPhoneFromFormProcedureTest {
         ItemStack stack = new ItemStack(Items.STICK);
         RegisterNewPhoneFromFormProcedure.execute(null, entity, stack, textstate("555", "   ", "1234"));
 
-        assertEquals("EntityFallbackName", PhoneRegistrySavedData.get(null).phones.getCompound("555").getString("name"));
+        assertEquals("EntityFallbackName", fr.lordfinn.crazyphone.utils.NbtCompat.getString(fr.lordfinn.crazyphone.utils.NbtCompat.getCompound(PhoneRegistrySavedData.get(null).phones, "555"), "name"));
     }
 }

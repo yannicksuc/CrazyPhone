@@ -74,10 +74,10 @@ class CrazyPhoneHelperTest {
         ImageData dummy = ImageData.dummy();
         CompoundTag tag = CrazyPhoneHelper.imageDataToCompoundTag(dummy);
 
-        assertEquals(dummy.getId().getMostSignificantBits(), tag.getLong("image_id_most"));
-        assertEquals(dummy.getId().getLeastSignificantBits(), tag.getLong("image_id_least"));
-        assertEquals(dummy.getTime(), tag.getLong("image_time"));
-        assertEquals(dummy.getOwner(), tag.getString("owner"));
+        assertEquals(dummy.getId().getMostSignificantBits(), fr.lordfinn.crazyphone.utils.NbtCompat.getLong(tag, "image_id_most"));
+        assertEquals(dummy.getId().getLeastSignificantBits(), fr.lordfinn.crazyphone.utils.NbtCompat.getLong(tag, "image_id_least"));
+        assertEquals(dummy.getTime(), fr.lordfinn.crazyphone.utils.NbtCompat.getLong(tag, "image_time"));
+        assertEquals(dummy.getOwner(), fr.lordfinn.crazyphone.utils.NbtCompat.getString(tag, "owner"));
     }
 
     // --- getGroupMembers ---

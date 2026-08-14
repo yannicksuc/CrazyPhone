@@ -5,6 +5,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
+import fr.lordfinn.crazyphone.utils.NbtCompat;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -46,7 +47,7 @@ class ContactProceduresTest {
         CrazyPhoneAddContactToPhoneProcedure.execute(null, "666", "555");
         ListTag contacts = contactsOf("555");
         assertEquals(1, contacts.size());
-        assertEquals("666", ((StringTag) contacts.get(0)).getAsString());
+        assertEquals("666", NbtCompat.asString(contacts.get(0)));
     }
 
     @Test
@@ -62,7 +63,7 @@ class ContactProceduresTest {
         CrazyPhoneAddContactToPhoneProcedure.execute(null, "777", "555");
         ListTag contacts = contactsOf("555");
         assertEquals(2, contacts.size());
-        assertEquals("777", ((StringTag) contacts.get(0)).getAsString(), "most recently added contact should be first");
+        assertEquals("777", NbtCompat.asString(contacts.get(0)), "most recently added contact should be first");
     }
 
     // --- remove ---
@@ -82,7 +83,7 @@ class ContactProceduresTest {
         CrazyPhoneRemoveContactFromPhoneProcedure.execute(null, "666", "555");
         ListTag contacts = contactsOf("555");
         assertEquals(1, contacts.size());
-        assertEquals("777", ((StringTag) contacts.get(0)).getAsString());
+        assertEquals("777", NbtCompat.asString(contacts.get(0)));
     }
 
     @Test
@@ -107,7 +108,7 @@ class ContactProceduresTest {
 
         ListTag remaining = contactsOf("555");
         assertEquals(1, remaining.size());
-        assertEquals("777", ((StringTag) remaining.get(0)).getAsString());
+        assertEquals("777", NbtCompat.asString(remaining.get(0)));
     }
 
     // --- get (resolves numbers into full contact records) ---
@@ -130,9 +131,9 @@ class ContactProceduresTest {
         ListTag resolved = CrazyPhoneGetContactsProcedure.execute(null, "555");
 
         assertEquals(1, resolved.size());
-        CompoundTag entry = resolved.getCompound(0);
-        assertEquals("Bob", entry.getString("name"));
-        assertEquals("666", entry.getString("number"), "the raw phone record has no number field of its own - it must be stamped on here");
+        CompoundTag entry = NbtCompat.getCompound(resolved, 0);
+        assertEquals("Bob", NbtCompat.getString(entry, "name"));
+        assertEquals("666", NbtCompat.getString(entry, "number"), "the raw phone record has no number field of its own - it must be stamped on here");
     }
 
     @Test
@@ -159,10 +160,10 @@ class ContactProceduresTest {
         CrazyPhoneAddContactToPhoneProcedure.execute(null, "777", "555"); // added second, stored at front
 
         ListTag stored = contactsOf("555");
-        assertEquals("777", ((StringTag) stored.get(0)).getAsString(), "sanity check on storage order");
+        assertEquals("777", NbtCompat.asString(stored.get(0)), "sanity check on storage order");
 
         ListTag resolved = CrazyPhoneGetContactsProcedure.execute(null, "555");
-        assertEquals("666", resolved.getCompound(0).getString("number"),
+        assertEquals("666", NbtCompat.getString(NbtCompat.getCompound(resolved, 0), "number"),
                 "get() reverses storage order back to oldest-added-first - see method comment for why this is worth locking in");
     }
 }

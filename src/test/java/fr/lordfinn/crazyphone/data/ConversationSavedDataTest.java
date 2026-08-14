@@ -3,6 +3,7 @@ package fr.lordfinn.crazyphone.data;
 import fr.lordfinn.crazyphone.Config;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.nbt.CompoundTag;
+import fr.lordfinn.crazyphone.utils.NbtCompat;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -80,7 +81,7 @@ class ConversationSavedDataTest {
 
         List<CompoundTag> page = data.getPage(CONVO, 0, 10);
         assertEquals(1, page.size());
-        assertEquals("hello", page.get(0).getString("value"));
+        assertEquals("hello", NbtCompat.getString(page.get(0), "value"));
         assertEquals(1, data.getMessageCount(CONVO));
     }
 
@@ -100,8 +101,8 @@ class ConversationSavedDataTest {
         List<CompoundTag> all = data.getPage(CONVO, 0, 100);
         assertEquals(5, all.size());
         // Oldest 3 (msg0-msg2) must have been dropped; msg3..msg7 remain, oldest-first.
-        assertEquals("msg3", all.get(0).getString("value"));
-        assertEquals("msg7", all.get(4).getString("value"));
+        assertEquals("msg3", NbtCompat.getString(all.get(0), "value"));
+        assertEquals("msg7", NbtCompat.getString(all.get(4), "value"));
     }
 
     @Test
@@ -121,7 +122,7 @@ class ConversationSavedDataTest {
         // Only the 2 most recent images survive; the text message and message count are otherwise untouched.
         assertEquals(2, imageCount);
         assertEquals(3, all.size(), "the oldest image should be dropped, not the text message");
-        assertTrue(all.stream().anyMatch(t -> "text between images".equals(t.getString("value"))));
+        assertTrue(all.stream().anyMatch(t -> "text between images".equals(NbtCompat.getString(t, "value"))));
     }
 
     @Test
@@ -134,14 +135,14 @@ class ConversationSavedDataTest {
         // First page: most recent 4 messages (msg6..msg9)
         List<CompoundTag> firstPage = data.getPage(CONVO, 0, 4);
         assertEquals(4, firstPage.size());
-        assertEquals("msg6", firstPage.get(0).getString("value"));
-        assertEquals("msg9", firstPage.get(3).getString("value"));
+        assertEquals("msg6", NbtCompat.getString(firstPage.get(0), "value"));
+        assertEquals("msg9", NbtCompat.getString(firstPage.get(3), "value"));
 
         // Second page: skip the 4 most recent, get the next 4 back (msg2..msg5)
         List<CompoundTag> secondPage = data.getPage(CONVO, 4, 4);
         assertEquals(4, secondPage.size());
-        assertEquals("msg2", secondPage.get(0).getString("value"));
-        assertEquals("msg5", secondPage.get(3).getString("value"));
+        assertEquals("msg2", NbtCompat.getString(secondPage.get(0), "value"));
+        assertEquals("msg5", NbtCompat.getString(secondPage.get(3), "value"));
     }
 
     @Test
@@ -168,8 +169,8 @@ class ConversationSavedDataTest {
 
         assertEquals(1, data.getMessageCount("111.222"));
         assertEquals(1, data.getMessageCount("111.333"));
-        assertEquals("to 222", data.getPage("111.222", 0, 10).get(0).getString("value"));
-        assertEquals("to 333", data.getPage("111.333", 0, 10).get(0).getString("value"));
+        assertEquals("to 222", NbtCompat.getString(data.getPage("111.222", 0, 10).get(0), "value"));
+        assertEquals("to 333", NbtCompat.getString(data.getPage("111.333", 0, 10).get(0), "value"));
     }
 
     @Test
@@ -178,18 +179,23 @@ class ConversationSavedDataTest {
         data.appendMessage(CONVO, textMessage("111", "hello", 0));
         data.appendMessage(CONVO, textMessage("222", "hi back", 1));
 
-        //? if >=1.20.5 {
+        //? if >=1.20.5 <1.21.10 {
         /*CompoundTag saved = data.save(new CompoundTag(), RegistryAccess.EMPTY);
         ConversationSavedData loaded = ConversationSavedData.load(saved, RegistryAccess.EMPTY);
-        *///? } else {
+        *///?}
+        //? if <1.20.5 {
         CompoundTag saved = data.save(new CompoundTag());
         ConversationSavedData loaded = ConversationSavedData.load(saved);
         //?}
+        //? if >=1.21.10 {
+        /*CompoundTag saved = data.save(new CompoundTag(), RegistryAccess.EMPTY);
+        ConversationSavedData loaded = ConversationSavedData.load(saved);
+        *///?}
 
         assertEquals(2, loaded.getMessageCount(CONVO));
         List<CompoundTag> page = loaded.getPage(CONVO, 0, 10);
-        assertEquals("hello", page.get(0).getString("value"));
-        assertEquals("hi back", page.get(1).getString("value"));
+        assertEquals("hello", NbtCompat.getString(page.get(0), "value"));
+        assertEquals("hi back", NbtCompat.getString(page.get(1), "value"));
     }
 
     @Test
@@ -263,10 +269,10 @@ class ConversationSavedDataTest {
         data.updateCallMessage(CONVO, targetCallId, callTag -> callTag.putInt("duration", 12345));
 
         List<CompoundTag> page = data.getPage(CONVO, 0, 10);
-        CompoundTag untouched = page.get(0).getCompound("call");
-        CompoundTag mutated = page.get(1).getCompound("call");
-        assertEquals(-1, untouched.getInt("duration"), "the OTHER call message must not be touched");
-        assertEquals(12345, mutated.getInt("duration"));
+        CompoundTag untouched = NbtCompat.getCompound(page.get(0), "call");
+        CompoundTag mutated = NbtCompat.getCompound(page.get(1), "call");
+        assertEquals(-1, NbtCompat.getInt(untouched, "duration"), "the OTHER call message must not be touched");
+        assertEquals(12345, NbtCompat.getInt(mutated, "duration"));
     }
 
     @Test
@@ -289,8 +295,8 @@ class ConversationSavedDataTest {
 
         data.finalizeOrphanedCalls();
 
-        CompoundTag call = data.getPage(CONVO, 0, 10).get(0).getCompound("call");
-        assertEquals(ConversationSavedData.ORPHANED_CALL_DURATION_MILLIS, call.getLong("call_duration_millis"),
+        CompoundTag call = NbtCompat.getCompound(data.getPage(CONVO, 0, 10).get(0), "call");
+        assertEquals(ConversationSavedData.ORPHANED_CALL_DURATION_MILLIS, NbtCompat.getLong(call, "call_duration_millis"),
                 "a call still showing -1 (in progress) after a fresh boot can only be a leftover from a server that died mid-call");
         assertTrue(data.isDirty(), "finalizing an orphaned call must mark the data dirty for disk persistence");
     }
@@ -302,8 +308,8 @@ class ConversationSavedDataTest {
 
         data.finalizeOrphanedCalls();
 
-        CompoundTag call = data.getPage(CONVO, 0, 10).get(0).getCompound("call");
-        assertEquals(5000, call.getLong("call_duration_millis"), "a call with a real, already-recorded duration must not be touched");
+        CompoundTag call = NbtCompat.getCompound(data.getPage(CONVO, 0, 10).get(0), "call");
+        assertEquals(5000, NbtCompat.getLong(call, "call_duration_millis"), "a call with a real, already-recorded duration must not be touched");
     }
 
     @Test
@@ -329,9 +335,9 @@ class ConversationSavedDataTest {
         data.finalizeOrphanedCalls();
 
         assertEquals(ConversationSavedData.ORPHANED_CALL_DURATION_MILLIS,
-                data.getPage("111.222", 0, 10).get(0).getCompound("call").getLong("call_duration_millis"));
+                NbtCompat.getLong(NbtCompat.getCompound(data.getPage("111.222", 0, 10).get(0), "call"), "call_duration_millis"));
         assertEquals(ConversationSavedData.ORPHANED_CALL_DURATION_MILLIS,
-                data.getPage("111.333", 0, 10).get(0).getCompound("call").getLong("call_duration_millis"));
+                NbtCompat.getLong(NbtCompat.getCompound(data.getPage("111.333", 0, 10).get(0), "call"), "call_duration_millis"));
     }
 
     /**

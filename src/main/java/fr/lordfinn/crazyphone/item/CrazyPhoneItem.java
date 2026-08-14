@@ -15,8 +15,8 @@ import net.minecraft.world.InteractionHand;
 import fr.lordfinn.crazyphone.procedures.CrazyPhoneOnUseProcedure;
 
 public class CrazyPhoneItem extends Item {
-    public CrazyPhoneItem() {
-        super(new Item.Properties().stacksTo(1).rarity(Rarity.COMMON));
+    public CrazyPhoneItem(Item.Properties properties) {
+        super(properties.stacksTo(1).rarity(Rarity.COMMON));
     }
 
     @Override

@@ -26,7 +26,7 @@ class MainHandProceduresTest {
     }
 
     private static String storedNumber(ItemStack stack) {
-        return PhoneTagAccess.getTag(stack).getString("number");
+        return fr.lordfinn.crazyphone.utils.NbtCompat.getString(PhoneTagAccess.getTag(stack), "number");
     }
 
     // --- ResetCrazyPhoneNumberFromMainHandProcedure ---

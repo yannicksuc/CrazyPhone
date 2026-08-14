@@ -47,16 +47,21 @@ class PhoneRegistrySavedDataTest {
         aliceFavorites.add(StringTag.valueOf("777"));
         data.favorites.put("555", aliceFavorites);
 
-        //? if >=1.20.5 {
+        //? if >=1.20.5 <1.21.10 {
         /*CompoundTag saved = data.save(new CompoundTag(), RegistryAccess.EMPTY);
         PhoneRegistrySavedData loaded = PhoneRegistrySavedData.load(saved, RegistryAccess.EMPTY);
-        *///? } else {
+        *///?}
+        //? if <1.20.5 {
         CompoundTag saved = data.save(new CompoundTag());
         PhoneRegistrySavedData loaded = PhoneRegistrySavedData.load(saved);
         //?}
+        //? if >=1.21.10 {
+        /*CompoundTag saved = data.save(new CompoundTag(), RegistryAccess.EMPTY);
+        PhoneRegistrySavedData loaded = PhoneRegistrySavedData.load(saved);
+        *///?}
 
         assertTrue(loaded.groupMeta.get("555.666") instanceof CompoundTag);
-        assertEquals("Squad", ((CompoundTag) loaded.groupMeta.get("555.666")).getString("name"));
+        assertEquals("Squad", fr.lordfinn.crazyphone.utils.NbtCompat.getString((CompoundTag) loaded.groupMeta.get("555.666"), "name"));
         assertTrue(loaded.favorites.get("555") instanceof ListTag);
         assertEquals(1, ((ListTag) loaded.favorites.get("555")).size());
     }
@@ -78,16 +83,21 @@ class PhoneRegistrySavedDataTest {
         data.isMayorElectionOn = true;
         data.isMayorVotingOn = true;
 
-        //? if >=1.20.5 {
+        //? if >=1.20.5 <1.21.10 {
         /*CompoundTag saved = data.save(new CompoundTag(), RegistryAccess.EMPTY);
         PhoneRegistrySavedData loaded = PhoneRegistrySavedData.load(saved, RegistryAccess.EMPTY);
-        *///? } else {
+        *///?}
+        //? if <1.20.5 {
         CompoundTag saved = data.save(new CompoundTag());
         PhoneRegistrySavedData loaded = PhoneRegistrySavedData.load(saved);
         //?}
+        //? if >=1.21.10 {
+        /*CompoundTag saved = data.save(new CompoundTag(), RegistryAccess.EMPTY);
+        PhoneRegistrySavedData loaded = PhoneRegistrySavedData.load(saved);
+        *///?}
 
         assertTrue(loaded.phones.get("555") instanceof CompoundTag);
-        assertEquals("Alice", ((CompoundTag) loaded.phones.get("555")).getString("name"));
+        assertEquals("Alice", fr.lordfinn.crazyphone.utils.NbtCompat.getString((CompoundTag) loaded.phones.get("555"), "name"));
         assertTrue(loaded.contacts.get("555") instanceof ListTag);
         assertEquals(1, ((ListTag) loaded.contacts.get("555")).size());
         assertTrue(loaded.isMayorElectionOn);
@@ -126,11 +136,15 @@ class PhoneRegistrySavedDataTest {
 
     @Test
     void load_withMissingFields_fallsBackToEmptyRatherThanThrowing() {
-        //? if >=1.20.5 {
+        //? if >=1.20.5 <1.21.10 {
         /*PhoneRegistrySavedData data = PhoneRegistrySavedData.load(new CompoundTag(), RegistryAccess.EMPTY);
-        *///? } else {
+        *///?}
+        //? if <1.20.5 {
         PhoneRegistrySavedData data = PhoneRegistrySavedData.load(new CompoundTag());
         //?}
+        //? if >=1.21.10 {
+        /*PhoneRegistrySavedData data = PhoneRegistrySavedData.load(new CompoundTag());
+        *///?}
         assertTrue(data.phones.isEmpty());
         assertTrue(data.contacts.isEmpty());
         assertFalse(data.isMayorVotingOn);

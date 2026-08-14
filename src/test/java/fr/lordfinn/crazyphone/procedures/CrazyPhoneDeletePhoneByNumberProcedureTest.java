@@ -5,6 +5,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
+import fr.lordfinn.crazyphone.utils.NbtCompat;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -70,7 +71,7 @@ class CrazyPhoneDeletePhoneByNumberProcedureTest {
 
         ListTag contactsOf666 = (ListTag) PhoneRegistrySavedData.get(null).contacts.get("666");
         assertEquals(1, contactsOf666.size());
-        assertEquals("777", ((StringTag) contactsOf666.get(0)).getAsString());
+        assertEquals("777", NbtCompat.asString(contactsOf666.get(0)));
 
         Tag contactsOf777 = PhoneRegistrySavedData.get(null).contacts.get("777");
         assertTrue(contactsOf777 == null || ((ListTag) contactsOf777).isEmpty());
@@ -87,6 +88,6 @@ class CrazyPhoneDeletePhoneByNumberProcedureTest {
         assertTrue(PhoneRegistrySavedData.get(null).phones.contains("999"));
         ListTag contactsOf999 = (ListTag) PhoneRegistrySavedData.get(null).contacts.get("999");
         assertEquals(1, contactsOf999.size());
-        assertEquals("111", ((StringTag) contactsOf999.get(0)).getAsString());
+        assertEquals("111", NbtCompat.asString(contactsOf999.get(0)));
     }
 }

@@ -14,17 +14,27 @@ class PlayerPhoneStateTest {
         state.currentCrazyPhoneScreenOpened = "crazyphone:crazy_phone_conversation;111.222";
         state.crazyPhoneScreenHistory = "crazyphone:crazyphone_home_screen|crazyphone:crazy_phone_contacts_screen";
 
-        //? if >=1.20.5 {
+        //? if >=1.20.5 <1.21.10 {
         /*CompoundTag nbt = state.serializeNBT(RegistryAccess.EMPTY);
 
         PlayerPhoneState restored = new PlayerPhoneState();
         restored.deserializeNBT(RegistryAccess.EMPTY, nbt);
-        *///? } else {
+        *///?}
+        //? if <1.20.5 {
         CompoundTag nbt = state.serializeNBT();
 
         PlayerPhoneState restored = new PlayerPhoneState();
         restored.deserializeNBT(nbt);
         //?}
+        //? if >=1.21.10 {
+        /*net.minecraft.world.level.storage.TagValueOutput output = net.minecraft.world.level.storage.TagValueOutput.createWithContext(net.minecraft.util.ProblemReporter.DISCARDING, RegistryAccess.EMPTY);
+        state.serialize(output);
+        CompoundTag nbt = output.buildResult();
+
+        PlayerPhoneState restored = new PlayerPhoneState();
+        net.minecraft.world.level.storage.ValueInput input = net.minecraft.world.level.storage.TagValueInput.create(net.minecraft.util.ProblemReporter.DISCARDING, RegistryAccess.EMPTY, nbt);
+        restored.deserialize(input);
+        *///?}
 
         assertEquals(state.currentCrazyPhoneScreenOpened, restored.currentCrazyPhoneScreenOpened);
         assertEquals(state.crazyPhoneScreenHistory, restored.crazyPhoneScreenHistory);

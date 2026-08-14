@@ -32,7 +32,11 @@ class StructureGenerator {
     @Disabled("one-off generator - re-enable, run once, re-disable after regenerating the structure")
     void generatePlatformStructure() throws IOException {
         CompoundTag root = new CompoundTag();
+        //? if <1.21.10 {
         root.putInt("DataVersion", SharedConstants.getCurrentVersion().getDataVersion().getVersion());
+        //? } else {
+        /*root.putInt("DataVersion", SharedConstants.getCurrentVersion().dataVersion().version());
+        *///?}
         root.put("size", new IntArrayTag(new int[]{3, 3, 3}));
         root.put("entities", new ListTag());
 

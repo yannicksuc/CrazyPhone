@@ -25,7 +25,7 @@ import fr.lordfinn.crazyphone.item.inventory.CrazyPhoneInventoryCapability;
 public class ModItems {
     public static final DeferredRegister.Items REGISTRY = DeferredRegister.createItems(Crazyphone.MODID);
 
-    public static final DeferredItem<Item> CRAZY_PHONE = REGISTRY.register("crazy_phone", CrazyPhoneItem::new);
+    public static final DeferredItem<Item> CRAZY_PHONE = REGISTRY.registerItem("crazy_phone", CrazyPhoneItem::new);
 
     @SubscribeEvent
     public static void registerCapabilities(RegisterCapabilitiesEvent event) {

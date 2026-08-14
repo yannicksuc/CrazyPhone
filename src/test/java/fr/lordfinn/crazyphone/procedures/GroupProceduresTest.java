@@ -108,14 +108,14 @@ class GroupProceduresTest {
         ListTag groups = CrazyPhoneGetGroupsProcedure.execute(world, "555");
 
         assertEquals(1, groups.size());
-        CompoundTag entry = groups.getCompound(0);
-        assertEquals("group-1", entry.getString("conversationId"));
-        assertEquals("Squad", entry.getString("name"));
-        assertEquals("555", entry.getString("admin"));
-        ListTag members = entry.getList("members", net.minecraft.nbt.Tag.TAG_COMPOUND);
+        CompoundTag entry = fr.lordfinn.crazyphone.utils.NbtCompat.getCompound(groups, 0);
+        assertEquals("group-1", fr.lordfinn.crazyphone.utils.NbtCompat.getString(entry, "conversationId"));
+        assertEquals("Squad", fr.lordfinn.crazyphone.utils.NbtCompat.getString(entry, "name"));
+        assertEquals("555", fr.lordfinn.crazyphone.utils.NbtCompat.getString(entry, "admin"));
+        ListTag members = fr.lordfinn.crazyphone.utils.NbtCompat.getList(entry, "members", net.minecraft.nbt.Tag.TAG_COMPOUND);
         assertEquals(1, members.size(), "the owner's own record must be excluded from the members list");
-        assertEquals("666", members.getCompound(0).getString("number"));
-        assertEquals("Bob", members.getCompound(0).getString("name"));
+        assertEquals("666", fr.lordfinn.crazyphone.utils.NbtCompat.getString(fr.lordfinn.crazyphone.utils.NbtCompat.getCompound(members, 0), "number"));
+        assertEquals("Bob", fr.lordfinn.crazyphone.utils.NbtCompat.getString(fr.lordfinn.crazyphone.utils.NbtCompat.getCompound(members, 0), "name"));
     }
 
     @Test

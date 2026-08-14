@@ -37,7 +37,7 @@ class PhoneNumberProceduresTest {
         int value = Integer.parseInt(number);
         assertTrue(value >= 100 && value <= 999);
 
-        String stored = PhoneTagAccess.getTag(stack).getString("number");
+        String stored = fr.lordfinn.crazyphone.utils.NbtCompat.getString(PhoneTagAccess.getTag(stack), "number");
         assertEquals(number, stored);
     }
 
