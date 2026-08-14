@@ -95,8 +95,7 @@ public class CrazyPhoneConversationMenu extends CrazyPhoneDefaultScreenMenu {
         PhoneTagAccess.setCustomName(head, displayName);
 
         GameProfile profile = new GameProfile(UUID.randomUUID(), "CustomHead");
-        PropertyMap properties = fr.lordfinn.crazyphone.utils.GameProfileCompat.properties(profile);
-        properties.put("textures", new Property("textures", COG_TEXTURE));
+        profile = fr.lordfinn.crazyphone.utils.GameProfileCompat.withTextureProperty(profile, COG_TEXTURE);
         PhoneTagAccess.setSkullOwner(head, profile);
 
         return head;

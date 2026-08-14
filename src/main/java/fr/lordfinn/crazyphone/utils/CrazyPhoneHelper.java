@@ -215,9 +215,8 @@ public class CrazyPhoneHelper {
             try {
                 PhoneTagAccess.updateTag(head, tag -> tag.putString("uuid", contact.getUuid()));
                 GameProfile profile = new GameProfile(UUID.fromString(contact.getUuid()), "CustomHead");
-                PropertyMap properties = GameProfileCompat.properties(profile);
                 if (contact.getSkin() != null || !contact.getSkin().isEmpty()) {
-                    properties.put("textures", new Property("textures", contact.getSkin()));
+                    profile = GameProfileCompat.withTextureProperty(profile, contact.getSkin());
                 }
                 PhoneTagAccess.setSkullOwner(head, profile);
             } catch (Exception e) {
