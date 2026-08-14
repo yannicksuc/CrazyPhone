@@ -18,7 +18,11 @@ import net.minecraft.world.item.ItemStack;
 *///? } else {
 import net.neoforged.neoforge.client.event.RenderGuiOverlayEvent;
 //?}
+//? if <1.21.10 {
 import net.neoforged.neoforge.client.event.RenderPlayerEvent;
+//? } else {
+/*import net.neoforged.neoforge.client.event.ClientTickEvent;
+*///?}
 
 import org.spongepowered.asm.mixin.injection.At;
 
@@ -40,8 +44,24 @@ public abstract class CameraModClientEventsMixin {
         }
     }
 
+    //? if <1.21.10 {
     @Inject(method = "renderPlayer", at = @At("HEAD"), cancellable = true)
     private void onRenderPlayer(RenderPlayerEvent.Pre event, CallbackInfo ci) {
+        onRenderPlayerImpl(ci);
+    }
+    //?}
+    //? if >=1.21.10 {
+    /*// The Camera mod's own renderPlayer hook switched from RenderPlayerEvent.Pre to ClientTickEvent.Pre in
+    // its 1.21.10 build (verified via javap against libs/camera-neoforge-1.21.10-1.1.8.jar) - the body below
+    // never actually reads the event argument (it unconditionally sweeps every other player each call), so
+    // the fix is purely matching the new injection target's real signature.
+    @Inject(method = "renderPlayer", at = @At("HEAD"), cancellable = true)
+    private void onRenderPlayer(ClientTickEvent.Pre event, CallbackInfo ci) {
+        onRenderPlayerImpl(ci);
+    }
+    *///?}
+
+    private void onRenderPlayerImpl(CallbackInfo ci) {
         Minecraft mc = Minecraft.getInstance();
         ClientLevel level = mc.level;
         if (level == null) return;

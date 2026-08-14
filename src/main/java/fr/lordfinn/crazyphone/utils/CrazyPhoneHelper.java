@@ -532,7 +532,7 @@ public class CrazyPhoneHelper {
             boolean hasContact = false;
             for (Tag contact : contactsOfReceiver) {
                 if (contact instanceof CompoundTag compoundTag
-                        && senderNumber.equals(compoundTag.getString("number"))) {
+                        && senderNumber.equals(NbtCompat.getString(compoundTag, "number"))) {
                     hasContact = true;
                     break;
                 }
@@ -976,7 +976,7 @@ public class CrazyPhoneHelper {
         meta.put("members", updatedMembers);
 
         String newAdmin = null;
-        if (meta.getString("admin").equals(memberNumber) && !remaining.isEmpty()) {
+        if (NbtCompat.getString(meta, "admin").equals(memberNumber) && !remaining.isEmpty()) {
             newAdmin = remaining.get(ThreadLocalRandom.current().nextInt(remaining.size()));
             meta.putString("admin", newAdmin);
         }

@@ -5,6 +5,6 @@ import fr.lordfinn.crazyphone.utils.PhoneTagAccess;
 
 public class IsPhoneSetupProcedure {
 	public static boolean execute(ItemStack itemstack) {
-		return !(PhoneTagAccess.getTag(itemstack).getString("name")).isEmpty();
+		return !(fr.lordfinn.crazyphone.utils.NbtCompat.getString(PhoneTagAccess.getTag(itemstack), "name")).isEmpty();
 	}
 }

@@ -30,11 +30,13 @@ public class CrazyPhoneItemInInventoryTickProcedure {
 		if (tooltip == null)
 			return;
 		if (itemstack.getItem() == ModItems.CRAZY_PHONE.get()) {
-			if (!(PhoneTagAccess.getTag(itemstack).getString("number")).isEmpty()) {
-				tooltip.add(Component.translatable("item.crazyphone.lore_number", PhoneTagAccess.getTag(itemstack).getString("number")));
+			String number = fr.lordfinn.crazyphone.utils.NbtCompat.getString(PhoneTagAccess.getTag(itemstack), "number");
+			String name = fr.lordfinn.crazyphone.utils.NbtCompat.getString(PhoneTagAccess.getTag(itemstack), "name");
+			if (!number.isEmpty()) {
+				tooltip.add(Component.translatable("item.crazyphone.lore_number", number));
 			}
-			if (!(PhoneTagAccess.getTag(itemstack).getString("name")).isEmpty()) {
-				tooltip.add(Component.translatable("item.crazyphone.lore_owner", PhoneTagAccess.getTag(itemstack).getString("name")));
+			if (!name.isEmpty()) {
+				tooltip.add(Component.translatable("item.crazyphone.lore_owner", name));
 			}
 		}
 	}

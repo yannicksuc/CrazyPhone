@@ -299,7 +299,7 @@ public class ScreenMenuUtils {
             for (Tag t : allContactsTag) {
                 if (!(t instanceof CompoundTag compound))
                     continue;
-                (favoriteNumbers.contains(compound.getString("number")) ? favorites : contacts).add(compound);
+                (favoriteNumbers.contains(NbtCompat.getString(compound, "number")) ? favorites : contacts).add(compound);
             }
             List<CompoundTag> groups = new ArrayList<>();
             for (Tag t : groupsTag) {

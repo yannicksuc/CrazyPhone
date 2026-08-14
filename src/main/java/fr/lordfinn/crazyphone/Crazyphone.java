@@ -77,7 +77,7 @@ public class Crazyphone {
     }
 
     private static boolean networkingRegistered = false;
-    //? if >=1.20.5 {
+    //? if >=1.20.5 <1.21.10 {
     /*private static final Map<CustomPacketPayload.Type<?>, NetworkMessage<?>> MESSAGES = new HashMap<>();
 
     private record NetworkMessage<T extends CustomPacketPayload>(StreamCodec<? extends FriendlyByteBuf, T> reader, IPayloadHandler<T> handler) {
@@ -95,7 +95,33 @@ public class Crazyphone {
         MESSAGES.forEach((id, networkMessage) -> registrar.playBidirectional(id, ((NetworkMessage) networkMessage).reader(), ((NetworkMessage) networkMessage).handler()));
         networkingRegistered = true;
     }
-    *///? } else {
+    *///?}
+    //? if >=1.21.10 {
+    /*private static final Map<CustomPacketPayload.Type<?>, NetworkMessage<?>> MESSAGES = new HashMap<>();
+
+    private record NetworkMessage<T extends CustomPacketPayload>(StreamCodec<? extends FriendlyByteBuf, T> reader, IPayloadHandler<T> handler) {
+    }
+
+    public static <T extends CustomPacketPayload> void addNetworkMessage(CustomPacketPayload.Type<T> id, StreamCodec<? extends FriendlyByteBuf, T> reader, IPayloadHandler<T> handler) {
+        if (networkingRegistered)
+            throw new IllegalStateException("Cannot register new network messages after networking has been registered");
+        MESSAGES.put(id, new NetworkMessage<>(reader, handler));
+    }
+
+    // The 3-arg playBidirectional(type, codec, handler) here only registers the server-side handler on
+    // 1.21.10 and silently leaves every payload's client-side handler unset (client-side handling must
+    // now be registered separately via RegisterClientPayloadHandlersEvent, or passed explicitly here as
+    // the 4-arg overload's clientHandler) - every one of this mod's handleData methods already branches
+    // on context.flow() internally, so passing the same handler for both directions restores the old
+    // one-handler-for-both-flows behavior instead.
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private void registerNetworking(final RegisterPayloadHandlersEvent event) {
+        final PayloadRegistrar registrar = event.registrar(MODID);
+        MESSAGES.forEach((id, networkMessage) -> registrar.playBidirectional(id, ((NetworkMessage) networkMessage).reader(), ((NetworkMessage) networkMessage).handler(), ((NetworkMessage) networkMessage).handler()));
+        networkingRegistered = true;
+    }
+    *///?}
+    //? if <1.20.5 {
     private static final Map<ResourceLocation, NetworkMessage<?>> MESSAGES = new HashMap<>();
 
     private record NetworkMessage<T extends CustomPacketPayload>(FriendlyByteBuf.Reader<T> reader, IPlayPayloadHandler<T> handler) {
