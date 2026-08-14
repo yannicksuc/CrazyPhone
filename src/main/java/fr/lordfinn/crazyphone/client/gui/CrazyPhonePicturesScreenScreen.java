@@ -214,8 +214,22 @@ public class CrazyPhonePicturesScreenScreen extends CrazyPhoneDefaultScreenScree
 		GuiCompat.popPose(guiGraphics);
 	}
 
+	//? if <1.21.10 {
 	@Override
 	public boolean mouseClicked(double mouseX, double mouseY, int button) {
+		if (mouseClickedImpl(mouseX, mouseY, button)) return true;
+		return super.mouseClicked(mouseX, mouseY, button);
+	}
+	//?}
+	//? if >=1.21.10 {
+	/*@Override
+	public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent event, boolean doubleClick) {
+		if (mouseClickedImpl(event.x(), event.y(), event.button())) return true;
+		return super.mouseClicked(event, doubleClick);
+	}
+	*///?}
+
+	private boolean mouseClickedImpl(double mouseX, double mouseY, int button) {
 		for (Map.Entry<Integer, Slot> entry : this.menu.get().entrySet()) {
 			Slot slot = entry.getValue();
 			ItemStack stack = slot.getItem();
@@ -239,7 +253,7 @@ public class CrazyPhonePicturesScreenScreen extends CrazyPhoneDefaultScreenScree
 				}
 			}
 		}
-		return super.mouseClicked(mouseX, mouseY, button);
+		return false;
 	}
 
 	private void onSlotZoomClick(int index) {

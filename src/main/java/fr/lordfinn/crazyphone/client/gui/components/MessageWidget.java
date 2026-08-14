@@ -398,8 +398,23 @@ public class MessageWidget extends AbstractWidget {
                 && mouseY >= wrappedText.getY() && mouseY < wrappedText.getY() + wrappedText.getHeight();
     }
 
+    //? if <1.21.10 {
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        return mouseClickedCompat(mouseX, mouseY, button);
+    }
+    //?}
+    //? if >=1.21.10 {
+    /*@Override
+    public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent event, boolean doubleClick) {
+        return mouseClickedCompat(event.x(), event.y(), event.button());
+    }
+    *///?}
+
+    /** Version-stable entry point other classes (CrazyPhoneConversationScreen's own message-feed hit test)
+     *  can call directly, without needing their own knowledge of whichever mouseClicked signature this
+     *  version of GuiEventListener/AbstractWidget actually declares. */
+    public boolean mouseClickedCompat(double mouseX, double mouseY, int button) {
         if (isImageHovered((int) mouseX, (int) mouseY)) {
             onImageClick(button);
             return true; // prevent further handling

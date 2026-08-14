@@ -333,8 +333,22 @@ public class CrazyPhoneGroupSettingsScreenScreen extends CrazyPhoneDefaultScreen
                 : "gui.crazyphone.crazy_phone_group_settings.button_add");
     }
 
+    //? if <1.21.10 {
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (mouseClickedImpl(mouseX, mouseY, button)) return true;
+        return super.mouseClicked(mouseX, mouseY, button);
+    }
+    //?}
+    //? if >=1.21.10 {
+    /*@Override
+    public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent event, boolean doubleClick) {
+        if (mouseClickedImpl(event.x(), event.y(), event.button())) return true;
+        return super.mouseClicked(event, doubleClick);
+    }
+    *///?}
+
+    private boolean mouseClickedImpl(double mouseX, double mouseY, int button) {
         if (!cursorCarriedIcon.isEmpty()) {
             // Already carrying a copy - this click either places it (icon slot) or cancels the pickup
             // (anywhere else), and must not also trigger whatever's underneath it (a member toggle, a
@@ -352,7 +366,7 @@ public class CrazyPhoneGroupSettingsScreenScreen extends CrazyPhoneDefaultScreen
         // motion, included) can ever actually take the item out of their inventory.
         if (handleInventoryIconPick())
             return true;
-        return super.mouseClicked(mouseX, mouseY, button);
+        return false;
     }
 
     private boolean handleMemberListClick(double mouseX, double mouseY, int button) {

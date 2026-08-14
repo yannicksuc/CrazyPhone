@@ -82,12 +82,26 @@ public class CrazyPhoneMayorsCandidatesListScreen extends CrazyPhoneDefaultScree
 		}
 	}
 
+	//? if <1.21.10 {
 	@Override
 	public boolean mouseClicked(double mouseX, double mouseY, int button) {
+		mouseClickedImpl(mouseX, mouseY, button);
+		return super.mouseClicked(mouseX, mouseY, button);
+	}
+	//?}
+	//? if >=1.21.10 {
+	/*@Override
+	public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent event, boolean doubleClick) {
+		mouseClickedImpl(event.x(), event.y(), event.button());
+		return super.mouseClicked(event, doubleClick);
+	}
+	*///?}
+
+	private void mouseClickedImpl(double mouseX, double mouseY, int button) {
 		HashMap<String, String> textstate = getEditBoxAndCheckBoxValues();
 		for (RenderSlot rs : renderSlots) {
 			if (isHovering(rs, mouseX, mouseY)) {
-				String candidateNumber = PhoneTagAccess.getTag(rs.stack).getString("number");
+				String candidateNumber = fr.lordfinn.crazyphone.utils.NbtCompat.getString(PhoneTagAccess.getTag(rs.stack), "number");
 				textstate.put(	"candidateNumber", candidateNumber);
                 //? if >=1.20.5 {
                 /*NetworkAccess.sendToServer(new CrazyPhoneMayorsCandidatesButtonMessage(0, x, y, z, textstate));
@@ -98,7 +112,6 @@ public class CrazyPhoneMayorsCandidatesListScreen extends CrazyPhoneDefaultScree
 				break;
 			}
 		}
-		return super.mouseClicked(mouseX, mouseY, button);
 	}
 
 	private boolean isHovering(RenderSlot rs, double mouseX, double mouseY) {

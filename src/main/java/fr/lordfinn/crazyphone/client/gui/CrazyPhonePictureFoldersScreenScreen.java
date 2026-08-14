@@ -39,8 +39,22 @@ public class CrazyPhonePictureFoldersScreenScreen extends CrazyPhoneDefaultScree
 				Component.translatable("gui.crazyphone.crazy_phone_picture_folders_screen.title"));
 	}
 
+	//? if <1.21.10 {
 	@Override
 	public boolean mouseClicked(double mouseX, double mouseY, int button) {
+		if (mouseClickedImpl(mouseX, mouseY, button)) return true;
+		return super.mouseClicked(mouseX, mouseY, button);
+	}
+	//?}
+	//? if >=1.21.10 {
+	/*@Override
+	public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent event, boolean doubleClick) {
+		if (mouseClickedImpl(event.x(), event.y(), event.button())) return true;
+		return super.mouseClicked(event, doubleClick);
+	}
+	*///?}
+
+	private boolean mouseClickedImpl(double mouseX, double mouseY, int button) {
 		for (int i = 0; i < menu.slots.size(); i++) {
 			Slot slot = menu.getSlot(i);
 			if (isHovering(slot, mouseX, mouseY)) {
@@ -55,7 +69,7 @@ public class CrazyPhonePictureFoldersScreenScreen extends CrazyPhoneDefaultScree
 				}
 			}
 		}
-		return super.mouseClicked(mouseX, mouseY, button);
+		return false;
 	}
 
 	private boolean isHovering(Slot slot, double mouseX, double mouseY) {
@@ -75,6 +89,7 @@ public class CrazyPhonePictureFoldersScreenScreen extends CrazyPhoneDefaultScree
 		return lines;
 	}
 
+	//? if <1.21.10 {
 	@Override
 	public boolean keyPressed(int key, int b, int c) {
 		if (key == 256) {
@@ -83,4 +98,15 @@ public class CrazyPhonePictureFoldersScreenScreen extends CrazyPhoneDefaultScree
 		}
 		return super.keyPressed(key, b, c);
 	}
+	//?}
+	//? if >=1.21.10 {
+	/*@Override
+	public boolean keyPressed(net.minecraft.client.input.KeyEvent event) {
+		if (event.key() == 256) {
+			this.minecraft.player.closeContainer();
+			return true;
+		}
+		return super.keyPressed(event);
+	}
+	*///?}
 }

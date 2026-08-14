@@ -157,6 +157,7 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 		RenderSystem.disableBlend();
 	}
 
+	//? if <1.21.10 {
 	@Override
 	public boolean keyPressed(int key, int b, int c) {
 		if (key == 256) {
@@ -173,6 +174,25 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 		}
 		return false;
 	}
+	//?}
+	//? if >=1.21.10 {
+	/*@Override
+	public boolean keyPressed(net.minecraft.client.input.KeyEvent event) {
+		if (event.key() == 256) {
+			this.minecraft.player.closeContainer();
+			return true;
+		}
+		Map<String, Object> copy = new HashMap<>(this.getWidgets());
+		for (Map.Entry<String, Object> entry : copy.entrySet()) {
+			Object widget = entry.getValue();
+			if (widget instanceof AbstractWidget widgetObject && widgetObject.isHoveredOrFocused()) {
+				widgetObject.keyPressed(event);
+				return true;
+			}
+		}
+		return false;
+	}
+	*///?}
 
 	@Override
 	protected void renderLabels(GuiGraphics guiGraphics, int mouseX, int mouseY) {

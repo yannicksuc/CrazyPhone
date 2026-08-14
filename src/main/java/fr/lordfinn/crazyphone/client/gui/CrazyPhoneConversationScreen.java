@@ -850,20 +850,39 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
         return button;
     }
 
+    //? if <1.21.10 {
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (mouseClickedImpl(mouseX, mouseY, button)) return true;
+        return super.mouseClicked(mouseX, mouseY, button);
+    }
+    //?}
+    //? if >=1.21.10 {
+    /*@Override
+    public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent event, boolean doubleClick) {
+        if (mouseClickedImpl(event.x(), event.y(), event.button())) return true;
+        return super.mouseClicked(event, doubleClick);
+    }
+    *///?}
+
+    private boolean mouseClickedImpl(double mouseX, double mouseY, int button) {
         // While recording/reviewing a voice message, the trash and pause/send controls are the only
         // interaction available - everything else (including the message feed behind the waveform row) is
         // deliberately unreachable until it's sent or deleted. They're real registered widgets now (see
         // createSquareIconButton), so super.mouseClicked() already dispatches to whichever of them is
         // visible/hovered - this just swallows every other click while that's the only thing reachable.
         if (voiceRecordingState != VoiceRecordingState.NONE) {
-            super.mouseClicked(mouseX, mouseY, button);
             return true;
         }
 
         if (button == 0 && button_envoyer.isMouseOver(mouseX, mouseY)) {
+            //? if <1.21.10 {
             button_envoyer.onPress();
+            //?}
+            //? if >=1.21.10 {
+            /*button_envoyer.onPress(new net.minecraft.client.input.MouseButtonEvent(mouseX, mouseY,
+                    new net.minecraft.client.input.MouseButtonInfo(button, 0)));
+            *///?}
             return true;
         }
 
@@ -885,20 +904,34 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
 
         if (!imagebutton_crazyphoneaddimage.visible && isWithinMessageCropZone((int) mouseX, (int) mouseY))
             for (MessageEntry entry : messageManager.getMessages()) {
-                if (entry.widget().mouseClicked(mouseX, mouseY, button)) {
+                if (entry.widget().mouseClickedCompat(mouseX, mouseY, button)) {
                     return true;
                 }
             }
-        return super.mouseClicked(mouseX, mouseY, button);
+        return false;
     }
 
+    //? if <1.21.10 {
     @Override
     public boolean keyPressed(int key, int scanCode, int modifiers) {
+        if (keyPressedImpl(key)) return true;
+        return super.keyPressed(key, scanCode, modifiers);
+    }
+    //?}
+    //? if >=1.21.10 {
+    /*@Override
+    public boolean keyPressed(net.minecraft.client.input.KeyEvent event) {
+        if (keyPressedImpl(event.key())) return true;
+        return super.keyPressed(event);
+    }
+    *///?}
+
+    private boolean keyPressedImpl(int key) {
         if (message.isFocused() && (key == GLFW.GLFW_KEY_ENTER || key == GLFW.GLFW_KEY_KP_ENTER)) {
             sendCurrentMessage();
             return true;
         }
-        return super.keyPressed(key, scanCode, modifiers);
+        return false;
     }
 
     private void addRenderableWidgets() {

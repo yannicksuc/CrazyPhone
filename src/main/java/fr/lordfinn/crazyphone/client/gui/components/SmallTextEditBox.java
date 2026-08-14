@@ -58,8 +58,18 @@ public class SmallTextEditBox extends EditBox {
         super.onClick((mouseX - this.getX())*(1/SCALE_FACTOR) + this.getX(), (mouseY - this.getY())*(1/SCALE_FACTOR) + this.getY());
     }
 
+    //? if <1.21.10 {
     @Override
     public void onRelease(double mouseX, double mouseY) {
         super.onRelease((mouseX - this.getX())*(1/SCALE_FACTOR) + this.getX(), (mouseY - this.getY())*(1/SCALE_FACTOR) + this.getY());
     }
+    //?}
+    //? if >=1.21.10 {
+    /*@Override
+    public void onRelease(net.minecraft.client.input.MouseButtonEvent event) {
+        double scaledX = (event.x() - this.getX()) * (1 / SCALE_FACTOR) + this.getX();
+        double scaledY = (event.y() - this.getY()) * (1 / SCALE_FACTOR) + this.getY();
+        super.onRelease(new net.minecraft.client.input.MouseButtonEvent(scaledX, scaledY, event.buttonInfo()));
+    }
+    *///?}
 }
