@@ -496,16 +496,16 @@ public class CrazyPhoneContactsScreenScreen extends CrazyPhoneDefaultScreenScree
 		// conversation with that contact at all.
 		String oneOnOneId = CrazyPhoneHelper.getConversationNumber(person.getNumber(), ownerNumber);
 		if (pendingNotifications != null && pendingNotifications.contains(oneOnOneId)) {
-			guiGraphics.blit(NOTIFICATION_IMAGE, iconX, iconY, 0, 0, 18, 18, 18, 18);
+			GuiCompat.blit(guiGraphics, NOTIFICATION_IMAGE, iconX, iconY, 0, 18, 18);
 		}
 
 		// Bottom-left corner, distinct from the top-left unread-message badge above - this contact's own
 		// number has to actually be on the local player's currently ACTIVE call, not just "some call
 		// somewhere", the same per-number gating ClientCallState.numberHasState was built for.
 		if (ClientCallState.numberHasState(person.getNumber(), State.ACTIVE)) {
-			guiGraphics.blit(IN_CALL_BADGE_IMAGE, iconX, iconY + 2, 0, 0, 14, 14, 14, 14);
+			GuiCompat.blit(guiGraphics, IN_CALL_BADGE_IMAGE, iconX, iconY + 2, 0, 14, 14);
 		} else if (ClientCallState.hasJoinableCallElsewhere(oneOnOneId)) {
-			guiGraphics.blit(REJOIN_CALL_BADGE_IMAGE, iconX, iconY + 2, 0, 0, 14, 14, 14, 14);
+			GuiCompat.blit(guiGraphics, REJOIN_CALL_BADGE_IMAGE, iconX, iconY + 2, 0, 14, 14);
 		}
 
 		return hovered;
@@ -574,7 +574,7 @@ public class CrazyPhoneContactsScreenScreen extends CrazyPhoneDefaultScreenScree
 			renderIconScaled(guiGraphics, iconX, iconY, icon, hovered ? HEAD_HOVER_GROW_SCALE : 1.0f);
 
 			if (pendingNotifications != null && pendingNotifications.contains(group.conversationId())) {
-				guiGraphics.blit(NOTIFICATION_IMAGE, iconX, iconY, 0, 0, 18, 18, 18, 18);
+				GuiCompat.blit(guiGraphics, NOTIFICATION_IMAGE, iconX, iconY, 0, 18, 18);
 			}
 
 			// Same rejoin badge as a 1:1 contact - a group call has no equivalent "am I on MY OWN active
@@ -582,7 +582,7 @@ public class CrazyPhoneContactsScreenScreen extends CrazyPhoneDefaultScreenScree
 			// (a 1:1 conversation's own contact number), not a group conversation id - hasJoinableCallElsewhere
 			// already excludes the local player's own active call by conversation id, so this alone is correct.
 			if (ClientCallState.hasJoinableCallElsewhere(group.conversationId())) {
-				guiGraphics.blit(REJOIN_CALL_BADGE_IMAGE, iconX, iconY + 2, 0, 0, 14, 14, 14, 14);
+				GuiCompat.blit(guiGraphics, REJOIN_CALL_BADGE_IMAGE, iconX, iconY + 2, 0, 14, 14);
 			}
 
 			if (hovered) {

@@ -268,7 +268,7 @@ public class CrazyPhonePasswordScreenScreen extends CrazyPhoneDefaultScreenScree
             }
             @Override
             public void renderWidget(GuiGraphics guiGraphics, int x, int y, float partialTicks) {
-                guiGraphics.blit(sprites.get(isActive(), isHoveredOrFocused()), getX(), getY(), 0, 0, width, height, width, height);
+                fr.lordfinn.crazyphone.utils.GuiCompat.blit(guiGraphics, sprites.get(isActive(), isHoveredOrFocused()), getX(), getY(), 0, width, height);
             }
         };
         guistate.put("button:imagebutton_reset", buttonReset);
