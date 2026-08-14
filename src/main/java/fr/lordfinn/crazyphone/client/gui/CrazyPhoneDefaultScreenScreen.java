@@ -118,7 +118,7 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 		fr.lordfinn.crazyphone.utils.GuiCompat.blit(guiGraphics, HEADER_BANNER_IMAGE, this.leftPos + 4, this.topPos + 9, 0, 114, 18);
 		guiGraphics.renderItem(icon, this.leftPos + HEADER_ICON_X, this.topPos + 9);
 		int availableWidth = Math.max(0, rightBoundX - HEADER_TITLE_RIGHT_GAP - HEADER_TITLE_X);
-		ScrollingText.render(guiGraphics, this.font, title, this.leftPos + HEADER_TITLE_X, this.topPos + 14, availableWidth, 0x404040);
+		ScrollingText.render(guiGraphics, this.font, title, this.leftPos + HEADER_TITLE_X, this.topPos + 14, availableWidth, 0xFF404040);
 	}
 
 	public static HashMap<String, String> getEditBoxAndCheckBoxValues() {

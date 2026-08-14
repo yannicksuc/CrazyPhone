@@ -146,7 +146,7 @@ public class CrazyPhoneInCallScreenScreen extends CrazyPhoneDefaultScreenScreen<
         if (n == 0) {
             guiGraphics.drawCenteredString(this.font, Component.literal(menu.getDisplayTitle())
                             .withStyle(style -> style.withColor(ChatFormatting.GRAY)),
-                    this.leftPos + 61, this.topPos + 95, 0xFFFFFF);
+                    this.leftPos + 61, this.topPos + 95, 0xFFFFFFFF);
             return;
         }
 

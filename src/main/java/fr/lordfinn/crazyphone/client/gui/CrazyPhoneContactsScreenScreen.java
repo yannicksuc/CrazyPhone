@@ -81,7 +81,7 @@ public class CrazyPhoneContactsScreenScreen extends CrazyPhoneDefaultScreenScree
 	private static final int TITLE_HEIGHT = 9;
 	private static final int SECTION_GAP = 2;
 	private static final float SECTION_TITLE_SCALE = 0.85f;
-	private static final int SECTION_TITLE_COLOR = 0x6C8EBF;
+	private static final int SECTION_TITLE_COLOR = 0xFF6C8EBF;
 	/** Right edge the section title's separator line reaches - aligned with the action buttons' own right
 	 * edge (see the button bounds() calls in init()), not the item grid's own (slightly wider) edge. */
 	private static final int TITLE_LINE_END_X = 114;
@@ -218,7 +218,7 @@ public class CrazyPhoneContactsScreenScreen extends CrazyPhoneDefaultScreenScree
 				int drawY = getY() + (getHeight() - 8) / 2;
 				GuiCompat.pushPose(guiGraphics);
 				GuiCompat.translate(guiGraphics, 0.5f, 0f);
-				guiGraphics.drawString(font, message, drawX, drawY, 0xFFFFFF, true);
+				guiGraphics.drawString(font, message, drawX, drawY, 0xFFFFFFFF, true);
 				GuiCompat.popPose(guiGraphics);
 			}
 		};

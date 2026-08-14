@@ -284,10 +284,10 @@ public class CrazyPhoneGroupSettingsScreenScreen extends CrazyPhoneDefaultScreen
     private void drawStateToggle(GuiGraphics guiGraphics, int toggleX, int toggleY, boolean showCross) {
         if (showCross) {
             drawBeveledButton(guiGraphics, toggleX, toggleY, TOGGLE_SIZE, 0xFF884444);
-            drawToggleSymbol(guiGraphics, toggleX, toggleY, "âœ•", 0xFFFFFF, -0.25f);
+            drawToggleSymbol(guiGraphics, toggleX, toggleY, "âœ•", 0xFFFFFFFF, -0.25f);
         } else {
             drawBeveledButton(guiGraphics, toggleX, toggleY, TOGGLE_SIZE, 0xFFCCAA00);
-            drawToggleSymbol(guiGraphics, toggleX, toggleY, "â†’", 0x000000);
+            drawToggleSymbol(guiGraphics, toggleX, toggleY, "â†’", 0xFF000000);
         }
     }
 
@@ -296,7 +296,7 @@ public class CrazyPhoneGroupSettingsScreenScreen extends CrazyPhoneDefaultScreen
             return null; // scrolled out of view
 
         boolean staged = stagedExcluded.contains(member.getNumber());
-        drawPersonRow(guiGraphics, x, rowY, member, staged ? 0xFF5555 : 0xFFFFFF); // red once marked for exclusion
+        drawPersonRow(guiGraphics, x, rowY, member, staged ? 0xFFFF5555 : 0xFFFFFFFF); // red once marked for exclusion
 
         boolean isSelf = member.getNumber().equals(viewerNumber);
         boolean canToggle = isSelf || viewerIsAdmin;
@@ -325,7 +325,7 @@ public class CrazyPhoneGroupSettingsScreenScreen extends CrazyPhoneDefaultScreen
             return null;
 
         boolean staged = stagedAdded.contains(contact.getNumber());
-        drawPersonRow(guiGraphics, x, rowY, contact, staged ? 0x55FF55 : 0x808080); // green once marked to be added, grey otherwise
+        drawPersonRow(guiGraphics, x, rowY, contact, staged ? 0xFF55FF55 : 0xFF808080); // green once marked to be added, grey otherwise
 
         int toggleX = x + MEMBER_LIST_WIDTH - TOGGLE_SIZE;
         int toggleY = rowY + (MEMBER_ROW_HEIGHT - TOGGLE_SIZE) / 2;

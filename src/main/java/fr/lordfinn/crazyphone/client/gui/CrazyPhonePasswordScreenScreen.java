@@ -106,7 +106,7 @@ public class CrazyPhonePasswordScreenScreen extends CrazyPhoneDefaultScreenScree
         } else {
             Component warning = Component.translatable("gui.crazyphone.crazy_phone_password_screen.warning_admin_visible")
                     .copy().withStyle(ChatFormatting.BOLD, ChatFormatting.RED);
-            guiGraphics.drawWordWrap(font, warning, 8, 32, 106, 0xFF5555);
+            guiGraphics.drawWordWrap(font, warning, 8, 32, 106, 0xFFFF5555);
             guiGraphics.drawString(font, Component.translatable("gui.crazyphone.crazy_phone_password_screen.label_mot_de_passe"), 8, 96, -12829636, false);
             // guistate (CrazyPhonePasswordScreenMenu's static field) only gets "textin:*" entries written by
             // an actual button click - reusing it here would validate against whatever number/name/password

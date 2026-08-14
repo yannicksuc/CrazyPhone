@@ -756,7 +756,7 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
                 int drawY = getY() + (getHeight() - 8) / 2;
                 GuiCompat.pushPose(guiGraphics);
                 GuiCompat.translate(guiGraphics, 0.5f, 0f);
-                guiGraphics.drawString(font, message, drawX, drawY, 0xFFFFFF, true);
+                guiGraphics.drawString(font, message, drawX, drawY, 0xFFFFFFFF, true);
                 GuiCompat.popPose(guiGraphics);
             }
         };

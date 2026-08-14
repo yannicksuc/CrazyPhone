@@ -101,7 +101,7 @@ public class CrazyPhoneIncomingCallScreenScreen extends CrazyPhoneDefaultScreenS
         renderCallerBust(guiGraphics);
         guiGraphics.drawCenteredString(this.font, Component.literal(menu.getDisplayTitle())
                         .withStyle(style -> style.withColor(ChatFormatting.GRAY)),
-                this.leftPos + 61, this.topPos + 143, 0xFFFFFF);
+                this.leftPos + 61, this.topPos + 143, 0xFFFFFFFF);
         this.renderTooltip(guiGraphics, mouseX, mouseY);
     }
 
