@@ -103,7 +103,7 @@ public record CrazyPhoneNewMessageNotificationPacket(
             mc.player.sendSystemMessage(Component.translatable("message.crazyphone.new_message_received", senderName)
                 .withStyle(style -> style.withColor(0x55FFFF).withItalic(true)));
 
-            SoundEvent sound = BuiltInRegistries.SOUND_EVENT.get(Crazyphone.parseId("block.note_block.pling"));
+            SoundEvent sound = fr.lordfinn.crazyphone.utils.RegistryCompat.get(BuiltInRegistries.SOUND_EVENT, Crazyphone.parseId("block.note_block.pling"));
             if (sound != null) {
                 mc.player.playNotifySound(sound, SoundSource.PLAYERS, 0.6f, 1.0f);
             }

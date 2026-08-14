@@ -64,7 +64,7 @@ public class CrazyPhoneGameTests {
     }
 
     private static String votedFor(PhoneRegistrySavedData registry, String voterNumber) {
-        return registry.mayorVotes.get(voterNumber) instanceof StringTag tag ? tag.getAsString() : null;
+        return registry.mayorVotes.get(voterNumber) instanceof StringTag tag ? fr.lordfinn.crazyphone.utils.NbtCompat.asString(tag) : null;
     }
 
     /** {@code GameTestHelper#assertValueEqual} doesn't exist pre-1.20.5 - falls back to a plain

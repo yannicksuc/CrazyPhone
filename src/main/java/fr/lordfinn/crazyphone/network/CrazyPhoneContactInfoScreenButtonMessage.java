@@ -145,8 +145,8 @@ public record CrazyPhoneContactInfoScreenButtonMessage(int buttonID, int x, int 
 			if (!(PhoneRegistrySavedData.get(world).phones.get(number) instanceof CompoundTag phone))
 				return;
 			phone = phone.copy();
-			name = (phone.get("name")) instanceof StringTag _stringTag ? _stringTag.getAsString() : "";
-			owner = (phone.get("uuid")) instanceof StringTag _stringTag ? _stringTag.getAsString() : "";
+			name = fr.lordfinn.crazyphone.utils.NbtCompat.getString(phone, "name");
+			owner = fr.lordfinn.crazyphone.utils.NbtCompat.getString(phone, "uuid");
 			if (!name.isEmpty() && !owner.isEmpty() && entity instanceof ServerPlayer serverPlayer) {
 				//? if >=1.20.5 {
 				/*PacketDistributor.sendToPlayer(serverPlayer, new UpdateContactInfoMessage(name, owner, number));

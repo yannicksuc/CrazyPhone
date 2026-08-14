@@ -32,7 +32,7 @@ public class CrazyPhoneGetGroupsProcedure {
         for (Tag idTag : groupIds) {
             if (!(idTag instanceof StringTag stringTag))
                 continue;
-            String conversationId = stringTag.getAsString();
+            String conversationId = fr.lordfinn.crazyphone.utils.NbtCompat.asString(stringTag);
 
             CrazyPhoneHelper.GroupMeta meta = CrazyPhoneHelper.getGroupMeta(world, conversationId);
             ListTag members = new ListTag();

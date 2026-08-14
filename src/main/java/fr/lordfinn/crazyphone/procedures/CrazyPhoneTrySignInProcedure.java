@@ -20,7 +20,7 @@ public class CrazyPhoneTrySignInProcedure {
 		CompoundTag phoneData;
 		if (IsPhoneSetupProcedure.execute(CrazyPhoneHelper.getMainHandItemOrEmpty(entity))) {
 			phoneData = (PhoneRegistrySavedData.get(world).phones.get(GetCrazyPhoneNumberFromMainHandProcedure.execute(entity, guistate))) instanceof CompoundTag _compoundTag ? _compoundTag.copy() : new CompoundTag();
-			if (!(phoneData == null) && (guistate.containsKey("textin:password") ? (String) guistate.get("textin:password") : "").equals((phoneData.get("password")) instanceof StringTag _stringTag ? _stringTag.getAsString() : "")) {
+			if (!(phoneData == null) && (guistate.containsKey("textin:password") ? (String) guistate.get("textin:password") : "").equals(phoneData.get("password") instanceof StringTag _stringTag ? fr.lordfinn.crazyphone.utils.NbtCompat.asString(_stringTag) : "")) {
 				{
 					final String _tagName = "isOpen";
 					final boolean _tagValue = true;

@@ -144,10 +144,10 @@ public final class CallRegistry {
             notifySafe(callee, session, CrazyPhoneCallStateSyncPacket.State.RINGING);
             //? if >=1.20.5 {
             /*PacketDistributor.sendToPlayer(callee,
-                    new CrazyPhoneIncomingCallNotificationPacket(conversationId, initiator.getGameProfile().getName(), callId));
+                    new CrazyPhoneIncomingCallNotificationPacket(conversationId, fr.lordfinn.crazyphone.utils.GameProfileCompat.name(initiator.getGameProfile()), callId));
             *///? } else {
             PacketDistributor.PLAYER.with(callee).send(
-                    new CrazyPhoneIncomingCallNotificationPacket(conversationId, initiator.getGameProfile().getName(), callId));
+                    new CrazyPhoneIncomingCallNotificationPacket(conversationId, fr.lordfinn.crazyphone.utils.GameProfileCompat.name(initiator.getGameProfile()), callId));
             //?}
         }
         return session;
@@ -338,7 +338,7 @@ public final class CallRegistry {
         try {
             sendStateSync(target, session, state);
         } catch (Exception e) {
-            LOGGER.error("Failed to send call state {} to {}", state, target.getGameProfile().getName(), e);
+            LOGGER.error("Failed to send call state {} to {}", state, fr.lordfinn.crazyphone.utils.GameProfileCompat.name(target.getGameProfile()), e);
         }
     }
 

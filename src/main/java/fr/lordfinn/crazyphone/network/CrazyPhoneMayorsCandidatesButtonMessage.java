@@ -128,7 +128,7 @@ public record CrazyPhoneMayorsCandidatesButtonMessage(int buttonID, int x, int y
 
 		if (buttonID == 0) {
 			if (!world.isClientSide()) {
-				SoundEvent sound = BuiltInRegistries.SOUND_EVENT.get(Crazyphone.parseId("minecraft:ui.button.click"));
+				SoundEvent sound = fr.lordfinn.crazyphone.utils.RegistryCompat.get(BuiltInRegistries.SOUND_EVENT, Crazyphone.parseId("minecraft:ui.button.click"));
 				if (sound != null) {
 					entity.playNotifySound(sound, SoundSource.PLAYERS, 0.2f, 1.0f);
 				}

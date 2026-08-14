@@ -136,7 +136,7 @@ public record CrazyPhoneContactsScreenButtonMessage(int buttonID, int x, int y, 
 
 		if (buttonID == 0) {
 			if (world.isClientSide()) {
-			SoundEvent sound = BuiltInRegistries.SOUND_EVENT.get(Crazyphone.parseId("minecraft:ui.button.click"));
+			SoundEvent sound = fr.lordfinn.crazyphone.utils.RegistryCompat.get(BuiltInRegistries.SOUND_EVENT, Crazyphone.parseId("minecraft:ui.button.click"));
 			if (sound != null) {
 				entity.playNotifySound(sound, SoundSource.PLAYERS, 0.2f, 1.0f);
 			}
@@ -145,7 +145,7 @@ public record CrazyPhoneContactsScreenButtonMessage(int buttonID, int x, int y, 
 		}
 		else if (buttonID == 1) {
 			if (world.isClientSide()) {
-				SoundEvent sound = BuiltInRegistries.SOUND_EVENT.get(Crazyphone.parseId("minecraft:ui.button.click"));
+				SoundEvent sound = fr.lordfinn.crazyphone.utils.RegistryCompat.get(BuiltInRegistries.SOUND_EVENT, Crazyphone.parseId("minecraft:ui.button.click"));
 				if (sound != null) {
 					entity.playNotifySound(sound, SoundSource.PLAYERS, 0.2f, 1.0f);
 				}
@@ -155,7 +155,7 @@ public record CrazyPhoneContactsScreenButtonMessage(int buttonID, int x, int y, 
 		}
 		else if (buttonID == 2) { // Create a group conversation with the selected contacts
 			if (world.isClientSide()) {
-				SoundEvent sound = BuiltInRegistries.SOUND_EVENT.get(Crazyphone.parseId("minecraft:ui.button.click"));
+				SoundEvent sound = fr.lordfinn.crazyphone.utils.RegistryCompat.get(BuiltInRegistries.SOUND_EVENT, Crazyphone.parseId("minecraft:ui.button.click"));
 				if (sound != null) {
 					entity.playNotifySound(sound, SoundSource.PLAYERS, 0.2f, 1.0f);
 				}
@@ -184,7 +184,7 @@ public record CrazyPhoneContactsScreenButtonMessage(int buttonID, int x, int y, 
 		}
 		else if (buttonID == 3) { // Remove the selected contacts
 			if (world.isClientSide()) {
-				SoundEvent sound = BuiltInRegistries.SOUND_EVENT.get(Crazyphone.parseId("minecraft:ui.button.click"));
+				SoundEvent sound = fr.lordfinn.crazyphone.utils.RegistryCompat.get(BuiltInRegistries.SOUND_EVENT, Crazyphone.parseId("minecraft:ui.button.click"));
 				if (sound != null) {
 					entity.playNotifySound(sound, SoundSource.PLAYERS, 0.2f, 1.0f);
 				}
@@ -202,7 +202,7 @@ public record CrazyPhoneContactsScreenButtonMessage(int buttonID, int x, int y, 
 		}
 		else if (buttonID == 5) { // Toggle favorite status for the selected contacts
 			if (world.isClientSide()) {
-				SoundEvent sound = BuiltInRegistries.SOUND_EVENT.get(Crazyphone.parseId("minecraft:ui.button.click"));
+				SoundEvent sound = fr.lordfinn.crazyphone.utils.RegistryCompat.get(BuiltInRegistries.SOUND_EVENT, Crazyphone.parseId("minecraft:ui.button.click"));
 				if (sound != null) {
 					entity.playNotifySound(sound, SoundSource.PLAYERS, 0.2f, 1.0f);
 				}
@@ -220,7 +220,7 @@ public record CrazyPhoneContactsScreenButtonMessage(int buttonID, int x, int y, 
 		}
 		else if (buttonID == 4) { // Open an already-known group conversation directly
 			if (world.isClientSide()) {
-				SoundEvent sound = BuiltInRegistries.SOUND_EVENT.get(Crazyphone.parseId("minecraft:ui.button.click"));
+				SoundEvent sound = fr.lordfinn.crazyphone.utils.RegistryCompat.get(BuiltInRegistries.SOUND_EVENT, Crazyphone.parseId("minecraft:ui.button.click"));
 				if (sound != null) {
 					entity.playNotifySound(sound, SoundSource.PLAYERS, 0.2f, 1.0f);
 				}

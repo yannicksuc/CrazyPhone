@@ -43,10 +43,22 @@ public final class MojangProfileLookup {
         return CACHE.computeIfAbsent(name, n -> CompletableFuture.supplyAsync(() -> {
             GameProfile[] result = new GameProfile[1];
             repository().findProfilesByNames(new String[]{n}, new ProfileLookupCallback() {
+                //? if <1.21.10 {
                 @Override
                 public void onProfileLookupSucceeded(GameProfile profile) {
                     result[0] = profile;
                 }
+                //?}
+                //? if >=1.21.10 {
+                /*@Override
+                public void onProfileLookupSucceeded(String succeededName, java.util.UUID uuid) {
+                    // The lookup itself only confirms name<->uuid now, no embedded skin PropertyMap
+                    // (that was the whole payload of the old single-GameProfile callback) - whatever reads
+                    // this profile later (SkinManager et al.) fetches textures from the UUID on its own,
+                    // same as it always has to for a GameProfile with no properties yet.
+                    result[0] = new GameProfile(uuid, succeededName);
+                }
+                *///?}
 
                 @Override
                 public void onProfileLookupFailed(String failedName, Exception exception) {

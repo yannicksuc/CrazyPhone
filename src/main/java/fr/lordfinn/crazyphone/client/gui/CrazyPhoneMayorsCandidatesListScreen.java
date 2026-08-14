@@ -35,7 +35,7 @@ public class CrazyPhoneMayorsCandidatesListScreen extends CrazyPhoneDefaultScree
 		var candidates = registry.mayorsCandidates;
 		var phones = registry.phones;
 
-		List<String> keys = new ArrayList<>(candidates.getAllKeys());
+		List<String> keys = new ArrayList<>(fr.lordfinn.crazyphone.utils.NbtCompat.keySet(candidates));
 
 		int startX = fr.lordfinn.crazyphone.world.inventory.CrazyPhoneDefaultScreenMenu.HEADER_CONTENT_START_X;
 		int startY = fr.lordfinn.crazyphone.world.inventory.CrazyPhoneDefaultScreenMenu.HEADER_CONTENT_START_Y;

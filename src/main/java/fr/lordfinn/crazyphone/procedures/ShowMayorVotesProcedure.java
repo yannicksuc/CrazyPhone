@@ -21,8 +21,8 @@ public class ShowMayorVotesProcedure {
 
 		// Compter les votes pour chaque numéro
 		Map<String, Integer> voteCounts = new HashMap<>();
-		for (String key : votes.getAllKeys()) {
-			String candidateNumber = votes.get(key).getAsString();
+		for (String key : fr.lordfinn.crazyphone.utils.NbtCompat.keySet(votes)) {
+			String candidateNumber = fr.lordfinn.crazyphone.utils.NbtCompat.asString(votes.get(key));
 			voteCounts.put(candidateNumber, voteCounts.getOrDefault(candidateNumber, 0) + 1);
 		}
 
@@ -60,8 +60,8 @@ public class ShowMayorVotesProcedure {
 		player.displayClientMessage(Component.translatable("message.crazyphone.vote_details_title")
 			.withStyle(ChatFormatting.YELLOW, ChatFormatting.BOLD), false);
 
-		for (String voter : votes.getAllKeys()) {
-			String candidateNumber = votes.get(voter).getAsString();
+		for (String voter : fr.lordfinn.crazyphone.utils.NbtCompat.keySet(votes)) {
+			String candidateNumber = fr.lordfinn.crazyphone.utils.NbtCompat.asString(votes.get(voter));
 
 			Contact voterContact = CrazyPhoneHelper.getContact(world, voter);
 			String voterName = voterContact != null ? voterContact.getName() : Component.translatable("message.crazyphone.unknown_voter", voter).getString();

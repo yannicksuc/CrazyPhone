@@ -103,10 +103,10 @@ public class CrazyPhoneContactsScreenScreen extends CrazyPhoneDefaultScreenScree
 		this.ownerNumber = GetCrazyPhoneNumberFromMainHandProcedure.execute(entity, null);
 		var tag = PhoneRegistrySavedData.get(entity.level()).phones.get(ownerNumber);
 		if (tag instanceof CompoundTag compound) {
-			ListTag notifList = compound.getList("notifications", ListTag.TAG_STRING);
+			ListTag notifList = fr.lordfinn.crazyphone.utils.NbtCompat.getList(compound, "notifications", ListTag.TAG_STRING);
 			this.pendingNotifications = notifList.stream()
 				.filter(t -> t instanceof StringTag)
-				.map(t -> ((StringTag)t).getAsString())
+				.map(t -> fr.lordfinn.crazyphone.utils.NbtCompat.asString(t))
 				.toList();
 		}
 	}

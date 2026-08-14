@@ -102,7 +102,7 @@ public record CrazyPhoneGroupMembershipNotificationPacket(String groupLabel, Str
         ResourceLocation soundId = messagePacket.added
             ? Crazyphone.parseId("block.note_block.pling")
             : Crazyphone.parseId("entity.villager.no");
-        SoundEvent sound = BuiltInRegistries.SOUND_EVENT.get(soundId);
+        SoundEvent sound = fr.lordfinn.crazyphone.utils.RegistryCompat.get(BuiltInRegistries.SOUND_EVENT, soundId);
         if (sound != null) {
             mc.player.playNotifySound(sound, SoundSource.PLAYERS, 0.6f, 1.0f);
         }

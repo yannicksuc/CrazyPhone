@@ -33,7 +33,7 @@ public class CrazyPhoneGetContactsProcedure {
 				if (tmp_element == null) {
 					continue;
 				}
-				tmp_element = PhoneRegistrySavedData.get(world).phones.get((tmp_element instanceof StringTag _stringTag ? _stringTag.getAsString() : ""));
+				tmp_element = PhoneRegistrySavedData.get(world).phones.get((tmp_element instanceof StringTag _stringTag ? fr.lordfinn.crazyphone.utils.NbtCompat.asString(_stringTag) : ""));
 				if (tmp_element == null) {
 					continue;
 				}

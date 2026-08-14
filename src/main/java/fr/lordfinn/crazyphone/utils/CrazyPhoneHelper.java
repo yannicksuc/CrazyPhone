@@ -1040,17 +1040,6 @@ public class CrazyPhoneHelper {
         return messageDatas;
     }
 
-    /** BuiltInRegistries.ITEM.get(ResourceLocation) returned the Item directly pre-1.21.10; it now returns
-     *  Optional&lt;Holder.Reference&lt;Item&gt;&gt;, matching every other registry get() (see ModEnchantments
-     *  for the same shape change on Registry#get(ResourceKey)). Caller already checked containsKey(id) first. */
-    private static net.minecraft.world.item.Item itemFromRegistry(ResourceLocation id) {
-        //? if <1.21.10 {
-        return BuiltInRegistries.ITEM.get(id);
-        //? } else {
-        /*return BuiltInRegistries.ITEM.get(id).map(net.minecraft.core.Holder.Reference::value).orElse(net.minecraft.world.item.Items.AIR);
-        *///?}
-    }
-
     public static @Nullable MessageData getMessageFromTag(CompoundTag messageTag) {
         if (messageTag == null) return null;
 
@@ -1071,7 +1060,7 @@ public class CrazyPhoneHelper {
             if (NbtCompat.contains(messageTag, "systemIcon")) {
                 ResourceLocation id = ResourceLocation.tryParse(NbtCompat.getString(messageTag, "systemIcon"));
                 if (id != null && BuiltInRegistries.ITEM.containsKey(id))
-                    icon = new ItemStack(itemFromRegistry(id));
+                    icon = new ItemStack(RegistryCompat.get(BuiltInRegistries.ITEM, id));
             }
             return MessageData.system(timecode, text, icon);
         }

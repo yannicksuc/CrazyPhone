@@ -20,6 +20,8 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 
 import fr.lordfinn.crazyphone.data.PhoneRegistrySavedData;
+import fr.lordfinn.crazyphone.utils.NbtCompat;
+import fr.lordfinn.crazyphone.utils.ChatEventCompat;
 
 import net.minecraft.nbt.StringTag;
 import net.minecraft.ChatFormatting;
@@ -40,16 +42,16 @@ public class CrazyPhoneListAndPrintPhonesProcedure {
 
 		ServerPlayer player = (ServerPlayer) entity;
 		player.sendSystemMessage(Component.translatable("command.crazyphone.list_separator"));
-		for (String phoneKey : PhoneRegistrySavedData.get(world).phones.getAllKeys()) {
+		for (String phoneKey : NbtCompat.keySet(PhoneRegistrySavedData.get(world).phones)) {
 			CompoundTag phone = (PhoneRegistrySavedData.get(world).phones
 					.get(phoneKey)) instanceof CompoundTag _compoundTag
 							? _compoundTag.copy()
 							: new CompoundTag();
 
-			String password = phone.get("password") instanceof StringTag s1 ? s1.getAsString() : "";
-			String uuid = phone.get("uuid") instanceof StringTag s2 ? s2.getAsString() : "";
-			String name = phone.get("name") instanceof StringTag s3 ? s3.getAsString() : "";
-			String skin = phone.get("skin") instanceof StringTag s4 ? s4.getAsString() : "";
+			String password = NbtCompat.getString(phone, "password");
+			String uuid = NbtCompat.getString(phone, "uuid");
+			String name = NbtCompat.getString(phone, "name");
+			String skin = NbtCompat.getString(phone, "skin");
 
 			String lowerSearch = search.toLowerCase();
 
@@ -136,9 +138,9 @@ public class CrazyPhoneListAndPrintPhonesProcedure {
 				.withStyle(style -> style
 						.withColor(ChatFormatting.YELLOW)
 						.withBold(true)
-						.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+						.withHoverEvent(ChatEventCompat.showText(
 								Component.translatable("command.crazyphone.list_copy_password", password)))
-						.withClickEvent(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, password))));
+						.withClickEvent(ChatEventCompat.copyToClipboard(password))));
 
 		// Séparateur
 		msg.append(Component.literal(" • ").withStyle(ChatFormatting.GRAY));
@@ -147,9 +149,9 @@ public class CrazyPhoneListAndPrintPhonesProcedure {
 		msg.append(Component.literal("[Skin]")
 				.withStyle(style -> style
 						.withColor(ChatFormatting.GRAY)
-						.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+						.withHoverEvent(ChatEventCompat.showText(
 								Component.translatable("command.crazyphone.list_copy_skin")))
-						.withClickEvent(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, skin))));
+						.withClickEvent(ChatEventCompat.copyToClipboard(skin))));
 
 		// Séparateur
 		msg.append(Component.literal(" • ").withStyle(ChatFormatting.GRAY));
@@ -158,9 +160,9 @@ public class CrazyPhoneListAndPrintPhonesProcedure {
 		msg.append(Component.literal("[" + pseudo + "]")
 				.withStyle(style -> style
 						.withColor(ChatFormatting.GRAY)
-						.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+						.withHoverEvent(ChatEventCompat.showText(
 								Component.translatable("command.crazyphone.list_copy_uuid")))
-						.withClickEvent(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, uuid))));
+						.withClickEvent(ChatEventCompat.copyToClipboard(uuid))));
 
 		// Séparateur
 		msg.append(Component.literal(" | ").withStyle(ChatFormatting.GRAY));
@@ -170,9 +172,9 @@ public class CrazyPhoneListAndPrintPhonesProcedure {
 				.withStyle(style -> style
 						.withColor(ChatFormatting.GREEN)
 						.withBold(true)
-						.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+						.withHoverEvent(ChatEventCompat.showText(
 								Component.translatable("command.crazyphone.list_take_phone")))
-						.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/crazyphone give " + number))));
+						.withClickEvent(ChatEventCompat.runCommand("/crazyphone give " + number))));
 
 		// Séparateur
 		msg.append(Component.literal(" ").withStyle(ChatFormatting.GRAY));
@@ -182,9 +184,9 @@ public class CrazyPhoneListAndPrintPhonesProcedure {
 				.withStyle(style -> style
 						.withColor(ChatFormatting.RED)
 						.withBold(true)
-						.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+						.withHoverEvent(ChatEventCompat.showText(
 								Component.translatable("command.crazyphone.list_delete_phone")))
-						.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/crazyphone delete " + number))));
+						.withClickEvent(ChatEventCompat.runCommand("/crazyphone delete " + number))));
 
 		return msg;
 	}

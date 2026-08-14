@@ -196,7 +196,7 @@ public class CallTerminationListener {
     }
 
     private static void playDisconnectSound(ServerPlayer player) {
-        SoundEvent sound = BuiltInRegistries.SOUND_EVENT.get(Crazyphone.parseId("minecraft:entity.villager.no"));
+        SoundEvent sound = fr.lordfinn.crazyphone.utils.RegistryCompat.get(BuiltInRegistries.SOUND_EVENT, Crazyphone.parseId("minecraft:entity.villager.no"));
         if (sound != null)
             player.playNotifySound(sound, SoundSource.PLAYERS, 0.8f, 0.8f);
     }

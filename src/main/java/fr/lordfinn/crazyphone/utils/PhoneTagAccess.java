@@ -56,9 +56,13 @@ public final class PhoneTagAccess {
 
     /** Sets a player-head ItemStack's skin/owner, e.g. a contact head's face texture. */
     public static void setSkullOwner(ItemStack stack, GameProfile profile) {
-        //? if >=1.20.5 {
+        //? if >=1.20.5 <1.21.10 {
         /*stack.set(DataComponents.PROFILE, new ResolvableProfile(profile));
-        *///? } else {
+        *///?}
+        //? if >=1.21.10 {
+        /*stack.set(DataComponents.PROFILE, ResolvableProfile.createResolved(profile));
+        *///?}
+        //? if <1.20.5 {
         CompoundTag tag = stack.getOrCreateTag();
         CompoundTag skullOwnerTag = new CompoundTag();
         NbtUtils.writeGameProfile(skullOwnerTag, profile);

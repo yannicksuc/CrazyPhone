@@ -337,8 +337,8 @@ public class ScreenMenuUtils {
 
     private static void sortByRecency(List<CompoundTag> entries, Level world, String ownerNumber, boolean isGroup) {
         entries.sort((a, b) -> {
-            String idA = isGroup ? a.getString("conversationId") : CrazyPhoneHelper.getConversationNumber(a.getString("number"), ownerNumber);
-            String idB = isGroup ? b.getString("conversationId") : CrazyPhoneHelper.getConversationNumber(b.getString("number"), ownerNumber);
+            String idA = isGroup ? NbtCompat.getString(a, "conversationId") : CrazyPhoneHelper.getConversationNumber(NbtCompat.getString(a, "number"), ownerNumber);
+            String idB = isGroup ? NbtCompat.getString(b, "conversationId") : CrazyPhoneHelper.getConversationNumber(NbtCompat.getString(b, "number"), ownerNumber);
             return Integer.compare(CrazyPhoneHelper.getLastMessageTimecode(world, idB), CrazyPhoneHelper.getLastMessageTimecode(world, idA));
         });
     }
@@ -360,10 +360,10 @@ public class ScreenMenuUtils {
     }
 
     private static void serializeContactDetails(FriendlyByteBuf buf, CompoundTag contact) {
-        String number = contact.getString("number");
-        String name = contact.getString("name");
-        String uuid = contact.contains("uuid", CompoundTag.TAG_STRING) ? contact.getString("uuid") : "";
-        String skin = contact.contains("skin", CompoundTag.TAG_STRING) ? contact.getString("skin") : "";
+        String number = NbtCompat.getString(contact, "number");
+        String name = NbtCompat.getString(contact, "name");
+        String uuid = NbtCompat.getString(contact, "uuid");
+        String skin = NbtCompat.getString(contact, "skin");
 
         buf.writeUtf(number);
         buf.writeUtf(name);
@@ -374,11 +374,11 @@ public class ScreenMenuUtils {
     private static void serializeGroupsToBuffer(FriendlyByteBuf buf, List<CompoundTag> groups) {
         buf.writeInt(groups.size());
         for (CompoundTag groupCompound : groups) {
-            buf.writeUtf(groupCompound.getString("conversationId"));
-            buf.writeUtf(groupCompound.getString("name"));
-            buf.writeNbt(groupCompound.getCompound("icon"));
-            buf.writeUtf(groupCompound.getString("admin"));
-            ListTag members = groupCompound.getList("members", CompoundTag.TAG_COMPOUND);
+            buf.writeUtf(NbtCompat.getString(groupCompound, "conversationId"));
+            buf.writeUtf(NbtCompat.getString(groupCompound, "name"));
+            buf.writeNbt(NbtCompat.getCompound(groupCompound, "icon"));
+            buf.writeUtf(NbtCompat.getString(groupCompound, "admin"));
+            ListTag members = NbtCompat.getList(groupCompound, "members");
             buf.writeInt(members.size());
             for (Tag member : members) {
                 if (member instanceof CompoundTag memberCompound) {
@@ -438,12 +438,12 @@ public class ScreenMenuUtils {
         for (Tag contactTag : viewerContacts) {
             if (!(contactTag instanceof CompoundTag compoundTag))
                 continue;
-            String number = compoundTag.getString("number");
+            String number = NbtCompat.getString(compoundTag, "number");
             if (members.stream().anyMatch(m -> m.getNumber().equals(number)))
                 continue;
-            invitable.add(new Contact(number, compoundTag.getString("name"),
-                    compoundTag.contains("skin", CompoundTag.TAG_STRING) ? compoundTag.getString("skin") : "",
-                    compoundTag.contains("uuid", CompoundTag.TAG_STRING) ? compoundTag.getString("uuid") : ""));
+            invitable.add(new Contact(number, NbtCompat.getString(compoundTag, "name"),
+                    NbtCompat.getString(compoundTag, "skin"),
+                    NbtCompat.getString(compoundTag, "uuid")));
         }
         buf.writeInt(invitable.size());
         for (Contact contact : invitable) {
@@ -457,7 +457,7 @@ public class ScreenMenuUtils {
     public static void openPhoneAlbumMenu(Player player, InteractionHand hand, int albumId) {
         if (player instanceof ServerPlayer serverPlayer) {
 
-            SoundEvent sound = BuiltInRegistries.SOUND_EVENT.get(Crazyphone.parseId("minecraft:item.book.page_turn"));
+            SoundEvent sound = RegistryCompat.get(BuiltInRegistries.SOUND_EVENT, Crazyphone.parseId("minecraft:item.book.page_turn"));
             if (sound != null) {
                 serverPlayer.playNotifySound(sound, SoundSource.PLAYERS, 0.7f, 1.2f);
             }
@@ -522,7 +522,7 @@ public class ScreenMenuUtils {
                     ListTag updatedNotifications = new ListTag();
                     for (Tag t : notifications) {
                         if (t instanceof StringTag stringTag) {
-                            if (!stringTag.getAsString().equals(conversationId)) {
+                            if (!NbtCompat.asString(stringTag).equals(conversationId)) {
                                 updatedNotifications.add(stringTag);
                             }
                         }
@@ -764,11 +764,11 @@ public class ScreenMenuUtils {
         buf.writeUtf(displayTitle);
         List<UUID> others = participantIds.stream().filter(id -> !id.equals(player.getUUID())).toList();
         buf.writeVarInt(others.size());
-        MinecraftServer server = player.getServer();
+        MinecraftServer server = player.level().getServer();
         for (UUID id : others) {
             buf.writeUUID(id);
             ServerPlayer other = server != null ? server.getPlayerList().getPlayer(id) : null;
-            buf.writeUtf(other != null ? other.getGameProfile().getName() : "");
+            buf.writeUtf(other != null ? GameProfileCompat.name(other.getGameProfile()) : "");
             for (EquipmentSlot slot : CALL_PREVIEW_ARMOR_SLOTS) {
                 ItemStack armor = other != null ? other.getItemBySlot(slot) : ItemStack.EMPTY;
                 buf.writeNbt(CrazyPhoneHelper.encodeItemStack(player.level(), armor));

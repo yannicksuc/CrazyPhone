@@ -160,7 +160,7 @@ public class CrazyPhonePasswordScreenScreen extends CrazyPhoneDefaultScreenScree
      * is ever actually submitted empty. */
     private String defaultNameSuggestion() {
         return this.minecraft != null && this.minecraft.player != null
-                ? this.minecraft.player.getGameProfile().getName()
+                ? fr.lordfinn.crazyphone.utils.GameProfileCompat.name(this.minecraft.player.getGameProfile())
                 : Component.translatable("gui.crazyphone.crazy_phone_password_screen.name").getString();
     }
 

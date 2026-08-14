@@ -29,7 +29,7 @@ public class CrazyPhoneDeletePhoneByNumberProcedure {
         registry.phones.remove(number);
         registry.contacts.remove(number);
 
-        for (String owner : List.copyOf(registry.contacts.getAllKeys())) {
+        for (String owner : List.copyOf(fr.lordfinn.crazyphone.utils.NbtCompat.keySet(registry.contacts))) {
             Tag tag = registry.contacts.get(owner);
             if (!(tag instanceof ListTag numbers))
                 continue;
@@ -37,7 +37,7 @@ public class CrazyPhoneDeletePhoneByNumberProcedure {
             List<Tag> remaining = new ArrayList<>();
             boolean changed = false;
             for (Tag entry : numbers) {
-                if (entry instanceof StringTag stringTag && number.equals(stringTag.getAsString())) {
+                if (entry instanceof StringTag stringTag && number.equals(fr.lordfinn.crazyphone.utils.NbtCompat.asString(stringTag))) {
                     changed = true;
                     continue;
                 }

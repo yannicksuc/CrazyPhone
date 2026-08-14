@@ -110,4 +110,13 @@ public final class NbtCompat {
     public static String asString(Tag tag) {
         return asString(tag, "");
     }
+
+    /** CompoundTag#getAllKeys() was renamed #keySet() in 1.21.10. */
+    public static java.util.Set<String> keySet(CompoundTag tag) {
+        //? if <1.21.10 {
+        return tag.getAllKeys();
+        //? } else {
+        /*return tag.keySet();
+        *///?}
+    }
 }

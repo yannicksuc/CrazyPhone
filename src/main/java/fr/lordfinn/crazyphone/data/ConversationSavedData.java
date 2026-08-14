@@ -163,7 +163,7 @@ public class ConversationSavedData extends SavedData {
      * every future relaunch since it's on disk. */
     public void finalizeOrphanedCalls() {
         boolean changed = false;
-        for (String conversationId : conversations.getAllKeys()) {
+        for (String conversationId : fr.lordfinn.crazyphone.utils.NbtCompat.keySet(conversations)) {
             if (!(conversations.get(conversationId) instanceof ListTag messages))
                 continue;
             for (int i = 0; i < messages.size(); i++) {

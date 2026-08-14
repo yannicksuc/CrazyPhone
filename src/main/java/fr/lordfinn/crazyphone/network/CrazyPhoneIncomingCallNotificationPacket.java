@@ -93,7 +93,7 @@ public record CrazyPhoneIncomingCallNotificationPacket(String conversationId, St
                 .withStyle(style -> style.withColor(0x00FF55).withItalic(true));
         mc.player.sendSystemMessage(toast);
 
-        SoundEvent sound = BuiltInRegistries.SOUND_EVENT.get(Crazyphone.parseId("block.note_block.bell"));
+        SoundEvent sound = fr.lordfinn.crazyphone.utils.RegistryCompat.get(BuiltInRegistries.SOUND_EVENT, Crazyphone.parseId("block.note_block.bell"));
         if (sound != null) {
             mc.player.playNotifySound(sound, SoundSource.PLAYERS, 0.8f, 1.2f);
         }

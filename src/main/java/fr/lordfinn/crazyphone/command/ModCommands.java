@@ -253,11 +253,11 @@ public class ModCommands {
 
     private static Iterable<String> registeredNumbers(CommandContext<CommandSourceStack> context) {
         LevelAccessor world = context.getSource().getUnsidedLevel();
-        return world == null ? java.util.List.of() : PhoneRegistrySavedData.get(world).phones.getAllKeys();
+        return world == null ? java.util.List.of() : fr.lordfinn.crazyphone.utils.NbtCompat.keySet(PhoneRegistrySavedData.get(world).phones);
     }
 
     private static Iterable<String> candidateNumbers(CommandContext<CommandSourceStack> context) {
         LevelAccessor world = context.getSource().getUnsidedLevel();
-        return world == null ? java.util.List.of() : PhoneRegistrySavedData.get(world).mayorsCandidates.getAllKeys();
+        return world == null ? java.util.List.of() : fr.lordfinn.crazyphone.utils.NbtCompat.keySet(PhoneRegistrySavedData.get(world).mayorsCandidates);
     }
 }

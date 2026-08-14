@@ -19,7 +19,7 @@ public class CrazyPhoneAddContactToPhoneProcedure {
 			numbers = new ListTag();
 		}
 		for (Tag dataelementiterator : numbers) {
-			if ((contact).equals(dataelementiterator instanceof StringTag _stringTag ? _stringTag.getAsString() : "")) {
+			if ((contact).equals(dataelementiterator instanceof StringTag _stringTag ? fr.lordfinn.crazyphone.utils.NbtCompat.asString(_stringTag) : "")) {
 				alreadyPresent = true;
 			}
 		}
