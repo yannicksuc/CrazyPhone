@@ -97,7 +97,11 @@ public record CrazyPhoneGroupMembershipNotificationPacket(String groupLabel, Str
                 messagePacket.added ? "message.crazyphone.group_added" : "message.crazyphone.group_removed",
                 actorName, groupLabel)
             .withStyle(style -> style.withColor(messagePacket.added ? 0x55FFFF : 0xFF5555).withItalic(true));
+        //? if <1.21.10 {
         mc.player.sendSystemMessage(toast);
+        //? } else {
+        /*mc.player.displayClientMessage(toast, false);
+        *///?}
 
         ResourceLocation soundId = messagePacket.added
             ? Crazyphone.parseId("block.note_block.pling")

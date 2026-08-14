@@ -59,7 +59,11 @@ public class PhoneCursorStabilizer {
     }
 
     private static void captureCursorPosition() {
+        //? if <1.21.10 {
         long window = Minecraft.getInstance().getWindow().getWindow();
+        //? } else {
+        /*long window = Minecraft.getInstance().getWindow().handle();
+        *///?}
         double[] x = new double[1];
         double[] y = new double[1];
         GLFW.glfwGetCursorPos(window, x, y);

@@ -17,7 +17,11 @@ public final class CallRingtonePlayer {
 
     public static SoundInstance play(SoundEvent sound) {
         SoundInstance instance = new SimpleSoundInstance(
+                //? if <1.21.10 {
                 sound.getLocation(),
+                //? } else {
+                /*sound.location(),
+                *///?}
                 SoundSource.RECORDS,
                 1.0f, 1.0f,
                 SoundInstance.createUnseededRandom(),

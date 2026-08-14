@@ -78,7 +78,7 @@ public class CrazyPhoneListAndPrintPhonesProcedure {
 							|| finalName.toLowerCase().contains(lowerSearch)) {
 						MutableComponent message = buildPhoneChatMessage(name, password, skin, uuid, phoneKey,
 								finalName);
-						player.getServer().execute(() -> player.sendSystemMessage(message));
+						player.level().getServer().execute(() -> player.sendSystemMessage(message));
 					}
 				});
 			}

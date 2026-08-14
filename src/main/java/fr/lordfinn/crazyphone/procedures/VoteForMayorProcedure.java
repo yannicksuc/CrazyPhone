@@ -46,7 +46,7 @@ public class VoteForMayorProcedure {
 		CompoundTag voteTimestamps = PhoneRegistrySavedData.get(world).lastMayorVoteTimestamps;
 
 		if (voteTimestamps.contains(myNumber)) {
-			long lastVoteTime = voteTimestamps.getLong(myNumber);
+			long lastVoteTime = fr.lordfinn.crazyphone.utils.NbtCompat.getLong(voteTimestamps, myNumber);
 			if (currentTime - lastVoteTime < 600) {
 				if (entity instanceof Player _player && !_player.level().isClientSide()) {
 					long remainingSeconds = (600 - (currentTime - lastVoteTime)) / 20;

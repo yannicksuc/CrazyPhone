@@ -45,7 +45,11 @@ public final class CursorEffects {
     public static void endFrame() {
         if (requestedThisFrame != currentlyActive) {
             currentlyActive = requestedThisFrame;
+            //? if <1.21.10 {
             long window = Minecraft.getInstance().getWindow().getWindow();
+            //? } else {
+            /*long window = Minecraft.getInstance().getWindow().handle();
+            *///?}
             switch (currentlyActive) {
                 case ZOOM -> {
                     if (zoomCursor == 0L)

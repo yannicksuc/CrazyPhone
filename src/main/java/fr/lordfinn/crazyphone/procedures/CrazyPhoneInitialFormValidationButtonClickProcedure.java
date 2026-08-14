@@ -25,8 +25,8 @@ public static void execute(LevelAccessor world, double x, double y, double z, En
 		ResourceKey<SoundEvent> successSoundKey = ResourceKey.create(Registries.SOUND_EVENT, ResourceLocation.tryParse("entity.experience_orb.pickup"));
 		ResourceKey<SoundEvent> failSoundKey = ResourceKey.create(Registries.SOUND_EVENT, ResourceLocation.tryParse("entity.villager.no"));
 
-		Holder<SoundEvent> successSoundHolder = world.registryAccess().registryOrThrow(Registries.SOUND_EVENT).getHolderOrThrow(successSoundKey);
-		Holder<SoundEvent> failSoundHolder = world.registryAccess().registryOrThrow(Registries.SOUND_EVENT).getHolderOrThrow(failSoundKey);
+		Holder<SoundEvent> successSoundHolder = fr.lordfinn.crazyphone.utils.RegistryCompat.holderOrThrow(world.registryAccess(), Registries.SOUND_EVENT, successSoundKey);
+		Holder<SoundEvent> failSoundHolder = fr.lordfinn.crazyphone.utils.RegistryCompat.holderOrThrow(world.registryAccess(), Registries.SOUND_EVENT, failSoundKey);
 
 
     if (CrazyPhoneGetInitialFormValidationMessageProcedure.OK.equals(CrazyPhoneGetInitialFormValidationMessageProcedure.execute(world, entity, textstate))) {
@@ -38,7 +38,7 @@ public static void execute(LevelAccessor world, double x, double y, double z, En
         }
 
         PhoneTagAccess.setPhoneDisplayName(CrazyPhoneHelper.getMainHandItemOrEmpty(entity),
-                PhoneTagAccess.getTag(CrazyPhoneHelper.getMainHandItemOrEmpty(entity)).getString("name"));
+                fr.lordfinn.crazyphone.utils.NbtCompat.getString(PhoneTagAccess.getTag(CrazyPhoneHelper.getMainHandItemOrEmpty(entity)), "name"));
 
         // The password/identity form is a custom no-slots menu (CrazyPhoneDefaultScreenMenu), so while it's
         // still open, vanilla's per-tick hotbar sync never looks at the mainhand slot - see that class's own

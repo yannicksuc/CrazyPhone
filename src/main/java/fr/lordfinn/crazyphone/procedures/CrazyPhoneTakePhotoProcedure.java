@@ -28,7 +28,7 @@ public class CrazyPhoneTakePhotoProcedure {
         ItemStack stack = playerIn.getItemInHand(InteractionHand.MAIN_HAND);
 
         if (playerIn.isShiftKeyDown() && !CameraModHelper.isActive(stack)) {
-            if (worldIn.isClientSide) {
+            if (worldIn.isClientSide()) {
                 //? if >=1.20.5 {
                 /*openClientGui(stack.get(CameraModAccess.shaderDataComponent()));
                 *///? } else {

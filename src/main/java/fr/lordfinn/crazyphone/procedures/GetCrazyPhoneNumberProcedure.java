@@ -8,7 +8,7 @@ public class GetCrazyPhoneNumberProcedure {
 	public static String execute(ItemStack phone, LevelAccessor world) {
 		String number = "";
 		final String _tagName = "number";
-		number = PhoneTagAccess.getTag(phone).getString(_tagName);
+		number = fr.lordfinn.crazyphone.utils.NbtCompat.getString(PhoneTagAccess.getTag(phone), _tagName);
 		if ((number).isEmpty()) {
 			return ResetCrazyPhoneNumberProcedure.execute(phone, world);
 		}

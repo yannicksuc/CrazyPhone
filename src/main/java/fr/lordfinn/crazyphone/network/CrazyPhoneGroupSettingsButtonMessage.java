@@ -176,7 +176,11 @@ public record CrazyPhoneGroupSettingsButtonMessage(int buttonID, int x, int y, i
 		if (iconNbt.isEmpty())
 			return ItemStack.EMPTY;
 		try {
+			//? if <1.21.10 {
 			CompoundTag tag = TagParser.parseTag(iconNbt);
+			//? } else {
+			/*CompoundTag tag = TagParser.parseCompoundFully(iconNbt);
+			*///?}
 			return CrazyPhoneHelper.decodeItemStack(world, tag);
 		} catch (Exception e) {
 			return ItemStack.EMPTY;

@@ -5,6 +5,6 @@ import fr.lordfinn.crazyphone.utils.PhoneTagAccess;
 
 public class IsPhoneOpenProcedure {
 	public static boolean execute(ItemStack itemstack) {
-		return PhoneTagAccess.getTag(itemstack).getBoolean("isOpen");
+		return fr.lordfinn.crazyphone.utils.NbtCompat.getBoolean(PhoneTagAccess.getTag(itemstack), "isOpen");
 	}
 }

@@ -42,11 +42,11 @@ public class CrazyPhoneMayorsCandidatesListScreen extends CrazyPhoneDefaultScree
 
 		for (int i = 0; i < keys.size(); i++) {
 			String number = keys.get(i);
-			CompoundTag phoneData = phones.getCompound(number);
+			CompoundTag phoneData = fr.lordfinn.crazyphone.utils.NbtCompat.getCompound(phones, number);
 
-			String name = phoneData.getString("name");
-			String skin = phoneData.getString("skin");
-			String uuid = phoneData.getString("uuid");
+			String name = fr.lordfinn.crazyphone.utils.NbtCompat.getString(phoneData, "name");
+			String skin = fr.lordfinn.crazyphone.utils.NbtCompat.getString(phoneData, "skin");
+			String uuid = fr.lordfinn.crazyphone.utils.NbtCompat.getString(phoneData, "uuid");
 
 			Contact contact = new Contact(number, name);
 			if (!uuid.isEmpty()) contact.setUuid(uuid);

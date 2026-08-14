@@ -28,7 +28,7 @@ import fr.lordfinn.crazyphone.Crazyphone;
 import fr.lordfinn.crazyphone.data.PlayerPhoneState;
 
 public record PlayerPhoneStateSyncPacket(PlayerPhoneState data) implements CustomPacketPayload {
-    //? if >=1.20.5 {
+    //? if >=1.20.5 <1.21.10 {
     /*public static final Type<PlayerPhoneStateSyncPacket> TYPE = new Type<>(Crazyphone.resource("player_phone_state_sync"));
 
     public static final StreamCodec<RegistryFriendlyByteBuf, PlayerPhoneStateSyncPacket> STREAM_CODEC = StreamCodec.of(
@@ -43,7 +43,32 @@ public record PlayerPhoneStateSyncPacket(PlayerPhoneState data) implements Custo
     public Type<PlayerPhoneStateSyncPacket> type() {
         return TYPE;
     }
-    *///? } else {
+    *///?}
+    //? if >=1.21.10 {
+    /*// PlayerPhoneState implements ValueIOSerializable here (serialize/deserialize), not INBTSerializable -
+    // TagValueOutput/TagValueInput are vanilla's own bridge between that and a plain CompoundTag for wire
+    // transmission, same round trip the old serializeNBT/deserializeNBT calls did.
+    public static final Type<PlayerPhoneStateSyncPacket> TYPE = new Type<>(Crazyphone.resource("player_phone_state_sync"));
+
+    public static final StreamCodec<RegistryFriendlyByteBuf, PlayerPhoneStateSyncPacket> STREAM_CODEC = StreamCodec.of(
+            (RegistryFriendlyByteBuf buffer, PlayerPhoneStateSyncPacket message) -> {
+                net.minecraft.world.level.storage.TagValueOutput output = net.minecraft.world.level.storage.TagValueOutput.createWithContext(net.minecraft.util.ProblemReporter.DISCARDING, buffer.registryAccess());
+                message.data().serialize(output);
+                buffer.writeNbt(output.buildResult());
+            },
+            (RegistryFriendlyByteBuf buffer) -> {
+                PlayerPhoneStateSyncPacket message = new PlayerPhoneStateSyncPacket(new PlayerPhoneState());
+                net.minecraft.world.level.storage.ValueInput input = net.minecraft.world.level.storage.TagValueInput.create(net.minecraft.util.ProblemReporter.DISCARDING, buffer.registryAccess(), buffer.readNbt());
+                message.data.deserialize(input);
+                return message;
+            });
+
+    @Override
+    public Type<PlayerPhoneStateSyncPacket> type() {
+        return TYPE;
+    }
+    *///?}
+    //? if <1.20.5 {
     public static final ResourceLocation ID = Crazyphone.resource("player_phone_state_sync");
 
     public PlayerPhoneStateSyncPacket(FriendlyByteBuf buffer) {
@@ -66,7 +91,7 @@ public record PlayerPhoneStateSyncPacket(PlayerPhoneState data) implements Custo
     }
     //?}
 
-    //? if >=1.20.5 {
+    //? if >=1.20.5 <1.21.10 {
     /*public static void handleData(final PlayerPhoneStateSyncPacket message, final IPayloadContext context) {
         if (context.flow() == PacketFlow.CLIENTBOUND) {
             context.enqueueWork(() -> context.player().getData(fr.lordfinn.crazyphone.data.PhoneAttachmentTypes.PLAYER_PHONE_STATE)
@@ -76,7 +101,23 @@ public record PlayerPhoneStateSyncPacket(PlayerPhoneState data) implements Custo
             });
         }
     }
-    *///? } else {
+    *///?}
+    //? if >=1.21.10 {
+    /*public static void handleData(final PlayerPhoneStateSyncPacket message, final IPayloadContext context) {
+        if (context.flow() == PacketFlow.CLIENTBOUND) {
+            context.enqueueWork(() -> {
+                net.minecraft.world.level.storage.TagValueOutput output = net.minecraft.world.level.storage.TagValueOutput.createWithContext(net.minecraft.util.ProblemReporter.DISCARDING, context.player().registryAccess());
+                message.data.serialize(output);
+                net.minecraft.world.level.storage.ValueInput input = net.minecraft.world.level.storage.TagValueInput.create(net.minecraft.util.ProblemReporter.DISCARDING, context.player().registryAccess(), output.buildResult());
+                context.player().getData(fr.lordfinn.crazyphone.data.PhoneAttachmentTypes.PLAYER_PHONE_STATE).deserialize(input);
+            }).exceptionally(e -> {
+                context.connection().disconnect(Component.literal(e.getMessage()));
+                return null;
+            });
+        }
+    }
+    *///?}
+    //? if <1.20.5 {
     public static void handleData(final PlayerPhoneStateSyncPacket message, final PlayPayloadContext context) {
         if (context.flow() == PacketFlow.CLIENTBOUND) {
             context.workHandler().submitAsync(() -> Minecraft.getInstance().player.getData(fr.lordfinn.crazyphone.data.PhoneAttachmentTypes.PLAYER_PHONE_STATE)

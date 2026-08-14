@@ -70,7 +70,7 @@ public abstract class CameraModPacketManagerMixin {
         try {
             ImageTools.saveImage(player, imageID, image);
 
-            player.getServer().submitAsync(() -> {
+            player.level().getServer().submitAsync(() -> {
                 ItemStack imageStack = new ItemStack(CameraModAccess.imageItem());
                 ImageData imageData = ImageData.create(player, imageID);
                 imageData.addToImage(imageStack);

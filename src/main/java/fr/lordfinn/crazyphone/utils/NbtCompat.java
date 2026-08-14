@@ -72,6 +72,15 @@ public final class NbtCompat {
         *///?}
     }
 
+    /** {@link ListTag#getCompound(int)} - empty CompoundTag (never null) if {@code index} isn't a compound. */
+    public static CompoundTag getCompound(ListTag list, int index) {
+        //? if <1.21.10 {
+        return list.getCompound(index);
+        //? } else {
+        /*return list.getCompoundOrEmpty(index);
+        *///?}
+    }
+
     /** Empty ListTag (never null) if {@code key} is missing, filtered to elements of {@code typeId} (e.g.
      *  {@code CompoundTag.TAG_COMPOUND}) pre-1.21.10 - the type filter itself is gone in 1.21.10, so callers
      *  there get back whatever's stored regardless of element type (same as every other call site already

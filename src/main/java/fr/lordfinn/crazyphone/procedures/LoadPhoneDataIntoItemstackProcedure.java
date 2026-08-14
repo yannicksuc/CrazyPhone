@@ -18,15 +18,15 @@ public class LoadPhoneDataIntoItemstackProcedure {
         if (phoneData == null)
             return; // no phone data found for that number
 
-        updateItemStackTag(itemstack, "uuid", phoneData.getString("uuid"));
-        updateItemStackTag(itemstack, "password", phoneData.getString("password"));
-        updateItemStackTag(itemstack, "name", phoneData.getString("name"));
-        updateItemStackTag(itemstack, "skin", phoneData.getString("skin"));
+        updateItemStackTag(itemstack, "uuid", fr.lordfinn.crazyphone.utils.NbtCompat.getString(phoneData, "uuid"));
+        updateItemStackTag(itemstack, "password", fr.lordfinn.crazyphone.utils.NbtCompat.getString(phoneData, "password"));
+        updateItemStackTag(itemstack, "name", fr.lordfinn.crazyphone.utils.NbtCompat.getString(phoneData, "name"));
+        updateItemStackTag(itemstack, "skin", fr.lordfinn.crazyphone.utils.NbtCompat.getString(phoneData, "skin"));
         updateItemStackTag(itemstack, "number", phoneNumber);
 
         // This only reads the registry (into the itemstack's own data), it never mutates it - broadcasting
         // an unchanged registry to every online player here was pure waste.
-        PhoneTagAccess.setPhoneDisplayName(itemstack, phoneData.getString("name"));
+        PhoneTagAccess.setPhoneDisplayName(itemstack, fr.lordfinn.crazyphone.utils.NbtCompat.getString(phoneData, "name"));
     }
 
     private static void updateItemStackTag(ItemStack itemstack, String tagName, String tagValue) {

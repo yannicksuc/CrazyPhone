@@ -91,7 +91,11 @@ public record CrazyPhoneIncomingCallNotificationPacket(String conversationId, St
                 .withStyle(style -> style.withBold(true).withColor(0x55FFFF));
         Component toast = Component.translatable("message.crazyphone.incoming_call_toast", callerName)
                 .withStyle(style -> style.withColor(0x00FF55).withItalic(true));
+        //? if <1.21.10 {
         mc.player.sendSystemMessage(toast);
+        //? } else {
+        /*mc.player.displayClientMessage(toast, false);
+        *///?}
 
         SoundEvent sound = fr.lordfinn.crazyphone.utils.RegistryCompat.get(BuiltInRegistries.SOUND_EVENT, Crazyphone.parseId("block.note_block.bell"));
         if (sound != null) {

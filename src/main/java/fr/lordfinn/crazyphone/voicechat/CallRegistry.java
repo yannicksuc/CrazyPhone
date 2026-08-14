@@ -125,7 +125,7 @@ public final class CallRegistry {
             return null;
 
         CallSession session = new CallSession(callId, conversationId, initiator.getUUID());
-        session.startedAtGameTime = initiator.getServer() == null ? 0 : initiator.getServer().overworld().getGameTime();
+        session.startedAtGameTime = initiator.level().getServer() == null ? 0 : initiator.level().getServer().overworld().getGameTime();
         session.participants.add(initiator.getUUID());
         ACTIVE_CALLS.put(callId, session);
         PLAYER_TO_CALL.put(initiator.getUUID(), callId);
@@ -205,7 +205,7 @@ public final class CallRegistry {
         CallSession session = getSessionFor(player.getUUID()).orElse(null);
         if (session == null)
             return;
-        leaveInternal(player.getUUID(), player.getServer(), session);
+        leaveInternal(player.getUUID(), player.level().getServer(), session);
         notifySafe(player, session, CrazyPhoneCallStateSyncPacket.State.ENDED);
     }
 
@@ -366,12 +366,12 @@ public final class CallRegistry {
 
     private static String resolvePlayerName(ServerPlayer contextPlayer, UUID playerId) {
         ServerPlayer player = findPlayer(contextPlayer, playerId);
-        return player != null ? player.getGameProfile().getName() : "";
+        return player != null ? fr.lordfinn.crazyphone.utils.GameProfileCompat.name(player.getGameProfile()) : "";
     }
 
     private static ServerPlayer findPlayer(ServerPlayer contextPlayer, UUID playerId) {
         if (contextPlayer.getUUID().equals(playerId))
             return contextPlayer;
-        return contextPlayer.getServer() == null ? null : contextPlayer.getServer().getPlayerList().getPlayer(playerId);
+        return contextPlayer.level().getServer() == null ? null : contextPlayer.level().getServer().getPlayerList().getPlayer(playerId);
     }
 }

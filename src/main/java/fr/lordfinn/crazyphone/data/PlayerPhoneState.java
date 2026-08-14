@@ -51,7 +51,7 @@ public class PlayerPhoneState implements INBTSerializable<CompoundTag> {
     }
     *///?}
 
-    //? if >=1.20.5 {
+    //? if >=1.20.5 <1.21.10 {
     /*@Override
     public CompoundTag serializeNBT(HolderLookup.@NotNull Provider lookupProvider) {
         CompoundTag nbt = new CompoundTag();
@@ -65,7 +65,8 @@ public class PlayerPhoneState implements INBTSerializable<CompoundTag> {
         currentCrazyPhoneScreenOpened = readString(nbt, "currentCrazyPhoneScreenOpened");
         crazyPhoneScreenHistory = readString(nbt, "crazyPhoneScreenHistory");
     }
-    *///? } else {
+    *///?}
+    //? if <1.20.5 {
     @Override
     public CompoundTag serializeNBT() {
         CompoundTag nbt = new CompoundTag();

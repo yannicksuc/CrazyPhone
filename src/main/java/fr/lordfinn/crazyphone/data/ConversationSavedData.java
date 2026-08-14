@@ -11,6 +11,11 @@ import net.minecraft.world.level.saveddata.SavedData;
 //? if <1.20.5 {
 import net.minecraft.util.datafix.DataFixTypes;
 //?}
+//? if >=1.21.10 {
+/*import com.mojang.serialization.Codec;
+import net.minecraft.util.datafix.DataFixTypes;
+import net.minecraft.world.level.saveddata.SavedDataType;
+*///?}
 
 import fr.lordfinn.crazyphone.Config;
 
@@ -39,7 +44,7 @@ public class ConversationSavedData extends SavedData {
      * image messages. Never sent wholesale; only ever read one entry at a time, on an explicit play click. */
     public CompoundTag voiceAudio = new CompoundTag();
 
-    //? if >=1.20.5 {
+    //? if >=1.20.5 <1.21.10 {
     /*public static ConversationSavedData load(CompoundTag tag, HolderLookup.Provider lookupProvider) {
     *///? } else {
     public static ConversationSavedData load(CompoundTag tag) {
@@ -50,17 +55,39 @@ public class ConversationSavedData extends SavedData {
         return data;
     }
 
-    //? if >=1.20.5 {
-    /*@Override
-    public CompoundTag save(CompoundTag nbt, HolderLookup.Provider lookupProvider) {
-    *///? } else {
+    //? if <1.20.5 {
     @Override
     public CompoundTag save(CompoundTag nbt) {
+        return writeNbt(nbt);
+    }
     //?}
+    //? if >=1.20.5 <1.21.10 {
+    /*@Override
+    public CompoundTag save(CompoundTag nbt, HolderLookup.Provider lookupProvider) {
+        return writeNbt(nbt);
+    }
+    *///?}
+    //? if >=1.21.10 {
+    /*// No longer a SavedData override point - see #CODEC below. Kept as this class's own hand-rolled
+    // NBT shape, reused by the Codec's encode side, same rationale as PhoneRegistrySavedData.
+    public CompoundTag save(CompoundTag nbt, HolderLookup.Provider lookupProvider) {
+        return writeNbt(nbt);
+    }
+    *///?}
+
+    private CompoundTag writeNbt(CompoundTag nbt) {
         nbt.put("conversations", this.conversations);
         nbt.put("voiceAudio", this.voiceAudio);
         return nbt;
     }
+
+    //? if >=1.21.10 {
+    /*public static final Codec<ConversationSavedData> CODEC = CompoundTag.CODEC.xmap(ConversationSavedData::load,
+            data -> data.writeNbt(new CompoundTag()));
+
+    public static final SavedDataType<ConversationSavedData> TYPE =
+            new SavedDataType<>(DATA_NAME, ConversationSavedData::new, CODEC, DataFixTypes.LEVEL);
+    *///?}
 
     public void storeVoiceAudio(UUID voiceId, String conversationId, byte[] pcm) {
         CompoundTag entry = new CompoundTag();
@@ -76,7 +103,7 @@ public class ConversationSavedData extends SavedData {
         if (!(voiceAudio.get(voiceId.toString()) instanceof CompoundTag entry))
             return null;
         byte[] bytes = entry.get("bytes") instanceof ByteArrayTag tag ? tag.getAsByteArray() : new byte[0];
-        return new VoiceAudioEntry(entry.getString("conversationId"), bytes);
+        return new VoiceAudioEntry(fr.lordfinn.crazyphone.utils.NbtCompat.getString(entry, "conversationId"), bytes);
     }
 
     public record VoiceAudioEntry(String conversationId, byte[] bytes) {
@@ -85,11 +112,15 @@ public class ConversationSavedData extends SavedData {
     public static ConversationSavedData get(LevelAccessor world) {
         if (world instanceof ServerLevelAccessor serverLevelAcc) {
             return serverLevelAcc.getLevel().getServer().overworld().getDataStorage()
-                    //? if >=1.20.5 {
-                    /*.computeIfAbsent(new SavedData.Factory<>(ConversationSavedData::new, ConversationSavedData::load), DATA_NAME);
-                    *///? } else {
+                    //? if <1.20.5 {
                     .computeIfAbsent(new SavedData.Factory<>(ConversationSavedData::new, ConversationSavedData::load, DataFixTypes.LEVEL), DATA_NAME);
                     //?}
+                    //? if >=1.20.5 <1.21.10 {
+                    /*.computeIfAbsent(new SavedData.Factory<>(ConversationSavedData::new, ConversationSavedData::load), DATA_NAME);
+                    *///?}
+                    //? if >=1.21.10 {
+                    /*.computeIfAbsent(TYPE);
+                    *///?}
         }
         throw new IllegalStateException("ConversationSavedData is server-only; conversations are fetched on demand via network packets, never held client-side in full");
     }
@@ -114,12 +145,12 @@ public class ConversationSavedData extends SavedData {
 
     private void trim(ListTag messages) {
         while (messages.size() > Config.maxStoredMessagesPerConversation) {
-            evictVoiceAudioIfPresent(messages.getCompound(0));
+            evictVoiceAudioIfPresent(fr.lordfinn.crazyphone.utils.NbtCompat.getCompound(messages, 0));
             messages.remove(0);
         }
         int imageCount = 0;
         for (int i = messages.size() - 1; i >= 0; i--) {
-            CompoundTag message = messages.getCompound(i);
+            CompoundTag message = fr.lordfinn.crazyphone.utils.NbtCompat.getCompound(messages, i);
             if (!message.contains("image"))
                 continue;
             imageCount++;
@@ -132,7 +163,7 @@ public class ConversationSavedData extends SavedData {
         // lockstep here or it leaks on disk forever, defeating the entire point of capping this history.
         int voiceCount = 0;
         for (int i = messages.size() - 1; i >= 0; i--) {
-            CompoundTag message = messages.getCompound(i);
+            CompoundTag message = fr.lordfinn.crazyphone.utils.NbtCompat.getCompound(messages, i);
             if (!message.contains("voice"))
                 continue;
             voiceCount++;
@@ -146,7 +177,7 @@ public class ConversationSavedData extends SavedData {
     private void evictVoiceAudioIfPresent(CompoundTag message) {
         if (!(message.get("voice") instanceof CompoundTag voiceTag))
             return;
-        UUID voiceId = new UUID(voiceTag.getLong("voice_id_most"), voiceTag.getLong("voice_id_least"));
+        UUID voiceId = new UUID(fr.lordfinn.crazyphone.utils.NbtCompat.getLong(voiceTag, "voice_id_most"), fr.lordfinn.crazyphone.utils.NbtCompat.getLong(voiceTag, "voice_id_least"));
         voiceAudio.remove(voiceId.toString());
     }
 
@@ -167,8 +198,8 @@ public class ConversationSavedData extends SavedData {
             if (!(conversations.get(conversationId) instanceof ListTag messages))
                 continue;
             for (int i = 0; i < messages.size(); i++) {
-                CompoundTag message = messages.getCompound(i);
-                if (message.get("call") instanceof CompoundTag callTag && callTag.getLong("call_duration_millis") == -1) {
+                CompoundTag message = fr.lordfinn.crazyphone.utils.NbtCompat.getCompound(messages, i);
+                if (message.get("call") instanceof CompoundTag callTag && fr.lordfinn.crazyphone.utils.NbtCompat.getLong(callTag, "call_duration_millis") == -1) {
                     callTag.putLong("call_duration_millis", ORPHANED_CALL_DURATION_MILLIS);
                     changed = true;
                 }
@@ -186,10 +217,10 @@ public class ConversationSavedData extends SavedData {
         if (!(existing instanceof ListTag messages))
             return;
         for (int i = messages.size() - 1; i >= 0; i--) {
-            CompoundTag message = messages.getCompound(i);
+            CompoundTag message = fr.lordfinn.crazyphone.utils.NbtCompat.getCompound(messages, i);
             if (!(message.get("call") instanceof CompoundTag callTag))
                 continue;
-            UUID id = new UUID(callTag.getLong("call_id_most"), callTag.getLong("call_id_least"));
+            UUID id = new UUID(fr.lordfinn.crazyphone.utils.NbtCompat.getLong(callTag, "call_id_most"), fr.lordfinn.crazyphone.utils.NbtCompat.getLong(callTag, "call_id_least"));
             if (id.equals(callId)) {
                 mutator.accept(callTag);
                 setDirty();
@@ -208,7 +239,7 @@ public class ConversationSavedData extends SavedData {
         int endExclusive = Math.max(0, messages.size() - skipFromEnd);
         int startInclusive = Math.max(0, endExclusive - limit);
         for (int i = startInclusive; i < endExclusive; i++) {
-            page.add(messages.getCompound(i).copy());
+            page.add(fr.lordfinn.crazyphone.utils.NbtCompat.getCompound(messages, i).copy());
         }
         return page;
     }

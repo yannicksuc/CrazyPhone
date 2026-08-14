@@ -60,7 +60,7 @@ public class CallTerminationListener {
         if (event.getEntity().getItem().getItem() != ModItems.CRAZY_PHONE.get())
             return;
         if (event.getPlayer() instanceof ServerPlayer serverPlayer && CallRegistry.getSessionFor(serverPlayer.getUUID()).isPresent()) {
-            MinecraftServer server = serverPlayer.getServer();
+            MinecraftServer server = serverPlayer.level().getServer();
             if (server != null)
                 phonelessSinceGameTime.putIfAbsent(serverPlayer.getUUID(), server.overworld().getGameTime());
         }

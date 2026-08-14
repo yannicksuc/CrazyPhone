@@ -40,7 +40,7 @@ public class RegisterNewPhoneFromFormProcedure {
             ServerPlayer player = (ServerPlayer) entity;
             GameProfile gameProfile = CrazyPhoneHelper.applySkinToProfile(player.getGameProfile(), entity.getStringUUID());
             if (gameProfile != null) {
-                Property property = gameProfile.getProperties().get("textures").stream().findFirst().orElse(null);
+                Property property = fr.lordfinn.crazyphone.utils.GameProfileCompat.properties(gameProfile).get("textures").stream().findFirst().orElse(null);
                 if (property != null) {
                     String textureUUID = property.value();
                     phone.putString("skin", textureUUID);

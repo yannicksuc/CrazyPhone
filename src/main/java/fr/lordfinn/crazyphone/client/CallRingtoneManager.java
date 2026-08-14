@@ -90,7 +90,12 @@ public class CallRingtoneManager {
             if (cycleIndex != lastBuzzCycle) {
                 lastBuzzCycle = cycleIndex;
                 mc.getSoundManager().play(new SimpleSoundInstance(
-                        ModSounds.PHONE_VIBRATING.get().getLocation(), SoundSource.RECORDS, 0.7f, 1.0f,
+                        //? if <1.21.10 {
+                        ModSounds.PHONE_VIBRATING.get().getLocation(),
+                        //? } else {
+                        /*ModSounds.PHONE_VIBRATING.get().location(),
+                        *///?}
+                        SoundSource.RECORDS, 0.7f, 1.0f,
                         SoundInstance.createUnseededRandom(), false, 0,
                         SoundInstance.Attenuation.NONE, 0.0, 0.0, 0.0, true));
             }

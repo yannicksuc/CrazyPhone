@@ -95,7 +95,7 @@ public record ConversationResponsePacket(String conversationId, int skipFromEnd,
         context.enqueueWork(() -> {
             List<CompoundTag> messages = new ArrayList<>();
             for (int i = 0; i < message.messages.size(); i++) {
-                messages.add(message.messages.getCompound(i));
+                messages.add(fr.lordfinn.crazyphone.utils.NbtCompat.getCompound(message.messages, i));
             }
             ConversationClientCache.onPageReceived(message.conversationId,
                     new ConversationClientCache.ConversationPage(messages, message.hasMore, message.skipFromEnd));
@@ -111,7 +111,7 @@ public record ConversationResponsePacket(String conversationId, int skipFromEnd,
         context.workHandler().submitAsync(() -> {
             List<CompoundTag> messages = new ArrayList<>();
             for (int i = 0; i < message.messages.size(); i++) {
-                messages.add(message.messages.getCompound(i));
+                messages.add(fr.lordfinn.crazyphone.utils.NbtCompat.getCompound(message.messages, i));
             }
             ConversationClientCache.onPageReceived(message.conversationId,
                     new ConversationClientCache.ConversationPage(messages, message.hasMore, message.skipFromEnd));

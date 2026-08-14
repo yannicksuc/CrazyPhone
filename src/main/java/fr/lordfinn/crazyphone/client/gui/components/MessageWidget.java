@@ -389,7 +389,7 @@ public class MessageWidget extends AbstractWidget {
     }
 
     private String readIconCustomData(String key) {
-        return fr.lordfinn.crazyphone.utils.PhoneTagAccess.getTag(icon).getString(key);
+        return fr.lordfinn.crazyphone.utils.NbtCompat.getString(fr.lordfinn.crazyphone.utils.PhoneTagAccess.getTag(icon), key);
     }
 
     /** Hit box for the message bubble itself (not the head icon), used by the screen to show a sent-at timestamp tooltip on hover. */

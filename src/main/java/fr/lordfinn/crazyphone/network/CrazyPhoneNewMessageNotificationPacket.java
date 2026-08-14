@@ -100,8 +100,13 @@ public record CrazyPhoneNewMessageNotificationPacket(
         if (!message.isSystem()) {
             Component senderName = Component.literal(messagePacket.senderName)
                     .withStyle(style -> style.withBold(true).withColor(0x00FF55));
-            mc.player.sendSystemMessage(Component.translatable("message.crazyphone.new_message_received", senderName)
-                .withStyle(style -> style.withColor(0x55FFFF).withItalic(true)));
+            Component notifText = Component.translatable("message.crazyphone.new_message_received", senderName)
+                .withStyle(style -> style.withColor(0x55FFFF).withItalic(true));
+            //? if <1.21.10 {
+            mc.player.sendSystemMessage(notifText);
+            //? } else {
+            /*mc.player.displayClientMessage(notifText, false);
+            *///?}
 
             SoundEvent sound = fr.lordfinn.crazyphone.utils.RegistryCompat.get(BuiltInRegistries.SOUND_EVENT, Crazyphone.parseId("block.note_block.pling"));
             if (sound != null) {

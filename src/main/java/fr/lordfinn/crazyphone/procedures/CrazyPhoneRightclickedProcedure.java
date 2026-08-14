@@ -32,8 +32,8 @@ public class CrazyPhoneRightclickedProcedure {
 				ScreenMenuUtils.openPhoneCustomMenu(_ent, InteractionHand.MAIN_HAND, CrazyphoneHomeScreenMenu.class);
 				if (world instanceof Level _level) {
 					if (playerIn instanceof ServerPlayer serverPlayer) {
-						SoundEvent sound = BuiltInRegistries.SOUND_EVENT
-								.get(Crazyphone.parseId("crazyphone:pokedex"));
+						SoundEvent sound = fr.lordfinn.crazyphone.utils.RegistryCompat.get(BuiltInRegistries.SOUND_EVENT,
+								Crazyphone.parseId("crazyphone:pokedex"));
 						if (sound != null) {
 							serverPlayer.playNotifySound(sound, SoundSource.PLAYERS, 0.2f, 1f);
 						}

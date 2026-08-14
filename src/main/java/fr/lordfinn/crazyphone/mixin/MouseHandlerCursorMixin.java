@@ -40,7 +40,11 @@ public abstract class MouseHandlerCursorMixin {
         if (!PhoneCursorStabilizer.consumePendingRestore(pos))
             return;
 
+        //? if <1.21.10 {
         long window = Minecraft.getInstance().getWindow().getWindow();
+        //? } else {
+        /*long window = Minecraft.getInstance().getWindow().handle();
+        *///?}
         GLFW.glfwSetCursorPos(window, pos[0], pos[1]);
         this.xpos = pos[0];
         this.ypos = pos[1];

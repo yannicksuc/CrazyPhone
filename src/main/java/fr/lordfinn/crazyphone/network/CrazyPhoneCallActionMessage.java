@@ -154,7 +154,7 @@ public record CrazyPhoneCallActionMessage(int action, String conversationId) imp
             Contact contact = CrazyPhoneHelper.getContact(world, number);
             if (contact == null || contact.getUuid() == null)
                 continue;
-            ServerPlayer callee = player.getServer().getPlayerList().getPlayer(UUID.fromString(contact.getUuid()));
+            ServerPlayer callee = player.level().getServer().getPlayerList().getPlayer(UUID.fromString(contact.getUuid()));
             if (callee != null)
                 callees.add(callee);
         }

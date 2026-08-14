@@ -42,7 +42,7 @@ public class CrazyPhoneOnUseProcedure {
 		// instead of being stuck showing the registration screen forever despite already being registered.
 		ItemStack heldPhone = CrazyPhoneHelper.getMainHandItemOrEmpty(entity);
 		if (IsPhoneItemStackInUseProcedure.execute(world, heldPhone) && !IsPhoneSetupProcedure.execute(heldPhone)) {
-			String heldNumber = PhoneTagAccess.getTag(heldPhone).getString("number");
+			String heldNumber = fr.lordfinn.crazyphone.utils.NbtCompat.getString(PhoneTagAccess.getTag(heldPhone), "number");
 			LoadPhoneDataIntoItemstackProcedure.execute(world, entity, heldPhone, heldNumber);
 		}
 		if (!IsPhoneSetupProcedure.execute(CrazyPhoneHelper.getMainHandItemOrEmpty(entity))) {

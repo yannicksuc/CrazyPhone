@@ -6,7 +6,8 @@ import net.minecraft.client.Screenshot;
 import net.minecraft.client.gui.screens.Screen;
 //? if >=1.20.5 {
 /*import net.neoforged.neoforge.client.event.RenderFrameEvent;
-*///? } else {
+*///?}
+//? if <1.20.5 {
 import net.neoforged.neoforge.event.TickEvent;
 //?}
 import com.mojang.blaze3d.platform.NativeImage;
@@ -44,7 +45,7 @@ public class CameraModImageTakerMixin {
         }
     }
 
-    //? if >=1.20.5 {
+    //? if >=1.20.5 <1.21.10 {
     /*@Inject(method = "onRenderTickEnd", at = @At("HEAD"), cancellable = true)
 private static void injectOnRenderTickEnd(RenderFrameEvent.Post event, CallbackInfo ci) {
     Minecraft mc = Minecraft.getInstance();
@@ -62,7 +63,33 @@ private static void injectOnRenderTickEnd(RenderFrameEvent.Post event, CallbackI
         ci.cancel();
     }
 }
-    *///? } else {
+    *///?}
+    //? if >=1.21.10 {
+    /*// Screenshot.takeScreenshot became asynchronous in 1.21.10 (a Consumer<NativeImage> callback instead
+    // of a direct return) - the surrounding hideGui/takeScreenshot state resets and the actual send now
+    // happen inside that callback instead of immediately after the call, but the ordering relative to
+    // ci.cancel() is unchanged (cancel just stops vanilla's own tick handling, independent of when the
+    // screenshot capture itself finishes).
+    @Inject(method = "onRenderTickEnd", at = @At("HEAD"), cancellable = true)
+private static void injectOnRenderTickEnd(RenderFrameEvent.Post event, CallbackInfo ci) {
+    Minecraft mc = Minecraft.getInstance();
+    if (takeScreenshot) {
+        if (mc.screen != null || !mc.options.hideGui) {
+            // On attend que l'écran soit fermé ET que le HUD soit caché
+            ci.cancel();
+            return;
+        }
+
+        Screenshot.takeScreenshot(mc.getMainRenderTarget(), image -> {
+            mc.options.hideGui = hide;
+            takeScreenshot = false;
+            de.maxhenkel.camera.ImageProcessor.sendScreenshotThreaded(uuid, image);
+        });
+        ci.cancel();
+    }
+}
+    *///?}
+    //? if <1.20.5 {
     @Inject(method = "onRenderTickEnd", at = @At("HEAD"), cancellable = true)
     private static void injectOnRenderTickEnd(TickEvent.RenderTickEvent event, CallbackInfo ci) {
         if (event.phase != TickEvent.Phase.END) return;
