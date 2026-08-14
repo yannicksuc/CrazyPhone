@@ -10,6 +10,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.network.FriendlyByteBuf;
 import fr.lordfinn.crazyphone.init.ModMenus;
+import fr.lordfinn.crazyphone.utils.CameraModHelper;
 import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
 import fr.lordfinn.crazyphone.utils.ScreenMenuUtils;
 
@@ -54,11 +55,7 @@ public class CrazyPhonePicturesScreenMenu extends CrazyPhoneDefaultScreenMenu {
 			ItemStack album = CrazyPhoneHelper.decodeItemStack(this.world, albumTag != null ? albumTag : new CompoundTag());
 			this.albumStack = album;
 			if (!album.isEmpty()) {
-				//? if >=1.20.5 {
-				/*AlbumInventory pictures = new AlbumInventory(entity.level().registryAccess(), album);
-				*///? } else {
-				AlbumInventory pictures = new AlbumInventory(album);
-				//?}
+				AlbumInventory pictures = CameraModHelper.newAlbumInventory(entity.level(), album);
 				this.albumHandler = new AlbumInventoryItemHandler(pictures);
 				this.internal = albumHandler;
 
@@ -93,6 +90,16 @@ public class CrazyPhonePicturesScreenMenu extends CrazyPhoneDefaultScreenMenu {
 							@Override
 							public void set(ItemStack stack) {
 								// Prevent external stack setting
+							}
+
+							// Vanilla's own hover-highlight patch is hardcoded to a 16x16 footprint and would
+							// show as a small, oddly-placed square in one corner of each real 34x34 thumbnail -
+							// suppressed here (rather than by overriding the screen's own render hook, which
+							// 1.21.10 removed) since AbstractContainerScreen's default renderSlotHighlight
+							// already checks isHighlightable() on every version.
+							@Override
+							public boolean isHighlightable() {
+								return false;
 							}
 						};
 						this.customSlots.put(index, this.addSlot(slot));

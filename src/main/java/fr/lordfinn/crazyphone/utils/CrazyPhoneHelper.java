@@ -111,7 +111,11 @@ public class CrazyPhoneHelper {
         if (!(held.getItem() instanceof CrazyPhoneItem))
             return null;
 
+        //? if >=1.21.10 {
+        /*net.neoforged.neoforge.transfer.ResourceHandler<net.neoforged.neoforge.transfer.item.ItemResource> handler = held.getCapability(Capabilities.Item.ITEM, null);
+        *///? } else {
         IItemHandler handler = held.getCapability(Capabilities.ItemHandler.ITEM, null);
+        //?}
 
         if (!(handler instanceof IItemHandlerModifiable modifiableHandler))
             return null;

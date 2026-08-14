@@ -29,7 +29,9 @@ import org.joml.Matrix4f;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferBuilder;
+//? if <1.21.10 {
 import com.mojang.blaze3d.vertex.BufferUploader;
+//?}
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.blaze3d.vertex.VertexFormat.Mode;
@@ -162,17 +164,13 @@ public class CrazyPhoneMayorCandidateScreenScreen extends CrazyPhoneDefaultScree
     GuiCompat.pushPose(guiGraphics);
     GuiCompat.translate(guiGraphics, x, y);
 
-    RenderSystem.setShader(GameRenderer::getPositionTexShader);
-    RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
     ResourceLocation location = TextureCache.instance().getImage(uuid);
+    ResourceLocation texture = location == null ? ImageScreen.DEFAULT_IMAGE : location;
 
     float imageWidth = 12.0F;
     float imageHeight = 8.0F;
 
-    if (location == null) {
-        RenderSystem.setShaderTexture(0, ImageScreen.DEFAULT_IMAGE);
-    } else {
-        RenderSystem.setShaderTexture(0, location);
+    if (location != null) {
         NativeImage image = TextureCache.instance().getNativeImage(uuid);
         if (image != null) {
             imageWidth = (float) image.getWidth();
@@ -200,27 +198,7 @@ public class CrazyPhoneMayorCandidateScreenScreen extends CrazyPhoneDefaultScree
     float left = (ws - wnew) / 2.0F;
     float top = (hs - hnew) / 2.0F;
 
-    Matrix4f matrix = guiGraphics.pose().last().pose();
-    //? if >=1.20.5 {
-    /*BufferBuilder buffer = Tesselator.getInstance().begin(Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
-
-    buffer.addVertex(matrix, left, top, zLevel).setUv(0.0F, 0.0F);
-    buffer.addVertex(matrix, left, top + hnew, zLevel).setUv(0.0F, 1.0F);
-    buffer.addVertex(matrix, left + wnew, top + hnew, zLevel).setUv(1.0F, 1.0F);
-    buffer.addVertex(matrix, left + wnew, top, zLevel).setUv(1.0F, 0.0F);
-
-    BufferUploader.drawWithShader(buffer.buildOrThrow());
-    *///? } else {
-    BufferBuilder buffer = Tesselator.getInstance().getBuilder();
-    buffer.begin(Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
-
-    buffer.vertex(matrix, left, top, zLevel).uv(0.0F, 0.0F).endVertex();
-    buffer.vertex(matrix, left, top + hnew, zLevel).uv(0.0F, 1.0F).endVertex();
-    buffer.vertex(matrix, left + wnew, top + hnew, zLevel).uv(1.0F, 1.0F).endVertex();
-    buffer.vertex(matrix, left + wnew, top, zLevel).uv(1.0F, 0.0F).endVertex();
-
-    Tesselator.getInstance().end();
-    //?}
+    GuiCompat.drawTexturedQuad(guiGraphics, texture, left, top, left + wnew, top + hnew, 0.0F, 0.0F, 1.0F, 1.0F);
 
     GuiCompat.popPose(guiGraphics);
 }

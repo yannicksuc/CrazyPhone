@@ -29,6 +29,10 @@ public class ModItems {
 
     @SubscribeEvent
     public static void registerCapabilities(RegisterCapabilitiesEvent event) {
+        //? if >=1.21.10 {
+        /*event.registerItem(Capabilities.Item.ITEM, (stack, context) -> new CrazyPhoneInventoryCapability(stack), CRAZY_PHONE.get());
+        *///? } else {
         event.registerItem(Capabilities.ItemHandler.ITEM, (stack, context) -> new CrazyPhoneInventoryCapability(stack), CRAZY_PHONE.get());
+        //?}
     }
 }

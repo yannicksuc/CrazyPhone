@@ -15,7 +15,11 @@ import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.multiplayer.PlayerInfo;
 import net.minecraft.client.player.RemotePlayer;
+//? if <1.21.10 {
 import net.minecraft.client.resources.PlayerSkin;
+//? } else {
+/*import net.minecraft.world.entity.player.PlayerSkin;
+*///?}
 import net.minecraft.client.resources.SkinManager;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.Button;
@@ -121,7 +125,11 @@ public class CrazyPhoneContactInfoScreenScreen extends CrazyPhoneDefaultScreenSc
 			// Try to create a RemotePlayer with the given name and UUID
 			this.profile = new GameProfile(uuid, name);
         	SkinManager skinManager = Minecraft.getInstance().getSkinManager();
+        	//? if <1.21.10 {
       	  	CompletableFuture<PlayerSkin> skinFuture = skinManager.getOrLoad(profile);
+        	//? } else {
+        	/*CompletableFuture<java.util.Optional<PlayerSkin>> skinFuture = skinManager.get(profile);
+        	*///?}
 
        		skinFuture.thenAccept(playerSkin -> {
 			PlayerInfo playerInfo = new PlayerInfo(profile, false);
@@ -208,7 +216,7 @@ public class CrazyPhoneContactInfoScreenScreen extends CrazyPhoneDefaultScreenSc
 		entity.setXRot(-angleYComponent * 20.0F);
 		entity.yHeadRot = entity.getYRot();
 		entity.yHeadRotO = entity.getYRot();
-		InventoryScreen.renderEntityInInventory(guiGraphics, x, y, scale, new Vector3f(0, 0, 0), pose, cameraOrientation, entity);
+		fr.lordfinn.crazyphone.utils.GuiCompat.renderEntityInInventory(guiGraphics, x, y, scale, new Vector3f(0, 0, 0), pose, cameraOrientation, entity);
 		entity.yBodyRot = f2;
 		entity.setYRot(f3);
 		entity.setXRot(f4);

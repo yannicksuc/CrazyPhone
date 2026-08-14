@@ -181,10 +181,18 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
         // and painted over it - the box's thin border could survive at the edges while the text underneath
         // got covered, which is exactly the "wide box, no text" look this was producing.
         if (menu.isGroup() && isHoveringGroupSettingsIcon(mouseX, mouseY)) {
+            //? if <1.21.10 {
             guiGraphics.renderComponentTooltip(this.font, List.of(groupSettingsTooltip), mouseX, mouseY);
+            //? } else {
+            /*guiGraphics.setComponentTooltipForNextFrame(this.font, List.of(groupSettingsTooltip), mouseX, mouseY);
+            *///?}
         }
         if (VoicechatIntegration.isAvailable() && isHoveringCallIcon(mouseX, mouseY)) {
+            //? if <1.21.10 {
             guiGraphics.renderComponentTooltip(this.font, List.of(callIconTooltip()), mouseX, mouseY);
+            //? } else {
+            /*guiGraphics.setComponentTooltipForNextFrame(this.font, List.of(callIconTooltip()), mouseX, mouseY);
+            *///?}
         }
         // Drawn again here, after the message feed: button_envoyer/imagebutton_crazyphoneaddimage sit at
         // the bottom-right corner of the message crop zone (y 144-173, crop ends at 158) as a deliberate
@@ -230,9 +238,14 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
         for (MessageEntry entry : messageManager.getMessages()) {
             if (entry.widget().isHeadHovered(mouseX, mouseY)) {
                 // Same "Name • number" format as the contact heads in the contacts menu.
-                guiGraphics.renderComponentTooltip(this.font, List.of(
+                List<Component> headTooltip = List.of(
                         CrazyPhoneHelper.formatContactDisplayName(entry.widget().getContactName(), entry.widget().getContactNumber())
-                ), mouseX, mouseY);
+                );
+                //? if <1.21.10 {
+                guiGraphics.renderComponentTooltip(this.font, headTooltip, mouseX, mouseY);
+                //? } else {
+                /*guiGraphics.setComponentTooltipForNextFrame(this.font, headTooltip, mouseX, mouseY);
+                *///?}
                 return;
             }
         }
@@ -249,7 +262,11 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
                     lines.add(Component.translatable("gui.crazyphone.crazy_phone_conversation.click_to_zoom")
                             .withStyle(ChatFormatting.GRAY));
                 }
+                //? if <1.21.10 {
                 guiGraphics.renderComponentTooltip(this.font, lines, mouseX, mouseY);
+                //? } else {
+                /*guiGraphics.setComponentTooltipForNextFrame(this.font, lines, mouseX, mouseY);
+                *///?}
                 return;
             }
         }
@@ -710,7 +727,7 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
                 public void renderWidget(GuiGraphics guiGraphics, int x, int y, float partialTicks) {
                     // Manual blit, not vanilla ImageButton's default GUI-sprite-atlas lookup - same reason
                     // as every other send-style icon button in this class (see createSendMessageButton).
-                    guiGraphics.blit(sprites.get(isActive(), isHoveredOrFocused()), getX(), getY(), 300, 0, 0, width, height, width, height);
+                    GuiCompat.blit(guiGraphics, sprites.get(isActive(), isHoveredOrFocused()), getX(), getY(), 300, width, height);
                 }
             };
         }
@@ -760,7 +777,7 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
                 // above message-feed content (bubbles, head icons rendered via GuiGraphics#renderItem,
                 // which sit around Z 100-200), so it's still never covered when scrolled to the bottom -
                 // see the comment above button_envoyer's usage for why this is re-rendered a second time.
-                guiGraphics.blit(sprites.get(isActive(), isHoveredOrFocused()), getX(), getY(), 300, 0, 0, width, height, width, height);
+                GuiCompat.blit(guiGraphics, sprites.get(isActive(), isHoveredOrFocused()), getX(), getY(), 300, width, height);
             }
         };
     button.setTooltip(Tooltip.create(Component.translatable("gui.crazyphone.crazy_phone_conversation.tooltip_send_message")));
@@ -816,11 +833,9 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
                 // alone wouldn't visually dim this when inactive - unlike vanilla Button, which tints on its
                 // own. Fading the alpha here is what actually makes the IMAGES-disabled state visible.
                 if (!isActive())
-                    com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1, 1, 1, 0.35f);
-                guiGraphics.blit(sprites.get(isActive(), isHoveredOrFocused()), getX(), getY(), 300, 0, 0, width,
-                        height, width, height);
-                if (!isActive())
-                    com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1, 1, 1, 1);
+                    GuiCompat.blit(guiGraphics, sprites.get(isActive(), isHoveredOrFocused()), getX(), getY(), 300, width, height, 0.35f);
+                else
+                    GuiCompat.blit(guiGraphics, sprites.get(isActive(), isHoveredOrFocused()), getX(), getY(), 300, width, height);
             }
         };
         button.setTooltip(Tooltip.create(Component.translatable("gui.crazyphone.crazy_phone_conversation.tooltip_send_image")));
@@ -838,11 +853,9 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
             @Override
             public void renderWidget(GuiGraphics guiGraphics, int x, int y, float partialTicks) {
                 if (!isActive())
-                    com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1, 1, 1, 0.35f);
-                guiGraphics.blit(sprites.get(isActive(), isHoveredOrFocused()), getX(), getY(), 300, 0, 0, width,
-                        height, width, height);
-                if (!isActive())
-                    com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1, 1, 1, 1);
+                    GuiCompat.blit(guiGraphics, sprites.get(isActive(), isHoveredOrFocused()), getX(), getY(), 300, width, height, 0.35f);
+                else
+                    GuiCompat.blit(guiGraphics, sprites.get(isActive(), isHoveredOrFocused()), getX(), getY(), 300, width, height);
             }
         };
         button.setTooltip(Tooltip.create(Component.translatable("gui.crazyphone.crazy_phone_conversation.tooltip_send_voice_message")));

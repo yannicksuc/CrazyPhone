@@ -92,7 +92,11 @@ public final class CallBustPreview {
             return;
         MojangProfileLookup.lookup(name).thenAccept(realProfile -> {
             GameProfile profile = realProfile != null ? realProfile : new GameProfile(id, name);
+            //? if <1.21.10 {
             mc.getSkinManager().getOrLoad(profile).thenAccept(skin -> {
+            //? } else {
+            /*mc.getSkinManager().get(profile).thenAccept(skin -> {
+            *///?}
                 RemotePlayer fake = new RemotePlayer(level, profile);
                 fake.refreshDisplayName();
                 FakePlayerPreview.showAllSkinLayers(fake);
@@ -156,7 +160,11 @@ public final class CallBustPreview {
                 Integer previousTick = lastAnimatedGameTick.put(participantId, currentGameTick);
                 if (previousTick == null || previousTick != currentGameTick) {
                     float walkSpeed = live != null ? live.walkAnimationSpeed() : 0f;
+                    //? if <1.21.10 {
                     entity.walkAnimation.update(walkSpeed, 0.4f);
+                    //? } else {
+                    /*entity.walkAnimation.update(walkSpeed, 0.4f, 1.0f);
+                    *///?}
                 }
             }
         }
@@ -169,7 +177,7 @@ public final class CallBustPreview {
         entity.setXRot(pitch);
         entity.yHeadRot = 180.0F + headYawDelta;
         entity.yHeadRotO = entity.yHeadRot;
-        InventoryScreen.renderEntityInInventory(guiGraphics, anchorX, anchorY, scale, new Vector3f(0, 0, 0), pose, new Quaternionf(), entity);
+        fr.lordfinn.crazyphone.utils.GuiCompat.renderEntityInInventory(guiGraphics, anchorX, anchorY, scale, new Vector3f(0, 0, 0), pose, new Quaternionf(), entity);
         entity.yBodyRot = prevBodyRot;
         entity.setYRot(prevYRot);
         entity.setXRot(prevXRot);

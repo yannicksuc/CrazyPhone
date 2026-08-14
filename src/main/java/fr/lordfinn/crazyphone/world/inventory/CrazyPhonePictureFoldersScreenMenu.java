@@ -67,7 +67,12 @@ public class CrazyPhonePictureFoldersScreenMenu extends CrazyPhoneDefaultScreenM
 	}
 
 	public void handleSlotClick(int slotIndex) {
-		if (entity.getMainHandItem().getCapability(Capabilities.ItemHandler.ITEM, null) instanceof IItemHandlerModifiable itemHandler) {
+		//? if >=1.21.10 {
+		/*boolean isBound = entity.getMainHandItem().getCapability(Capabilities.Item.ITEM, null) instanceof IItemHandlerModifiable;
+		*///? } else {
+		boolean isBound = entity.getMainHandItem().getCapability(Capabilities.ItemHandler.ITEM, null) instanceof IItemHandlerModifiable;
+		//?}
+		if (isBound) {
 			if (entity instanceof ServerPlayer serverPlayer) {
 				ScreenMenuUtils.openPhoneAlbumMenu(serverPlayer, InteractionHand.MAIN_HAND, slotIndex);
 			}

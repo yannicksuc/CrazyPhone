@@ -77,7 +77,11 @@ public class CrazyPhoneMayorsCandidatesListScreen extends CrazyPhoneDefaultScree
 			guiGraphics.renderItem(rs.stack, iconX, iconY);
 			if (isHovering(rs, mouseX, mouseY)) {
 				guiGraphics.fill(iconX, iconY, iconX + 16, iconY + 16, 0x80FFFFFF);
+				//? if <1.21.10 {
 				guiGraphics.renderTooltip(this.font, rs.stack, mouseX, mouseY);
+				//? } else {
+				/*guiGraphics.setTooltipForNextFrame(this.font, rs.stack, mouseX, mouseY);
+				*///?}
 			}
 		}
 	}

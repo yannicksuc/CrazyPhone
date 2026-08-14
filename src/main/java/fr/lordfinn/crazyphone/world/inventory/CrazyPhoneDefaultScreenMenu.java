@@ -92,11 +92,19 @@ abstract public class CrazyPhoneDefaultScreenMenu extends AbstractContainerMenu 
 				byte hand = extraData.readByte();
 				ItemStack itemstack = hand == 0 ? this.entity.getMainHandItem() : this.entity.getOffhandItem();
 				this.boundItemMatcher = () -> itemstack == (hand == 0 ? this.entity.getMainHandItem() : this.entity.getOffhandItem());
+				//? if >=1.21.10 {
+				/*Object cap = itemstack.getCapability(Capabilities.Item.ITEM, null);
+				if (cap instanceof IItemHandler h) {
+					this.internal = h;
+					this.bound = true;
+				}
+				*///? } else {
 				IItemHandler cap = itemstack.getCapability(Capabilities.ItemHandler.ITEM);
 				if (cap != null) {
 					this.internal = cap;
 					this.bound = true;
 				}
+				//?}
 			}
 		}
 	}

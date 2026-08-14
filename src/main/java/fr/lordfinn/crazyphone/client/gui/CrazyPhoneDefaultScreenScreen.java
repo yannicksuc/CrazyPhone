@@ -115,7 +115,7 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 	 *                     are shown) so the title scrolls under it, not behind or past it. Defaults to the
 	 *                     header banner's own right edge when a screen has no such icon. */
 	protected void renderHeader(GuiGraphics guiGraphics, ItemStack icon, Component title, int rightBoundX) {
-		guiGraphics.blit(HEADER_BANNER_IMAGE, this.leftPos + 4, this.topPos + 9, 0, 0, 0, 114, 18, 114, 18);
+		fr.lordfinn.crazyphone.utils.GuiCompat.blit(guiGraphics, HEADER_BANNER_IMAGE, this.leftPos + 4, this.topPos + 9, 0, 114, 18);
 		guiGraphics.renderItem(icon, this.leftPos + HEADER_ICON_X, this.topPos + 9);
 		int availableWidth = Math.max(0, rightBoundX - HEADER_TITLE_RIGHT_GAP - HEADER_TITLE_X);
 		ScrollingText.render(guiGraphics, this.font, title, this.leftPos + HEADER_TITLE_X, this.topPos + 14, availableWidth, 0x404040);
@@ -147,14 +147,19 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 
 	@Override
 	protected void renderBg(GuiGraphics guiGraphics, float partialTicks, int gx, int gy) {
+		//? if <1.21.10 {
 		RenderSystem.setShaderColor(1, 1, 1, 1);
 		RenderSystem.enableBlend();
 		RenderSystem.defaultBlendFunc();
+		//?}
 
-		guiGraphics.blit(Crazyphone.parseId("crazyphone:textures/screens/phone-background.png"), this.leftPos + 0,
-				this.topPos + 0, 0,0, 0, 122, 195, 122, 195);
+		fr.lordfinn.crazyphone.utils.GuiCompat.blit(guiGraphics,
+				Crazyphone.parseId("crazyphone:textures/screens/phone-background.png"),
+				this.leftPos + 0, this.topPos + 0, 0, 122, 195);
 
+		//? if <1.21.10 {
 		RenderSystem.disableBlend();
+		//?}
 	}
 
 	//? if <1.21.10 {
@@ -245,8 +250,7 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 				e -> onBackButtonPressed()) {
 			@Override
 			public void renderWidget(GuiGraphics guiGraphics, int x, int y, float partialTicks) {
-				guiGraphics.blit(sprites.get(isActive(), isHoveredOrFocused()), getX(), getY(), 0, 0, width, height,
-						width, height);
+				fr.lordfinn.crazyphone.utils.GuiCompat.blit(guiGraphics, sprites.get(isActive(), isHoveredOrFocused()), getX(), getY(), 0, width, height);
 			}
 		};
 		imagebutton_crazyphoneback.setTooltip(Tooltip.create(Component.translatable("gui.crazyphone.crazyphone_home_screen.tooltip_back")));
@@ -269,8 +273,7 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 				}) {
 			@Override
 			public void renderWidget(GuiGraphics guiGraphics, int x, int y, float partialTicks) {
-				guiGraphics.blit(sprites.get(isActive(), isHoveredOrFocused()), getX(), getY(), 0, 0, width, height,
-						width, height);
+				fr.lordfinn.crazyphone.utils.GuiCompat.blit(guiGraphics, sprites.get(isActive(), isHoveredOrFocused()), getX(), getY(), 0, width, height);
 			}
 		};
 		imagebutton_crazyphonehome.setTooltip(Tooltip.create(Component.translatable("gui.crazyphone.crazyphone_home_screen.tooltip_home")));
@@ -293,8 +296,7 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 				}) {
 			@Override
 			public void renderWidget(GuiGraphics guiGraphics, int x, int y, float partialTicks) {
-				guiGraphics.blit(sprites.get(isActive(), isHoveredOrFocused()), getX(), getY(), 0, 0, width, height,
-						width, height);
+				fr.lordfinn.crazyphone.utils.GuiCompat.blit(guiGraphics, sprites.get(isActive(), isHoveredOrFocused()), getX(), getY(), 0, width, height);
 			}
 		};
 		imagebutton_crazyphonelock.setTooltip(Tooltip.create(Component.translatable("gui.crazyphone.crazyphone_home_screen.tooltip_lock")));

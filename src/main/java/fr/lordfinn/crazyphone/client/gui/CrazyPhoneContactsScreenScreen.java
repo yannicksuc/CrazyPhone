@@ -118,19 +118,23 @@ public class CrazyPhoneContactsScreenScreen extends CrazyPhoneDefaultScreenScree
 	@Override
 	protected void renderBg(GuiGraphics guiGraphics, float partialTicks, int gx, int gy) {
 		super.renderBg(guiGraphics, partialTicks, gx, gy);
+		//? if <1.21.10 {
 		com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1, 1, 1, 1);
 		com.mojang.blaze3d.systems.RenderSystem.enableBlend();
 		com.mojang.blaze3d.systems.RenderSystem.defaultBlendFunc();
+		//?}
 		guiGraphics.enableScissor(scissorX0(), scissorY0(), scissorX1(), scissorY1());
 		for (int index : selectedSlots) {
 			int[] pos = personPosByFlatIndex(index);
 			if (pos != null) {
-				guiGraphics.blit(Crazyphone.parseId("crazyphone:textures/screens/slot_selected.png"), pos[0] - 1, pos[1] - 1, 0, 0,
-						18, 18, 18, 18);
+				GuiCompat.blit(guiGraphics, Crazyphone.parseId("crazyphone:textures/screens/slot_selected.png"),
+						pos[0] - 1, pos[1] - 1, 0, 18, 18);
 			}
 		}
 		guiGraphics.disableScissor();
+		//? if <1.21.10 {
 		com.mojang.blaze3d.systems.RenderSystem.disableBlend();
+		//?}
 	}
 
 	@Override
@@ -343,8 +347,13 @@ public class CrazyPhoneContactsScreenScreen extends CrazyPhoneDefaultScreenScree
 
 		guiGraphics.disableScissor();
 
-		if (hoveredTooltip != null)
+		if (hoveredTooltip != null) {
+			//? if <1.21.10 {
 			guiGraphics.renderTooltip(this.font, hoveredTooltip.stream().map(Component::getVisualOrderText).toList(), mouseX, mouseY);
+			//? } else {
+			/*guiGraphics.setTooltipForNextFrame(this.font, hoveredTooltip.stream().map(Component::getVisualOrderText).toList(), mouseX, mouseY);
+			*///?}
+		}
 	}
 
 	private int scissorX0() {

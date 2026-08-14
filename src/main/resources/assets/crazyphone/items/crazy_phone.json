@@ -1,0 +1,23 @@
+{
+	"model": {
+		"type": "minecraft:condition",
+		"property": "crazyphone:in_call",
+		"on_true": {"type": "minecraft:model", "model": "crazyphone:item/crazy_phone_in_call"},
+		"on_false": {
+			"type": "minecraft:condition",
+			"property": "crazyphone:called_in",
+			"on_true": {"type": "minecraft:model", "model": "crazyphone:item/crazy_phone_called_in"},
+			"on_false": {
+				"type": "minecraft:condition",
+				"property": "crazyphone:calling",
+				"on_true": {"type": "minecraft:model", "model": "crazyphone:item/crazy_phone_calling"},
+				"on_false": {
+					"type": "minecraft:condition",
+					"property": "crazyphone:screen_on",
+					"on_true": {"type": "minecraft:model", "model": "crazyphone:item/crazy_phone_on"},
+					"on_false": {"type": "minecraft:model", "model": "crazyphone:item/crazy_phone"}
+				}
+			}
+		}
+	}
+}

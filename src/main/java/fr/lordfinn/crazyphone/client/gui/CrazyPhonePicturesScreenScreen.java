@@ -37,7 +37,9 @@ import java.util.UUID;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferBuilder;
+//? if <1.21.10 {
 import com.mojang.blaze3d.vertex.BufferUploader;
+//?}
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.blaze3d.vertex.VertexFormat.Mode;
@@ -100,9 +102,11 @@ public class CrazyPhonePicturesScreenScreen extends CrazyPhoneDefaultScreenScree
 	 * spot) with a solid-color square painted first underneath, so exactly a SELECTED_INSET-wide border of
 	 * that color remains visible around the shrunk photo - simpler than drawing 4 separate border strips. */
 	private void renderThumbnails(GuiGraphics guiGraphics) {
+		//? if <1.21.10 {
 		RenderSystem.setShaderColor(1, 1, 1, 1);
 		RenderSystem.enableBlend();
 		RenderSystem.defaultBlendFunc();
+		//?}
 		for (Map.Entry<Integer, Slot> entry : this.menu.get().entrySet()) {
 			int visibleIndex = entry.getKey();
 			Slot slot = entry.getValue();
@@ -124,7 +128,9 @@ public class CrazyPhonePicturesScreenScreen extends CrazyPhoneDefaultScreenScree
 				drawCroppedImage(guiGraphics, x, y, THUMB_SIZE, THUMB_SIZE, imageData.getId());
 			}
 		}
+		//? if <1.21.10 {
 		RenderSystem.disableBlend();
+		//?}
 	}
 
 	/** Vanilla draws each Slot's item as a 16x16 icon by default - this grid shows real cropped photo
@@ -133,13 +139,18 @@ public class CrazyPhonePicturesScreenScreen extends CrazyPhoneDefaultScreenScree
 	protected void renderSlot(GuiGraphics guiGraphics, Slot slot) {
 	}
 
+	//? if <1.21.10 {
 	/** Vanilla's own hover-highlight patch is hardcoded to a 16x16 footprint (AbstractContainerScreen's
 	 * private isHovering(Slot,...) can't be overridden to fix that for the real 34x34 thumbnails), and
 	 * would just show as a small, oddly-placed square in one corner of each photo - skipped entirely since
-	 * the selection border already gives clear feedback for what's actually selected. */
+	 * the selection border already gives clear feedback for what's actually selected. On >=1.21.10 this
+	 * override point is gone entirely; the same suppression is achieved instead via the picture grid's own
+	 * Slot#isHighlightable() override in CrazyPhonePicturesScreenMenu, which vanilla's own (now-private)
+	 * highlight renderer already checks on every version. */
 	@Override
 	protected void renderSlotHighlight(GuiGraphics guiGraphics, Slot slot, int mouseX, int mouseY, float partialTick) {
 	}
+	//?}
 
 	/** Replaces vanilla's tooltip trigger entirely rather than patching around it - it keys off
 	 * hoveredSlot, which is only ever set by that same un-overridable 16x16 isHovering check, so tooltips
@@ -152,7 +163,11 @@ public class CrazyPhonePicturesScreenScreen extends CrazyPhoneDefaultScreenScree
 		for (Slot slot : this.menu.get().values()) {
 			ItemStack stack = slot.getItem();
 			if (!stack.isEmpty() && isHoveringSlot(slot, mouseX, mouseY)) {
+				//? if <1.21.10 {
 				guiGraphics.renderTooltip(this.font, this.getTooltipFromContainerItem(stack), stack.getTooltipImage(), stack, mouseX, mouseY);
+				//? } else {
+				/*guiGraphics.setTooltipForNextFrame(this.font, this.getTooltipFromContainerItem(stack), stack.getTooltipImage(), stack, mouseX, mouseY);
+				*///?}
 				return;
 			}
 		}
@@ -167,16 +182,12 @@ public class CrazyPhonePicturesScreenScreen extends CrazyPhoneDefaultScreenScree
 		GuiCompat.pushPose(guiGraphics);
 		GuiCompat.translate(guiGraphics, x, y);
 
-		RenderSystem.setShader(GameRenderer::getPositionTexShader);
-		RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
 		ResourceLocation location = TextureCache.instance().getImage(uuid);
+		ResourceLocation texture = location == null ? ImageScreen.DEFAULT_IMAGE : location;
 
 		float srcWidth = 1F;
 		float srcHeight = 1F;
-		if (location == null) {
-			RenderSystem.setShaderTexture(0, ImageScreen.DEFAULT_IMAGE);
-		} else {
-			RenderSystem.setShaderTexture(0, location);
+		if (location != null) {
 			NativeImage image = TextureCache.instance().getNativeImage(uuid);
 			if (image != null) {
 				srcWidth = image.getWidth();
@@ -193,23 +204,7 @@ public class CrazyPhonePicturesScreenScreen extends CrazyPhoneDefaultScreenScree
 			vOffset = (1f - vSpan) / 2f;
 		}
 
-		Matrix4f matrix = guiGraphics.pose().last().pose();
-		//? if >=1.20.5 {
-		/*BufferBuilder buffer = Tesselator.getInstance().begin(Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
-		buffer.addVertex(matrix, 0, 0, 0).setUv(uOffset, vOffset);
-		buffer.addVertex(matrix, 0, height, 0).setUv(uOffset, vOffset + vSpan);
-		buffer.addVertex(matrix, width, height, 0).setUv(uOffset + uSpan, vOffset + vSpan);
-		buffer.addVertex(matrix, width, 0, 0).setUv(uOffset + uSpan, vOffset);
-		BufferUploader.drawWithShader(buffer.buildOrThrow());
-		*///? } else {
-		BufferBuilder buffer = Tesselator.getInstance().getBuilder();
-		buffer.begin(Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
-		buffer.vertex(matrix, 0, 0, 0).uv(uOffset, vOffset).endVertex();
-		buffer.vertex(matrix, 0, height, 0).uv(uOffset, vOffset + vSpan).endVertex();
-		buffer.vertex(matrix, width, height, 0).uv(uOffset + uSpan, vOffset + vSpan).endVertex();
-		buffer.vertex(matrix, width, 0, 0).uv(uOffset + uSpan, vOffset).endVertex();
-		Tesselator.getInstance().end();
-		//?}
+		GuiCompat.drawTexturedQuad(guiGraphics, texture, 0, 0, width, height, uOffset, vOffset, uOffset + uSpan, vOffset + vSpan);
 
 		GuiCompat.popPose(guiGraphics);
 	}
@@ -372,7 +367,11 @@ public class CrazyPhonePicturesScreenScreen extends CrazyPhoneDefaultScreenScree
 			}
 			selectedSlots.clear(); // Clear selection client-side for UI
 			updateActionButtonsState();
+			//? if <1.21.10 {
 			Minecraft.getInstance().player.playSound(SoundEvents.ITEM_BREAK, 1.0F, 1.0F);
+			//? } else {
+			/*Minecraft.getInstance().player.playSound(SoundEvents.ITEM_BREAK.value(), 1.0F, 1.0F);
+			*///?}
 		}).bounds(this.leftPos + 62, this.topPos + 158, 52, 14).build();
 		guistate.put("button:button_del", button_del);
 		this.addRenderableWidget(button_del);

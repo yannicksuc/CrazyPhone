@@ -10,7 +10,9 @@ import org.joml.Matrix4f;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferBuilder;
+//? if <1.21.10 {
 import com.mojang.blaze3d.vertex.BufferUploader;
+//?}
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.blaze3d.vertex.VertexFormat.Mode;
@@ -571,17 +573,13 @@ public class MessageWidget extends AbstractWidget {
     GuiCompat.pushPose(guiGraphics);
     GuiCompat.translate(guiGraphics, x, y);
 
-    RenderSystem.setShader(GameRenderer::getPositionTexShader);
-    RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
     ResourceLocation location = TextureCache.instance().getImage(uuid);
+    ResourceLocation texture = location == null ? ImageScreen.DEFAULT_IMAGE : location;
 
     float imageWidth = 12.0F;
     float imageHeight = 8.0F;
 
-    if (location == null) {
-        RenderSystem.setShaderTexture(0, ImageScreen.DEFAULT_IMAGE);
-    } else {
-        RenderSystem.setShaderTexture(0, location);
+    if (location != null) {
         NativeImage image = TextureCache.instance().getNativeImage(uuid);
         if (image != null) {
             imageWidth = (float) image.getWidth();
@@ -606,36 +604,20 @@ public class MessageWidget extends AbstractWidget {
     float left = 0.0F;
     float top = (hs - hnew) / 2.0F;
 
-    Matrix4f matrix = guiGraphics.pose().last().pose();
-    //? if >=1.20.5 {
-    /*BufferBuilder buffer = Tesselator.getInstance().begin(Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
-
-    buffer.addVertex(matrix, left, top, zLevel).setUv(0.0F, 0.0F);
-    buffer.addVertex(matrix, left, top + hnew, zLevel).setUv(0.0F, 1.0F);
-    buffer.addVertex(matrix, left + wnew, top + hnew, zLevel).setUv(1.0F, 1.0F);
-    buffer.addVertex(matrix, left + wnew, top, zLevel).setUv(1.0F, 0.0F);
-    *///? } else {
-    BufferBuilder buffer = Tesselator.getInstance().getBuilder();
-    buffer.begin(Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
-
-    buffer.vertex(matrix, left, top, zLevel).uv(0.0F, 0.0F).endVertex();
-    buffer.vertex(matrix, left, top + hnew, zLevel).uv(0.0F, 1.0F).endVertex();
-    buffer.vertex(matrix, left + wnew, top + hnew, zLevel).uv(1.0F, 1.0F).endVertex();
-    buffer.vertex(matrix, left + wnew, top, zLevel).uv(1.0F, 0.0F).endVertex();
-    //?}
-
-    // This is a raw Tesselator draw that bypasses GuiGraphics's own Z-tracking (used by blit()/fill()/
-    // renderTooltip() etc. to guarantee later-drawn elements like tooltips appear on top). Without
-    // disabling depth testing here, this quad can write a depth value that makes a legitimately
-    // later-drawn, higher-Z tooltip fail the depth test and render as hidden behind message images -
-    // exactly the bug this fixes (tooltips appearing under the send/add-image buttons).
+    // This bypasses GuiGraphics's own Z-tracking (used by blit()/fill()/renderTooltip() etc. to guarantee
+    // later-drawn elements like tooltips appear on top). Pre-1.21.10, without disabling depth testing here,
+    // this quad can write a depth value that makes a legitimately later-drawn, higher-Z tooltip fail the
+    // depth test and render as hidden behind message images - exactly the bug this fixes (tooltips
+    // appearing under the send/add-image buttons). 1.21.10's GuiGraphics.blit goes through the same
+    // stratum-ordered GuiRenderState every other GUI element does, so it no longer needs (or has) a manual
+    // depth-test toggle to get the same guarantee.
+    //? if <1.21.10 {
     RenderSystem.disableDepthTest();
-    //? if >=1.20.5 {
-    /*BufferUploader.drawWithShader(buffer.buildOrThrow());
-    *///? } else {
-    Tesselator.getInstance().end();
     //?}
+    GuiCompat.drawTexturedQuad(guiGraphics, texture, left, top, left + wnew, top + hnew, 0.0F, 0.0F, 1.0F, 1.0F);
+    //? if <1.21.10 {
     RenderSystem.enableDepthTest();
+    //?}
 
     GuiCompat.popPose(guiGraphics);
 }

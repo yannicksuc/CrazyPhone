@@ -1,6 +1,17 @@
 package fr.lordfinn.crazyphone.item;
 
+//? if >=1.21.10 {
+/*import com.mojang.serialization.MapCodec;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.renderer.item.properties.conditional.ConditionalItemModelProperty;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.item.ItemDisplayContext;
+import net.minecraft.world.item.ItemStack;
+import net.neoforged.neoforge.client.event.RegisterConditionalItemModelPropertyEvent;
+import javax.annotation.Nullable;
+*///? } else {
 import net.minecraft.client.renderer.item.ItemProperties;
+//?}
 import net.minecraft.resources.ResourceLocation;
 
 import net.neoforged.api.distmarker.Dist;
@@ -39,6 +50,53 @@ import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
 /*@EventBusSubscriber(value = Dist.CLIENT)
 *///?}
 public class CrazyPhoneItemProperties {
+    //? if >=1.21.10 {
+    /*@SubscribeEvent
+    public static void onRegisterConditionalItemModelProperty(RegisterConditionalItemModelPropertyEvent event) {
+        event.register(Crazyphone.resource("screen_on"), ScreenOn.MAP_CODEC);
+        event.register(Crazyphone.resource("calling"), CallState.CALLING_CODEC);
+        event.register(Crazyphone.resource("called_in"), CallState.CALLED_IN_CODEC);
+        event.register(Crazyphone.resource("in_call"), CallState.IN_CALL_CODEC);
+    }
+
+    public record ScreenOn() implements ConditionalItemModelProperty {
+        public static final MapCodec<ScreenOn> MAP_CODEC = MapCodec.unit(new ScreenOn());
+
+        @Override
+        public boolean get(ItemStack stack, @Nullable ClientLevel level, @Nullable LivingEntity entity, int seed, ItemDisplayContext displayContext) {
+            return CrazyPhoneHelper.isPhoneScreenOpen(stack);
+        }
+
+        @Override
+        public MapCodec<ScreenOn> type() {
+            return MAP_CODEC;
+        }
+    }
+
+    // One record for all 3 call-state predicates (calling/called_in/in_call) rather than 3 near-identical
+    // records - the state each checks is baked into which MAP_CODEC constant it's registered under, exactly
+    // mirroring how registerCallState(propertyName, targetState) worked pre-1.21.10.
+    public record CallState(State targetState) implements ConditionalItemModelProperty {
+        public static final MapCodec<CallState> CALLING_CODEC = MapCodec.unit(new CallState(State.CALLING));
+        public static final MapCodec<CallState> CALLED_IN_CODEC = MapCodec.unit(new CallState(State.RINGING));
+        public static final MapCodec<CallState> IN_CALL_CODEC = MapCodec.unit(new CallState(State.ACTIVE));
+
+        @Override
+        public boolean get(ItemStack stack, @Nullable ClientLevel level, @Nullable LivingEntity entity, int seed, ItemDisplayContext displayContext) {
+            return targetState.name().equals(CrazyPhoneHelper.getPhoneCallState(stack));
+        }
+
+        @Override
+        public MapCodec<CallState> type() {
+            return switch (targetState) {
+                case CALLING -> CALLING_CODEC;
+                case RINGING -> CALLED_IN_CODEC;
+                case ACTIVE -> IN_CALL_CODEC;
+                default -> throw new IllegalStateException("No registered item model property for call state " + targetState);
+            };
+        }
+    }
+    *///? } else {
     @SubscribeEvent
     public static void onClientSetup(FMLClientSetupEvent event) {
         event.enqueueWork(() -> {
@@ -60,4 +118,5 @@ public class CrazyPhoneItemProperties {
                 (stack, level, entity, seed) -> targetState.name().equals(CrazyPhoneHelper.getPhoneCallState(stack)) ? 1.0f : 0.0f
         );
     }
+    //?}
 }

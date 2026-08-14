@@ -12,7 +12,12 @@ public class CrazyPhoneSaveImageProcedure {
 	public static void execute(Entity entity) {
 		if (entity == null)
 			return;
-		if ((CrazyPhoneHelper.getMainHandItemOrEmpty(entity)).getCapability(Capabilities.ItemHandler.ITEM, null) instanceof IItemHandlerModifiable _modHandlerItemSetSlot) {
+		//? if >=1.21.10 {
+		/*Object _cap = (CrazyPhoneHelper.getMainHandItemOrEmpty(entity)).getCapability(Capabilities.Item.ITEM, null);
+		*///? } else {
+		Object _cap = (CrazyPhoneHelper.getMainHandItemOrEmpty(entity)).getCapability(Capabilities.ItemHandler.ITEM, null);
+		//?}
+		if (_cap instanceof IItemHandlerModifiable _modHandlerItemSetSlot) {
 			ItemStack _setstack = new ItemStack(Blocks.GOLD_BLOCK).copy();
 			_setstack.setCount(1);
 			_modHandlerItemSetSlot.setStackInSlot(0, _setstack);
