@@ -1,5 +1,6 @@
 package fr.lordfinn.crazyphone.network;
 
+//? if neoforge {
 //? if >=1.20.5 {
 /*import net.neoforged.neoforge.network.handling.IPayloadContext;
 *///? } else {
@@ -12,6 +13,7 @@ import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.fml.common.Mod.EventBusSubscriber;
 //?}
 import net.neoforged.bus.api.SubscribeEvent;
+//?}
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -40,11 +42,13 @@ import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
  * every online player, unlike the old mod's full MapVariables sync that used to ship every conversation's
  * entire history to everyone on every message.
  */
+//? if neoforge {
 //? if <1.20.5 {
 @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
 //?} else {
 /*@EventBusSubscriber
 *///?}
+//?}
 public record CrazyPhoneNewMessageNotificationPacket(
     CompoundTag messageTag,
     String senderName
@@ -122,13 +126,14 @@ public record CrazyPhoneNewMessageNotificationPacket(
         }
     }
 
-    //? if >=1.20.5 {
+    //? if neoforge && >=1.20.5 {
     /*public static void handleData(final CrazyPhoneNewMessageNotificationPacket messagePacket, final IPayloadContext context) {
         if (context.flow() == PacketFlow.CLIENTBOUND) {
             context.enqueueWork(() -> applyNotification(messagePacket));
         }
     }
-    *///? } else {
+    *///?}
+    //? if neoforge && <1.20.5 {
     public static void handleData(final CrazyPhoneNewMessageNotificationPacket messagePacket, final PlayPayloadContext context) {
         if (context.flow() == PacketFlow.CLIENTBOUND) {
             context.workHandler().submitAsync(() -> applyNotification(messagePacket));
@@ -136,6 +141,7 @@ public record CrazyPhoneNewMessageNotificationPacket(
     }
     //?}
 
+    //? if neoforge {
     @SubscribeEvent
     public static void registerMessage(FMLCommonSetupEvent event) {
         //? if >=1.20.5 {
@@ -144,4 +150,21 @@ public record CrazyPhoneNewMessageNotificationPacket(
         Crazyphone.addNetworkMessage(ID, CrazyPhoneNewMessageNotificationPacket::new, CrazyPhoneNewMessageNotificationPacket::handleData);
         //?}
     }
+    //?}
+    //? if fabric && >=1.20.5 {
+    /*// Not wired into ModPackets yet - applyNotification() reaches CrazyPhoneConversationScreen, which
+    // isn't in the Fabric build's include list (screens/menus are task #166), so registering this type
+    // now would just leave a dead receiver. Left ready for when that lands.
+    public static void handleDataFabric(CrazyPhoneNewMessageNotificationPacket messagePacket, net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.Context context) {
+        applyNotification(messagePacket);
+    }
+
+    public static void registerFabricType() {
+        fr.lordfinn.crazyphone.fabric.FabricNetworking.registerS2CType(TYPE, STREAM_CODEC);
+    }
+
+    public static void registerFabricClientReceiver() {
+        fr.lordfinn.crazyphone.fabric.FabricNetworking.registerClientReceiver(TYPE, CrazyPhoneNewMessageNotificationPacket::handleDataFabric);
+    }
+    *///?}
 }

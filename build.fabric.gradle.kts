@@ -147,7 +147,18 @@ sourceSets.main {
             "fr/lordfinn/crazyphone/network/PhoneRegistrySyncPacket.java",
             "fr/lordfinn/crazyphone/data/PlayerPhoneState.java",
             "fr/lordfinn/crazyphone/network/PlayerPhoneStateSyncPacket.java",
-            "fr/lordfinn/crazyphone/data/PhoneAttachmentTypes.java"
+            "fr/lordfinn/crazyphone/data/PhoneAttachmentTypes.java",
+            "fr/lordfinn/crazyphone/client/ClientCallState.java",
+            "fr/lordfinn/crazyphone/network/CrazyPhoneCallStateSyncPacket.java",
+            "fr/lordfinn/crazyphone/network/ConversationCallActivitySyncPacket.java",
+            "fr/lordfinn/crazyphone/network/CrazyPhoneGroupMembershipNotificationPacket.java",
+            // Loader-agnostic by inspection (no NeoForge/Camera imports), but transitively depend on
+            // PhoneRegistrySavedData so they share its >=1.20.5 scoping.
+            "fr/lordfinn/crazyphone/procedures/GetCrazyPhoneNumberProcedure.java",
+            "fr/lordfinn/crazyphone/procedures/CrazyPhoneAddContactToPhoneProcedure.java",
+            "fr/lordfinn/crazyphone/procedures/CrazyPhoneGetContactsProcedure.java",
+            "fr/lordfinn/crazyphone/procedures/ResetCrazyPhoneNumberProcedure.java",
+            "fr/lordfinn/crazyphone/procedures/IsPhoneInUseProcedure.java"
         )
     }
     java.setIncludes(includes)

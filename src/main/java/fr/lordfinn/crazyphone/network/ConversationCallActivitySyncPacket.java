@@ -1,5 +1,6 @@
 package fr.lordfinn.crazyphone.network;
 
+//? if neoforge {
 //? if >=1.20.5 {
 /*import net.neoforged.neoforge.network.handling.IPayloadContext;
 *///? } else {
@@ -12,6 +13,7 @@ import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.fml.common.Mod.EventBusSubscriber;
 //?}
 import net.neoforged.bus.api.SubscribeEvent;
+//?}
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -77,7 +79,7 @@ public record ConversationCallActivitySyncPacket(String conversationId, boolean 
     }
     //?}
 
-    //? if >=1.20.5 {
+    //? if neoforge && >=1.20.5 {
     /*public static void handleData(final ConversationCallActivitySyncPacket message, final IPayloadContext context) {
         if (context.flow() != PacketFlow.CLIENTBOUND)
             return;
@@ -87,7 +89,8 @@ public record ConversationCallActivitySyncPacket(String conversationId, boolean 
                     return null;
                 });
     }
-    *///? } else {
+    *///?}
+    //? if neoforge && <1.20.5 {
     public static void handleData(final ConversationCallActivitySyncPacket message, final PlayPayloadContext context) {
         if (context.flow() != PacketFlow.CLIENTBOUND)
             return;
@@ -99,6 +102,7 @@ public record ConversationCallActivitySyncPacket(String conversationId, boolean 
     }
     //?}
 
+    //? if neoforge {
     //? if <1.20.5 {
     @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
     //?} else {
@@ -114,4 +118,18 @@ public record ConversationCallActivitySyncPacket(String conversationId, boolean 
             //?}
         }
     }
+    //?}
+    //? if fabric && >=1.20.5 {
+    /*public static void handleDataFabric(ConversationCallActivitySyncPacket message, net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.Context context) {
+        ClientCallState.onConversationActivityChanged(message.conversationId, message.active);
+    }
+
+    public static void registerFabricType() {
+        fr.lordfinn.crazyphone.fabric.FabricNetworking.registerS2CType(TYPE, STREAM_CODEC);
+    }
+
+    public static void registerFabricClientReceiver() {
+        fr.lordfinn.crazyphone.fabric.FabricNetworking.registerClientReceiver(TYPE, ConversationCallActivitySyncPacket::handleDataFabric);
+    }
+    *///?}
 }

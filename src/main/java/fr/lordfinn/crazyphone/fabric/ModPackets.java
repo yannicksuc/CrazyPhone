@@ -16,6 +16,9 @@ package fr.lordfinn.crazyphone.fabric;
         fr.lordfinn.crazyphone.network.FeatureFlagSyncPacket.registerFabricType();
         fr.lordfinn.crazyphone.network.PhoneRegistrySyncPacket.registerFabricType();
         fr.lordfinn.crazyphone.network.PlayerPhoneStateSyncPacket.registerFabricType();
+        fr.lordfinn.crazyphone.network.CrazyPhoneCallStateSyncPacket.registerFabricType();
+        fr.lordfinn.crazyphone.network.ConversationCallActivitySyncPacket.registerFabricType();
+        fr.lordfinn.crazyphone.network.CrazyPhoneGroupMembershipNotificationPacket.registerFabricType();
     }
 
     // Called from CrazyphoneFabricClient#onInitializeClient - registers every server->client receiver.
@@ -23,6 +26,9 @@ package fr.lordfinn.crazyphone.fabric;
         fr.lordfinn.crazyphone.network.FeatureFlagSyncPacket.registerFabricClientReceiver();
         fr.lordfinn.crazyphone.network.PhoneRegistrySyncPacket.registerFabricClientReceiver();
         fr.lordfinn.crazyphone.network.PlayerPhoneStateSyncPacket.registerFabricClientReceiver();
+        fr.lordfinn.crazyphone.network.CrazyPhoneCallStateSyncPacket.registerFabricClientReceiver();
+        fr.lordfinn.crazyphone.network.ConversationCallActivitySyncPacket.registerFabricClientReceiver();
+        fr.lordfinn.crazyphone.network.CrazyPhoneGroupMembershipNotificationPacket.registerFabricClientReceiver();
     }
 }
 *///?}
