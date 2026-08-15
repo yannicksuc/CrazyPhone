@@ -16,6 +16,12 @@ import net.minecraft.util.datafix.DataFixTypes;
 import net.minecraft.util.datafix.DataFixTypes;
 import net.minecraft.world.level.saveddata.SavedDataType;
 *///?}
+// Real vanilla SavedData.Factory (unlike NeoForge's own 2-arg convenience overload of the same class -
+// see the get() method below) always requires a DataFixTypes, at every version Factory exists in at all -
+// confirmed via javap on the Loom-remapped vanilla jar, not assumed from the NeoForge-side code above.
+//? if fabric && >=1.20.5 <1.21.10 {
+/*import net.minecraft.util.datafix.DataFixTypes;
+*///?}
 
 import fr.lordfinn.crazyphone.Config;
 
@@ -112,14 +118,23 @@ public class ConversationSavedData extends SavedData {
     public static ConversationSavedData get(LevelAccessor world) {
         if (world instanceof ServerLevelAccessor serverLevelAcc) {
             return serverLevelAcc.getLevel().getServer().overworld().getDataStorage()
-                    //? if <1.20.5 {
+                    //? if neoforge && <1.20.5 {
                     .computeIfAbsent(new SavedData.Factory<>(ConversationSavedData::new, ConversationSavedData::load, DataFixTypes.LEVEL), DATA_NAME);
                     //?}
-                    //? if >=1.20.5 <1.21.10 {
+                    //? if neoforge && >=1.20.5 <1.21.10 {
                     /*.computeIfAbsent(new SavedData.Factory<>(ConversationSavedData::new, ConversationSavedData::load), DATA_NAME);
                     *///?}
-                    //? if >=1.21.10 {
+                    //? if neoforge && >=1.21.10 {
                     /*.computeIfAbsent(TYPE);
+                    *///?}
+                    // Fabric branches use real vanilla SavedData/DimensionDataStorage signatures (confirmed via
+                    // javap on the Loom-remapped vanilla jar) rather than the NeoForge-only convenience
+                    // overloads the two branches above rely on - see the import block's comment above.
+                    //? if fabric && <1.20.5 {
+                    /*.computeIfAbsent(ConversationSavedData::load, ConversationSavedData::new, DATA_NAME);
+                    *///?}
+                    //? if fabric && >=1.20.5 {
+                    /*.computeIfAbsent(new SavedData.Factory<>(ConversationSavedData::new, ConversationSavedData::load, DataFixTypes.LEVEL), DATA_NAME);
                     *///?}
         }
         throw new IllegalStateException("ConversationSavedData is server-only; conversations are fetched on demand via network packets, never held client-side in full");
