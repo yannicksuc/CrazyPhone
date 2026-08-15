@@ -5,9 +5,21 @@ package fr.lordfinn.crazyphone.fabric;
  * entrypoints.client) - the loader-specific equivalent of the client-only registration NeoForge does via
  * @EventBusSubscriber(Dist.CLIENT)/mod-bus listeners. Walking-skeleton stage: screen/menu/renderer
  * registration gets added here incrementally as each area is ported from the NeoForge implementation.
- * Compiles to nothing on NeoForge nodes - see CrazyphoneFabric.java for why.
+ * Compiles to nothing on NeoForge nodes - see CrazyphoneFabric.java for why. Two flat, independent
+ * >=1.20.5/<1.20.5 blocks for the same reason as CrazyphoneFabric.java.
  */
-//? if fabric {
+//? if fabric && >=1.20.5 {
+/*import net.fabricmc.api.ClientModInitializer;
+
+public class CrazyphoneFabricClient implements ClientModInitializer {
+    @Override
+    public void onInitializeClient() {
+        ModPackets.registerClient();
+        CrazyphoneFabric.LOGGER.info("CrazyPhone (Fabric) client initializing");
+    }
+}
+*///?}
+//? if fabric && <1.20.5 {
 /*import net.fabricmc.api.ClientModInitializer;
 
 public class CrazyphoneFabricClient implements ClientModInitializer {

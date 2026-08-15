@@ -114,14 +114,26 @@ sourceSets.main {
 // tasks #160-166), not just adding more source directories - each area has real NeoForge-specific and
 // Camera-mod-specific code to rewrite against Fabric/Camerapture APIs first.
 sourceSets.main {
-    java.setIncludes(listOf(
+    val includes = mutableListOf(
         "fr/lordfinn/crazyphone/fabric/**",
         "fr/lordfinn/crazyphone/Crazyphone.java",
         "fr/lordfinn/crazyphone/init/ModItems.java",
         "fr/lordfinn/crazyphone/item/CrazyPhoneItem.java",
-        "fr/lordfinn/crazyphone/utils/RegistryEntry.java",
-        "fr/lordfinn/crazyphone/utils/NetworkAccess.java"
-    ))
+        "fr/lordfinn/crazyphone/utils/RegistryEntry.java"
+    )
+    // CustomPacketPayload (and everything built on it: NetworkAccess's send methods, every packet record,
+    // FeatureFlag's isEnabledFor gating) doesn't exist before 1.20.5 at all - see NetworkAccess.java's own
+    // doc comment. 1.20.1-fabric stays at the narrower walking-skeleton scope above until its own
+    // dedicated pre-1.20.5 networking pass (task #161 follow-up).
+    if (minecraftVersion != "1.20.1") {
+        includes += listOf(
+            "fr/lordfinn/crazyphone/utils/NetworkAccess.java",
+            "fr/lordfinn/crazyphone/FeatureFlag.java",
+            "fr/lordfinn/crazyphone/client/ClientFeatureFlagState.java",
+            "fr/lordfinn/crazyphone/network/FeatureFlagSyncPacket.java"
+        )
+    }
+    java.setIncludes(includes)
 }
 
 // fabric.mod.json is expanded from a template the same way neoforge.mods.toml is - see

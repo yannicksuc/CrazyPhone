@@ -1,11 +1,11 @@
 package fr.lordfinn.crazyphone.network;
 
+//? if neoforge {
 //? if >=1.20.5 {
 /*import net.neoforged.neoforge.network.handling.IPayloadContext;
 *///? } else {
 import net.neoforged.neoforge.network.handling.PlayPayloadContext;
 //?}
-import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 //? if >=1.20.5 {
 /*import net.neoforged.fml.common.EventBusSubscriber;
@@ -13,6 +13,7 @@ import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.fml.common.Mod.EventBusSubscriber;
 //?}
 import net.neoforged.bus.api.SubscribeEvent;
+//?}
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -96,6 +97,7 @@ public record FeatureFlagSyncPacket(Map<String, Boolean> enabledStates) implemen
     }
     //?}
 
+    //? if neoforge {
     //? if >=1.20.5 {
     /*public static void handleData(final FeatureFlagSyncPacket message, final IPayloadContext context) {
         if (context.flow() != PacketFlow.CLIENTBOUND)
@@ -115,6 +117,7 @@ public record FeatureFlagSyncPacket(Map<String, Boolean> enabledStates) implemen
         });
     }
     //?}
+    //?}
 
     private static Map<String, Boolean> computeFor(ServerPlayer player) {
         Map<String, Boolean> states = new HashMap<>();
@@ -125,11 +128,7 @@ public record FeatureFlagSyncPacket(Map<String, Boolean> enabledStates) implemen
 
     /** Sent right after login (see PhoneAttachmentTypes#onPlayerLoggedIn). */
     public static void syncTo(ServerPlayer player) {
-        //? if >=1.20.5 {
-        /*PacketDistributor.sendToPlayer(player, new FeatureFlagSyncPacket(computeFor(player)));
-        *///? } else {
-        PacketDistributor.PLAYER.with(player).send(new FeatureFlagSyncPacket(computeFor(player)));
-        //?}
+        fr.lordfinn.crazyphone.utils.NetworkAccess.sendToPlayer(player, new FeatureFlagSyncPacket(computeFor(player)));
     }
 
     /** Sent whenever a global switch changes via /crazyphone feature - each online player gets their own
@@ -139,6 +138,7 @@ public record FeatureFlagSyncPacket(Map<String, Boolean> enabledStates) implemen
             syncTo(player);
     }
 
+    //? if neoforge {
     //? if <1.20.5 {
     @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
     //?} else {
@@ -154,4 +154,18 @@ public record FeatureFlagSyncPacket(Map<String, Boolean> enabledStates) implemen
             //?}
         }
     }
+    //?}
+    //? if fabric && >=1.20.5 {
+    /*public static void handleDataFabric(FeatureFlagSyncPacket message, net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.Context context) {
+        fr.lordfinn.crazyphone.client.ClientFeatureFlagState.onPacket(message);
+    }
+
+    public static void registerFabricType() {
+        fr.lordfinn.crazyphone.fabric.FabricNetworking.registerS2CType(TYPE, STREAM_CODEC);
+    }
+
+    public static void registerFabricClientReceiver() {
+        fr.lordfinn.crazyphone.fabric.FabricNetworking.registerClientReceiver(TYPE, FeatureFlagSyncPacket::handleDataFabric);
+    }
+    *///?}
 }
