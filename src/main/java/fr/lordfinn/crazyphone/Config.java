@@ -1,5 +1,6 @@
 package fr.lordfinn.crazyphone;
 
+//? if neoforge {
 import net.neoforged.bus.api.SubscribeEvent;
 //? if >=1.20.5 {
 /*import net.neoforged.fml.common.EventBusSubscriber;
@@ -8,12 +9,16 @@ import net.neoforged.fml.common.Mod.EventBusSubscriber;
 //?}
 import net.neoforged.fml.event.config.ModConfigEvent;
 import net.neoforged.neoforge.common.ModConfigSpec;
+//?}
 
+//? if neoforge {
 //? if <1.20.5 {
 @EventBusSubscriber(modid = Crazyphone.MODID, bus = EventBusSubscriber.Bus.MOD)
 //?} else {
 /*@EventBusSubscriber(modid = Crazyphone.MODID)
 *///?}
+//?}
+//? if neoforge {
 public class Config {
     private static final ModConfigSpec.Builder BUILDER = new ModConfigSpec.Builder();
 
@@ -168,3 +173,49 @@ public class Config {
     }
 
 }
+//?}
+//? if fabric {
+/*// TODO(#164 follow-up): no real Fabric config file yet - NeoForge's ModConfigSpec (TOML, per-value
+// comments/ranges, live reload) has no Fabric equivalent in this codebase yet. Values below are the
+// same hardcoded defaults as the NeoForge TOML's defaults, just not server-operator-configurable on
+// Fabric yet. Setters only flip the in-memory value (no persistence to disk), matching FeatureFlag's
+// Fabric placeholder for the same reason.
+public class Config {
+    public static int maxStoredMessagesPerConversation = 300;
+    public static int maxMessagesSentPerRequest = 100;
+    public static int maxImagesStoredPerConversation = 50;
+    public static int maxAlbumSlotsPerPhone = 27;
+    public static boolean mayorElectionFeatureEnabled = true;
+    public static boolean callsFeatureEnabled = true;
+    public static boolean voiceMessagesFeatureEnabled = true;
+    public static boolean imagesFeatureEnabled = true;
+    public static boolean cameraFeatureEnabled = true;
+    public static boolean voicechatIntegrationEnabled = true;
+    public static int callRingTimeoutSeconds = 30;
+    public static int aloneInCallKickSeconds = 5;
+    public static int phoneDropGraceSeconds = 5;
+    public static int maxVoiceMessagesStoredPerConversation = 30;
+    public static int maxVoiceMessageRecordingSeconds = 60;
+    public static boolean soulboundEnchantmentEnabled = true;
+
+    public static void setMayorElectionFeatureEnabled(boolean enabled) {
+        mayorElectionFeatureEnabled = enabled;
+    }
+
+    public static void setCallsFeatureEnabled(boolean enabled) {
+        callsFeatureEnabled = enabled;
+    }
+
+    public static void setVoiceMessagesFeatureEnabled(boolean enabled) {
+        voiceMessagesFeatureEnabled = enabled;
+    }
+
+    public static void setImagesFeatureEnabled(boolean enabled) {
+        imagesFeatureEnabled = enabled;
+    }
+
+    public static void setCameraFeatureEnabled(boolean enabled) {
+        cameraFeatureEnabled = enabled;
+    }
+}
+*///?}

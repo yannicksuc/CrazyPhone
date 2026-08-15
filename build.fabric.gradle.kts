@@ -118,8 +118,22 @@ sourceSets.main {
         "fr/lordfinn/crazyphone/fabric/**",
         "fr/lordfinn/crazyphone/Crazyphone.java",
         "fr/lordfinn/crazyphone/init/ModItems.java",
+        "fr/lordfinn/crazyphone/init/ModSounds.java",
         "fr/lordfinn/crazyphone/item/CrazyPhoneItem.java",
-        "fr/lordfinn/crazyphone/utils/RegistryEntry.java"
+        "fr/lordfinn/crazyphone/utils/RegistryEntry.java",
+        "fr/lordfinn/crazyphone/Config.java",
+        "fr/lordfinn/crazyphone/utils/NbtCompat.java",
+        "fr/lordfinn/crazyphone/utils/PhoneTagAccess.java",
+        "fr/lordfinn/crazyphone/utils/RegistryCompat.java",
+        "fr/lordfinn/crazyphone/utils/GameProfileCompat.java",
+        "fr/lordfinn/crazyphone/utils/Contact.java",
+        "fr/lordfinn/crazyphone/client/gui/components/MessageData.java"
+        // ConversationSavedData.java is NOT included yet: its SavedData.Factory/computeIfAbsent call sites
+        // assume NeoForge's SavedData API shape (a Factory<T>(constructor, loader[, DataFixTypes]) record
+        // usable from 1.20.1 onward) but real vanilla/Fabric SavedData's Factory signature genuinely
+        // differs per version - confirmed via real compiler errors ("cannot infer type arguments",
+        // "cannot find symbol: class Factory" on 1.20.1-fabric). Needs its own javap-verified, loader-
+        // gated get()/load()/save() pass (task #164 follow-up), not just an include-list addition.
     )
     // CustomPacketPayload (and everything built on it: NetworkAccess's send methods, every packet record,
     // FeatureFlag's isEnabledFor gating) doesn't exist before 1.20.5 at all - see NetworkAccess.java's own
