@@ -8,21 +8,30 @@ import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
 //? if neoforge {
 import de.maxhenkel.camera.items.ImageItem;
 import fr.lordfinn.crazyphone.utils.CameraModHelper;
-//?}
+import fr.lordfinn.crazyphone.voicechat.CallRegistry;
+//? } else {
+/*import fr.lordfinn.crazyphone.init.ModItems;
+import fr.lordfinn.crazyphone.world.inventory.CrazyphoneHomeScreenMenu;
+import net.minecraft.world.InteractionHand;
+*///?}
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import fr.lordfinn.crazyphone.utils.ScreenMenuUtils;
 import fr.lordfinn.crazyphone.utils.PhoneTagAccess;
-import fr.lordfinn.crazyphone.voicechat.CallRegistry;
 
 public class CrazyPhoneOnUseProcedure {
 	public static void execute(LevelAccessor world, double x, double y, double z, Entity entity) {
 		if (entity == null)
 			return;
+		//? if neoforge {
 		if (entity instanceof Player _player)
 			_player.closeContainer();
+		//?}
+		// closeContainer() is protected on vanilla Player - NeoForge access-transforms it public, but plain
+		// Fabric Loom doesn't widen it without our own access widener. Not needed on Fabric anyway: every
+		// screen opened below goes through Player#openMenu, which already closes whatever is currently open.
 		// Using the phone while ringing opens the Incoming Call screen (Accept/Decline - answering is no
 		// longer automatic just from touching the phone); using it while already ringing or in a call
 		// reopens the matching call screen directly - even past a password lock, and even if the phone isn't
@@ -34,10 +43,14 @@ public class CrazyPhoneOnUseProcedure {
 		// can physically hold several registered phones. Without the isHeldPhoneInThisCall check below,
 		// using ANY of them while the player has an active call anywhere redirected to that call's screen,
 		// even for a completely unrelated number that was never part of it.
+		//? if neoforge {
 		if (entity instanceof ServerPlayer serverPlayer && isHeldPhoneInThisCall(serverPlayer, world)) {
 			ScreenMenuUtils.openCallScreenForPlayer(serverPlayer);
 			return;
 		}
+		//?}
+		// TODO: calls aren't routed on Fabric yet (voicechat.CallRegistry not ported this pass), so there's
+		// no in-call state to redirect to here.
 		// IsPhoneSetupProcedure only trusts the item's OWN cached "name" tag, which can desync from the
 		// registry (the actual source of truth) if an earlier write to the item was ever interrupted -
 		// resyncing here whenever the registry disagrees means the item self-heals on its very next open
@@ -85,9 +98,14 @@ public class CrazyPhoneOnUseProcedure {
 				}
 				//? } else {
 				/*// TODO(#165): Fabric equivalent of the offhand-image-into-phone upload, once the
-				// Camerapture integration (replacing Camera mod's ImageItem) is written - falls through to
-				// the normal rightclick flow unconditionally until then.
-				CrazyPhoneRightclickedProcedure.execute(world, x, y, z, entity);
+				// Camerapture integration (replacing Camera mod's ImageItem) is written, and of
+				// CrazyPhoneRightclickedProcedure's camera-active check - always resets to the home screen
+				// until then (mirrors CrazyPhoneDefaultScreenButtonMessage's own Fabric fallback for the
+				// same button).
+				if (player.getItemInHand(InteractionHand.MAIN_HAND).getItem() == ModItems.CRAZY_PHONE.get()) {
+					ScreenMenuUtils.resetToHomeScreen(player);
+					ScreenMenuUtils.openPhoneCustomMenu(player, InteractionHand.MAIN_HAND, CrazyphoneHomeScreenMenu.class);
+				}
 				*///?}
 			}
 		} else {
@@ -100,6 +118,7 @@ public class CrazyPhoneOnUseProcedure {
 	 * is one Simple Voice Chat connection per player, but a phone's number lives in that specific item's own
 	 * NBT, and a player can hold several registered phones at once; without this check, using ANY of them
 	 * while any one of them was mid-call redirected to that call's screen. */
+	//? if neoforge {
 	private static boolean isHeldPhoneInThisCall(ServerPlayer player, LevelAccessor world) {
 		CallRegistry.CallSession session = CallRegistry.getSessionFor(player.getUUID()).orElse(null);
 		if (session == null)
@@ -107,4 +126,5 @@ public class CrazyPhoneOnUseProcedure {
 		String heldNumber = GetCrazyPhoneNumberFromMainHandProcedure.execute(player, null);
 		return !heldNumber.isEmpty() && CrazyPhoneHelper.getGroupMembers(world, session.conversationId).contains(heldNumber);
 	}
+	//?}
 }

@@ -4,7 +4,9 @@ import org.joml.Vector3f;
 import org.joml.Quaternionf;
 import org.slf4j.LoggerFactory;
 
+//? if neoforge {
 import net.neoforged.neoforge.network.PacketDistributor;
+//?}
 import fr.lordfinn.crazyphone.utils.NetworkAccess;
 
 import net.minecraft.world.entity.player.Player;
@@ -135,7 +137,9 @@ public class CrazyPhoneContactInfoScreenScreen extends CrazyPhoneDefaultScreenSc
 			PlayerInfo playerInfo = new PlayerInfo(profile, false);
             playerInfo.getSkin();
 			this.fakePlayer = new RemotePlayer(level, profile);
+			//? if neoforge {
 			this.fakePlayer.refreshDisplayName();
+			//?}
 			fr.lordfinn.crazyphone.client.FakePlayerPreview.showAllSkinLayers(this.fakePlayer);
 			level.addFreshEntity(this.fakePlayer);
 		});

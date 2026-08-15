@@ -16,6 +16,7 @@ package fr.lordfinn.crazyphone.fabric;
 //? if fabric && >=1.20.5 {
 /*import fr.lordfinn.crazyphone.init.ModItems;
 import fr.lordfinn.crazyphone.init.ModSounds;
+import fr.lordfinn.crazyphone.init.ModMenus;
 import fr.lordfinn.crazyphone.data.PhoneAttachmentTypes;
 import net.fabricmc.api.ModInitializer;
 import org.slf4j.Logger;
@@ -29,7 +30,9 @@ public class CrazyphoneFabric implements ModInitializer {
     public void onInitialize() {
         ModItems.register();
         ModSounds.register();
+        ModMenus.register();
         ModPackets.registerCommon();
+        ModPackets.registerServer();
         PhoneAttachmentTypes.register();
         LOGGER.info("CrazyPhone (Fabric) initializing");
     }

@@ -1,5 +1,6 @@
 package fr.lordfinn.crazyphone.network;
 
+//? if neoforge {
 //? if >=1.20.5 {
 /*import net.neoforged.neoforge.network.handling.IPayloadContext;
 *///? } else {
@@ -12,6 +13,7 @@ import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.fml.common.Mod.EventBusSubscriber;
 //?}
 import net.neoforged.bus.api.SubscribeEvent;
+//?}
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -135,6 +137,7 @@ public record VoiceMessageUploadPacket(String conversationId, UUID voiceId, byte
                 durationTicks, envelope, timestampInMinutes);
     }
 
+    //? if neoforge {
     //? if >=1.20.5 {
     /*public static void handleData(final VoiceMessageUploadPacket message, final IPayloadContext context) {
         if (context.flow() != PacketFlow.SERVERBOUND)
@@ -162,6 +165,20 @@ public record VoiceMessageUploadPacket(String conversationId, UUID voiceId, byte
         });
     }
     //?}
+    //?}
+    //? if fabric && >=1.20.5 {
+    /*public static void handleDataFabric(VoiceMessageUploadPacket message, net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.Context context) {
+        handle(context.player(), message.conversationId, message.voiceId, message.audioPcm, message.durationTicks, message.envelope);
+    }
+
+    public static void registerFabricType() {
+        fr.lordfinn.crazyphone.fabric.FabricNetworking.registerC2SType(TYPE, STREAM_CODEC);
+    }
+
+    public static void registerFabricServerReceiver() {
+        fr.lordfinn.crazyphone.fabric.FabricNetworking.registerServerReceiver(TYPE, VoiceMessageUploadPacket::handleDataFabric);
+    }
+    *///?}
 
     /** min/max/first-few sample values - a quick sanity check that captured audio looks like real speech
      * (varying values in a plausible range) rather than silence (all ~0) or garbage (implausible values). */
@@ -177,6 +194,7 @@ public record VoiceMessageUploadPacket(String conversationId, UUID voiceId, byte
         return "amplitude range [" + min + ", " + max + "]";
     }
 
+    //? if neoforge {
     //? if <1.20.5 {
     @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
     //?} else {
@@ -192,4 +210,5 @@ public record VoiceMessageUploadPacket(String conversationId, UUID voiceId, byte
             //?}
         }
     }
+    //?}
 }

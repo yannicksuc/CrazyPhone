@@ -1,5 +1,6 @@
 package fr.lordfinn.crazyphone.network;
 
+//? if neoforge {
 //? if >=1.20.5 {
 /*import net.neoforged.neoforge.network.handling.IPayloadContext;
 *///? } else {
@@ -12,6 +13,7 @@ import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.fml.common.Mod.EventBusSubscriber;
 //?}
 import net.neoforged.bus.api.SubscribeEvent;
+//?}
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -25,7 +27,9 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 
 import fr.lordfinn.crazyphone.Crazyphone;
+//? if neoforge {
 import fr.lordfinn.crazyphone.voicechat.SvcCallBridge;
+//?}
 import fr.lordfinn.crazyphone.voicechat.VoicechatIntegration;
 
 /**
@@ -64,12 +68,21 @@ public record VoiceMessageStopPacket() implements CustomPacketPayload {
     }
     //?}
 
+    //? if neoforge {
     private static void handle(ServerPlayer player) {
         if (!VoicechatIntegration.isAvailable())
             return;
         SvcCallBridge.stopVoiceMessagePlayback(player);
     }
+    //?}
+    //? if fabric {
+    /*// SvcCallBridge isn't ported on Fabric this pass - see build.fabric.gradle.kts's note - so a stop
+    // request is a deliberate no-op rather than a half-wired call.
+    private static void handle(ServerPlayer player) {
+    }
+    *///?}
 
+    //? if neoforge {
     //? if >=1.20.5 {
     /*public static void handleData(final VoiceMessageStopPacket message, final IPayloadContext context) {
         if (context.flow() != PacketFlow.SERVERBOUND)
@@ -97,7 +110,22 @@ public record VoiceMessageStopPacket() implements CustomPacketPayload {
         });
     }
     //?}
+    //?}
+    //? if fabric && >=1.20.5 {
+    /*public static void handleDataFabric(VoiceMessageStopPacket message, net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.Context context) {
+        handle(context.player());
+    }
 
+    public static void registerFabricType() {
+        fr.lordfinn.crazyphone.fabric.FabricNetworking.registerC2SType(TYPE, STREAM_CODEC);
+    }
+
+    public static void registerFabricServerReceiver() {
+        fr.lordfinn.crazyphone.fabric.FabricNetworking.registerServerReceiver(TYPE, VoiceMessageStopPacket::handleDataFabric);
+    }
+    *///?}
+
+    //? if neoforge {
     //? if <1.20.5 {
     @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
     //?} else {
@@ -113,4 +141,5 @@ public record VoiceMessageStopPacket() implements CustomPacketPayload {
             //?}
         }
     }
+    //?}
 }

@@ -365,6 +365,7 @@ public class CrazyPhoneHelper {
             ConversationSavedData.get(world).updateCallMessage(conversationId, callId,
                     callTag -> callTag.putLong("call_duration_millis", durationMillis));
         }
+        //? if neoforge {
         MinecraftServer server = world.getServer();
         if (server == null)
             return;
@@ -376,6 +377,9 @@ public class CrazyPhoneHelper {
             if (receiverPlayer != null)
                 NetworkAccess.sendToPlayer(receiverPlayer, new fr.lordfinn.crazyphone.network.CrazyPhoneNewCallDurationNotificationPacket(conversationId, callId, durationMillis));
         }
+        //?}
+        // Only called from voicechat.CallRegistry (NeoForge-only this pass, see build.fabric.gradle.kts's
+        // note) - the bystander push above is dead but harmless to leave gated rather than remove.
     }
 
     /** Posts a "missed call" system message - the mirror-image case to {@link #addCallMessage}/

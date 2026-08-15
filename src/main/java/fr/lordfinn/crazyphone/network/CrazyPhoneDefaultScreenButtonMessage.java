@@ -1,6 +1,7 @@
 
 package fr.lordfinn.crazyphone.network;
 
+//? if neoforge {
 //? if >=1.20.5 {
 /*import net.neoforged.neoforge.network.handling.IPayloadContext;
 *///? } else {
@@ -13,6 +14,7 @@ import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.fml.common.Mod.EventBusSubscriber;
 //?}
 import net.neoforged.bus.api.SubscribeEvent;
+//?}
 
 import net.minecraft.world.level.Level;
 import net.minecraft.world.entity.player.Player;
@@ -30,17 +32,28 @@ import net.minecraft.core.BlockPos;
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneDefaultScreenMenu;
 import fr.lordfinn.crazyphone.procedures.CrazyPhoneGoBackScreenProcedure;
 import fr.lordfinn.crazyphone.procedures.CrazyPhoneLockProcedure;
+//? if neoforge {
 import fr.lordfinn.crazyphone.procedures.CrazyPhoneRightclickedProcedure;
+//? } else {
+/*import fr.lordfinn.crazyphone.utils.ScreenMenuUtils;
+import fr.lordfinn.crazyphone.world.inventory.CrazyphoneHomeScreenMenu;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.server.level.ServerPlayer;
+import fr.lordfinn.crazyphone.init.ModItems;
+*///?}
 import fr.lordfinn.crazyphone.Crazyphone;
 
 import java.util.Map;
 import java.util.HashMap;
 
+//? if neoforge {
 //? if <1.20.5 {
 @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
 //?} else {
 /*@EventBusSubscriber
 *///?}
+//?}
 public record CrazyPhoneDefaultScreenButtonMessage(int buttonID, int x, int y, int z, HashMap<String, String> textstate) implements CustomPacketPayload {
 
 	//? if >=1.20.5 {
@@ -77,6 +90,7 @@ public record CrazyPhoneDefaultScreenButtonMessage(int buttonID, int x, int y, i
 	}
 	//?}
 
+	//? if neoforge {
 	//? if >=1.20.5 {
 	/*public static void handleData(final CrazyPhoneDefaultScreenButtonMessage message, final IPayloadContext context) {
 		if (context.flow() == PacketFlow.SERVERBOUND) {
@@ -112,6 +126,12 @@ public record CrazyPhoneDefaultScreenButtonMessage(int buttonID, int x, int y, i
 		}
 	}
 	//?}
+	//?}
+	//? if fabric && >=1.20.5 {
+	/*public static void handleDataFabric(CrazyPhoneDefaultScreenButtonMessage message, net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.Context context) {
+		handleButtonAction(context.player(), message.buttonID, message.x, message.y, message.z, message.textstate);
+	}
+	*///?}
 
 	public static void handleButtonAction(Player entity, int buttonID, int x, int y, int z, HashMap<String, String> textstate) {
 		Level world = entity.level();
@@ -128,7 +148,17 @@ public record CrazyPhoneDefaultScreenButtonMessage(int buttonID, int x, int y, i
 		if (buttonID == 0) {
 			CrazyPhoneGoBackScreenProcedure.execute(world, x, y, z, entity);
 		} else if (buttonID == 1) {
+			//? if neoforge {
 			CrazyPhoneRightclickedProcedure.execute(world, x, y, z, entity);
+			//? } else {
+			/*// Camerapture integration (task #165) not done yet, so unlike CrazyPhoneRightclickedProcedure
+			// this skips the "camera active -> take photo" branch and always resets to the home screen.
+			ItemStack stack = entity.getItemInHand(InteractionHand.MAIN_HAND);
+			if (stack.getItem() == ModItems.CRAZY_PHONE.get() && entity instanceof ServerPlayer serverPlayer) {
+				ScreenMenuUtils.resetToHomeScreen(serverPlayer);
+				ScreenMenuUtils.openPhoneCustomMenu(serverPlayer, InteractionHand.MAIN_HAND, CrazyphoneHomeScreenMenu.class);
+			}
+			*///?}
 		} else if (buttonID == 2) {
 			CrazyPhoneLockProcedure.execute(world, x, y, z, entity);
 		}
@@ -161,6 +191,7 @@ public record CrazyPhoneDefaultScreenButtonMessage(int buttonID, int x, int y, i
 		return map;
 	}
 
+	//? if neoforge {
 	@SubscribeEvent
 	public static void registerMessage(FMLCommonSetupEvent event) {
 		//? if >=1.20.5 {
@@ -169,4 +200,14 @@ public record CrazyPhoneDefaultScreenButtonMessage(int buttonID, int x, int y, i
 		Crazyphone.addNetworkMessage(CrazyPhoneDefaultScreenButtonMessage.ID, CrazyPhoneDefaultScreenButtonMessage::new, CrazyPhoneDefaultScreenButtonMessage::handleData);
 		//?}
 	}
+	//?}
+	//? if fabric && >=1.20.5 {
+	/*public static void registerFabricType() {
+		fr.lordfinn.crazyphone.fabric.FabricNetworking.registerC2SType(TYPE, STREAM_CODEC);
+	}
+
+	public static void registerFabricServerReceiver() {
+		fr.lordfinn.crazyphone.fabric.FabricNetworking.registerServerReceiver(TYPE, CrazyPhoneDefaultScreenButtonMessage::handleDataFabric);
+	}
+	*///?}
 }

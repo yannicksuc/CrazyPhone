@@ -1,6 +1,11 @@
 package fr.lordfinn.crazyphone.voicechat;
 
+//? if neoforge {
 import net.neoforged.fml.ModList;
+//?}
+//? if fabric {
+/*import net.fabricmc.loader.api.FabricLoader;
+*///?}
 
 import fr.lordfinn.crazyphone.Config;
 
@@ -22,7 +27,11 @@ public final class VoicechatIntegration {
 
     public static boolean isAvailable() {
         if (available == null) {
+            //? if neoforge {
             available = ModList.get().isLoaded(VOICECHAT_MOD_ID);
+            //? } else {
+            /*available = FabricLoader.getInstance().isModLoaded(VOICECHAT_MOD_ID);
+            *///?}
         }
         return available && Config.voicechatIntegrationEnabled;
     }

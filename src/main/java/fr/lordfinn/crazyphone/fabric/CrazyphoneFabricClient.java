@@ -10,11 +10,13 @@ package fr.lordfinn.crazyphone.fabric;
  */
 //? if fabric && >=1.20.5 {
 /*import net.fabricmc.api.ClientModInitializer;
+import fr.lordfinn.crazyphone.init.ModScreens;
 
 public class CrazyphoneFabricClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         ModPackets.registerClient();
+        ModScreens.register();
         CrazyphoneFabric.LOGGER.info("CrazyPhone (Fabric) client initializing");
     }
 }

@@ -1,5 +1,6 @@
 package fr.lordfinn.crazyphone.init;
 
+//? if neoforge {
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.neoforged.neoforge.registries.DeferredHolder;
 //? if >=1.20.5 {
@@ -17,6 +18,13 @@ import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.fml.common.Mod.EventBusSubscriber;
 //?}
 import net.neoforged.bus.api.SubscribeEvent;
+//?}
+//? if fabric && >=1.20.5 {
+/*import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerType;
+import net.minecraft.core.Registry;
+import net.minecraft.core.registries.BuiltInRegistries;
+import fr.lordfinn.crazyphone.utils.RegistryEntry;
+*///?}
 
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.server.level.ServerPlayer;
@@ -34,11 +42,13 @@ import net.minecraft.core.registries.Registries;
 
 import fr.lordfinn.crazyphone.world.inventory.CrazyphoneHomeScreenMenu;
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneSignInScreenMenu;
+//? if neoforge {
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhonePicturesScreenMenu;
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhonePictureFoldersScreenMenu;
+import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneMayorCandidateScreenMenu;
+//?}
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhonePasswordScreenMenu;
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneMayorsCandidatesListMenu;
-import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneMayorCandidateScreenMenu;
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneConversationMenu;
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneContactsScreenMenu;
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneContactInfoScreenMenu;
@@ -50,12 +60,15 @@ import fr.lordfinn.crazyphone.Crazyphone;
 import org.jetbrains.annotations.NotNull;
 
 // Menu type entries are added below as each screen/menu pair is ported.
+//? if neoforge {
 //? if <1.20.5 {
 @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
 //?} else {
 /*@EventBusSubscriber
 *///?}
+//?}
 public class ModMenus {
+    //? if neoforge {
 	public static final DeferredRegister<MenuType<?>> REGISTRY = DeferredRegister.create(Registries.MENU, Crazyphone.MODID);
 
 	public static final DeferredHolder<MenuType<?>, MenuType<CrazyphoneHomeScreenMenu>> CRAZYPHONE_HOME_SCREEN = REGISTRY.register("crazyphone_home_screen", () -> IMenuTypeExtension.create(CrazyphoneHomeScreenMenu::new));
@@ -80,8 +93,56 @@ public class ModMenus {
 			() -> IMenuTypeExtension.create(CrazyPhoneInCallScreenMenu::new));
 	public static final DeferredHolder<MenuType<?>, MenuType<CrazyPhoneIncomingCallScreenMenu>> CRAZY_PHONE_INCOMING_CALL_SCREEN = REGISTRY.register("crazy_phone_incoming_call_screen",
 			() -> IMenuTypeExtension.create(CrazyPhoneIncomingCallScreenMenu::new));
+    //?}
+    //? if fabric && >=1.20.5 {
+    /*// Vanilla's own MenuType constructor is private (only Fabric API's own access-widened
+    // ExtendedScreenHandlerType can reach it) - every menu here needs extra opening data (block pos, hand,
+    // and per-menu payload), which is exactly what ExtendedScreenHandlerType<T, D> is for. D is the raw
+    // RegistryFriendlyByteBuf itself via PASSTHROUGH_CODEC below, so every existing menu constructor
+    // (int, Inventory, FriendlyByteBuf) keeps working unmodified - RegistryFriendlyByteBuf IS-A
+    // FriendlyByteBuf, and the codec's decode side just hands back the same network buffer the client
+    // already knows how to read from sequentially.
+    public static final StreamCodec<RegistryFriendlyByteBuf, RegistryFriendlyByteBuf> PASSTHROUGH_CODEC = StreamCodec.of(
+            (RegistryFriendlyByteBuf networkBuf, RegistryFriendlyByteBuf data) -> networkBuf.writeBytes(data),
+            (RegistryFriendlyByteBuf networkBuf) -> networkBuf);
+
+    public static RegistryEntry<MenuType<CrazyphoneHomeScreenMenu>> CRAZYPHONE_HOME_SCREEN;
+    public static RegistryEntry<MenuType<CrazyPhonePasswordScreenMenu>> CRAZY_PHONE_PASSWORD_SCREEN;
+    public static RegistryEntry<MenuType<CrazyPhoneSignInScreenMenu>> CRAZY_PHONE_SIGN_IN_SCREEN;
+    public static RegistryEntry<MenuType<CrazyPhoneContactsScreenMenu>> CRAZY_PHONE_CONTACTS_SCREEN;
+    public static RegistryEntry<MenuType<CrazyPhoneContactInfoScreenMenu>> CRAZY_PHONE_CONTACT_INFO_SCREEN;
+    public static RegistryEntry<MenuType<CrazyPhoneConversationMenu>> CRAZY_PHONE_CONVERSATION;
+    public static RegistryEntry<MenuType<CrazyPhoneMayorsCandidatesListMenu>> CRAZY_PHONE_MAYORS_CANDIDATES_LIST;
+    public static RegistryEntry<MenuType<CrazyPhoneGroupSettingsScreenMenu>> CRAZY_PHONE_GROUP_SETTINGS_SCREEN;
+    public static RegistryEntry<MenuType<CrazyPhoneCallingScreenMenu>> CRAZY_PHONE_CALLING_SCREEN;
+    public static RegistryEntry<MenuType<CrazyPhoneInCallScreenMenu>> CRAZY_PHONE_IN_CALL_SCREEN;
+    public static RegistryEntry<MenuType<CrazyPhoneIncomingCallScreenMenu>> CRAZY_PHONE_INCOMING_CALL_SCREEN;
+
+    private static <T extends net.minecraft.world.inventory.AbstractContainerMenu> RegistryEntry<MenuType<T>> registerMenu(
+            String id, ExtendedScreenHandlerType.ExtendedFactory<T, RegistryFriendlyByteBuf> factory) {
+        return new RegistryEntry<>(Registry.register(BuiltInRegistries.MENU, Crazyphone.resource(id),
+                new ExtendedScreenHandlerType<>(factory, PASSTHROUGH_CODEC)));
+    }
+
+    public static void register() {
+        CRAZYPHONE_HOME_SCREEN = registerMenu("crazyphone_home_screen", CrazyphoneHomeScreenMenu::new);
+        CRAZY_PHONE_PASSWORD_SCREEN = registerMenu("crazy_phone_password_screen", CrazyPhonePasswordScreenMenu::new);
+        CRAZY_PHONE_SIGN_IN_SCREEN = registerMenu("crazy_phone_sign_in_screen", CrazyPhoneSignInScreenMenu::new);
+        CRAZY_PHONE_CONTACTS_SCREEN = registerMenu("crazy_phone_contacts_screen", CrazyPhoneContactsScreenMenu::new);
+        CRAZY_PHONE_CONTACT_INFO_SCREEN = registerMenu("crazy_phone_contact_info_screen", CrazyPhoneContactInfoScreenMenu::new);
+        CRAZY_PHONE_CONVERSATION = registerMenu("crazy_phone_conversation", CrazyPhoneConversationMenu::new);
+        CRAZY_PHONE_MAYORS_CANDIDATES_LIST = registerMenu("crazy_phone_mayors_candidates_list", CrazyPhoneMayorsCandidatesListMenu::new);
+        CRAZY_PHONE_GROUP_SETTINGS_SCREEN = registerMenu("crazy_phone_group_settings_screen", CrazyPhoneGroupSettingsScreenMenu::new);
+        CRAZY_PHONE_CALLING_SCREEN = registerMenu("crazy_phone_calling_screen", CrazyPhoneCallingScreenMenu::new);
+        CRAZY_PHONE_IN_CALL_SCREEN = registerMenu("crazy_phone_in_call_screen", CrazyPhoneInCallScreenMenu::new);
+        CRAZY_PHONE_INCOMING_CALL_SCREEN = registerMenu("crazy_phone_incoming_call_screen", CrazyPhoneIncomingCallScreenMenu::new);
+        // TODO(#165): CRAZY_PHONE_PICTURE_FOLDERS_SCREEN/CRAZY_PHONE_PICTURES_SCREEN/
+        // CRAZY_PHONE_MAYOR_CANDIDATE_SCREEN wait on the Camerapture integration.
+    }
+    *///?}
 
 	/** Always targeted at one player - a textbox value belongs to whoever is looking at that screen, never broadcast it. */
+	//? if neoforge {
 	public static void setText(String boxname, String value, ServerPlayer player) {
 		//? if >=1.20.5 {
 		/*//? if >=1.20.5 {
@@ -161,4 +222,5 @@ public class ModMenus {
 		Crazyphone.addNetworkMessage(GuiSyncMessage.ID, GuiSyncMessage::new, GuiSyncMessage::handleData);
 		//?}
 	}
+	//?}
 }

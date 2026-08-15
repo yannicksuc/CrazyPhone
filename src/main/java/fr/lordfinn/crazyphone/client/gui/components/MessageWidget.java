@@ -19,15 +19,17 @@ import com.mojang.blaze3d.vertex.VertexFormat.Mode;
 
 import com.mojang.blaze3d.platform.NativeImage;
 
+//? if neoforge {
 import de.maxhenkel.camera.ImageData;
 import de.maxhenkel.camera.TextureCache;
 import de.maxhenkel.camera.gui.ImageScreen;
+import fr.lordfinn.crazyphone.utils.CameraModHelper;
+import net.neoforged.neoforge.network.PacketDistributor;
+//?}
 import fr.lordfinn.crazyphone.client.ClientCallState;
 import fr.lordfinn.crazyphone.client.CursorEffects;
 import fr.lordfinn.crazyphone.network.VoiceMessageAudioRequestPacket;
 import fr.lordfinn.crazyphone.network.VoiceMessageStopPacket;
-import fr.lordfinn.crazyphone.utils.CameraModHelper;
-import net.neoforged.neoforge.network.PacketDistributor;
 import fr.lordfinn.crazyphone.utils.NetworkAccess;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -471,11 +473,20 @@ public class MessageWidget extends AbstractWidget {
         }
     }
 
+    //? if neoforge {
     private void onImageClick(int button) {
         if (button == 0) {
             CameraModHelper.openImage(image);
         }
     }
+    //?}
+    //? if fabric {
+    /*// Camerapture integration not written yet (task #165) - image is always ItemStack.EMPTY on Fabric
+    // (see CrazyPhoneHelper.getMessageFromTag), so isImageHovered() below always returns false and this
+    // never actually fires. Kept as a no-op stub purely so mouseClickedCompat still compiles.
+    private void onImageClick(int button) {
+    }
+    *///?}
 
     @Override
     protected void updateWidgetNarration(NarrationElementOutput narrationElementOutput) {
@@ -495,6 +506,7 @@ public class MessageWidget extends AbstractWidget {
         return mouseX >= x && mouseX < x + imageWidth && mouseY >= y && mouseY < y + imageHeight;
     }
 
+    //? if neoforge {
     private void renderImage(GuiGraphics guiGraphics, int mouseX, int mouseY) {
         if (image.isEmpty()) return;
 
@@ -621,5 +633,16 @@ public class MessageWidget extends AbstractWidget {
 
     GuiCompat.popPose(guiGraphics);
 }
+    //?}
+    //? if fabric {
+    /*// Camerapture integration not written yet (task #165) - image is always ItemStack.EMPTY on Fabric
+    // (see CrazyPhoneHelper.getMessageFromTag), so renderItemHead()'s !image.isEmpty() guard already keeps
+    // this from ever actually running. Kept as a no-op stub purely so renderItemHead() still compiles.
+    private void renderImage(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+    }
+
+    public void initImageScaling() {
+    }
+    *///?}
 
 }

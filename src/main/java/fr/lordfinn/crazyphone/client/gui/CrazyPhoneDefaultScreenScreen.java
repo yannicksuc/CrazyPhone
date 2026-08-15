@@ -2,7 +2,9 @@ package fr.lordfinn.crazyphone.client.gui;
 
 import fr.lordfinn.crazyphone.Crazyphone;
 
+//? if neoforge {
 import net.neoforged.neoforge.network.PacketDistributor;
+//?}
 import fr.lordfinn.crazyphone.utils.NetworkAccess;
 
 import net.minecraft.world.level.Level;

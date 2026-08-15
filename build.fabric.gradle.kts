@@ -158,7 +158,108 @@ sourceSets.main {
             "fr/lordfinn/crazyphone/procedures/CrazyPhoneAddContactToPhoneProcedure.java",
             "fr/lordfinn/crazyphone/procedures/CrazyPhoneGetContactsProcedure.java",
             "fr/lordfinn/crazyphone/procedures/ResetCrazyPhoneNumberProcedure.java",
-            "fr/lordfinn/crazyphone/procedures/IsPhoneInUseProcedure.java"
+            "fr/lordfinn/crazyphone/procedures/IsPhoneInUseProcedure.java",
+            // Screens/menus GUI reuse pass (task #166) - Tier 1: no NeoForge/Camera coupling beyond the
+            // dead <1.20.5 PacketDistributor import (never active since Fabric is scoped >=1.20.5 here) and
+            // MessageWidget's image-rendering methods (gated, Fabric renders text/voice/call bubbles but not
+            // images yet - see CrazyPhoneHelper.getMessageFromTag's own Fabric TODO for the same reason).
+            "fr/lordfinn/crazyphone/utils/GuiCompat.java",
+            "fr/lordfinn/crazyphone/client/gui/PhoneScreen.java",
+            "fr/lordfinn/crazyphone/client/gui/CrazyPhoneDefaultScreenScreen.java",
+            "fr/lordfinn/crazyphone/client/gui/CrazyPhoneContactsScreenScreen.java",
+            "fr/lordfinn/crazyphone/client/gui/CrazyPhoneConversationScreen.java",
+            "fr/lordfinn/crazyphone/client/gui/CrazyPhoneGroupSettingsScreenScreen.java",
+            "fr/lordfinn/crazyphone/client/gui/CrazyPhonePasswordScreenScreen.java",
+            "fr/lordfinn/crazyphone/client/gui/CrazyPhoneMayorsCandidatesListScreen.java",
+            // Calling/InCall/IncomingCall screens excluded here (need CrazyPhoneCallActionMessage ->
+            // voicechat.CallRegistry -> SvcCallBridge, not ported this pass) - their MENU classes stay in
+            // scope below since nothing tries to open them on Fabric (see ModScreens.java's own note).
+            "fr/lordfinn/crazyphone/client/gui/CrazyPhoneSignInScreenScreen.java",
+            "fr/lordfinn/crazyphone/client/gui/CrazyphoneHomeScreenScreen.java",
+            "fr/lordfinn/crazyphone/client/gui/CrazyPhoneContactInfoScreenScreen.java",
+            "fr/lordfinn/crazyphone/world/inventory/CrazyPhoneContactsScreenMenu.java",
+            "fr/lordfinn/crazyphone/world/inventory/CrazyPhoneConversationMenu.java",
+            "fr/lordfinn/crazyphone/world/inventory/CrazyPhoneGroupSettingsScreenMenu.java",
+            "fr/lordfinn/crazyphone/world/inventory/CrazyPhoneCallingScreenMenu.java",
+            "fr/lordfinn/crazyphone/world/inventory/CrazyPhoneInCallScreenMenu.java",
+            "fr/lordfinn/crazyphone/world/inventory/CrazyPhoneIncomingCallScreenMenu.java",
+            "fr/lordfinn/crazyphone/world/inventory/CrazyPhoneMayorsCandidatesListMenu.java",
+            "fr/lordfinn/crazyphone/world/inventory/CrazyPhoneContactInfoScreenMenu.java",
+            "fr/lordfinn/crazyphone/world/inventory/CrazyPhonePasswordScreenMenu.java",
+            "fr/lordfinn/crazyphone/world/inventory/CrazyPhoneSignInScreenMenu.java",
+            "fr/lordfinn/crazyphone/world/inventory/CrazyphoneHomeScreenMenu.java",
+            "fr/lordfinn/crazyphone/client/gui/components/MessageDisplayManager.java",
+            "fr/lordfinn/crazyphone/client/gui/components/CallBustPreview.java",
+            "fr/lordfinn/crazyphone/client/gui/components/WrappedTextWidget.java",
+            "fr/lordfinn/crazyphone/client/gui/components/ScrollingText.java",
+            "fr/lordfinn/crazyphone/client/gui/components/CrazyPhoneColors.java",
+            "fr/lordfinn/crazyphone/client/gui/components/PasswordEditBox.java",
+            "fr/lordfinn/crazyphone/client/gui/components/SmallTextEditBox.java",
+            "fr/lordfinn/crazyphone/client/gui/components/MessageWidget.java",
+            "fr/lordfinn/crazyphone/world/inventory/CrazyPhoneDefaultScreenMenu.java",
+            "fr/lordfinn/crazyphone/init/ModMenus.java",
+            "fr/lordfinn/crazyphone/init/ModScreens.java",
+            "fr/lordfinn/crazyphone/procedures/CrazyPhoneGetGroupsProcedure.java",
+            "fr/lordfinn/crazyphone/utils/ScreenMenuUtils.java",
+            // CrazyPhoneNewMessageNotificationPacket needs CrazyPhoneConversationScreen (now in scope
+            // above); CrazyPhoneHelper needs CrazyPhoneNewMessageNotificationPacket - the cycle only
+            // resolves once all three are compiled together in the same pass.
+            "fr/lordfinn/crazyphone/network/CrazyPhoneNewMessageNotificationPacket.java",
+            "fr/lordfinn/crazyphone/utils/CrazyPhoneHelper.java",
+            // Loader-agnostic by inspection - needed nearly everywhere a phone number has to be read off
+            // the item in the player's hand (button messages, call packets, screens).
+            "fr/lordfinn/crazyphone/procedures/GetCrazyPhoneNumberFromMainHandProcedure.java",
+            "fr/lordfinn/crazyphone/procedures/CrazyPhoneGetInitialFormValidationMessageProcedure.java",
+            "fr/lordfinn/crazyphone/procedures/ResetCrazyPhoneNumberFromMainHandProcedure.java",
+            "fr/lordfinn/crazyphone/procedures/CrazyPhoneInitialFormValidationButtonClickProcedure.java",
+            "fr/lordfinn/crazyphone/procedures/CrazyPhoneTrySignInProcedure.java",
+            "fr/lordfinn/crazyphone/procedures/CrazyPhoneGoBackScreenProcedure.java",
+            "fr/lordfinn/crazyphone/procedures/CrazyPhoneLockProcedure.java",
+            "fr/lordfinn/crazyphone/procedures/CrazyPhoneRemoveContactFromPhoneProcedure.java",
+            "fr/lordfinn/crazyphone/procedures/IsPhoneItemStackInUseProcedure.java",
+            "fr/lordfinn/crazyphone/procedures/IsPhoneSetupProcedure.java",
+            "fr/lordfinn/crazyphone/procedures/RegisterNewPhoneFromFormProcedure.java",
+            "fr/lordfinn/crazyphone/procedures/IsPhoneOpenProcedure.java",
+            "fr/lordfinn/crazyphone/procedures/LoadPhoneDataIntoItemstackProcedure.java",
+            "fr/lordfinn/crazyphone/procedures/CrazyPhoneOpenPasswordScreenProcedure.java",
+            "fr/lordfinn/crazyphone/procedures/CrazyPhoneOpenSignInScreenProcedure.java",
+            // CrazyPhoneOnUseProcedure - dispatches to the setup/lock/home flow. Its Camera-mod (offhand
+            // image upload) and call-redirect (CallRegistry) branches are gated neoforge-only with Fabric
+            // fallbacks, matching CrazyPhoneDefaultScreenButtonMessage's own "reset to home" pattern.
+            "fr/lordfinn/crazyphone/procedures/CrazyPhoneOnUseProcedure.java",
+            // CrazyPhoneRightclickedProcedure and CrazyPhoneOpenPictureFoldersScreenProcedure stay out -
+            // both need Camera-mod/Camerapture classes not ported yet (task #165).
+            // CrazyPhoneConversationScreen needs these client-side helpers (all confirmed loader-agnostic).
+            "fr/lordfinn/crazyphone/client/CursorEffects.java",
+            "fr/lordfinn/crazyphone/client/FakePlayerPreview.java",
+            "fr/lordfinn/crazyphone/client/MojangProfileLookup.java",
+            "fr/lordfinn/crazyphone/client/ClientMessageDraft.java",
+            "fr/lordfinn/crazyphone/client/ConversationClientCache.java",
+            // isAvailable() is now dual-loader (FabricLoader.isModLoaded on Fabric) - everything else in
+            // this package (CallRegistry, SvcCallBridge, ...) stays NeoForge-only for this pass, so on
+            // Fabric this can report "available" while nothing actually wires up a call/voice packet yet.
+            "fr/lordfinn/crazyphone/voicechat/VoicechatIntegration.java",
+            // Fully loader-agnostic already - only the local mic-capture/OGG-encoding path, no networking.
+            "fr/lordfinn/crazyphone/voicechat/VoiceMessageRecorder.java",
+            // Remaining C2S button-message packets + voice/call packets (task #166 tail) - each gated
+            // NeoForge-only where it touches CallRegistry/SvcCallBridge/Camera, matching CrazyPhoneHelper's
+            // own partial-degradation pattern.
+            "fr/lordfinn/crazyphone/network/UpdateContactInfoMessage.java",
+            "fr/lordfinn/crazyphone/network/CrazyPhoneDefaultScreenButtonMessage.java",
+            "fr/lordfinn/crazyphone/network/CrazyphoneHomeScreenButtonMessage.java",
+            "fr/lordfinn/crazyphone/network/CrazyPhoneContactsScreenButtonMessage.java",
+            "fr/lordfinn/crazyphone/network/CrazyPhoneGroupSettingsButtonMessage.java",
+            "fr/lordfinn/crazyphone/network/CrazyPhoneMayorsCandidatesButtonMessage.java",
+            "fr/lordfinn/crazyphone/network/CrazyPhonePasswordScreenButtonMessage.java",
+            "fr/lordfinn/crazyphone/network/CrazyPhoneSignInScreenButtonMessage.java",
+            "fr/lordfinn/crazyphone/network/CrazyPhoneContactInfoScreenButtonMessage.java",
+            "fr/lordfinn/crazyphone/network/CrazyPhoneConversationButtonMessage.java",
+            "fr/lordfinn/crazyphone/network/ConversationRequestPacket.java",
+            "fr/lordfinn/crazyphone/network/ConversationResponsePacket.java",
+            "fr/lordfinn/crazyphone/network/CrazyPhoneCallActionMessage.java",
+            "fr/lordfinn/crazyphone/network/VoiceMessageUploadPacket.java",
+            "fr/lordfinn/crazyphone/network/VoiceMessageAudioRequestPacket.java",
+            "fr/lordfinn/crazyphone/network/VoiceMessageStopPacket.java"
         )
     }
     java.setIncludes(includes)

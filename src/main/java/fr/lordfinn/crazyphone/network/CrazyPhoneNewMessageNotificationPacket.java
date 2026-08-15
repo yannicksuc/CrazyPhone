@@ -152,10 +152,7 @@ public record CrazyPhoneNewMessageNotificationPacket(
     }
     //?}
     //? if fabric && >=1.20.5 {
-    /*// Not wired into ModPackets yet - applyNotification() reaches CrazyPhoneConversationScreen, which
-    // isn't in the Fabric build's include list (screens/menus are task #166), so registering this type
-    // now would just leave a dead receiver. Left ready for when that lands.
-    public static void handleDataFabric(CrazyPhoneNewMessageNotificationPacket messagePacket, net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.Context context) {
+    /*public static void handleDataFabric(CrazyPhoneNewMessageNotificationPacket messagePacket, net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.Context context) {
         applyNotification(messagePacket);
     }
 
