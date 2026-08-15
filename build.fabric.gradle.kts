@@ -59,18 +59,29 @@ dependencies {
 
     // maven.modrinth:<slug>:<version> - see the Modrinth exclusiveContent repository above.
     modImplementation("maven.modrinth:camerapture:$camerapturePinnedVersion")
+
+    // NeoForge pulls this in transitively; a plain Fabric Loom project doesn't, so every @Nullable
+    // annotation across the shared src/main/java tree (there are many) needs it declared explicitly here.
+    compileOnly("com.google.code.findbugs:jsr305:3.0.2")
 }
 
+// A plain literal, not a "run-$minecraftVersion-..." interpolation: Loom's RunConfigSettings.runDir setter
+// doesn't evaluate a string template the same way a NeoForge gameDirectory assignment does - interpolating
+// minecraftVersion here silently produced the literal path segment "provider(?)" (a Gradle Provider's
+// unresolved toString(), not the real value) even though that same val works fine everywhere else in this
+// file (see the "minecraft:$minecraftVersion" dependency coordinate above). Each node still gets its own
+// isolated run directory via the subproject folder itself (versions/1.21.1-fabric/run/, versions/
+// 1.20.1-fabric/run/, ...) since runDir is resolved relative to the subproject, not shared across nodes.
 loom {
     runs {
         named("client") {
             client()
             programArgs("--username", "LordFinn")
-            runDir = "run-$minecraftVersion-fabric"
+            runDir = "run"
         }
         named("server") {
             server()
-            runDir = "run-$minecraftVersion-fabric-server"
+            runDir = "run-server"
         }
     }
 }
@@ -91,20 +102,32 @@ sourceSets.main {
     resources.srcDir(rootProject.file("src/generated/resources"))
 }
 
-// WALKING-SKELETON STAGE: the shared src/main/java tree is still 100% NeoForge-only code (DeferredRegister,
-// IEventBus, @Mod, PayloadRegistrar, ...), none of which compiles against Fabric Loader APIs. Rather than
-// //? if fabric/neoforge-gate every one of those ~150 files in one pass, this walking skeleton excludes the
-// whole tree except a new fr.lordfinn.crazyphone.fabric package (the Fabric entrypoint/registration glue,
-// parallel to Crazyphone.java/ModItems.java/etc.) so the Loom+Stonecutter wiring itself can be verified
-// end-to-end (compiles, mod loads, boots) before real features get ported back in one at a time. Follow-up
-// milestones progressively narrow this exclude as each area (items, data, network, screens, mixins) gets
-// its Fabric implementation written.
+// WALKING-SKELETON STAGE: the shared src/main/java tree is still overwhelmingly NeoForge-only code
+// (DeferredRegister, IEventBus, @Mod/@SubscribeEvent scattered across individual files - not just a few
+// hub files, confirmed by attempting to widen this include list: procedures/, utils/, network/, world/
+// inventory/ and voicechat/ are a tangled mesh, not a clean layered dependency, so "port items first, then
+// menus, then network" doesn't hold up as a compile-order strategy). This walking skeleton stays narrowed
+// to fr.lordfinn.crazyphone.fabric (the entrypoint/registration glue) plus the few files confirmed
+// loader-agnostic (Crazyphone's MODID/resource() helpers, ModItems, CrazyPhoneItem, RegistryEntry) so the
+// Loom+Stonecutter wiring itself stays verified end-to-end (compiles, mod loads, boots - confirmed live via
+// :1.21.1-fabric:runServer reaching "Done"). Widening further needs a genuine porting pass per area (see
+// tasks #160-166), not just adding more source directories - each area has real NeoForge-specific and
+// Camera-mod-specific code to rewrite against Fabric/Camerapture APIs first.
 sourceSets.main {
-    java.setIncludes(listOf("fr/lordfinn/crazyphone/fabric/**"))
+    java.setIncludes(listOf(
+        "fr/lordfinn/crazyphone/fabric/**",
+        "fr/lordfinn/crazyphone/Crazyphone.java",
+        "fr/lordfinn/crazyphone/init/ModItems.java",
+        "fr/lordfinn/crazyphone/item/CrazyPhoneItem.java",
+        "fr/lordfinn/crazyphone/utils/RegistryEntry.java"
+    ))
 }
 
 // fabric.mod.json is expanded from a template the same way neoforge.mods.toml is - see
-// src/main/templates/fabric.mod.json and generateModMetadata below.
+// src/main/fabric-templates/fabric.mod.json and generateModMetadata below - a separate directory from
+// src/main/templates/ (the NeoForge template), NOT a subfolder of it: that NeoForge-side generateModMetadata
+// task processes the entire src/main/templates tree unconditionally, and blows up trying to expand this
+// file's Fabric-only placeholder tokens (undefined properties on any NeoForge node/gradle.properties).
 val modMetadataProperties = mapOf(
     "minecraft_version" to property("minecraft_version"),
     "mod_id" to property("mod_id"),
@@ -118,7 +141,7 @@ val modMetadataProperties = mapOf(
 val generateModMetadata = tasks.register<ProcessResources>("generateModMetadata") {
     inputs.properties(modMetadataProperties)
     expand(modMetadataProperties)
-    from(rootProject.file("src/main/templates/fabric"))
+    from(rootProject.file("src/main/fabric-templates"))
     into("build/generated/sources/modMetadata")
 }
 sourceSets.main {

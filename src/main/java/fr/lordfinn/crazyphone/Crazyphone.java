@@ -1,5 +1,6 @@
 package fr.lordfinn.crazyphone;
 
+//? if neoforge {
 import com.mojang.logging.LogUtils;
 
 import net.neoforged.bus.api.IEventBus;
@@ -15,8 +16,10 @@ import net.neoforged.neoforge.network.registration.IPayloadRegistrar;
 import net.neoforged.neoforge.network.handling.IPlayPayloadHandler;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlerEvent;
 //?}
+//?}
 
 import net.minecraft.resources.ResourceLocation;
+//? if neoforge {
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 //? if >=1.20.5 {
 /*import net.minecraft.network.codec.StreamCodec;
@@ -33,11 +36,23 @@ import org.slf4j.Logger;
 
 import java.util.HashMap;
 import java.util.Map;
+//?}
 
+/**
+ * MODID/resource()/parseId() are shared across both loaders (referenced from ~everywhere in the codebase
+ * that builds a ResourceLocation) - only the actual mod-lifecycle registration below (constructor, network
+ * message registrar) is NeoForge-specific. Fabric's own entrypoint/registration glue lives in
+ * fr.lordfinn.crazyphone.fabric.CrazyphoneFabric instead, since Fabric's entrypoint mechanism (interface
+ * implementation) has no equivalent of NeoForge's @Mod-annotated constructor injection to share code with.
+ */
+//? if neoforge {
 @Mod(Crazyphone.MODID)
+//?}
 public class Crazyphone {
     public static final String MODID = "crazyphone";
+    //? if neoforge {
     private static final Logger LOGGER = LogUtils.getLogger();
+    //?}
 
     //? if >=1.20.5 {
     /*public static ResourceLocation resource(String path) {
@@ -57,6 +72,7 @@ public class Crazyphone {
     }
     //?}
 
+    //? if neoforge {
     public Crazyphone(IEventBus modEventBus, ModContainer modContainer) {
         modEventBus.addListener(this::registerNetworking);
 
@@ -139,5 +155,6 @@ public class Crazyphone {
         MESSAGES.forEach((id, networkMessage) -> registrar.play(id, ((NetworkMessage) networkMessage).reader(), ((NetworkMessage) networkMessage).handler()));
         networkingRegistered = true;
     }
+    //?}
     //?}
 }

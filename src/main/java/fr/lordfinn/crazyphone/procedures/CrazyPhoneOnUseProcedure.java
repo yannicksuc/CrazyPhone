@@ -5,8 +5,10 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.entity.player.Player;
 import fr.lordfinn.crazyphone.FeatureFlag;
 import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
+//? if neoforge {
 import de.maxhenkel.camera.items.ImageItem;
 import fr.lordfinn.crazyphone.utils.CameraModHelper;
+//?}
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -51,6 +53,7 @@ public class CrazyPhoneOnUseProcedure {
 			if (entity instanceof ServerPlayer player) {
 				ItemStack offhandStack = player.getOffhandItem();
 
+				//? if neoforge {
 				if (offhandStack != null && !offhandStack.isEmpty() && offhandStack.getItem() instanceof ImageItem) {
 					if (!FeatureFlag.CAMERA.isEnabledFor(player)) {
 						player.displayClientMessage(
@@ -80,6 +83,12 @@ public class CrazyPhoneOnUseProcedure {
 				} else {
 					CrazyPhoneRightclickedProcedure.execute(world, x, y, z, entity);
 				}
+				//? } else {
+				/*// TODO(#165): Fabric equivalent of the offhand-image-into-phone upload, once the
+				// Camerapture integration (replacing Camera mod's ImageItem) is written - falls through to
+				// the normal rightclick flow unconditionally until then.
+				CrazyPhoneRightclickedProcedure.execute(world, x, y, z, entity);
+				*///?}
 			}
 		} else {
 			CrazyPhoneOpenSignInScreenProcedure.execute(world, x, y, z, entity);
