@@ -11,12 +11,21 @@ import net.minecraft.world.InteractionResultHolder;
 /*import net.minecraft.world.InteractionResult;
 *///?}
 import net.minecraft.world.InteractionHand;
+//? if >=1.21.10 {
+/*import net.minecraft.core.component.DataComponents;
+import net.minecraft.world.item.component.TooltipDisplay;
+*///?}
 
 import fr.lordfinn.crazyphone.procedures.CrazyPhoneOnUseProcedure;
 
 public class CrazyPhoneItem extends Item {
     public CrazyPhoneItem(Item.Properties properties) {
+        //? if >=1.21.10 {
+        /*super(properties.component(DataComponents.TOOLTIP_DISPLAY, TooltipDisplay.DEFAULT.withHidden(DataComponents.CONTAINER, true))
+                .stacksTo(1).rarity(Rarity.COMMON));
+        *///? } else {
         super(properties.stacksTo(1).rarity(Rarity.COMMON));
+        //?}
     }
 
     @Override

@@ -36,6 +36,25 @@ public class CrazyPhoneImageScreen extends ImageScreen implements PhoneScreen {
     }
 
     /**
+     * On >=1.21.10 the camera mod's ImageScreen#render is a full rewrite that draws the (uncentered)
+     * image directly and never calls renderBg/renderLabels (both are now empty stubs) nor renders any
+     * widget - it completely bypasses AbstractContainerScreen's normal render chain, which is what used
+     * to draw this screen's buttons. Overriding render() here restores that chain: draw our own
+     * correctly-centered background/image (renderBg below), then render every widget exactly like
+     * vanilla Screen#render itself does on this version (a plain loop over renderables).
+     */
+    //? if >=1.21.10 {
+    /*
+    @Override
+    public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+        this.renderBg(guiGraphics, partialTick, mouseX, mouseY);
+        for (net.minecraft.client.gui.components.Renderable renderable : this.renderables) {
+            renderable.render(guiGraphics, mouseX, mouseY, partialTick);
+        }
+    }
+    *///?}
+
+    /**
      * The camera mod's own ImageScreen#renderBg computes an 80%-of-window box for the picture but never
      * actually centers that box on the window (it draws from the (0,0) origin), so the image renders
      * shifted toward the top-left instead of centered. Overriding renderBg here bypasses that
