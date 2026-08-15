@@ -119,7 +119,8 @@ sourceSets.main {
         "fr/lordfinn/crazyphone/Crazyphone.java",
         "fr/lordfinn/crazyphone/init/ModItems.java",
         "fr/lordfinn/crazyphone/item/CrazyPhoneItem.java",
-        "fr/lordfinn/crazyphone/utils/RegistryEntry.java"
+        "fr/lordfinn/crazyphone/utils/RegistryEntry.java",
+        "fr/lordfinn/crazyphone/utils/NetworkAccess.java"
     ))
 }
 
