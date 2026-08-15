@@ -1,5 +1,6 @@
 package fr.lordfinn.crazyphone.network;
 
+//? if neoforge {
 //? if >=1.20.5 {
 /*import net.neoforged.neoforge.network.handling.IPayloadContext;
 *///? } else {
@@ -12,6 +13,7 @@ import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.fml.common.Mod.EventBusSubscriber;
 //?}
 import net.neoforged.bus.api.SubscribeEvent;
+//?}
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -76,6 +78,7 @@ public record PhoneRegistrySyncPacket(PhoneRegistrySavedData data) implements Cu
     }
     //?}
 
+    //? if neoforge {
     //? if >=1.20.5 {
     /*public static void handleData(final PhoneRegistrySyncPacket message, final IPayloadContext context) {
         if (context.flow() == PacketFlow.CLIENTBOUND) {
@@ -101,7 +104,9 @@ public record PhoneRegistrySyncPacket(PhoneRegistrySavedData data) implements Cu
         }
     }
     //?}
+    //?}
 
+    //? if neoforge {
     //? if <1.20.5 {
     @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
     //?} else {
@@ -117,4 +122,19 @@ public record PhoneRegistrySyncPacket(PhoneRegistrySavedData data) implements Cu
             //?}
         }
     }
+    //?}
+    //? if fabric && >=1.20.5 {
+    /*public static void handleDataFabric(PhoneRegistrySyncPacket message, net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.Context context) {
+        PhoneRegistrySavedData clientSide = PhoneRegistrySavedData.get(net.minecraft.client.Minecraft.getInstance().player.level());
+        clientSide.readFrom(message.data.save(new CompoundTag(), net.minecraft.client.Minecraft.getInstance().player.registryAccess()));
+    }
+
+    public static void registerFabricType() {
+        fr.lordfinn.crazyphone.fabric.FabricNetworking.registerS2CType(TYPE, STREAM_CODEC);
+    }
+
+    public static void registerFabricClientReceiver() {
+        fr.lordfinn.crazyphone.fabric.FabricNetworking.registerClientReceiver(TYPE, PhoneRegistrySyncPacket::handleDataFabric);
+    }
+    *///?}
 }

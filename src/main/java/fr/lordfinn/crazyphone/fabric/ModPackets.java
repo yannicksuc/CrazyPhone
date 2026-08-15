@@ -14,11 +14,13 @@ package fr.lordfinn.crazyphone.fabric;
     // Called from CrazyphoneFabric#onInitialize - safe on both dedicated server and client.
     public static void registerCommon() {
         fr.lordfinn.crazyphone.network.FeatureFlagSyncPacket.registerFabricType();
+        fr.lordfinn.crazyphone.network.PhoneRegistrySyncPacket.registerFabricType();
     }
 
     // Called from CrazyphoneFabricClient#onInitializeClient - registers every server->client receiver.
     public static void registerClient() {
         fr.lordfinn.crazyphone.network.FeatureFlagSyncPacket.registerFabricClientReceiver();
+        fr.lordfinn.crazyphone.network.PhoneRegistrySyncPacket.registerFabricClientReceiver();
     }
 }
 *///?}

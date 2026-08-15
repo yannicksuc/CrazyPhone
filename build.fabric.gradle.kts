@@ -142,7 +142,9 @@ sourceSets.main {
             "fr/lordfinn/crazyphone/utils/NetworkAccess.java",
             "fr/lordfinn/crazyphone/FeatureFlag.java",
             "fr/lordfinn/crazyphone/client/ClientFeatureFlagState.java",
-            "fr/lordfinn/crazyphone/network/FeatureFlagSyncPacket.java"
+            "fr/lordfinn/crazyphone/network/FeatureFlagSyncPacket.java",
+            "fr/lordfinn/crazyphone/data/PhoneRegistrySavedData.java",
+            "fr/lordfinn/crazyphone/network/PhoneRegistrySyncPacket.java"
         )
     }
     java.setIncludes(includes)
