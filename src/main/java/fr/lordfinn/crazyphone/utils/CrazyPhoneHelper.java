@@ -24,10 +24,12 @@ import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
 import com.mojang.authlib.properties.PropertyMap;
 
+//? if neoforge {
 import de.maxhenkel.camera.ImageData;
 import de.maxhenkel.camera.inventory.AlbumInventory;
 import de.maxhenkel.camera.items.AlbumItem;
 import de.maxhenkel.camera.items.ImageItem;
+//?}
 import fr.lordfinn.crazyphone.client.gui.components.MessageData;
 import fr.lordfinn.crazyphone.data.ConversationSavedData;
 import fr.lordfinn.crazyphone.data.PhoneRegistrySavedData;
@@ -67,10 +69,11 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.resources.RegistryOps;
 import java.util.concurrent.ThreadLocalRandom;
+//? if neoforge {
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.IItemHandlerModifiable;
-import net.neoforged.neoforge.network.PacketDistributor;
+//?}
 
 public class CrazyPhoneHelper {
 
@@ -79,6 +82,7 @@ public class CrazyPhoneHelper {
         return entity instanceof LivingEntity livingEntity ? livingEntity.getMainHandItem() : ItemStack.EMPTY;
     }
 
+    //? if neoforge {
     public static void deleteSlotsFromAlbum(AlbumInventory inventory, Set<Integer> slots) {
         // slots ultimately comes from a client-supplied CSV (CrazyPhonePicturesScreenButtonMessage) - never
         // trust it to already be in range.
@@ -122,6 +126,7 @@ public class CrazyPhoneHelper {
 
         return modifiableHandler;
     }
+    //?}
 
     public static Contact getContact(Level world, String number) {
         Tag potentialContact = PhoneRegistrySavedData.get(world).phones.get(number);
@@ -134,6 +139,7 @@ public class CrazyPhoneHelper {
         return null;
     }
 
+    //? if neoforge {
     public static ItemStack getAlbumFromPhoneHandler(IItemHandlerModifiable handler, int albumIndex) {
         if (handler == null)
             return ItemStack.EMPTY;
@@ -141,6 +147,7 @@ public class CrazyPhoneHelper {
             return ItemStack.EMPTY;
         return handler.getStackInSlot(albumIndex);
     }
+    //?}
 
     public static String getConversationNumber(String recipientNumber, Entity entity) {
         return getConversationNumber(
@@ -367,11 +374,7 @@ public class CrazyPhoneHelper {
                 continue;
             ServerPlayer receiverPlayer = server.getPlayerList().getPlayer(UUID.fromString(receiver.getUuid()));
             if (receiverPlayer != null)
-                //? if >=1.20.5 {
-                /*PacketDistributor.sendToPlayer(receiverPlayer, new fr.lordfinn.crazyphone.network.CrazyPhoneNewCallDurationNotificationPacket(conversationId, callId, durationMillis));
-                *///? } else {
-                PacketDistributor.PLAYER.with(receiverPlayer).send(new fr.lordfinn.crazyphone.network.CrazyPhoneNewCallDurationNotificationPacket(conversationId, callId, durationMillis));
-                //?}
+                NetworkAccess.sendToPlayer(receiverPlayer, new fr.lordfinn.crazyphone.network.CrazyPhoneNewCallDurationNotificationPacket(conversationId, callId, durationMillis));
         }
     }
 
@@ -412,11 +415,7 @@ public class CrazyPhoneHelper {
                 continue;
             ServerPlayer receiverPlayer = server.getPlayerList().getPlayer(UUID.fromString(receiver.getUuid()));
             if (receiverPlayer != null) {
-                //? if >=1.20.5 {
-                /*PacketDistributor.sendToPlayer(receiverPlayer, new CrazyPhoneNewMessageNotificationPacket(messageTag, ""));
-                *///? } else {
-                PacketDistributor.PLAYER.with(receiverPlayer).send(new CrazyPhoneNewMessageNotificationPacket(messageTag, ""));
-                //?}
+                NetworkAccess.sendToPlayer(receiverPlayer, new CrazyPhoneNewMessageNotificationPacket(messageTag, ""));
             }
             addNotificationBadge(registry, number, conversationId, receiverPlayer);
         }
@@ -428,6 +427,7 @@ public class CrazyPhoneHelper {
         tag.putString("sender", senderNumber);
         tag.putString("value", message);
         tag.putInt("timecode", timestampInMinutes);
+        //? if neoforge {
         if (image != null && !image.isEmpty() && image.getItem() instanceof ImageItem) {
             //? if >=1.20.5 {
             /*if (image.has(CameraModAccess.imageDataComponent())) {
@@ -442,6 +442,11 @@ public class CrazyPhoneHelper {
             }
             //?}
         }
+        //?}
+        //? if fabric {
+        /*// TODO(#165): embed a Camerapture picture reference into the message tag, once the
+        // Camera mod -> Camerapture integration is written.
+        *///?}
         return tag;
     }
 
@@ -461,6 +466,7 @@ public class CrazyPhoneHelper {
         return tag;
     }
 
+    //? if neoforge {
     public static CompoundTag imageDataToCompoundTag(ImageData data) {
         CompoundTag tag = new CompoundTag();
 
@@ -484,6 +490,7 @@ public class CrazyPhoneHelper {
 
         return tag;
     }
+    //?}
 
     /**
      * Notifies the other participant(s) of {@code conversationId} that a new message arrived. Only ever
@@ -518,11 +525,7 @@ public class CrazyPhoneHelper {
 
             ServerPlayer receiverPlayer = server.getPlayerList().getPlayer(UUID.fromString(receiver.getUuid()));
             if (receiverPlayer != null) {
-                //? if >=1.20.5 {
-                /*PacketDistributor.sendToPlayer(receiverPlayer, new CrazyPhoneNewMessageNotificationPacket(messageTag,sender.getName()));
-                *///? } else {
-                PacketDistributor.PLAYER.with(receiverPlayer).send(new CrazyPhoneNewMessageNotificationPacket(messageTag,sender.getName()));
-                //?}
+                NetworkAccess.sendToPlayer(receiverPlayer, new CrazyPhoneNewMessageNotificationPacket(messageTag, sender.getName()));
             }
 
             addNotificationBadge(registry, receiverNumber, conversationId, receiverPlayer);
@@ -757,11 +760,7 @@ public class CrazyPhoneHelper {
                 continue;
             ServerPlayer player = server.getPlayerList().getPlayer(UUID.fromString(member.getUuid()));
             if (player != null)
-                //? if >=1.20.5 {
-                /*PacketDistributor.sendToPlayer(player, new ConversationCallActivitySyncPacket(conversationId, active));
-                *///? } else {
-                PacketDistributor.PLAYER.with(player).send(new ConversationCallActivitySyncPacket(conversationId, active));
-                //?}
+                NetworkAccess.sendToPlayer(player, new ConversationCallActivitySyncPacket(conversationId, active));
         }
     }
 
@@ -925,11 +924,7 @@ public class CrazyPhoneHelper {
             return;
         ServerPlayer memberPlayer = server.getPlayerList().getPlayer(UUID.fromString(memberContact.getUuid()));
         if (memberPlayer != null)
-            //? if >=1.20.5 {
-            /*PacketDistributor.sendToPlayer(memberPlayer, new CrazyPhoneGroupMembershipNotificationPacket(groupLabel, actorName, added));
-            *///? } else {
-            PacketDistributor.PLAYER.with(memberPlayer).send(new CrazyPhoneGroupMembershipNotificationPacket(groupLabel, actorName, added));
-            //?}
+            NetworkAccess.sendToPlayer(memberPlayer, new CrazyPhoneGroupMembershipNotificationPacket(groupLabel, actorName, added));
     }
 
     public static void renameGroup(Level world, String conversationId, String newName) {
@@ -1082,16 +1077,19 @@ public class CrazyPhoneHelper {
         ItemStack stack = ItemStack.EMPTY;
         if (NbtCompat.contains(messageTag, "image")) {
             CompoundTag imageTag = NbtCompat.getCompound(messageTag, "image");
-            //? if >=1.20.5 {
+            //? if neoforge && >=1.20.5 {
             /*ImageData imageData = ImageData.fromImageTag(imageTag);
             if (imageData != null) {
                 stack = new ItemStack(CameraModAccess.imageItem());
                 imageData.addToImage(stack);
             }
-            *///? } else {
+            *///?}
+            //? if neoforge && <1.20.5 {
             stack = new ItemStack(CameraModAccess.imageItem());
             stack.getOrCreateTag().put("image", imageTag.copy());
             //?}
+            // Fabric: Camerapture integration not written yet (see task #165) - image messages decode
+            // as an empty ItemStack for now rather than a real picture item.
         }
 
         return new MessageData(timecode, value, sender, stack);
@@ -1149,6 +1147,7 @@ public class CrazyPhoneHelper {
         return profile;
     }
 
+    //? if neoforge {
     public static void takeSelectedAlbumSlotsFromHeldPhone(Player entity, Level world, Set<Integer> slotsToCopy,
             int albumId) {
         IItemHandlerModifiable handler = getPhoneItemHandler(entity);
@@ -1211,4 +1210,5 @@ public class CrazyPhoneHelper {
             addMessage(world, conversationId, senderNumber, "", timestampInMinutes, imageToSend);
         }
     }
+    //?}
 }
