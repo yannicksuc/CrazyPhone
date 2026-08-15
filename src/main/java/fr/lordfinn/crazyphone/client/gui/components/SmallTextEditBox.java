@@ -9,7 +9,9 @@ import net.minecraft.network.chat.Component;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
+//? if <1.21.10 {
 @OnlyIn(Dist.CLIENT)
+//?}
 public class SmallTextEditBox extends EditBox {
 
     private static final float SCALE_FACTOR = 0.75F; // Scale down the font size

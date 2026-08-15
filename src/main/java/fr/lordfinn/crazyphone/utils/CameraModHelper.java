@@ -67,7 +67,9 @@ public class CameraModHelper {
 		}
 	}
 
+	//? if <1.21.10 {
 	@OnlyIn(Dist.CLIENT)
+	//?}
 	private static void openClientGui(List<UUID> images, List<ItemStack> imageStacks, int startIndex) {
 		Minecraft mc = Minecraft.getInstance();
 		AlbumScreen screen = new CrazyPhoneAlbumScreen(images, imageStacks);
@@ -86,7 +88,9 @@ public class CameraModHelper {
 		});
 	}
 
+	//? if <1.21.10 {
 	@OnlyIn(Dist.CLIENT)
+	//?}
     public static void openImage(ItemStack stack) {
       Minecraft.getInstance().setScreen(new CrazyPhoneImageScreen(stack));
     }

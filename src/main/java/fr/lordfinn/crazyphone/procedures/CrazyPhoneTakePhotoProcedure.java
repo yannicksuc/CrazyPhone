@@ -59,7 +59,9 @@ public class CrazyPhoneTakePhotoProcedure {
         }
     }
 
+    //? if <1.21.10 {
     @OnlyIn(Dist.CLIENT)
+    //?}
     private static void openClientGui(String currentShader) {
         Minecraft.getInstance().setScreen(new CameraScreen(currentShader));
     }

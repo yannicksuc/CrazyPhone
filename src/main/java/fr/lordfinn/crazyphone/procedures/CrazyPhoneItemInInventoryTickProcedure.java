@@ -20,7 +20,9 @@ import java.util.List;
 
 @EventBusSubscriber(value = {Dist.CLIENT})
 public class CrazyPhoneItemInInventoryTickProcedure {
+	//? if <1.21.10 {
 	@OnlyIn(Dist.CLIENT)
+	//?}
 	@SubscribeEvent
 	public static void onItemTooltip(ItemTooltipEvent event) {
 		execute(event.getItemStack(), event.getToolTip());

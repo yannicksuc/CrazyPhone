@@ -7,7 +7,9 @@ import net.minecraft.network.chat.Component;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
+//? if <1.21.10 {
 @OnlyIn(Dist.CLIENT)
+//?}
 public class PasswordEditBox extends EditBox {
 
     public PasswordEditBox(Font font, int x, int y, int width, int height, Component message) {
