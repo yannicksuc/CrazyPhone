@@ -7,7 +7,6 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.level.saveddata.SavedData;
-import net.neoforged.neoforge.network.PacketDistributor;
 //? if <1.20.5 {
 import net.minecraft.util.datafix.DataFixTypes;
 //?}
@@ -16,9 +15,15 @@ import net.minecraft.util.datafix.DataFixTypes;
 import net.minecraft.util.datafix.DataFixTypes;
 import net.minecraft.world.level.saveddata.SavedDataType;
 *///?}
+// Real vanilla SavedData.Factory always requires a DataFixTypes, at every version it exists at all - see
+// ConversationSavedData.java's import block for the full javap-verified explanation.
+//? if fabric && >=1.20.5 <1.21.10 {
+/*import net.minecraft.util.datafix.DataFixTypes;
+*///?}
 
 import fr.lordfinn.crazyphone.network.PhoneRegistrySyncPacket;
 import fr.lordfinn.crazyphone.utils.NbtCompat;
+import fr.lordfinn.crazyphone.utils.NetworkAccess;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -132,21 +137,13 @@ public class PhoneRegistrySavedData extends SavedData {
     public void syncToAll(LevelAccessor world) {
         this.setDirty();
         if (world instanceof Level level && !level.isClientSide())
-            //? if >=1.20.5 {
-            /*PacketDistributor.sendToAllPlayers(new PhoneRegistrySyncPacket(this));
-            *///? } else {
-            PacketDistributor.ALL.noArg().send(new PhoneRegistrySyncPacket(this));
-            //?}
+            NetworkAccess.sendToAllPlayers(level.getServer(), new PhoneRegistrySyncPacket(this));
     }
 
     /** Marks dirty for disk persistence and pushes the registry to a single player, e.g. right after they join. */
     public void syncTo(ServerPlayer player) {
         this.setDirty();
-        //? if >=1.20.5 {
-        /*PacketDistributor.sendToPlayer(player, new PhoneRegistrySyncPacket(this));
-        *///? } else {
-        PacketDistributor.PLAYER.with(player).send(new PhoneRegistrySyncPacket(this));
-        //?}
+        NetworkAccess.sendToPlayer(player, new PhoneRegistrySyncPacket(this));
     }
 
     static final PhoneRegistrySavedData CLIENT_SIDE = new PhoneRegistrySavedData();
@@ -154,14 +151,22 @@ public class PhoneRegistrySavedData extends SavedData {
     public static PhoneRegistrySavedData get(LevelAccessor world) {
         if (world instanceof ServerLevelAccessor serverLevelAcc) {
             return serverLevelAcc.getLevel().getServer().overworld().getDataStorage()
-                    //? if <1.20.5 {
+                    //? if neoforge && <1.20.5 {
                     .computeIfAbsent(new SavedData.Factory<>(PhoneRegistrySavedData::new, PhoneRegistrySavedData::load, DataFixTypes.LEVEL), DATA_NAME);
                     //?}
-                    //? if >=1.20.5 <1.21.10 {
+                    //? if neoforge && >=1.20.5 <1.21.10 {
                     /*.computeIfAbsent(new SavedData.Factory<>(PhoneRegistrySavedData::new, PhoneRegistrySavedData::load), DATA_NAME);
                     *///?}
-                    //? if >=1.21.10 {
+                    //? if neoforge && >=1.21.10 {
                     /*.computeIfAbsent(TYPE);
+                    *///?}
+                    // Fabric branches use real vanilla SavedData/DimensionDataStorage signatures (javap-
+                    // verified - see ConversationSavedData.java's import block for the full explanation).
+                    //? if fabric && <1.20.5 {
+                    /*.computeIfAbsent(PhoneRegistrySavedData::load, PhoneRegistrySavedData::new, DATA_NAME);
+                    *///?}
+                    //? if fabric && >=1.20.5 {
+                    /*.computeIfAbsent(new SavedData.Factory<>(PhoneRegistrySavedData::new, PhoneRegistrySavedData::load, DataFixTypes.LEVEL), DATA_NAME);
                     *///?}
         }
         return CLIENT_SIDE;

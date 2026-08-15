@@ -1,6 +1,7 @@
 package fr.lordfinn.crazyphone.utils;
 
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.server.MinecraftServer;
 //? if fabric {
 /*import net.minecraft.server.level.ServerPlayer;
 *///?}
@@ -71,6 +72,26 @@ public final class NetworkAccess {
     //? if fabric && >=1.20.5 {
     /*public static void sendToPlayer(ServerPlayer player, CustomPacketPayload payload) {
         net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.send(player, payload);
+    }
+    *///?}
+
+    //? if neoforge && <1.20.5 {
+    public static void sendToAllPlayers(MinecraftServer server, CustomPacketPayload payload) {
+        net.neoforged.neoforge.network.PacketDistributor.ALL.noArg().send(payload);
+    }
+    //?}
+    //? if neoforge && >=1.20.5 {
+    /*public static void sendToAllPlayers(MinecraftServer server, CustomPacketPayload payload) {
+        net.neoforged.neoforge.network.PacketDistributor.sendToAllPlayers(payload);
+    }
+    *///?}
+    //? if fabric && >=1.20.5 {
+    /*// Fabric has no single "broadcast to everyone on the server" helper analogous to PacketDistributor.ALL -
+    // PlayerLookup.all(server) plus a per-player send is the standard replacement.
+    public static void sendToAllPlayers(MinecraftServer server, CustomPacketPayload payload) {
+        for (ServerPlayer player : net.fabricmc.fabric.api.networking.v1.PlayerLookup.all(server)) {
+            net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.send(player, payload);
+        }
     }
     *///?}
 }
