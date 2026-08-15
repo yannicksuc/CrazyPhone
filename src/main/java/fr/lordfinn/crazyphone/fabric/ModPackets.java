@@ -15,12 +15,14 @@ package fr.lordfinn.crazyphone.fabric;
     public static void registerCommon() {
         fr.lordfinn.crazyphone.network.FeatureFlagSyncPacket.registerFabricType();
         fr.lordfinn.crazyphone.network.PhoneRegistrySyncPacket.registerFabricType();
+        fr.lordfinn.crazyphone.network.PlayerPhoneStateSyncPacket.registerFabricType();
     }
 
     // Called from CrazyphoneFabricClient#onInitializeClient - registers every server->client receiver.
     public static void registerClient() {
         fr.lordfinn.crazyphone.network.FeatureFlagSyncPacket.registerFabricClientReceiver();
         fr.lordfinn.crazyphone.network.PhoneRegistrySyncPacket.registerFabricClientReceiver();
+        fr.lordfinn.crazyphone.network.PlayerPhoneStateSyncPacket.registerFabricClientReceiver();
     }
 }
 *///?}
