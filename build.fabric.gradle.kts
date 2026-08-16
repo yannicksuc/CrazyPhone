@@ -280,7 +280,17 @@ sourceSets.main {
             "fr/lordfinn/crazyphone/data/OrphanedCallCleanup.java",
             "fr/lordfinn/crazyphone/item/CrazyPhoneItemProperties.java",
             "fr/lordfinn/crazyphone/client/PhoneClickableCursorHandler.java",
-            "fr/lordfinn/crazyphone/procedures/CrazyPhoneItemInInventoryTickProcedure.java"
+            "fr/lordfinn/crazyphone/procedures/CrazyPhoneItemInInventoryTickProcedure.java",
+            // Fabric-native picture pipeline (task #165) - real photo capture/storage/display for Fabric,
+            // NOT a Camerapture integration (its own capture pipeline turns out to have no public "give me
+            // the bytes" hook, see FabricPictureCapture's own doc comment). Scoped to in-conversation
+            // capture+send+view only - no standalone Pictures/PictureFolders gallery or mayor-candidate
+            // photo posters, those stay excluded/TODO(#165) exactly as before.
+            "fr/lordfinn/crazyphone/network/CrazyPhoneUploadPicturePacket.java",
+            "fr/lordfinn/crazyphone/network/CrazyPhonePictureRequestPacket.java",
+            "fr/lordfinn/crazyphone/network/CrazyPhonePictureResponsePacket.java",
+            "fr/lordfinn/crazyphone/client/picture/FabricPictureCapture.java",
+            "fr/lordfinn/crazyphone/client/picture/FabricPictureCache.java"
         )
     }
     java.setIncludes(includes)

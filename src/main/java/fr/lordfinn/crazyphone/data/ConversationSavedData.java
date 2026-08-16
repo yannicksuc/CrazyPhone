@@ -49,6 +49,12 @@ public class ConversationSavedData extends SavedData {
      * tag itself, same "lightweight metadata in the message, heavy payload fetched on demand" shape as
      * image messages. Never sent wholesale; only ever read one entry at a time, on an explicit play click. */
     public CompoundTag voiceAudio = new CompoundTag();
+    /** imageId (string) -> {bytes: PNG, conversationId} - the Fabric-native picture pipeline's own payload
+     * store (see fr.lordfinn.crazyphone.picture package), same shape as voiceAudio above. On NeoForge,
+     * image bytes still live in Camera mod's own disk cache (see CrazyPhoneHelper#imageDataToCompoundTag) -
+     * this map is simply never written to there, kept unconditional only because ConversationSavedData
+     * itself is shared, loader-agnostic code. */
+    public CompoundTag imageBytes = new CompoundTag();
 
     //? if >=1.20.5 <1.21.10 {
     /*public static ConversationSavedData load(CompoundTag tag, HolderLookup.Provider lookupProvider) {
@@ -58,6 +64,7 @@ public class ConversationSavedData extends SavedData {
         ConversationSavedData data = new ConversationSavedData();
         data.conversations = tag.get("conversations") instanceof CompoundTag t ? t : new CompoundTag();
         data.voiceAudio = tag.get("voiceAudio") instanceof CompoundTag t ? t : new CompoundTag();
+        data.imageBytes = tag.get("imageBytes") instanceof CompoundTag t ? t : new CompoundTag();
         return data;
     }
 
@@ -84,6 +91,7 @@ public class ConversationSavedData extends SavedData {
     private CompoundTag writeNbt(CompoundTag nbt) {
         nbt.put("conversations", this.conversations);
         nbt.put("voiceAudio", this.voiceAudio);
+        nbt.put("imageBytes", this.imageBytes);
         return nbt;
     }
 
@@ -113,6 +121,26 @@ public class ConversationSavedData extends SavedData {
     }
 
     public record VoiceAudioEntry(String conversationId, byte[] bytes) {
+    }
+
+    public void storeImageBytes(UUID imageId, String conversationId, byte[] png) {
+        CompoundTag entry = new CompoundTag();
+        entry.putString("conversationId", conversationId);
+        entry.put("bytes", new ByteArrayTag(png));
+        imageBytes.put(imageId.toString(), entry);
+        setDirty();
+    }
+
+    /** Null if the id doesn't exist (evicted, or never existed) - same not-client-trusted-conversationId
+     * caveat as {@link #getVoiceAudio}. */
+    public @Nullable ImageBytesEntry getImageBytes(UUID imageId) {
+        if (!(imageBytes.get(imageId.toString()) instanceof CompoundTag entry))
+            return null;
+        byte[] bytes = entry.get("bytes") instanceof ByteArrayTag tag ? tag.getAsByteArray() : new byte[0];
+        return new ImageBytesEntry(fr.lordfinn.crazyphone.utils.NbtCompat.getString(entry, "conversationId"), bytes);
+    }
+
+    public record ImageBytesEntry(String conversationId, byte[] bytes) {
     }
 
     public static ConversationSavedData get(LevelAccessor world) {
@@ -161,6 +189,7 @@ public class ConversationSavedData extends SavedData {
     private void trim(ListTag messages) {
         while (messages.size() > Config.maxStoredMessagesPerConversation) {
             evictVoiceAudioIfPresent(fr.lordfinn.crazyphone.utils.NbtCompat.getCompound(messages, 0));
+            evictImageBytesIfPresent(fr.lordfinn.crazyphone.utils.NbtCompat.getCompound(messages, 0));
             messages.remove(0);
         }
         int imageCount = 0;
@@ -170,6 +199,7 @@ public class ConversationSavedData extends SavedData {
                 continue;
             imageCount++;
             if (imageCount > Config.maxImagesStoredPerConversation) {
+                evictImageBytesIfPresent(message);
                 messages.remove(i);
             }
         }
@@ -194,6 +224,16 @@ public class ConversationSavedData extends SavedData {
             return;
         UUID voiceId = new UUID(fr.lordfinn.crazyphone.utils.NbtCompat.getLong(voiceTag, "voice_id_most"), fr.lordfinn.crazyphone.utils.NbtCompat.getLong(voiceTag, "voice_id_least"));
         voiceAudio.remove(voiceId.toString());
+    }
+
+    /** No-op for a NeoForge/Camera-mod image tag (its bytes were never in this map to begin with - see
+     * imageBytes' own doc comment), removes the corresponding entry for a Fabric-native one. Both loaders'
+     * image tags share the same image_id_most/image_id_least fields, so this is safe to call unconditionally. */
+    private void evictImageBytesIfPresent(CompoundTag message) {
+        if (!(message.get("image") instanceof CompoundTag imageTag))
+            return;
+        UUID imageId = new UUID(fr.lordfinn.crazyphone.utils.NbtCompat.getLong(imageTag, "image_id_most"), fr.lordfinn.crazyphone.utils.NbtCompat.getLong(imageTag, "image_id_least"));
+        imageBytes.remove(imageId.toString());
     }
 
     /** Sentinel {@code call_duration_millis} value meaning "connected, then the server went away before it

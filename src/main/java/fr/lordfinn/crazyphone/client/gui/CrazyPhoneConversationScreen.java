@@ -33,6 +33,9 @@ import fr.lordfinn.crazyphone.client.gui.components.MessageDisplayManager.Messag
 import fr.lordfinn.crazyphone.client.gui.components.SmallTextEditBox;
 import fr.lordfinn.crazyphone.network.ConversationRequestPacket;
 import fr.lordfinn.crazyphone.network.CrazyPhoneConversationButtonMessage;
+//? if fabric && >=1.20.5 {
+/*import fr.lordfinn.crazyphone.network.CrazyPhoneUploadPicturePacket;
+*///?}
 import fr.lordfinn.crazyphone.procedures.GetCrazyPhoneNumberFromMainHandProcedure;
 import fr.lordfinn.crazyphone.utils.Contact;
 import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
@@ -822,12 +825,23 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
                 new WidgetSprites(Crazyphone.parseId("crazyphone:textures/screens/crazyphone-add-image.png"),
                         Crazyphone.parseId("crazyphone:textures/screens/crazyphone-add-hover.png")),
                 e -> {
+                    //? if neoforge {
                     //? if >=1.20.5 {
                     /*NetworkAccess.sendToServer(new CrazyPhoneConversationButtonMessage(1, x, y, z, getEditBoxAndCheckBoxValues()));
                     *///? } else {
                     PacketDistributor.SERVER.noArg().send(new CrazyPhoneConversationButtonMessage(1, x, y, z, getEditBoxAndCheckBoxValues()));
                     //?}
                     CrazyPhoneConversationButtonMessage.handleButtonAction(entity, 1, x, y, z, getEditBoxAndCheckBoxValues());
+                    //?}
+                    //? if fabric && >=1.20.5 {
+                    /*// Fabric-native picture pipeline (task #165) - no picture-folders browser exists here
+                    // (that's still Camera-mod/Camerapture-coupled, see build.fabric.gradle.kts), so this
+                    // button instead takes a photo and sends it into THIS conversation in one click, the
+                    // same "in-chat camera" shape a real phone messaging app uses.
+                    byte[] png = fr.lordfinn.crazyphone.client.picture.FabricPictureCapture.captureAsPng();
+                    if (png != null)
+                        NetworkAccess.sendToServer(new CrazyPhoneUploadPicturePacket(this.menu.getConversationId(), png));
+                    *///?}
                 }) {
             @Override
             public void renderWidget(GuiGraphics guiGraphics, int x, int y, float partialTicks) {

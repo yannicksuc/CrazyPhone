@@ -19,6 +19,7 @@ public class MessageData {
     private final UUID callId;
     private final long callStartMillis;
     private final long callDurationMillis;
+    private final UUID imageId;
 
     public MessageData(int timecode, String message, String sender) {
         this.timecode = timecode;
@@ -34,6 +35,7 @@ public class MessageData {
         this.callId = null;
         this.callStartMillis = 0;
         this.callDurationMillis = -1;
+        this.imageId = null;
     }
 
     public MessageData(int timecode, String message, String sender, ItemStack stack) {
@@ -50,6 +52,7 @@ public class MessageData {
         this.callId = null;
         this.callStartMillis = 0;
         this.callDurationMillis = -1;
+        this.imageId = null;
     }
 
     private MessageData(int timecode, Component systemText, ItemStack systemIcon) {
@@ -66,6 +69,7 @@ public class MessageData {
         this.callId = null;
         this.callStartMillis = 0;
         this.callDurationMillis = -1;
+        this.imageId = null;
     }
 
     private MessageData(int timecode, String sender, UUID voiceId, int voiceDurationTicks, byte[] voiceEnvelope) {
@@ -82,6 +86,7 @@ public class MessageData {
         this.callId = null;
         this.callStartMillis = 0;
         this.callDurationMillis = -1;
+        this.imageId = null;
     }
 
     private MessageData(int timecode, UUID callId, long callStartMillis, long callDurationMillis) {
@@ -98,6 +103,32 @@ public class MessageData {
         this.callId = callId;
         this.callStartMillis = callStartMillis;
         this.callDurationMillis = callDurationMillis;
+        this.imageId = null;
+    }
+
+    /** Fabric-native picture pipeline (task #165) variant - the actual PNG bytes are fetched from the
+     * server on demand, only when this message's bubble is actually rendered (see FabricPictureCache),
+     * same lazy shape as the voice-message audio fetch. NeoForge's image messages keep using the
+     * ItemStack-typed {@code image} field instead (a real Camera-mod picture item). */
+    private MessageData(int timecode, String sender, UUID imageId) {
+        this.timecode = timecode;
+        this.message = "";
+        this.sender = sender;
+        this.image = ItemStack.EMPTY;
+        this.system = false;
+        this.systemText = null;
+        this.systemIcon = ItemStack.EMPTY;
+        this.voiceId = null;
+        this.voiceDurationTicks = 0;
+        this.voiceEnvelope = new byte[0];
+        this.callId = null;
+        this.callStartMillis = 0;
+        this.callDurationMillis = -1;
+        this.imageId = imageId;
+    }
+
+    public static MessageData image(int timecode, String sender, UUID imageId) {
+        return new MessageData(timecode, sender, imageId);
     }
 
     /** A system event (rename / icon change / member excluded / admin reassigned) - not sent by anyone,
@@ -119,6 +150,14 @@ public class MessageData {
      * live-ticking elapsed time from {@code callStartMillis} in that case (see MessageWidget). */
     public static MessageData call(int timecode, UUID callId, long callStartMillis, long callDurationMillis) {
         return new MessageData(timecode, callId, callStartMillis, callDurationMillis);
+    }
+
+    public boolean isImage() {
+        return imageId != null;
+    }
+
+    public UUID getImageId() {
+        return imageId;
     }
 
     public boolean isVoice() {

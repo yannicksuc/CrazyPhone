@@ -283,6 +283,35 @@ public class CrazyPhoneHelper {
         }
     }
 
+    /**
+     * Appends an image message on the Fabric-native picture pipeline (task #165): mirrors
+     * {@link #addVoiceMessage}, storing PNG bytes in {@link ConversationSavedData#imageBytes} and embedding
+     * only an id pointer in the message tag. Uses the SAME image_id_most/image_id_least/owner field names
+     * {@link #imageDataToCompoundTag} already writes on NeoForge, so {@link #getMessageFromTag}'s image
+     * block can stay a single shared read path that just resolves the id differently per loader.
+     */
+    public static void addImageMessage(Level world, String conversationId, String senderNumber, UUID imageId, int timestampInMinutes) {
+        synchronized (messageLock) {
+            ConversationSavedData data = ConversationSavedData.get(world);
+            // Bytes are already stored by the caller (CrazyPhoneUploadPicturePacket) before this runs -
+            // this only writes the lightweight message tag pointing at them.
+            CompoundTag imageTag = new CompoundTag();
+            imageTag.putLong("image_id_most", imageId.getMostSignificantBits());
+            imageTag.putLong("image_id_least", imageId.getLeastSignificantBits());
+            imageTag.putString("owner", senderNumber);
+
+            CompoundTag messageTag = new CompoundTag();
+            messageTag.putString("sender", senderNumber);
+            messageTag.putString("value", "");
+            messageTag.putInt("timecode", timestampInMinutes);
+            messageTag.put("image", imageTag);
+
+            data.appendMessage(conversationId, messageTag);
+            List<String> numbers = getGroupMembers(world, conversationId);
+            notifyContacts(world, messageTag, numbers, senderNumber, "📷", timestampInMinutes, conversationId);
+        }
+    }
+
     /** The timecode of the most recent message in a conversation, or 0 if it has none yet - used to sort
      * the contacts/groups grid by recency (most recently active conversation first). */
     public static int getLastMessageTimecode(LevelAccessor world, String conversationId) {
@@ -1092,8 +1121,13 @@ public class CrazyPhoneHelper {
             stack = new ItemStack(CameraModAccess.imageItem());
             stack.getOrCreateTag().put("image", imageTag.copy());
             //?}
-            // Fabric: Camerapture integration not written yet (see task #165) - image messages decode
-            // as an empty ItemStack for now rather than a real picture item.
+            //? if fabric {
+            /*// Fabric-native picture pipeline (task #165) - bytes are fetched lazily on demand from
+            // ConversationSavedData#imageBytes, keyed by the same image_id_most/image_id_least this tag
+            // already carries (see CrazyPhoneHelper#addImageMessage), never eagerly loaded here.
+            UUID imageId = new UUID(NbtCompat.getLong(imageTag, "image_id_most"), NbtCompat.getLong(imageTag, "image_id_least"));
+            return MessageData.image(timecode, sender, imageId);
+            *///?}
         }
 
         return new MessageData(timecode, value, sender, stack);

@@ -57,6 +57,10 @@ public class MessageWidget extends AbstractWidget {
     private int adjustedY;
     boolean showIcon = true;
     private ItemStack image = ItemStack.EMPTY;
+    /** Fabric-native picture pipeline (task #165) counterpart to {@link #image} - NeoForge's image messages
+     * carry a real Camera-mod ItemStack instead and leave this null; Fabric's carry this instead and leave
+     * {@code image} empty. Exactly one of the two is ever set for an image message, on either loader. */
+    private java.util.UUID fabricImageId;
     private int imageWidth = 0;
     private int imageHeight = 0;
     MessageDisplayManager manager;
@@ -108,27 +112,32 @@ public class MessageWidget extends AbstractWidget {
     }
 
     public MessageWidget(WrappedTextWidget wrappedText, boolean isSender, ItemStack icon, int scrollPosition, @Nullable ItemStack image, MessageDisplayManager messageDisplayManager) {
-        this(wrappedText, isSender, icon, scrollPosition, image, messageDisplayManager, false, null, 0, null, null, 0, -1);
+        this(wrappedText, isSender, icon, scrollPosition, image, messageDisplayManager, false, null, 0, null, null, 0, -1, null);
     }
 
     public MessageWidget(WrappedTextWidget wrappedText, boolean isSender, ItemStack icon, int scrollPosition, @Nullable ItemStack image, MessageDisplayManager messageDisplayManager, boolean isSystem) {
-        this(wrappedText, isSender, icon, scrollPosition, image, messageDisplayManager, isSystem, null, 0, null, null, 0, -1);
+        this(wrappedText, isSender, icon, scrollPosition, image, messageDisplayManager, isSystem, null, 0, null, null, 0, -1, null);
     }
 
     public MessageWidget(WrappedTextWidget wrappedText, boolean isSender, ItemStack icon, int scrollPosition, @Nullable ItemStack image, MessageDisplayManager messageDisplayManager, boolean isSystem,
                           @Nullable java.util.UUID voiceId, int voiceDurationTicks, @Nullable byte[] voiceEnvelope) {
-        this(wrappedText, isSender, icon, scrollPosition, image, messageDisplayManager, isSystem, voiceId, voiceDurationTicks, voiceEnvelope, null, 0, -1);
+        this(wrappedText, isSender, icon, scrollPosition, image, messageDisplayManager, isSystem, voiceId, voiceDurationTicks, voiceEnvelope, null, 0, -1, null);
+    }
+
+    public MessageWidget(WrappedTextWidget wrappedText, boolean isSender, ItemStack icon, int scrollPosition, @Nullable ItemStack image, MessageDisplayManager messageDisplayManager, boolean isSystem,
+                          @Nullable java.util.UUID voiceId, int voiceDurationTicks, @Nullable byte[] voiceEnvelope, @Nullable java.util.UUID fabricImageId) {
+        this(wrappedText, isSender, icon, scrollPosition, image, messageDisplayManager, isSystem, voiceId, voiceDurationTicks, voiceEnvelope, null, 0, -1, fabricImageId);
     }
 
     /** Call log entry - see the callId/callStartMillis/callDurationMillis field javadocs. */
     public MessageWidget(WrappedTextWidget wrappedText, MessageDisplayManager messageDisplayManager,
                           java.util.UUID callId, long callStartMillis, long callDurationMillis) {
-        this(wrappedText, false, ItemStack.EMPTY, 0, null, messageDisplayManager, true, null, 0, null, callId, callStartMillis, callDurationMillis);
+        this(wrappedText, false, ItemStack.EMPTY, 0, null, messageDisplayManager, true, null, 0, null, callId, callStartMillis, callDurationMillis, null);
     }
 
     private MessageWidget(WrappedTextWidget wrappedText, boolean isSender, ItemStack icon, int scrollPosition, @Nullable ItemStack image, MessageDisplayManager messageDisplayManager, boolean isSystem,
                           @Nullable java.util.UUID voiceId, int voiceDurationTicks, @Nullable byte[] voiceEnvelope,
-                          @Nullable java.util.UUID callId, long callStartMillis, long callDurationMillis) {
+                          @Nullable java.util.UUID callId, long callStartMillis, long callDurationMillis, @Nullable java.util.UUID fabricImageId) {
         super(wrappedText.getX(), wrappedText.getY(), wrappedText.getWidth(), wrappedText.getHeight(), wrappedText.getMessage());
         this.wrappedText = wrappedText;
         this.isSender = isSender;
@@ -142,8 +151,11 @@ public class MessageWidget extends AbstractWidget {
         this.callId = callId;
         this.callStartMillis = callStartMillis;
         this.callDurationMillis = callDurationMillis;
+        this.fabricImageId = fabricImageId;
         if (image != null && !image.isEmpty()) {
             this.image = image;
+            initImageScaling();
+        } else if (fabricImageId != null) {
             initImageScaling();
         }
         adjustPosition(this.getX() + (isSystem || isSender ? 0 : 15));
@@ -481,10 +493,10 @@ public class MessageWidget extends AbstractWidget {
     }
     //?}
     //? if fabric {
-    /*// Camerapture integration not written yet (task #165) - image is always ItemStack.EMPTY on Fabric
-    // (see CrazyPhoneHelper.getMessageFromTag), so isImageHovered() below always returns false and this
-    // never actually fires. Kept as a no-op stub purely so mouseClickedCompat still compiles.
-    private void onImageClick(int button) {
+    /*private void onImageClick(int button) {
+        // No full-screen image viewer on Fabric yet (task #165 follow-up) - the hover-zoom in renderImage
+        // already shows the picture larger in place, which covers the common case of "let me see that
+        // properly" without needing a whole extra screen.
     }
     *///?}
 
@@ -499,7 +511,7 @@ public class MessageWidget extends AbstractWidget {
 
     /** Public so {@link MessageDisplayManager} can defer this widget to a second render pass when its image is hovered, so the grown/shadowed image always paints on top of neighboring messages instead of being covered by whichever one renders later in normal order. */
     public boolean isImageHovered(int mouseX, int mouseY) {
-        if (image.isEmpty())
+        if (image.isEmpty() && fabricImageId == null)
             return false;
         int x = wrappedText.getX();
         int y = wrappedText.getY();
@@ -635,13 +647,53 @@ public class MessageWidget extends AbstractWidget {
 }
     //?}
     //? if fabric {
-    /*// Camerapture integration not written yet (task #165) - image is always ItemStack.EMPTY on Fabric
-    // (see CrazyPhoneHelper.getMessageFromTag), so renderItemHead()'s !image.isEmpty() guard already keeps
-    // this from ever actually running. Kept as a no-op stub purely so renderItemHead() still compiles.
+    /*// Fabric-native picture pipeline (task #165) - same layout/hover-grow/shadow logic as the NeoForge
+    // body above, just resolving the texture through FabricPictureCache (lazy server fetch keyed by
+    // fabricImageId) instead of Camera mod's TextureCache. No full-screen viewer to open on click yet (see
+    // onImageClick's own note) - the hover-zoom below is this loader's only "look closer" affordance so far.
     private void renderImage(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+        if (fabricImageId == null) return;
+
+        if (imageWidth <= 0 || imageHeight <= 0) {
+            initImageScaling();
+            adjustPosition();
+            manager.resetPositions();
+        }
+
+        net.minecraft.resources.ResourceLocation texture = fr.lordfinn.crazyphone.client.picture.FabricPictureCache.getOrRequest(fabricImageId);
+        if (texture == null) return;
+
+        int x = wrappedText.getX();
+        int y = wrappedText.getY();
+        int drawX = x;
+        int drawY = y;
+        int drawWidth = imageWidth;
+        int drawHeight = imageHeight;
+
+        if (isImageHovered(mouseX, mouseY)) {
+            CursorEffects.requestZoomCursor();
+            drawWidth = Math.round(imageWidth * HOVER_GROW_SCALE);
+            drawHeight = Math.round(imageHeight * HOVER_GROW_SCALE);
+            drawX = x - (drawWidth - imageWidth) / 2;
+            drawY = y - (drawHeight - imageHeight) / 2;
+            guiGraphics.fill(drawX + 1, drawY + 1, drawX + drawWidth + 1, drawY + drawHeight + 1, 0x66000000);
+        }
+
+        GuiCompat.blit(guiGraphics, texture, drawX, drawY, 300, drawWidth, drawHeight);
     }
 
     public void initImageScaling() {
+        if (fabricImageId == null) return;
+        // Width is fixed to the message bubble's width regardless of the source image's own aspect ratio
+        // until the texture actually arrives (server fetch is async) - same "reasonable default, corrected
+        // once real data is in" shape as everything else in this lazy-fetch pipeline. Once
+        // FabricPictureCache resolves the texture this stays a fixed square; a true aspect-ratio-aware
+        // version would need the source dimensions threaded back from the fetch, left as follow-up polish.
+        int maxWidth = wrappedText.getWidth();
+        this.imageWidth = maxWidth;
+        this.imageHeight = maxWidth;
+        wrappedText.setMinHeight(Math.max(18, this.imageHeight));
+        this.setHeight(wrappedText.getHeight());
     }
     *///?}
 

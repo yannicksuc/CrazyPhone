@@ -162,7 +162,7 @@ public class MessageDisplayManager {
         if (icon == null)
             icon = new ItemStack(Items.PLAYER_HEAD);
         MessageWidget widget = new MessageWidget(wrapped, isSender, icon, 0, newMessage.getImage(), this, false,
-                newMessage.getVoiceId(), newMessage.getVoiceDurationTicks(), newMessage.getVoiceEnvelope());
+                newMessage.getVoiceId(), newMessage.getVoiceDurationTicks(), newMessage.getVoiceEnvelope(), newMessage.getImageId());
         return new MessageEntry(newMessage, widget);
     }
 
