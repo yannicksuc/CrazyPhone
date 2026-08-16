@@ -290,7 +290,15 @@ sourceSets.main {
             "fr/lordfinn/crazyphone/network/CrazyPhonePictureRequestPacket.java",
             "fr/lordfinn/crazyphone/network/CrazyPhonePictureResponsePacket.java",
             "fr/lordfinn/crazyphone/client/picture/FabricPictureCapture.java",
-            "fr/lordfinn/crazyphone/client/picture/FabricPictureCache.java"
+            "fr/lordfinn/crazyphone/client/picture/FabricPictureCache.java",
+            // Task #164 (SavedData/player-attachment persistence): Soulbound enchantment death-drop
+            // handling. ModEnchantments is loader-agnostic by inspection (only RegistryAccess/Registries.
+            // ENCHANTMENT, no NeoForge imports); SoulboundStash now carries a Fabric Codec branch and
+            // SoulboundHandler a full Fabric event-based implementation (ServerLivingEntityEvents.ALLOW_DEATH
+            // + ServerPlayerEvents.AFTER_RESPAWN instead of LivingDropsEvent/PlayerEvent.Clone).
+            "fr/lordfinn/crazyphone/enchantment/ModEnchantments.java",
+            "fr/lordfinn/crazyphone/data/SoulboundStash.java",
+            "fr/lordfinn/crazyphone/enchantment/SoulboundHandler.java"
         )
     }
     java.setIncludes(includes)

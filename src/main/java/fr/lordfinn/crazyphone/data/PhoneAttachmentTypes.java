@@ -93,14 +93,15 @@ public class PhoneAttachmentTypes {
 // interface (see PlayerPhoneState.java), and every Entity implements AttachmentTarget via mixin, so a plain
 // cast - not a capability lookup - is how getAttached/setAttached are reached (this is the API's own
 // documented usage pattern, not a workaround).
-//
-// SOULBOUND_STASH is deliberately not ported here yet: SoulboundStash has no Fabric Codec yet, and nothing
-// on the Fabric side calls it (SoulboundHandler, the enchantment's death-drop logic, isn't ported - task
-// #158 follow-up), so registering it now would be dead weight. PLAYER_PHONE_STATE is needed today because
-// it's what makes the phone screen's open/navigate-back state actually survive a reconnect.
 public class PhoneAttachmentTypes {
     public static final AttachmentType<PlayerPhoneState> PLAYER_PHONE_STATE = AttachmentRegistry.createPersistent(
             Crazyphone.resource("player_phone_state"), PlayerPhoneState.CODEC);
+
+    // See SoulboundStash's own javadoc - only ever non-empty for the brief window between a death that
+    // pulled soulbound items out of the inventory and the respawn that reinserts them (see
+    // SoulboundHandler.java's Fabric branch).
+    public static final AttachmentType<SoulboundStash> SOULBOUND_STASH = AttachmentRegistry.createPersistent(
+            Crazyphone.resource("soulbound_stash"), SoulboundStash.CODEC);
 
     public static void register() {
         ServerPlayerEvents.JOIN.register(player -> {

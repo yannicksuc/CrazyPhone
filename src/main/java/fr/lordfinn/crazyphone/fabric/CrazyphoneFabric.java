@@ -20,6 +20,7 @@ import fr.lordfinn.crazyphone.init.ModMenus;
 import fr.lordfinn.crazyphone.data.PhoneAttachmentTypes;
 import fr.lordfinn.crazyphone.command.ModCommands;
 import fr.lordfinn.crazyphone.data.OrphanedCallCleanup;
+import fr.lordfinn.crazyphone.enchantment.SoulboundHandler;
 import net.fabricmc.api.ModInitializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +39,7 @@ public class CrazyphoneFabric implements ModInitializer {
         PhoneAttachmentTypes.register();
         ModCommands.register();
         OrphanedCallCleanup.register();
+        SoulboundHandler.register();
         LOGGER.info("CrazyPhone (Fabric) initializing");
     }
 }
