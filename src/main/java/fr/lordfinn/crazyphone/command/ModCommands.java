@@ -3,9 +3,11 @@ package fr.lordfinn.crazyphone.command;
 import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
 
+//? if neoforge {
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.common.util.FakePlayerFactory;
 //? if >=1.20.5 {
@@ -14,6 +16,10 @@ import net.neoforged.neoforge.common.util.FakePlayerFactory;
 import net.neoforged.fml.common.Mod.EventBusSubscriber;
 //?}
 import net.neoforged.bus.api.SubscribeEvent;
+//?}
+//? if fabric && >=1.20.5 {
+/*import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
+*///?}
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
@@ -28,7 +34,9 @@ import net.minecraft.world.level.LevelAccessor;
 import fr.lordfinn.crazyphone.FeatureFlag;
 import fr.lordfinn.crazyphone.data.PhoneRegistrySavedData;
 import fr.lordfinn.crazyphone.network.FeatureFlagSyncPacket;
+//? if neoforge {
 import fr.lordfinn.crazyphone.procedures.CrazyPhoneAddMayorProgramFromMainHandProcedure;
+//?}
 import fr.lordfinn.crazyphone.procedures.CrazyPhoneAddNewMayorCandidateProcedure;
 import fr.lordfinn.crazyphone.procedures.CrazyPhoneDeletePhoneByNumberProcedure;
 import fr.lordfinn.crazyphone.procedures.CrazyPhoneGivePhoneToPlayerFromNumberProcedure;
@@ -66,7 +74,9 @@ import fr.lordfinn.crazyphone.procedures.VoteForMayorProcedure;
  * /crazyphone mayor candidate program &lt;number&gt;  (level 4 - candidate's program poster from the item in hand)
  * </pre>
  */
+//? if neoforge {
 @EventBusSubscriber
+//?}
 public class ModCommands {
     private static final SuggestionProvider<CommandSourceStack> REGISTERED_NUMBERS = (context, builder) ->
             SharedSuggestionProvider.suggest(registeredNumbers(context), builder);
@@ -75,9 +85,35 @@ public class ModCommands {
     private static final SuggestionProvider<CommandSourceStack> FEATURE_NAMES = (context, builder) ->
             SharedSuggestionProvider.suggest(java.util.Arrays.stream(FeatureFlag.values()).map(f -> f.id).toList(), builder);
 
+    //? if neoforge {
     @SubscribeEvent
     public static void registerCommand(RegisterCommandsEvent event) {
-        event.getDispatcher().register(Commands.literal("crazyphone")
+        event.getDispatcher().register(buildCommandTree());
+    }
+    //?}
+    //? if fabric && >=1.20.5 {
+    /*public static void register() {
+        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> dispatcher.register(buildCommandTree()));
+    }
+    *///?}
+
+    /** Shared by both loaders' registration entrypoint - see those for how each reaches the dispatcher. The
+     * "candidate program" leaf (candidate's program poster, sourced from a Camera-mod image item in hand)
+     * stays NeoForge-only until the Camerapture integration (task #165) replaces that dependency. */
+    private static LiteralArgumentBuilder<CommandSourceStack> buildCommandTree() {
+        LiteralArgumentBuilder<CommandSourceStack> candidate = Commands.literal("candidate").requires(s -> s.hasPermission(4))
+                .then(Commands.literal("add")
+                        .then(Commands.argument("phoneNumber", IntegerArgumentType.integer(100, 999)).suggests(REGISTERED_NUMBERS)
+                                .executes(ModCommands::mayorCandidateAdd)))
+                .then(Commands.literal("remove")
+                        .then(Commands.argument("phoneNumber", IntegerArgumentType.integer(100, 999)).suggests(CANDIDATE_NUMBERS)
+                                .executes(ModCommands::mayorCandidateRemove)));
+        //? if neoforge {
+        candidate.then(Commands.literal("program")
+                .then(Commands.argument("phoneNumber", IntegerArgumentType.integer(100, 999)).suggests(CANDIDATE_NUMBERS)
+                        .executes(ModCommands::mayorCandidateProgram)));
+        //?}
+        return Commands.literal("crazyphone")
                 .then(Commands.literal("give").requires(s -> s.hasPermission(4))
                         .then(Commands.argument("number", StringArgumentType.word()).suggests(REGISTERED_NUMBERS)
                                 .executes(ModCommands::give)))
@@ -110,29 +146,20 @@ public class ModCommands {
                                 .then(Commands.literal("clear").requires(s -> s.hasPermission(4))
                                         .then(Commands.argument("phoneNumber", IntegerArgumentType.integer(100, 999)).suggests(REGISTERED_NUMBERS)
                                                 .executes(ModCommands::mayorVotesClear))))
-                        .then(Commands.literal("candidate").requires(s -> s.hasPermission(4))
-                                .then(Commands.literal("add")
-                                        .then(Commands.argument("phoneNumber", IntegerArgumentType.integer(100, 999)).suggests(REGISTERED_NUMBERS)
-                                                .executes(ModCommands::mayorCandidateAdd)))
-                                .then(Commands.literal("remove")
-                                        .then(Commands.argument("phoneNumber", IntegerArgumentType.integer(100, 999)).suggests(CANDIDATE_NUMBERS)
-                                                .executes(ModCommands::mayorCandidateRemove)))
-                                .then(Commands.literal("program")
-                                        .then(Commands.argument("phoneNumber", IntegerArgumentType.integer(100, 999)).suggests(CANDIDATE_NUMBERS)
-                                                .executes(ModCommands::mayorCandidateProgram))))));
+                        .then(candidate));
     }
 
     // --- phones ---
 
     private static int give(CommandContext<CommandSourceStack> arguments) {
-        Level world = arguments.getSource().getUnsidedLevel();
+        Level world = arguments.getSource().getLevel();
         Entity entity = resolveEntity(arguments, world);
         CrazyPhoneGivePhoneToPlayerFromNumberProcedure.execute(world, arguments, entity);
         return 1;
     }
 
     private static int delete(CommandContext<CommandSourceStack> arguments) {
-        Level world = arguments.getSource().getUnsidedLevel();
+        Level world = arguments.getSource().getLevel();
         String number = StringArgumentType.getString(arguments, "number");
         boolean deleted = CrazyPhoneDeletePhoneByNumberProcedure.execute(world, number);
         if (deleted) {
@@ -144,7 +171,7 @@ public class ModCommands {
     }
 
     private static int list(CommandContext<CommandSourceStack> arguments) {
-        Level world = arguments.getSource().getUnsidedLevel();
+        Level world = arguments.getSource().getLevel();
         Entity entity = resolveEntity(arguments, world);
         CrazyPhoneListAndPrintPhonesProcedure.execute(world, arguments, entity);
         return 1;
@@ -186,78 +213,87 @@ public class ModCommands {
     // --- mayor ---
 
     private static int mayorVote(CommandContext<CommandSourceStack> arguments) {
-        Level world = arguments.getSource().getUnsidedLevel();
+        Level world = arguments.getSource().getLevel();
         Entity entity = resolveEntity(arguments, world);
         VoteForMayorProcedure.execute(world, arguments, entity);
         return 1;
     }
 
     private static int mayorElection(CommandContext<CommandSourceStack> arguments) {
-        Level world = arguments.getSource().getUnsidedLevel();
+        Level world = arguments.getSource().getLevel();
         CrazyPhoneToggleElectionProcedure.execute(world, arguments);
         return 1;
     }
 
     private static int mayorVoting(CommandContext<CommandSourceStack> arguments) {
-        Level world = arguments.getSource().getUnsidedLevel();
+        Level world = arguments.getSource().getLevel();
         CrazyPhoneToggleMayorVotingProcedure.execute(world, arguments);
         return 1;
     }
 
     private static int mayorVotesShow(CommandContext<CommandSourceStack> arguments) {
-        Level world = arguments.getSource().getUnsidedLevel();
+        Level world = arguments.getSource().getLevel();
         Entity entity = resolveEntity(arguments, world);
         ShowMayorVotesProcedure.execute(world, entity);
         return 1;
     }
 
     private static int mayorVotesClear(CommandContext<CommandSourceStack> arguments) {
-        Level world = arguments.getSource().getUnsidedLevel();
+        Level world = arguments.getSource().getLevel();
         Entity entity = resolveEntity(arguments, world);
         RemoveVoteByNumberProcedure.execute(world, arguments, entity);
         return 1;
     }
 
     private static int mayorCandidateAdd(CommandContext<CommandSourceStack> arguments) {
-        Level world = arguments.getSource().getUnsidedLevel();
+        Level world = arguments.getSource().getLevel();
         Entity entity = resolveEntity(arguments, world);
         CrazyPhoneAddNewMayorCandidateProcedure.execute(world, arguments, entity);
         return 1;
     }
 
     private static int mayorCandidateRemove(CommandContext<CommandSourceStack> arguments) {
-        Level world = arguments.getSource().getUnsidedLevel();
+        Level world = arguments.getSource().getLevel();
         Entity entity = resolveEntity(arguments, world);
         CrazyPhoneRemoveMayorCandidateProcedure.execute(world, arguments, entity);
         return 1;
     }
 
+    //? if neoforge {
     private static int mayorCandidateProgram(CommandContext<CommandSourceStack> arguments) {
-        Level world = arguments.getSource().getUnsidedLevel();
+        Level world = arguments.getSource().getLevel();
         Entity entity = resolveEntity(arguments, world);
         CrazyPhoneAddMayorProgramFromMainHandProcedure.execute(world, arguments, entity);
         return 1;
     }
+    //?}
+    // No Fabric mayorCandidateProgram - the "candidate program" leaf isn't registered on Fabric at all (see
+    // buildCommandTree's own note), so this method would be unreachable there anyway.
 
     // --- shared helpers ---
 
     /** The command sender as an Entity, falling back to a fake player when run from console/command block
      * (a world is still needed for procedures that touch player-scoped state) - every subcommand needed
-     * this same fallback, previously copy-pasted into all dozen command classes. */
+     * this same fallback, previously copy-pasted into all dozen command classes. Fabric API has no equivalent
+     * fake-player factory; running one of these commands from console/command-block simply no-ops there
+     * (every procedure already null-checks its entity parameter) rather than getting a half-working fake
+     * player. */
     private static Entity resolveEntity(CommandContext<CommandSourceStack> arguments, Level world) {
         Entity entity = arguments.getSource().getEntity();
+        //? if neoforge {
         if (entity == null && world instanceof ServerLevel serverLevel)
             entity = FakePlayerFactory.getMinecraft(serverLevel);
+        //?}
         return entity;
     }
 
     private static Iterable<String> registeredNumbers(CommandContext<CommandSourceStack> context) {
-        LevelAccessor world = context.getSource().getUnsidedLevel();
+        LevelAccessor world = context.getSource().getLevel();
         return world == null ? java.util.List.of() : fr.lordfinn.crazyphone.utils.NbtCompat.keySet(PhoneRegistrySavedData.get(world).phones);
     }
 
     private static Iterable<String> candidateNumbers(CommandContext<CommandSourceStack> context) {
-        LevelAccessor world = context.getSource().getUnsidedLevel();
+        LevelAccessor world = context.getSource().getLevel();
         return world == null ? java.util.List.of() : fr.lordfinn.crazyphone.utils.NbtCompat.keySet(PhoneRegistrySavedData.get(world).mayorsCandidates);
     }
 }

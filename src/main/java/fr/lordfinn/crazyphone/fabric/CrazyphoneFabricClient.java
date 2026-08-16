@@ -11,12 +11,20 @@ package fr.lordfinn.crazyphone.fabric;
 //? if fabric && >=1.20.5 {
 /*import net.fabricmc.api.ClientModInitializer;
 import fr.lordfinn.crazyphone.init.ModScreens;
+import fr.lordfinn.crazyphone.item.CrazyPhoneItemProperties;
+import fr.lordfinn.crazyphone.client.PhoneClickableCursorHandler;
+import fr.lordfinn.crazyphone.procedures.CrazyPhoneItemInInventoryTickProcedure;
+import fr.lordfinn.crazyphone.client.CallRingtoneManager;
 
 public class CrazyphoneFabricClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         ModPackets.registerClient();
         ModScreens.register();
+        CrazyPhoneItemProperties.register();
+        PhoneClickableCursorHandler.register();
+        CrazyPhoneItemInInventoryTickProcedure.register();
+        CallRingtoneManager.register();
         CrazyphoneFabric.LOGGER.info("CrazyPhone (Fabric) client initializing");
     }
 }
@@ -24,6 +32,9 @@ public class CrazyphoneFabricClient implements ClientModInitializer {
 //? if fabric && <1.20.5 {
 /*import net.fabricmc.api.ClientModInitializer;
 
+// CrazyPhoneItemProperties/CrazyPhoneItemInInventoryTickProcedure aren't wired here: both reach
+// CrazyPhoneCallStateSyncPacket.State, which is >=1.20.5-only (see build.fabric.gradle.kts) - 1.20.1-fabric
+// stays at the narrower walking-skeleton scope until its own pre-1.20.5 networking pass (task #161 follow-up).
 public class CrazyphoneFabricClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {

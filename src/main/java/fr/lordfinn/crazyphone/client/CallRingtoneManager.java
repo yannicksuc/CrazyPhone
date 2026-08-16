@@ -1,5 +1,6 @@
 package fr.lordfinn.crazyphone.client;
 
+//? if neoforge {
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 //? if >=1.20.5 {
@@ -12,6 +13,10 @@ import net.neoforged.fml.common.Mod.EventBusSubscriber;
 *///? } else {
 import net.neoforged.neoforge.event.TickEvent;
 //?}
+//?}
+//? if fabric && >=1.20.5 {
+/*import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+*///?}
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
@@ -38,7 +43,9 @@ import org.slf4j.LoggerFactory;
  * retriggers a short buzz every pulse cycle (see CallVibrationTiming), layered on top of the ringtone melody
  * and synced to CrazyPhoneVibrationRenderer's visual hand-shake pulses.
  */
+//? if neoforge {
 @EventBusSubscriber(value = Dist.CLIENT)
+//?}
 public class CallRingtoneManager {
     private static final Logger LOGGER = LoggerFactory.getLogger("crazyphone");
     private static SoundInstance currentSound;
@@ -47,13 +54,26 @@ public class CallRingtoneManager {
     // TEMP diagnostic (see chat report of "no vibration/sound/ringtone at all") - remove once confirmed.
     private static long ringingStartedGameTime = -1;
 
+    //? if neoforge {
     @SubscribeEvent
     //? if >=1.20.5 {
     /*public static void onClientTick(ClientTickEvent.Post event) {
+        tick();
+    }
     *///? } else {
     public static void onClientTick(TickEvent.ClientTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
+        tick();
+    }
     //?}
+    //?}
+    //? if fabric && >=1.20.5 {
+    /*public static void register() {
+        ClientTickEvents.END_CLIENT_TICK.register(client -> tick());
+    }
+    *///?}
+
+    private static void tick() {
         Minecraft mc = Minecraft.getInstance();
         LocalPlayer player = mc.player;
         if (player == null) {

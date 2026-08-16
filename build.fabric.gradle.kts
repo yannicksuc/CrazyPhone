@@ -149,6 +149,9 @@ sourceSets.main {
             "fr/lordfinn/crazyphone/network/PlayerPhoneStateSyncPacket.java",
             "fr/lordfinn/crazyphone/data/PhoneAttachmentTypes.java",
             "fr/lordfinn/crazyphone/client/ClientCallState.java",
+            "fr/lordfinn/crazyphone/client/CallRingtoneManager.java",
+            "fr/lordfinn/crazyphone/client/CallRingtonePlayer.java",
+            "fr/lordfinn/crazyphone/client/CallVibrationTiming.java",
             "fr/lordfinn/crazyphone/network/CrazyPhoneCallStateSyncPacket.java",
             "fr/lordfinn/crazyphone/network/ConversationCallActivitySyncPacket.java",
             "fr/lordfinn/crazyphone/network/CrazyPhoneGroupMembershipNotificationPacket.java",
@@ -259,7 +262,25 @@ sourceSets.main {
             "fr/lordfinn/crazyphone/network/CrazyPhoneCallActionMessage.java",
             "fr/lordfinn/crazyphone/network/VoiceMessageUploadPacket.java",
             "fr/lordfinn/crazyphone/network/VoiceMessageAudioRequestPacket.java",
-            "fr/lordfinn/crazyphone/network/VoiceMessageStopPacket.java"
+            "fr/lordfinn/crazyphone/network/VoiceMessageStopPacket.java",
+            // Task #162 (event subscriptions): /crazyphone command tree. "candidate program" leaf excluded
+            // on Fabric (Camera-mod dependent, see ModCommands.java's own note); everything else identical.
+            "fr/lordfinn/crazyphone/procedures/CrazyPhoneAddNewMayorCandidateProcedure.java",
+            "fr/lordfinn/crazyphone/procedures/CrazyPhoneDeletePhoneByNumberProcedure.java",
+            "fr/lordfinn/crazyphone/procedures/CrazyPhoneGivePhoneToPlayerFromNumberProcedure.java",
+            "fr/lordfinn/crazyphone/procedures/CrazyPhoneListAndPrintPhonesProcedure.java",
+            "fr/lordfinn/crazyphone/utils/ChatEventCompat.java",
+            "fr/lordfinn/crazyphone/procedures/CrazyPhoneRemoveMayorCandidateProcedure.java",
+            "fr/lordfinn/crazyphone/procedures/CrazyPhoneToggleElectionProcedure.java",
+            "fr/lordfinn/crazyphone/procedures/CrazyPhoneToggleMayorVotingProcedure.java",
+            "fr/lordfinn/crazyphone/procedures/RemoveVoteByNumberProcedure.java",
+            "fr/lordfinn/crazyphone/procedures/ShowMayorVotesProcedure.java",
+            "fr/lordfinn/crazyphone/procedures/VoteForMayorProcedure.java",
+            "fr/lordfinn/crazyphone/command/ModCommands.java",
+            "fr/lordfinn/crazyphone/data/OrphanedCallCleanup.java",
+            "fr/lordfinn/crazyphone/item/CrazyPhoneItemProperties.java",
+            "fr/lordfinn/crazyphone/client/PhoneClickableCursorHandler.java",
+            "fr/lordfinn/crazyphone/procedures/CrazyPhoneItemInInventoryTickProcedure.java"
         )
     }
     java.setIncludes(includes)
