@@ -10,11 +10,14 @@ package fr.lordfinn.crazyphone.fabric;
  */
 //? if fabric && >=1.20.5 {
 /*import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import fr.lordfinn.crazyphone.init.ModScreens;
 import fr.lordfinn.crazyphone.item.CrazyPhoneItemProperties;
 import fr.lordfinn.crazyphone.client.PhoneClickableCursorHandler;
 import fr.lordfinn.crazyphone.procedures.CrazyPhoneItemInInventoryTickProcedure;
 import fr.lordfinn.crazyphone.client.CallRingtoneManager;
+import fr.lordfinn.crazyphone.client.picture.FabricPictureCapture;
+import fr.lordfinn.crazyphone.item.CrazyPhonePhotoItem;
 
 public class CrazyphoneFabricClient implements ClientModInitializer {
     @Override
@@ -25,6 +28,8 @@ public class CrazyphoneFabricClient implements ClientModInitializer {
         PhoneClickableCursorHandler.register();
         CrazyPhoneItemInInventoryTickProcedure.register();
         CallRingtoneManager.register();
+        CrazyPhonePhotoItem.registerFabricRenderer();
+        ClientTickEvents.END_CLIENT_TICK.register(client -> FabricPictureCapture.onClientTick());
         CrazyphoneFabric.LOGGER.info("CrazyPhone (Fabric) client initializing");
     }
 }

@@ -22,6 +22,7 @@ import net.minecraft.world.item.Item;
 
 import fr.lordfinn.crazyphone.Crazyphone;
 import fr.lordfinn.crazyphone.item.CrazyPhoneItem;
+import fr.lordfinn.crazyphone.item.CrazyPhonePhotoItem;
 //? if neoforge {
 import fr.lordfinn.crazyphone.item.inventory.CrazyPhoneInventoryCapability;
 //?}
@@ -38,6 +39,7 @@ public class ModItems {
     public static final DeferredRegister.Items REGISTRY = DeferredRegister.createItems(Crazyphone.MODID);
 
     public static final DeferredItem<Item> CRAZY_PHONE = REGISTRY.registerItem("crazy_phone", CrazyPhoneItem::new);
+    public static final DeferredItem<Item> CRAZY_PHONE_PHOTO = REGISTRY.registerItem("crazy_phone_photo", CrazyPhonePhotoItem::new);
 
     @SubscribeEvent
     public static void registerCapabilities(RegisterCapabilitiesEvent event) {
@@ -54,12 +56,11 @@ public class ModItems {
     // time, which can run too early relative to Fabric's own registry-freeze ordering). RegistryEntry wraps
     // the result so every existing ".get()" call site across the codebase keeps compiling unchanged.
     public static RegistryEntry<Item> CRAZY_PHONE;
+    public static RegistryEntry<Item> CRAZY_PHONE_PHOTO;
 
     public static void register() {
         CRAZY_PHONE = new RegistryEntry<>(Registry.register(BuiltInRegistries.ITEM, Crazyphone.resource("crazy_phone"), new CrazyPhoneItem(new Item.Properties())));
-        // TODO(#163): Fabric equivalent of CrazyPhoneInventoryCapability's item-attached inventory, via
-        // Fabric API's ItemApiLookup rather than NeoForge Capabilities - the phone has no internal photo
-        // storage on Fabric yet.
+        CRAZY_PHONE_PHOTO = new RegistryEntry<>(Registry.register(BuiltInRegistries.ITEM, Crazyphone.resource("crazy_phone_photo"), new CrazyPhonePhotoItem(new Item.Properties())));
     }
     *///?}
 }
