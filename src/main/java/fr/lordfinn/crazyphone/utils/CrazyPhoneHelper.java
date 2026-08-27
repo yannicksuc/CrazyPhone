@@ -1110,6 +1110,15 @@ public class CrazyPhoneHelper {
         ItemStack stack = ItemStack.EMPTY;
         if (NbtCompat.contains(messageTag, "image")) {
             CompoundTag imageTag = NbtCompat.getCompound(messageTag, "image");
+            // Native picture pipeline format, shared by both loaders (see addImageMessage) - bytes are
+            // fetched lazily on demand from PhotoSavedData, keyed by this id, never eagerly loaded here.
+            // Every image message written since the native pipeline was generalized to NeoForge carries
+            // this field; only a message persisted before that (NeoForge only, real Camera-mod item data)
+            // falls through to the legacy reconstruction below.
+            if (NbtCompat.contains(imageTag, "image_id_most")) {
+                UUID imageId = new UUID(NbtCompat.getLong(imageTag, "image_id_most"), NbtCompat.getLong(imageTag, "image_id_least"));
+                return MessageData.image(timecode, sender, imageId);
+            }
             //? if neoforge && >=1.20.5 {
             /*ImageData imageData = ImageData.fromImageTag(imageTag);
             if (imageData != null) {
@@ -1121,13 +1130,6 @@ public class CrazyPhoneHelper {
             stack = new ItemStack(CameraModAccess.imageItem());
             stack.getOrCreateTag().put("image", imageTag.copy());
             //?}
-            //? if fabric {
-            /*// Fabric-native picture pipeline (task #165) - bytes are fetched lazily on demand from
-            // ConversationSavedData#imageBytes, keyed by the same image_id_most/image_id_least this tag
-            // already carries (see CrazyPhoneHelper#addImageMessage), never eagerly loaded here.
-            UUID imageId = new UUID(NbtCompat.getLong(imageTag, "image_id_most"), NbtCompat.getLong(imageTag, "image_id_least"));
-            return MessageData.image(timecode, sender, imageId);
-            *///?}
         }
 
         return new MessageData(timecode, value, sender, stack);

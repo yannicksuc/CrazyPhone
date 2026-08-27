@@ -4,7 +4,21 @@ package fr.lordfinn.crazyphone.item;
 import net.neoforged.neoforge.client.extensions.common.IClientItemExtensions;
 //?}
 
+import net.minecraft.world.InteractionHand;
+//? if <1.21.10 {
+import net.minecraft.world.InteractionResultHolder;
+//?} else {
+/*import net.minecraft.world.InteractionResult;
+*///?}
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
+
+import fr.lordfinn.crazyphone.utils.PhotoItemData;
+
+import java.util.UUID;
+import java.util.function.Consumer;
 
 /**
  * A captured photo, held/given/dropped like any other item. Unlike a map's "flat icon in a slot, only ever
@@ -15,39 +29,56 @@ import net.minecraft.world.item.Item;
  * shared by both loaders - this class only wires that renderer in.
  */
 public class CrazyPhonePhotoItem extends Item {
+    // Right-click opens the full-size viewer, reading the pointer this specific item instance carries
+    // (see PhotoItemData) instead of a message's - same screen a chat-bubble click opens
+    // (MessageWidget#onImageClick). This class is common-loaded on BOTH sides (registered from
+    // CrazyphoneFabric#onInitialize / ModItems' DeferredRegister), so it must never reference
+    // net.minecraft.client.* types directly anywhere in ITS OWN bytecode - both Fabric's dedicated-server
+    // classloader AND NeoForge's own dist transformer reject that outright once the class is actually
+    // loaded (confirmed the hard way twice: once for use() directly opening a Screen, once for a
+    // client-setup callback living on this same class - see CrazyPhonePhotoItemClientBinding, which now
+    // owns that wiring instead, since IT is never instantiated from common code the way this Item is).
+    // clientViewerOpener is set once from each loader's own client-only entrypoint - a class the dedicated
+    // server never loads at all - so the actual Minecraft/Screen reference only ever lives in that lambda's
+    // own compiled bytecode, never in this class's.
+    public static Consumer<UUID> clientViewerOpener = null;
+
     public CrazyPhonePhotoItem(Properties properties) {
         super(properties);
     }
 
+    //? if <1.21.10 {
+    @Override
+    public InteractionResultHolder<ItemStack> use(Level world, Player player, InteractionHand hand) {
+        ItemStack stack = player.getItemInHand(hand);
+        openViewerOnClient(world, stack);
+        return InteractionResultHolder.success(stack);
+    }
+    //?} else {
+    /*@Override
+    public InteractionResult use(Level world, Player player, InteractionHand hand) {
+        ItemStack stack = player.getItemInHand(hand);
+        openViewerOnClient(world, stack);
+        return InteractionResult.SUCCESS;
+    }
+    *///?}
+
+    private void openViewerOnClient(Level world, ItemStack stack) {
+        if (world.isClientSide() && clientViewerOpener != null) {
+            PhotoItemData data = PhotoItemData.fromStack(stack);
+            if (data != null)
+                clientViewerOpener.accept(data.photoId());
+        }
+    }
+
     //? if fabric && >=1.20.5 {
-    /*// Fabric equivalent of the NeoForge branch below - one BuiltinItemRendererRegistry.register call from
-    // CrazyphoneFabricClient#onInitializeClient instead of an overridden initializeClient() method.
+    /*// Fabric equivalent of the NeoForge renderer branch below - one BuiltinItemRendererRegistry.register
+    // call from CrazyphoneFabricClient#onInitializeClient instead of an overridden initializeClient() method.
     public static void registerFabricRenderer() {
         net.fabricmc.fabric.api.client.rendering.v1.BuiltinItemRendererRegistry.INSTANCE.register(
                 fr.lordfinn.crazyphone.init.ModItems.CRAZY_PHONE_PHOTO.get(),
                 (stack, displayContext, poseStack, buffer, light, overlay) ->
                         fr.lordfinn.crazyphone.client.render.CrazyPhonePhotoItemRenderer.render(stack, poseStack, buffer, light, overlay));
-    }
-
-    // Right-click opens the same full-size viewer a chat-bubble click does (see MessageWidget#onImageClick),
-    // reading the pointer this specific item instance carries instead of a message's. This class is loaded
-    // on BOTH sides (registered from the common CrazyphoneFabric#onInitialize), so it must never reference
-    // net.minecraft.client.* types directly - Fabric's dedicated-server classloader rejects that outright,
-    // unlike NeoForge's own initializeClient() hook below (which NeoForge's dist-cleaner specially strips).
-    // clientViewerOpener is set once from CrazyphoneFabricClient - a class the server never loads at all -
-    // so the actual Minecraft/Screen reference only ever lives in that lambda's own compiled bytecode.
-    public static java.util.function.Consumer<java.util.UUID> clientViewerOpener = null;
-
-    @Override
-    public net.minecraft.world.InteractionResultHolder<net.minecraft.world.item.ItemStack> use(
-            net.minecraft.world.level.Level world, net.minecraft.world.entity.player.Player player, net.minecraft.world.InteractionHand hand) {
-        net.minecraft.world.item.ItemStack stack = player.getItemInHand(hand);
-        if (world.isClientSide() && clientViewerOpener != null) {
-            fr.lordfinn.crazyphone.utils.PhotoItemData data = fr.lordfinn.crazyphone.utils.PhotoItemData.fromStack(stack);
-            if (data != null)
-                clientViewerOpener.accept(data.photoId());
-        }
-        return net.minecraft.world.InteractionResultHolder.success(stack);
     }
     *///?}
     //? if neoforge && <1.21.10 {

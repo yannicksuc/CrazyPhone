@@ -31,11 +31,7 @@ public class CrazyphoneFabricClient implements ClientModInitializer {
         CrazyPhonePhotoItem.registerFabricRenderer();
         CrazyPhonePhotoItem.clientViewerOpener = photoId ->
                 net.minecraft.client.Minecraft.getInstance().setScreen(new fr.lordfinn.crazyphone.client.gui.CrazyPhonePhotoViewerScreen(photoId));
-        ClientTickEvents.END_CLIENT_TICK.register(client -> {
-            FabricPictureCapture.onClientTick();
-            if (client.screen instanceof fr.lordfinn.crazyphone.client.gui.CrazyPhoneCaptureOverlayScreen overlay)
-                overlay.onClientTick();
-        });
+        ClientTickEvents.END_CLIENT_TICK.register(client -> FabricPictureCapture.tickAll());
         CrazyphoneFabric.LOGGER.info("CrazyPhone (Fabric) client initializing");
     }
 }

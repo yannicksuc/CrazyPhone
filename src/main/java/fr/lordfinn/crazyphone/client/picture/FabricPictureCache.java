@@ -7,8 +7,7 @@ package fr.lordfinn.crazyphone.client.picture;
  * real pixel dimensions) so a scrolled-past-and-back message or a re-opened viewer doesn't refetch. Same
  * lazy/on-demand shape as VoiceMessageRecorder's audio fetch, just for images instead of playback.
  */
-//? if fabric && >=1.20.5 {
-/*import com.mojang.blaze3d.platform.NativeImage;
+import com.mojang.blaze3d.platform.NativeImage;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.resources.ResourceLocation;
@@ -60,6 +59,7 @@ public final class FabricPictureCache {
             FAILED.add(key);
             return;
         }
+        //? if <1.21.10 {
         try {
             NativeImage image = NativeImage.read(pngBytes);
             DynamicTexture texture = new DynamicTexture(image);
@@ -69,6 +69,11 @@ public final class FabricPictureCache {
         } catch (Exception e) {
             FAILED.add(key);
         }
+        //? } else {
+        /*// TODO: 1.21.10 changed DynamicTexture's constructor (now takes a name Supplier) and
+        // TextureManager#register's key type (ResourceLocation, not a plain String) - not backported yet,
+        // tracked alongside FabricPictureCapture's own 1.21.10 TODO. Fails closed like a decode error would.
+        FAILED.add(key);
+        *///?}
     }
 }
-*///?}

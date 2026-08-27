@@ -8,12 +8,8 @@ package fr.lordfinn.crazyphone.client.gui;
  * slot for a one-off client-only view. The world stays visible behind this screen for free (a non-pause
  * Screen never stops the 3D world from rendering); on top of it this only draws a small original viewfinder
  * frame and a zoom readout - it does not attempt to reproduce any specific camera mod's HUD.
- *
- * Fabric-only for now: NeoForge's capture backend (the equivalent of FabricPictureCapture) doesn't exist
- * yet - see the implementation plan's rollout order (this is proven on Fabric first, then generalized).
  */
-//? if fabric && >=1.20.5 {
-/*import net.minecraft.client.Minecraft;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -43,9 +39,10 @@ public class CrazyPhoneCaptureOverlayScreen extends Screen implements PhoneScree
         return false;
     }
 
-    // Ticks the zoom lerp every client tick this screen is open - called from the same shared tick hook
-    // FabricPictureCapture already uses, not vanilla's own Screen#tick (which only fires while a menu-backed
-    // screen keeps its container synced - this is a plain Screen, vanilla never calls tick() on it).
+    // Ticks the zoom lerp every client tick this screen is open - called from each loader's shared tick
+    // hook (the same one FabricPictureCapture already uses), not vanilla's own Screen#tick (which only fires
+    // while a menu-backed screen keeps its container synced - this is a plain Screen, vanilla never calls
+    // tick() on it).
     public void onClientTick() {
         zoom.tick(Minecraft.getInstance());
     }
@@ -89,13 +86,24 @@ public class CrazyPhoneCaptureOverlayScreen extends Screen implements PhoneScree
         return true;
     }
 
+    //? if <1.21.10 {
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        return mouseClickedCompat(button) || super.mouseClicked(mouseX, mouseY, button);
+    }
+    //?} else {
+    /*@Override
+    public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent event, boolean doubleClick) {
+        return mouseClickedCompat(event.button()) || super.mouseClicked(event, doubleClick);
+    }
+    *///?}
+
+    private boolean mouseClickedCompat(int button) {
         if (!capturing && (button == 0 || button == 1)) {
             triggerCapture();
             return true;
         }
-        return super.mouseClicked(mouseX, mouseY, button);
+        return false;
     }
 
     private void triggerCapture() {
@@ -114,4 +122,3 @@ public class CrazyPhoneCaptureOverlayScreen extends Screen implements PhoneScree
         Minecraft.getInstance().setScreen(previousScreen);
     }
 }
-*///?}

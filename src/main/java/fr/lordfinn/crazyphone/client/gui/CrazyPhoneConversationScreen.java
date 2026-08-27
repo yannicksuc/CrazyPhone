@@ -830,23 +830,13 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
         ImageButton button = new ImageButton(this.leftPos + 100, this.topPos + 143, 14, 15,
                 new WidgetSprites(Crazyphone.parseId("crazyphone:textures/screens/crazyphone-add-image.png"),
                         Crazyphone.parseId("crazyphone:textures/screens/crazyphone-add-hover.png")),
-                e -> {
-                    //? if neoforge {
-                    //? if >=1.20.5 {
-                    /*NetworkAccess.sendToServer(new CrazyPhoneConversationButtonMessage(1, x, y, z, getEditBoxAndCheckBoxValues()));
-                    *///? } else {
-                    PacketDistributor.SERVER.noArg().send(new CrazyPhoneConversationButtonMessage(1, x, y, z, getEditBoxAndCheckBoxValues()));
-                    //?}
-                    CrazyPhoneConversationButtonMessage.handleButtonAction(entity, 1, x, y, z, getEditBoxAndCheckBoxValues());
-                    //?}
-                    //? if fabric && >=1.20.5 {
-                    /*// Native picture pipeline - no picture-folders browser exists here (albums are gone
-                    // entirely, see the implementation plan), so this button opens the full-screen capture
-                    // overlay (zoom, then click to shoot) instead of a gallery.
-                    net.minecraft.client.Minecraft.getInstance().setScreen(
-                            new fr.lordfinn.crazyphone.client.gui.CrazyPhoneCaptureOverlayScreen(this.menu.getConversationId()));
-                    *///?}
-                }) {
+                // Native picture pipeline, both loaders - no picture-folders browser exists here anymore
+                // (albums are gone entirely, see the implementation plan), so this button opens the
+                // full-screen capture overlay (zoom, then click to shoot) instead of a gallery. Purely
+                // client-side (no server round trip needed to start framing a shot), unlike the old
+                // Camera-mod-backed album button this replaces.
+                e -> net.minecraft.client.Minecraft.getInstance().setScreen(
+                        new fr.lordfinn.crazyphone.client.gui.CrazyPhoneCaptureOverlayScreen(this.menu.getConversationId()))) {
             @Override
             public void renderWidget(GuiGraphics guiGraphics, int x, int y, float partialTicks) {
                 // No separate disabled sprite was provided to WidgetSprites (2-arg ctor), so sprites.get()

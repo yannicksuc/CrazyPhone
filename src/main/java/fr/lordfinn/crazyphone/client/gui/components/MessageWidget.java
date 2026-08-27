@@ -381,7 +381,7 @@ public class MessageWidget extends AbstractWidget {
                 ? wrappedText.getX() + wrappedText.getWidth()
                 : wrappedText.getX() - 16;
                 int itemY = wrappedText.getY() + wrappedText.getHeight() - 16;
-        if (!image.isEmpty())
+        if (!image.isEmpty() || fabricImageId != null)
             renderImage(guiGraphics, mouseX, mouseY);
         if (showIcon && !isSystem)
             guiGraphics.renderItem(icon, itemX, itemY);
@@ -485,20 +485,22 @@ public class MessageWidget extends AbstractWidget {
         }
     }
 
-    //? if neoforge {
+    // Native pipeline path (fabricImageId set) takes priority on both loaders - the only path a NEW image
+    // message ever takes, on either loader, now that native capture is generalized. The legacy Camera-mod
+    // branch only still fires for image messages sent before that generalization landed (NeoForge-only,
+    // scheduled for removal alongside the rest of Camera mod's own files).
     private void onImageClick(int button) {
-        if (button == 0) {
-            CameraModHelper.openImage(image);
-        }
-    }
-    //?}
-    //? if fabric {
-    /*private void onImageClick(int button) {
-        if (button == 0 && fabricImageId != null)
+        if (button != 0) return;
+        if (fabricImageId != null) {
             net.minecraft.client.Minecraft.getInstance().setScreen(
                     new fr.lordfinn.crazyphone.client.gui.CrazyPhonePhotoViewerScreen(fabricImageId));
+            return;
+        }
+        //? if neoforge {
+        if (!image.isEmpty())
+            CameraModHelper.openImage(image);
+        //?}
     }
-    *///?}
 
     @Override
     protected void updateWidgetNarration(NarrationElementOutput narrationElementOutput) {
@@ -518,9 +520,11 @@ public class MessageWidget extends AbstractWidget {
         return mouseX >= x && mouseX < x + imageWidth && mouseY >= y && mouseY < y + imageHeight;
     }
 
-    //? if neoforge {
+    // Native pipeline path (fabricImageId set) - shared by both loaders, resolves the texture through
+    // FabricPictureCache (lazy server fetch keyed by photoId) instead of Camera mod's TextureCache. The
+    // legacy NeoForge-only branch below only still fires for image messages sent before generalization.
     private void renderImage(GuiGraphics guiGraphics, int mouseX, int mouseY) {
-        if (image.isEmpty()) return;
+        if (image.isEmpty() && fabricImageId == null) return;
 
         if (imageWidth <= 0 || imageHeight <= 0) {
             initImageScaling();
@@ -528,6 +532,68 @@ public class MessageWidget extends AbstractWidget {
             manager.resetPositions();
         }
 
+        if (fabricImageId != null) {
+            renderNativeImage(guiGraphics, mouseX, mouseY);
+            return;
+        }
+        //? if neoforge {
+        renderLegacyCameraModImage(guiGraphics, mouseX, mouseY);
+        //?}
+    }
+
+    private void renderNativeImage(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+        fr.lordfinn.crazyphone.client.picture.FabricPictureCache.CachedTexture texture =
+                fr.lordfinn.crazyphone.client.picture.FabricPictureCache.getOrRequest(fabricImageId, fr.lordfinn.crazyphone.utils.PhotoResolution.THUMBNAIL);
+        if (texture == null) return;
+
+        int x = wrappedText.getX();
+        int y = wrappedText.getY();
+        int drawX = x;
+        int drawY = y;
+        int drawWidth = imageWidth;
+        int drawHeight = imageHeight;
+
+        if (isImageHovered(mouseX, mouseY)) {
+            CursorEffects.requestZoomCursor();
+            drawWidth = Math.round(imageWidth * HOVER_GROW_SCALE);
+            drawHeight = Math.round(imageHeight * HOVER_GROW_SCALE);
+            drawX = x - (drawWidth - imageWidth) / 2;
+            drawY = y - (drawHeight - imageHeight) / 2;
+            guiGraphics.fill(drawX + 1, drawY + 1, drawX + drawWidth + 1, drawY + drawHeight + 1, 0x66000000);
+        }
+
+        GuiCompat.blit(guiGraphics, texture.location(), drawX, drawY, 300, drawWidth, drawHeight);
+    }
+
+    public void initImageScaling() {
+        if (fabricImageId != null) {
+            initNativeImageScaling();
+            return;
+        }
+        //? if neoforge {
+        initLegacyCameraModImageScaling();
+        //?}
+    }
+
+    private void initNativeImageScaling() {
+        int maxWidth = wrappedText.getWidth();
+        fr.lordfinn.crazyphone.client.picture.FabricPictureCache.CachedTexture texture =
+                fr.lordfinn.crazyphone.client.picture.FabricPictureCache.getOrRequest(fabricImageId, fr.lordfinn.crazyphone.utils.PhotoResolution.THUMBNAIL);
+        if (texture != null) {
+            // Real aspect ratio once the texture has actually arrived (server fetch is async).
+            this.imageWidth = maxWidth;
+            this.imageHeight = Math.max(1, Math.round(maxWidth * ((float) texture.height() / texture.width())));
+        } else {
+            // Reasonable default until the fetch resolves - corrected on the next call once it does.
+            this.imageWidth = maxWidth;
+            this.imageHeight = maxWidth;
+        }
+        wrappedText.setMinHeight(Math.max(18, this.imageHeight));
+        this.setHeight(wrappedText.getHeight());
+    }
+
+    //? if neoforge {
+    private void renderLegacyCameraModImage(GuiGraphics guiGraphics, int mouseX, int mouseY) {
         ImageData imageData = ImageData.fromStack(image);
         if (imageData == null) return;
 
@@ -573,7 +639,7 @@ public class MessageWidget extends AbstractWidget {
         drawImage(guiGraphics, Minecraft.getInstance(), drawX, drawY, drawWidth, drawHeight, 0f, imageID);
     }
 
-    public void initImageScaling() {
+    private void initLegacyCameraModImageScaling() {
         ImageData imageData = ImageData.fromStack(image);
         if (imageData != null) {
             UUID imageID = imageData.getId();
@@ -586,7 +652,6 @@ public class MessageWidget extends AbstractWidget {
                 this.imageWidth = maxWidth;
                 this.imageHeight = (int) (maxWidth * imgHeight / imgWidth);
 
-                // Ajuste la hauteur minimale du texte pour contenir l'image
                 wrappedText.setMinHeight(Math.max(18, this.imageHeight));
                 this.setHeight(wrappedText.getHeight());
             }
@@ -646,61 +711,5 @@ public class MessageWidget extends AbstractWidget {
     GuiCompat.popPose(guiGraphics);
 }
     //?}
-    //? if fabric {
-    /*// Fabric-native picture pipeline (task #165) - same layout/hover-grow/shadow logic as the NeoForge
-    // body above, just resolving the texture through FabricPictureCache (lazy server fetch keyed by
-    // fabricImageId) instead of Camera mod's TextureCache. No full-screen viewer to open on click yet (see
-    // onImageClick's own note) - the hover-zoom below is this loader's only "look closer" affordance so far.
-    private void renderImage(GuiGraphics guiGraphics, int mouseX, int mouseY) {
-        if (fabricImageId == null) return;
-
-        if (imageWidth <= 0 || imageHeight <= 0) {
-            initImageScaling();
-            adjustPosition();
-            manager.resetPositions();
-        }
-
-        fr.lordfinn.crazyphone.client.picture.FabricPictureCache.CachedTexture texture =
-                fr.lordfinn.crazyphone.client.picture.FabricPictureCache.getOrRequest(fabricImageId, fr.lordfinn.crazyphone.utils.PhotoResolution.THUMBNAIL);
-        if (texture == null) return;
-
-        int x = wrappedText.getX();
-        int y = wrappedText.getY();
-        int drawX = x;
-        int drawY = y;
-        int drawWidth = imageWidth;
-        int drawHeight = imageHeight;
-
-        if (isImageHovered(mouseX, mouseY)) {
-            CursorEffects.requestZoomCursor();
-            drawWidth = Math.round(imageWidth * HOVER_GROW_SCALE);
-            drawHeight = Math.round(imageHeight * HOVER_GROW_SCALE);
-            drawX = x - (drawWidth - imageWidth) / 2;
-            drawY = y - (drawHeight - imageHeight) / 2;
-            guiGraphics.fill(drawX + 1, drawY + 1, drawX + drawWidth + 1, drawY + drawHeight + 1, 0x66000000);
-        }
-
-        GuiCompat.blit(guiGraphics, texture.location(), drawX, drawY, 300, drawWidth, drawHeight);
-    }
-
-    public void initImageScaling() {
-        if (fabricImageId == null) return;
-        int maxWidth = wrappedText.getWidth();
-        fr.lordfinn.crazyphone.client.picture.FabricPictureCache.CachedTexture texture =
-                fr.lordfinn.crazyphone.client.picture.FabricPictureCache.getOrRequest(fabricImageId, fr.lordfinn.crazyphone.utils.PhotoResolution.THUMBNAIL);
-        if (texture != null) {
-            // Real aspect ratio once the texture has actually arrived (server fetch is async) - fit to the
-            // bubble's width, same as the NeoForge body above.
-            this.imageWidth = maxWidth;
-            this.imageHeight = Math.max(1, Math.round(maxWidth * ((float) texture.height() / texture.width())));
-        } else {
-            // Reasonable default until the fetch resolves - corrected on the next call once it does.
-            this.imageWidth = maxWidth;
-            this.imageHeight = maxWidth;
-        }
-        wrappedText.setMinHeight(Math.max(18, this.imageHeight));
-        this.setHeight(wrappedText.getHeight());
-    }
-    *///?}
 
 }

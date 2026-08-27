@@ -5,11 +5,8 @@ package fr.lordfinn.crazyphone.client.gui;
  * (plain client Screen, remembered previousScreen, centered button row near the bottom) but 100% original
  * code with no Camera-mod inheritance and no album button (albums are gone). Two entry points: a chat
  * bubble click (MessageWidget#onImageClick) and a held Photo item's right-click use action.
- *
- * Fabric-only for now, same reason as CrazyPhoneCaptureOverlayScreen - see the implementation plan.
  */
-//? if fabric && >=1.20.5 {
-/*import net.minecraft.client.Minecraft;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
@@ -81,4 +78,3 @@ public class CrazyPhonePhotoViewerScreen extends Screen implements PhoneScreen {
         Minecraft.getInstance().setScreen(previousScreen);
     }
 }
-*///?}

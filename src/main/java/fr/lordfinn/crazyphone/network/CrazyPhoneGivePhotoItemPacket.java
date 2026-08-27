@@ -1,13 +1,28 @@
 package fr.lordfinn.crazyphone.network;
 
-/**
- * Client -> server: "Save to Inventory" from the photo viewer - gives the player a physical Photo item
- * pointing at this photoId. Fabric-only for now, same reason as the rest of this pipeline.
- */
-//? if fabric && >=1.20.5 {
+//? if neoforge {
+//? if >=1.20.5 {
+/*import net.neoforged.neoforge.network.handling.IPayloadContext;
+*///? } else {
+import net.neoforged.neoforge.network.handling.PlayPayloadContext;
+//?}
+import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
+//? if >=1.20.5 {
+/*import net.neoforged.fml.common.EventBusSubscriber;
+*///? } else {
+import net.neoforged.fml.common.Mod.EventBusSubscriber;
+//?}
+import net.neoforged.bus.api.SubscribeEvent;
+//?}
+
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.network.protocol.PacketFlow;
+//? if >=1.20.5 {
 /*import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.RegistryFriendlyByteBuf;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+*///? }
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
@@ -22,9 +37,11 @@ import fr.lordfinn.crazyphone.utils.PhotoItemData;
 
 import java.util.UUID;
 
+/** Client -> server: "Save to Inventory" from the photo viewer - gives the player a physical Photo item pointing at this photoId. */
 public record CrazyPhoneGivePhotoItemPacket(UUID photoId) implements CustomPacketPayload {
 
-    public static final Type<CrazyPhoneGivePhotoItemPacket> TYPE = new Type<>(
+    //? if >=1.20.5 {
+    /*public static final Type<CrazyPhoneGivePhotoItemPacket> TYPE = new Type<>(
             Crazyphone.resource("give_photo_item")
     );
 
@@ -38,6 +55,22 @@ public record CrazyPhoneGivePhotoItemPacket(UUID photoId) implements CustomPacke
     public Type<CrazyPhoneGivePhotoItemPacket> type() {
         return TYPE;
     }
+    *///? } else {
+    public static final ResourceLocation ID = Crazyphone.resource("give_photo_item");
+
+    public CrazyPhoneGivePhotoItemPacket(FriendlyByteBuf buffer) {
+        this(buffer.readUUID());
+    }
+
+    public void write(FriendlyByteBuf buffer) {
+        buffer.writeUUID(photoId);
+    }
+
+    @Override
+    public ResourceLocation id() {
+        return ID;
+    }
+    //?}
 
     private static void handle(ServerPlayer player, UUID photoId) {
         Level world = player.level();
@@ -57,7 +90,37 @@ public record CrazyPhoneGivePhotoItemPacket(UUID photoId) implements CustomPacke
             player.drop(stack, false);
     }
 
-    public static void handleDataFabric(CrazyPhoneGivePhotoItemPacket message, net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.Context context) {
+    //? if neoforge {
+    //? if >=1.20.5 {
+    /*public static void handleData(final CrazyPhoneGivePhotoItemPacket message, final IPayloadContext context) {
+        if (context.flow() != PacketFlow.SERVERBOUND)
+            return;
+        context.enqueueWork(() -> {
+            if (!(context.player() instanceof ServerPlayer player))
+                return;
+            handle(player, message.photoId);
+        }).exceptionally(e -> {
+            context.connection().disconnect(Component.literal(e.getMessage()));
+            return null;
+        });
+    }
+    *///? } else {
+    public static void handleData(final CrazyPhoneGivePhotoItemPacket message, final PlayPayloadContext context) {
+        if (context.flow() != PacketFlow.SERVERBOUND)
+            return;
+        context.workHandler().submitAsync(() -> {
+            if (!(context.player().orElse(null) instanceof ServerPlayer player))
+                return;
+            handle(player, message.photoId);
+        }).exceptionally(e -> {
+            context.packetHandler().disconnect(Component.literal(e.getMessage()));
+            return null;
+        });
+    }
+    //?}
+    //?}
+    //? if fabric && >=1.20.5 {
+    /*public static void handleDataFabric(CrazyPhoneGivePhotoItemPacket message, net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.Context context) {
         handle(context.player(), message.photoId);
     }
 
@@ -68,5 +131,23 @@ public record CrazyPhoneGivePhotoItemPacket(UUID photoId) implements CustomPacke
     public static void registerFabricServerReceiver() {
         fr.lordfinn.crazyphone.fabric.FabricNetworking.registerServerReceiver(TYPE, CrazyPhoneGivePhotoItemPacket::handleDataFabric);
     }
+    *///?}
+
+    //? if neoforge {
+    //? if <1.20.5 {
+    @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
+    //?} else {
+    /*@EventBusSubscriber
+    *///?}
+    public static class Registration {
+        @SubscribeEvent
+        public static void register(FMLCommonSetupEvent event) {
+            //? if >=1.20.5 {
+            /*Crazyphone.addNetworkMessage(TYPE, STREAM_CODEC, CrazyPhoneGivePhotoItemPacket::handleData);
+            *///? } else {
+            Crazyphone.addNetworkMessage(ID, CrazyPhoneGivePhotoItemPacket::new, CrazyPhoneGivePhotoItemPacket::handleData);
+            //?}
+        }
+    }
+    //?}
 }
-*///?}

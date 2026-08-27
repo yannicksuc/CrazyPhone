@@ -7,14 +7,33 @@ package fr.lordfinn.crazyphone.client.picture;
  * "just give me the bytes" hook (confirmed by inspecting its jar - PictureTaker's takePicture() always ends
  * by uploading through Camerapture's own NewPicturePacket, never returns bytes to a caller).
  */
-//? if fabric && >=1.20.5 {
-/*import com.mojang.blaze3d.platform.NativeImage;
+//? if neoforge {
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
+//? if >=1.20.5 {
+/*import net.neoforged.fml.common.EventBusSubscriber;
+*///? } else {
+import net.neoforged.fml.common.Mod.EventBusSubscriber;
+//?}
+//? if >=1.20.5 {
+/*import net.neoforged.neoforge.client.event.ClientTickEvent;
+*///? } else {
+import net.neoforged.neoforge.event.TickEvent;
+//?}
+//?}
+
+import com.mojang.blaze3d.platform.NativeImage;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
+
+import fr.lordfinn.crazyphone.client.gui.CrazyPhoneCaptureOverlayScreen;
 
 import java.io.IOException;
 import java.util.function.BiConsumer;
 
+//? if neoforge {
+@EventBusSubscriber(value = Dist.CLIENT)
+//?}
 public final class FabricPictureCapture {
     // Small on purpose: this is a "phone camera" feature, not a photography app - keeps upload/storage/
     // texture-cache costs bounded regardless of the player's actual render resolution. Two resolutions are
@@ -33,10 +52,35 @@ public final class FabricPictureCapture {
     public static volatile boolean suppressPhoneRendering = false;
 
     // Fabric's Event<T> has no unregister() - a single always-on tick listener (see onClientTick, wired
-    // once from CrazyphoneFabricClient) polls this instead of registering/unregistering a one-shot one.
+    // once from each loader's client entrypoint) polls this instead of registering/unregistering a
+    // one-shot one. NeoForge's Event bus does support unregistering, but polling the same way keeps this
+    // class identical on both loaders.
     private static volatile BiConsumer<byte[], byte[]> pendingCallback = null;
 
     private FabricPictureCapture() {
+    }
+
+    //? if neoforge {
+    @SubscribeEvent
+    //? if >=1.20.5 {
+    /*public static void onNeoForgeClientTick(ClientTickEvent.Post event) {
+        tickAll();
+    }
+    *///? } else {
+    public static void onNeoForgeClientTick(TickEvent.ClientTickEvent event) {
+        if (event.phase != TickEvent.Phase.END) return;
+        tickAll();
+    }
+    //?}
+    //?}
+
+    // Ticks pending capture requests plus the capture overlay's own zoom lerp, if it's the currently open
+    // screen - called every client tick on both loaders (NeoForge via the event above, Fabric via
+    // CrazyphoneFabricClient's own END_CLIENT_TICK registration, mirroring CallRingtoneManager's shape).
+    public static void tickAll() {
+        onClientTick();
+        if (Minecraft.getInstance().screen instanceof CrazyPhoneCaptureOverlayScreen overlay)
+            overlay.onClientTick();
     }
 
     // Hides the phone screen for a moment, captures a clean shot of the world once that's actually taken
@@ -50,8 +94,8 @@ public final class FabricPictureCapture {
         pendingCallback = onCaptured;
     }
 
-    // Called every client tick (see CrazyphoneFabricClient) - a no-op except on the tick right after
-    // requestCapture() leaves a callback pending.
+    // Called every client tick (see CrazyphoneFabricClient / the NeoForge client tick handler) - a no-op
+    // except on the tick right after requestCapture() leaves a callback pending.
     public static void onClientTick() {
         BiConsumer<byte[], byte[]> callback = pendingCallback;
         if (callback == null)
@@ -64,6 +108,7 @@ public final class FabricPictureCapture {
     // Captures the current frame once and derives both resolutions from it (one screenshot, not two) -
     // calls back with (null, null) if capture/encoding failed (e.g. an unusually small render target), which
     // the caller should treat as a silent best-effort skip, same as any other client action in this mod.
+    //? if <1.21.10 {
     private static void captureBothResolutions(BiConsumer<byte[], byte[]> callback) {
         Minecraft mc = Minecraft.getInstance();
         try (NativeImage full = Screenshot.takeScreenshot(mc.getMainRenderTarget())) {
@@ -75,6 +120,14 @@ public final class FabricPictureCapture {
             callback.accept(null, null);
         }
     }
+    //? } else {
+    /*// TODO: 1.21.10 reworked both Screenshot.takeScreenshot (now callback-based) and NativeImage (no more
+    // asByteArray()) - not backported yet, tracked alongside CrazyPhonePhotoItem's own 1.21.10 renderer TODO
+    // (see the implementation plan's rollout order). Fails closed exactly like a real IOException would.
+    private static void captureBothResolutions(BiConsumer<byte[], byte[]> callback) {
+        callback.accept(null, null);
+    }
+    *///?}
 
     // Nearest-neighbor downscale (via NativeImage's own resizeSubRectTo) to fit within maxDimension on the
     // longer side, preserving aspect ratio - good enough for a phone-camera photo, doesn't need the
@@ -91,4 +144,3 @@ public final class FabricPictureCapture {
         return target;
     }
 }
-*///?}
