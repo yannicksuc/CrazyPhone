@@ -14,13 +14,49 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
 
 import java.io.IOException;
+import java.util.function.Consumer;
 
 public final class FabricPictureCapture {
     // Small on purpose: this is a "phone camera" feature, not a photography app - keeps upload/storage/
     // texture-cache costs bounded regardless of the player's actual render resolution.
     private static final int MAX_DIMENSION = 256;
 
+    // Set for the span between requestCapture() being called and the deferred capture actually running -
+    // CrazyPhoneConversationScreen checks this to skip its own render() for those frames (see its own
+    // doc comment on the check). Without this, a straight captureAsPng() call from a button's onPress
+    // photographs the phone's OWN conversation UI (the last thing drawn into the main render target),
+    // not the world behind it - the same "hide the UI, wait a frame, then capture" problem Camerapture's
+    // own PictureTaker solves internally (confirmed via javap: it tracks a hudWasHidden flag and defers
+    // the actual capture to renderTickEnd()), just done here without depending on Camerapture at all.
+    public static volatile boolean suppressPhoneRendering = false;
+
+    // Fabric's Event<T> has no unregister() - a single always-on tick listener (see onClientTick, wired
+    // once from CrazyphoneFabricClient) polls this instead of registering/unregistering a one-shot one.
+    private static volatile Consumer<byte[]> pendingCallback = null;
+
     private FabricPictureCapture() {
+    }
+
+    // Hides the phone screen for a moment, captures a clean shot of the world once that's actually taken
+    // effect, then hands the PNG bytes (or null on failure) to onCaptured and restores rendering. A client
+    // tick always follows several rendered frames (ticks run at a fixed 20 Hz, well below any normal
+    // framerate), so by the time onClientTick fires, the screen has genuinely been absent from at least
+    // one fully rendered frame - unlike calling captureAsPng() synchronously from the button click itself,
+    // which would just photograph the still-visible phone screen.
+    public static void requestCapture(Consumer<byte[]> onCaptured) {
+        suppressPhoneRendering = true;
+        pendingCallback = onCaptured;
+    }
+
+    // Called every client tick (see CrazyphoneFabricClient) - a no-op except on the tick right after
+    // requestCapture() leaves a callback pending.
+    public static void onClientTick() {
+        Consumer<byte[]> callback = pendingCallback;
+        if (callback == null)
+            return;
+        pendingCallback = null;
+        suppressPhoneRendering = false;
+        callback.accept(captureAsPng());
     }
 
     // Captures the current frame and returns downscaled PNG bytes, or null if capture/encoding failed (e.g.

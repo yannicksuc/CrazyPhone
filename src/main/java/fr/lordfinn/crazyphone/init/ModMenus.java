@@ -24,6 +24,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import fr.lordfinn.crazyphone.utils.RegistryEntry;
+import io.netty.buffer.Unpooled;
 *///?}
 
 import net.minecraft.world.inventory.MenuType;
@@ -100,11 +101,20 @@ public class ModMenus {
     // and per-menu payload), which is exactly what ExtendedScreenHandlerType<T, D> is for. D is the raw
     // RegistryFriendlyByteBuf itself via PASSTHROUGH_CODEC below, so every existing menu constructor
     // (int, Inventory, FriendlyByteBuf) keeps working unmodified - RegistryFriendlyByteBuf IS-A
-    // FriendlyByteBuf, and the codec's decode side just hands back the same network buffer the client
-    // already knows how to read from sequentially.
+    // FriendlyByteBuf. The decode side must actually consume every byte of the network buffer itself
+    // (copying them into a fresh buffer with its own reader index reset to 0) rather than just handing
+    // back the network buffer unread: the packet layer verifies the network buffer was fully drained
+    // the moment decode() returns, before the menu constructor ever gets a chance to read from it - an
+    // earlier version of this codec returned the network buffer as-is, which always failed that check
+    // ("N bytes extra") since decode itself never advanced its reader index.
     public static final StreamCodec<RegistryFriendlyByteBuf, RegistryFriendlyByteBuf> PASSTHROUGH_CODEC = StreamCodec.of(
             (RegistryFriendlyByteBuf networkBuf, RegistryFriendlyByteBuf data) -> networkBuf.writeBytes(data),
-            (RegistryFriendlyByteBuf networkBuf) -> networkBuf);
+            (RegistryFriendlyByteBuf networkBuf) -> {
+                int length = networkBuf.readableBytes();
+                RegistryFriendlyByteBuf copy = new RegistryFriendlyByteBuf(Unpooled.buffer(length), networkBuf.registryAccess());
+                networkBuf.readBytes(copy, length);
+                return copy;
+            });
 
     public static RegistryEntry<MenuType<CrazyphoneHomeScreenMenu>> CRAZYPHONE_HOME_SCREEN;
     public static RegistryEntry<MenuType<CrazyPhonePasswordScreenMenu>> CRAZY_PHONE_PASSWORD_SCREEN;

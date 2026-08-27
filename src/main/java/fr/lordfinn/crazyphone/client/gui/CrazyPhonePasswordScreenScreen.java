@@ -88,13 +88,18 @@ public class CrazyPhonePasswordScreenScreen extends CrazyPhoneDefaultScreenScree
 
     @Override
     public void resize(Minecraft minecraft, int width, int height) {
-        String numberVal = number.getValue();
-        String nameVal = name.getValue();
-        String passwordVal = password.getValue();
+        // Only one of (number, name) vs password is ever non-null at a time - init() only builds the
+        // fields for the current step (see STEP_IDENTITY/STEP_PASSWORD branches above).
+        String numberVal = number != null ? number.getValue() : null;
+        String nameVal = name != null ? name.getValue() : null;
+        String passwordVal = password != null ? password.getValue() : null;
         super.resize(minecraft, width, height);
-        number.setValue(numberVal);
-        name.setValue(nameVal);
-        password.setValue(passwordVal);
+        if (number != null && numberVal != null)
+            number.setValue(numberVal);
+        if (name != null && nameVal != null)
+            name.setValue(nameVal);
+        if (password != null && passwordVal != null)
+            password.setValue(passwordVal);
     }
 
     @Override

@@ -28,9 +28,17 @@ package fr.lordfinn.crazyphone.fabric;
         fr.lordfinn.crazyphone.network.CrazyPhoneMayorsCandidatesButtonMessage.registerFabricType();
         fr.lordfinn.crazyphone.network.CrazyPhonePasswordScreenButtonMessage.registerFabricType();
         fr.lordfinn.crazyphone.network.CrazyPhoneSignInScreenButtonMessage.registerFabricType();
+        fr.lordfinn.crazyphone.network.CrazyPhoneContactInfoScreenButtonMessage.registerFabricType();
         fr.lordfinn.crazyphone.network.CrazyPhoneUploadPicturePacket.registerFabricType();
         fr.lordfinn.crazyphone.network.CrazyPhonePictureRequestPacket.registerFabricType();
         fr.lordfinn.crazyphone.network.CrazyPhonePictureResponsePacket.registerFabricType();
+        fr.lordfinn.crazyphone.network.ConversationRequestPacket.registerFabricType();
+        fr.lordfinn.crazyphone.network.ConversationResponsePacket.registerFabricType();
+        fr.lordfinn.crazyphone.network.CrazyPhoneCallActionMessage.registerFabricType();
+        fr.lordfinn.crazyphone.network.CrazyPhoneConversationButtonMessage.registerFabricType();
+        fr.lordfinn.crazyphone.network.VoiceMessageAudioRequestPacket.registerFabricType();
+        fr.lordfinn.crazyphone.network.VoiceMessageStopPacket.registerFabricType();
+        fr.lordfinn.crazyphone.network.VoiceMessageUploadPacket.registerFabricType();
     }
 
     // Called from CrazyphoneFabricClient#onInitializeClient - registers every server->client receiver.
@@ -44,6 +52,7 @@ package fr.lordfinn.crazyphone.fabric;
         fr.lordfinn.crazyphone.network.CrazyPhoneNewMessageNotificationPacket.registerFabricClientReceiver();
         fr.lordfinn.crazyphone.network.UpdateContactInfoMessage.registerFabricClientReceiver();
         fr.lordfinn.crazyphone.network.CrazyPhonePictureResponsePacket.registerFabricClientReceiver();
+        fr.lordfinn.crazyphone.network.ConversationResponsePacket.registerFabricClientReceiver();
     }
 
     // Called from CrazyphoneFabric#onInitialize - registers every client->server receiver (safe on
@@ -56,8 +65,15 @@ package fr.lordfinn.crazyphone.fabric;
         fr.lordfinn.crazyphone.network.CrazyPhoneMayorsCandidatesButtonMessage.registerFabricServerReceiver();
         fr.lordfinn.crazyphone.network.CrazyPhonePasswordScreenButtonMessage.registerFabricServerReceiver();
         fr.lordfinn.crazyphone.network.CrazyPhoneSignInScreenButtonMessage.registerFabricServerReceiver();
+        fr.lordfinn.crazyphone.network.CrazyPhoneContactInfoScreenButtonMessage.registerFabricServerReceiver();
         fr.lordfinn.crazyphone.network.CrazyPhoneUploadPicturePacket.registerFabricServerReceiver();
         fr.lordfinn.crazyphone.network.CrazyPhonePictureRequestPacket.registerFabricServerReceiver();
+        fr.lordfinn.crazyphone.network.ConversationRequestPacket.registerFabricServerReceiver();
+        fr.lordfinn.crazyphone.network.CrazyPhoneCallActionMessage.registerFabricServerReceiver();
+        fr.lordfinn.crazyphone.network.CrazyPhoneConversationButtonMessage.registerFabricServerReceiver();
+        fr.lordfinn.crazyphone.network.VoiceMessageAudioRequestPacket.registerFabricServerReceiver();
+        fr.lordfinn.crazyphone.network.VoiceMessageStopPacket.registerFabricServerReceiver();
+        fr.lordfinn.crazyphone.network.VoiceMessageUploadPacket.registerFabricServerReceiver();
     }
 }
 *///?}

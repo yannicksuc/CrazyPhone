@@ -156,6 +156,12 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
 
     @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
+        //? if fabric && >=1.20.5 {
+        /*// Skipped for the handful of frames a Fabric-native photo capture is pending, so the screenshot
+        // shows the world instead of this screen itself - see FabricPictureCapture's own doc comment.
+        if (fr.lordfinn.crazyphone.client.picture.FabricPictureCapture.suppressPhoneRendering)
+            return;
+        *///?}
         message.visible = voiceRecordingState == VoiceRecordingState.NONE;
         // button_envoyer sits at the exact same coordinates/size as button_voicepause/button_voicesend
         // (leftPos+100, topPos+158, 14x14) - without this it stayed clickable (its own .visible was never
@@ -837,10 +843,14 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
                     /*// Fabric-native picture pipeline (task #165) - no picture-folders browser exists here
                     // (that's still Camera-mod/Camerapture-coupled, see build.fabric.gradle.kts), so this
                     // button instead takes a photo and sends it into THIS conversation in one click, the
-                    // same "in-chat camera" shape a real phone messaging app uses.
-                    byte[] png = fr.lordfinn.crazyphone.client.picture.FabricPictureCapture.captureAsPng();
-                    if (png != null)
-                        NetworkAccess.sendToServer(new CrazyPhoneUploadPicturePacket(this.menu.getConversationId(), png));
+                    // same "in-chat camera" shape a real phone messaging app uses. Goes through
+                    // requestCapture (not a direct captureAsPng() call) so the phone screen itself is
+                    // hidden from the shot - see FabricPictureCapture's own doc comment.
+                    String conversationId = this.menu.getConversationId();
+                    fr.lordfinn.crazyphone.client.picture.FabricPictureCapture.requestCapture(png -> {
+                        if (png != null)
+                            NetworkAccess.sendToServer(new CrazyPhoneUploadPicturePacket(conversationId, png));
+                    });
                     *///?}
                 }) {
             @Override

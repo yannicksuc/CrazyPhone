@@ -18,13 +18,6 @@ tasks.withType<JavaCompile>().configureEach {
 
 repositories {
     mavenLocal()
-    // Modrinth's Maven - lets Camerapture be declared as a normal Gradle dependency instead of a
-    // hand-copied jar in libs/ (unlike the NeoForge side's Camera mod dependency, which has no such
-    // repository available and must be dropped into libs/ manually - see build.gradle.kts).
-    exclusiveContent {
-        forRepository { maven("https://api.modrinth.com/maven") { name = "Modrinth" } }
-        filter { includeGroup("maven.modrinth") }
-    }
 }
 
 base {
@@ -44,7 +37,6 @@ java.toolchain.languageVersion = JavaLanguageVersion.of(if (minecraftVersionForT
 val minecraftVersion = property("minecraft_version") as String
 val fabricLoaderVersion = property("fabric_loader_version") as String
 val fabricApiVersion = property("fabric_api_version") as String
-val camerapturePinnedVersion = property("camerapture_version") as String
 
 dependencies {
     minecraft("com.mojang:minecraft:$minecraftVersion")
@@ -56,9 +48,6 @@ dependencies {
 
     modImplementation("net.fabricmc:fabric-loader:$fabricLoaderVersion")
     modImplementation("net.fabricmc.fabric-api:fabric-api:$fabricApiVersion")
-
-    // maven.modrinth:<slug>:<version> - see the Modrinth exclusiveContent repository above.
-    modImplementation("maven.modrinth:camerapture:$camerapturePinnedVersion")
 
     // NeoForge pulls this in transitively; a plain Fabric Loom project doesn't, so every @Nullable
     // annotation across the shared src/main/java tree (there are many) needs it declared explicitly here.
@@ -112,13 +101,18 @@ sourceSets.main {
 // Loom+Stonecutter wiring itself stays verified end-to-end (compiles, mod loads, boots - confirmed live via
 // :1.21.1-fabric:runServer reaching "Done"). Widening further needs a genuine porting pass per area (see
 // tasks #160-166), not just adding more source directories - each area has real NeoForge-specific and
-// Camera-mod-specific code to rewrite against Fabric/Camerapture APIs first.
+// Camera-mod-specific code to rewrite against native Fabric vanilla APIs first (not Camerapture - see
+// FabricPictureCapture.java's own doc comment on why that turned out to be a dead end).
 sourceSets.main {
     val includes = mutableListOf(
         "fr/lordfinn/crazyphone/fabric/**",
         "fr/lordfinn/crazyphone/Crazyphone.java",
         "fr/lordfinn/crazyphone/init/ModItems.java",
         "fr/lordfinn/crazyphone/init/ModSounds.java",
+        "fr/lordfinn/crazyphone/init/ModTabs.java",
+        "fr/lordfinn/crazyphone/item/CrazyPhonePhotoItem.java",
+        "fr/lordfinn/crazyphone/client/render/CrazyPhonePhotoItemRenderer.java",
+        "fr/lordfinn/crazyphone/utils/PhotoResolution.java",
         "fr/lordfinn/crazyphone/item/CrazyPhoneItem.java",
         "fr/lordfinn/crazyphone/utils/RegistryEntry.java",
         "fr/lordfinn/crazyphone/Config.java",
@@ -231,7 +225,8 @@ sourceSets.main {
             // fallbacks, matching CrazyPhoneDefaultScreenButtonMessage's own "reset to home" pattern.
             "fr/lordfinn/crazyphone/procedures/CrazyPhoneOnUseProcedure.java",
             // CrazyPhoneRightclickedProcedure and CrazyPhoneOpenPictureFoldersScreenProcedure stay out -
-            // both need Camera-mod/Camerapture classes not ported yet (task #165).
+            // both are Camera-mod (album/gallery) coupled, out of scope for Fabric's native in-conversation-
+            // only photo pipeline (task #165, see FabricPictureCapture.java).
             // CrazyPhoneConversationScreen needs these client-side helpers (all confirmed loader-agnostic).
             "fr/lordfinn/crazyphone/client/CursorEffects.java",
             "fr/lordfinn/crazyphone/client/FakePlayerPreview.java",

@@ -16,6 +16,7 @@ package fr.lordfinn.crazyphone.fabric;
 //? if fabric && >=1.20.5 {
 /*import fr.lordfinn.crazyphone.init.ModItems;
 import fr.lordfinn.crazyphone.init.ModSounds;
+import fr.lordfinn.crazyphone.init.ModTabs;
 import fr.lordfinn.crazyphone.init.ModMenus;
 import fr.lordfinn.crazyphone.data.PhoneAttachmentTypes;
 import fr.lordfinn.crazyphone.command.ModCommands;
@@ -33,6 +34,7 @@ public class CrazyphoneFabric implements ModInitializer {
     public void onInitialize() {
         ModItems.register();
         ModSounds.register();
+        ModTabs.register();
         ModMenus.register();
         ModPackets.registerCommon();
         ModPackets.registerServer();
@@ -47,6 +49,7 @@ public class CrazyphoneFabric implements ModInitializer {
 //? if fabric && <1.20.5 {
 /*import fr.lordfinn.crazyphone.init.ModItems;
 import fr.lordfinn.crazyphone.init.ModSounds;
+import fr.lordfinn.crazyphone.init.ModTabs;
 import net.fabricmc.api.ModInitializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,6 +62,7 @@ public class CrazyphoneFabric implements ModInitializer {
     public void onInitialize() {
         ModItems.register();
         ModSounds.register();
+        ModTabs.register();
         LOGGER.info("CrazyPhone (Fabric) initializing");
     }
 }
