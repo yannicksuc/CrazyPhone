@@ -5,10 +5,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import fr.lordfinn.crazyphone.Crazyphone;
-//? if neoforge {
-import fr.lordfinn.crazyphone.procedures.CrazyPhoneTakePhotoProcedure;
-import fr.lordfinn.crazyphone.procedures.CrazyPhoneOpenPictureFoldersScreenProcedure;
-//?}
 import fr.lordfinn.crazyphone.utils.ScreenMenuUtils;
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneMayorsCandidatesListMenu;
 import fr.lordfinn.crazyphone.world.inventory.CrazyphoneHomeScreenMenu;
@@ -138,16 +134,8 @@ public record CrazyphoneHomeScreenButtonMessage(int buttonID, int x, int y, int 
 		// security measure to prevent arbitrary chunk generation
 		if (!world.hasChunkAt(new BlockPos(x, y, z)))
 			return;
-		//? if neoforge {
-		if (buttonID == 0) {
-
-			CrazyPhoneTakePhotoProcedure.execute(world, entity);
-		}
-		if (buttonID == 1) {
-			CrazyPhoneOpenPictureFoldersScreenProcedure.execute(world, x, y, z, entity);
-		}
-		//?}
-		// TODO(#165): buttonID 0 (take photo) / 1 (picture folders) wait on the Camerapture integration.
+		// buttonID 0 (take photo) / 1 (picture folders) were the Camera-mod-backed standalone capture/gallery
+		// buttons, removed along with Camera mod and the home screen icons that used to send them.
 		if (buttonID == 2) {
 			ScreenMenuUtils.openPhoneContactsMenu(entity, InteractionHand.MAIN_HAND);
 		}

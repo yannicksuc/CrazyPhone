@@ -25,8 +25,6 @@ import fr.lordfinn.crazyphone.client.gui.CrazyPhoneDefaultScreenScreen;
 import fr.lordfinn.crazyphone.client.gui.CrazyphoneHomeScreenScreen;
 import fr.lordfinn.crazyphone.client.gui.CrazyPhoneSignInScreenScreen;
 //? if neoforge {
-import fr.lordfinn.crazyphone.client.gui.CrazyPhonePicturesScreenScreen;
-import fr.lordfinn.crazyphone.client.gui.CrazyPhonePictureFoldersScreenScreen;
 import fr.lordfinn.crazyphone.client.gui.CrazyPhoneMayorCandidateScreenScreen;
 //?}
 import fr.lordfinn.crazyphone.client.gui.CrazyPhonePasswordScreenScreen;
@@ -74,8 +72,6 @@ public class ModScreens {
 		event.register(ModMenus.CRAZYPHONE_HOME_SCREEN.get(), CrazyphoneHomeScreenScreen::new);
 		event.register(ModMenus.CRAZY_PHONE_PASSWORD_SCREEN.get(), CrazyPhonePasswordScreenScreen::new);
 		event.register(ModMenus.CRAZY_PHONE_SIGN_IN_SCREEN.get(), CrazyPhoneSignInScreenScreen::new);
-		event.register(ModMenus.CRAZY_PHONE_PICTURE_FOLDERS_SCREEN.get(), CrazyPhonePictureFoldersScreenScreen::new);
-		event.register(ModMenus.CRAZY_PHONE_PICTURES_SCREEN.get(), CrazyPhonePicturesScreenScreen::new);
 		event.register(ModMenus.CRAZY_PHONE_CONTACTS_SCREEN.get(), CrazyPhoneContactsScreenScreen::new);
 		event.register(ModMenus.CRAZY_PHONE_CONTACT_INFO_SCREEN.get(), CrazyPhoneContactInfoScreenScreen::new);
 		event.register(ModMenus.CRAZY_PHONE_CONVERSATION.get(), CrazyPhoneConversationScreen::new);

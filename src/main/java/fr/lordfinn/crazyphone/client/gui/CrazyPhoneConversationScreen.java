@@ -817,7 +817,7 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
 
         String ownerNumber = GetCrazyPhoneNumberFromMainHandProcedure.execute(this.menu.entity, null);
         int timestampInMinutes = (int) (Instant.now().getEpochSecond() / 60);
-        MessageData optimistic = new MessageData(timestampInMinutes, text, ownerNumber, ItemStack.EMPTY);
+        MessageData optimistic = new MessageData(timestampInMinutes, text, ownerNumber);
         receivedMessages.add(optimistic);
         // Not addRenderableWidget'd - see the comment in onConversationPageReceived for why that caused
         // the message feed to render unclipped, overflowing the crop area.

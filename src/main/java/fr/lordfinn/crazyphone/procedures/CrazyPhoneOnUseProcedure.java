@@ -3,19 +3,10 @@ package fr.lordfinn.crazyphone.procedures;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.entity.player.Player;
-import fr.lordfinn.crazyphone.FeatureFlag;
 import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
 //? if neoforge {
-import de.maxhenkel.camera.items.ImageItem;
-import fr.lordfinn.crazyphone.utils.CameraModHelper;
 import fr.lordfinn.crazyphone.voicechat.CallRegistry;
-//? } else {
-/*import fr.lordfinn.crazyphone.init.ModItems;
-import fr.lordfinn.crazyphone.world.inventory.CrazyphoneHomeScreenMenu;
-import net.minecraft.world.InteractionHand;
-*///?}
-import net.minecraft.ChatFormatting;
-import net.minecraft.network.chat.Component;
+//?}
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import fr.lordfinn.crazyphone.utils.ScreenMenuUtils;
@@ -63,51 +54,7 @@ public class CrazyPhoneOnUseProcedure {
 		if (!IsPhoneSetupProcedure.execute(CrazyPhoneHelper.getMainHandItemOrEmpty(entity))) {
 			CrazyPhoneOpenPasswordScreenProcedure.execute(world, x, y, z, entity);
 		} else if (IsPhoneOpenProcedure.execute(CrazyPhoneHelper.getMainHandItemOrEmpty(entity))) {
-			if (entity instanceof ServerPlayer player) {
-				ItemStack offhandStack = player.getOffhandItem();
-
-				//? if neoforge {
-				if (offhandStack != null && !offhandStack.isEmpty() && offhandStack.getItem() instanceof ImageItem) {
-					if (!FeatureFlag.CAMERA.isEnabledFor(player)) {
-						player.displayClientMessage(
-							Component.translatable("message.crazyphone.camera_feature_disabled")
-								.withStyle(style -> style.withColor(ChatFormatting.RED).withItalic(true)),
-							true
-						);
-						player.playSound(net.minecraft.sounds.SoundEvents.NOTE_BLOCK_BASS.value(), 1.0F, 0.5F);
-					} else {
-						boolean result = CameraModHelper.tryInsertImageIntoCrazyPhone(player, offhandStack);
-						if (result) {
-							player.displayClientMessage(
-								Component.translatable("message.crazyphone.image_upload_success")
-									.withStyle(style -> style.withColor(ChatFormatting.GREEN).withBold(true)),
-								true
-							);
-							player.playSound(net.minecraft.sounds.SoundEvents.EXPERIENCE_ORB_PICKUP, 1.0F, 1.2F);
-						} else {
-							player.displayClientMessage(
-								Component.translatable("message.crazyphone.image_upload_failed")
-									.withStyle(style -> style.withColor(ChatFormatting.RED).withItalic(true)),
-								true
-							);
-							player.playSound(net.minecraft.sounds.SoundEvents.NOTE_BLOCK_BASS.value(), 1.0F, 0.5F);
-						}
-					}
-				} else {
-					CrazyPhoneRightclickedProcedure.execute(world, x, y, z, entity);
-				}
-				//? } else {
-				/*// TODO(#165): Fabric equivalent of the offhand-image-into-phone upload, once the
-				// Camerapture integration (replacing Camera mod's ImageItem) is written, and of
-				// CrazyPhoneRightclickedProcedure's camera-active check - always resets to the home screen
-				// until then (mirrors CrazyPhoneDefaultScreenButtonMessage's own Fabric fallback for the
-				// same button).
-				if (player.getItemInHand(InteractionHand.MAIN_HAND).getItem() == ModItems.CRAZY_PHONE.get()) {
-					ScreenMenuUtils.resetToHomeScreen(player);
-					ScreenMenuUtils.openPhoneCustomMenu(player, InteractionHand.MAIN_HAND, CrazyphoneHomeScreenMenu.class);
-				}
-				*///?}
-			}
+			CrazyPhoneRightclickedProcedure.execute(world, x, y, z, entity);
 		} else {
 			CrazyPhoneOpenSignInScreenProcedure.execute(world, x, y, z, entity);
 		}

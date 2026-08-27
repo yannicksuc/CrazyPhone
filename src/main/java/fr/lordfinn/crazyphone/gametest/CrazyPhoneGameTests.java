@@ -6,9 +6,7 @@ import fr.lordfinn.crazyphone.data.PhoneAttachmentTypes;
 import fr.lordfinn.crazyphone.data.PhoneRegistrySavedData;
 import fr.lordfinn.crazyphone.init.ModItems;
 import fr.lordfinn.crazyphone.procedures.CrazyPhoneOnUseProcedure;
-import fr.lordfinn.crazyphone.procedures.CrazyPhoneTakePhotoProcedure;
 import fr.lordfinn.crazyphone.procedures.GetCrazyPhoneNumberFromMainHandProcedure;
-import fr.lordfinn.crazyphone.utils.CameraModHelper;
 import fr.lordfinn.crazyphone.utils.ScreenMenuUtils;
 import fr.lordfinn.crazyphone.voicechat.CallRegistry;
 
@@ -318,29 +316,6 @@ public class CrazyPhoneGameTests {
 
         String number = GetCrazyPhoneNumberFromMainHandProcedure.execute(player, null);
         assertValueEqual(helper, number, "999", "held phone number");
-        helper.succeed();
-    }
-
-    /** Covers CrazyPhoneLeftClickInterceptor's actual effect: left-clicking (attacking/punching) while
-     * holding the phone must activate the camera instead of performing the normal attack/block-break
-     * action - see that class's own javadoc for why it calls this exact procedure. The interceptor itself
-     * is a pure client/server event-cancellation shim with nothing to unit-test in isolation; what's
-     * actually worth verifying is the server-side state change it triggers, which this exercises directly
-     * via {@link CrazyPhoneTakePhotoProcedure} (the same procedure the interceptor calls). */
-    @GameTest(template = "platform", batch = "leftClickActivatesCamera")
-    public static void leftClickingWithPhoneHeld_activatesCamera_insteadOfNormalAction(GameTestHelper helper) {
-        ServerPlayer player = makeTestPlayer(helper);
-        ItemStack phone = freshCrazyPhone();
-        PhoneTagAccess.updateTag(phone, tag -> tag.putString("number", "111"));
-        player.getInventory().setItem(0, phone);
-        player.getInventory().selected = 0;
-
-        helper.assertTrue(!CameraModHelper.isActive(phone), "camera must start inactive on a freshly given phone");
-
-        ignoringMockConnectionPacketLimits(() -> CrazyPhoneTakePhotoProcedure.execute(helper.getLevel(), player));
-
-        helper.assertTrue(CameraModHelper.isActive(phone),
-                "left-clicking with the phone in hand must activate the camera mode on that exact phone item");
         helper.succeed();
     }
 

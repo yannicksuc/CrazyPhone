@@ -24,12 +24,6 @@ import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
 import com.mojang.authlib.properties.PropertyMap;
 
-//? if neoforge {
-import de.maxhenkel.camera.ImageData;
-import de.maxhenkel.camera.inventory.AlbumInventory;
-import de.maxhenkel.camera.items.AlbumItem;
-import de.maxhenkel.camera.items.ImageItem;
-//?}
 import fr.lordfinn.crazyphone.client.gui.components.MessageData;
 import fr.lordfinn.crazyphone.data.ConversationSavedData;
 import fr.lordfinn.crazyphone.data.PhoneRegistrySavedData;
@@ -83,31 +77,6 @@ public class CrazyPhoneHelper {
     }
 
     //? if neoforge {
-    public static void deleteSlotsFromAlbum(AlbumInventory inventory, Set<Integer> slots) {
-        // slots ultimately comes from a client-supplied CSV (CrazyPhonePicturesScreenButtonMessage) - never
-        // trust it to already be in range.
-        for (int slot : slots) {
-            if (slot >= 0 && slot < inventory.getContainerSize())
-                inventory.setItem(slot, ItemStack.EMPTY);
-        }
-    }
-
-    @SuppressWarnings("null")
-    public static void deleteSelectedAlbumSlotsFromHeldPhone(Player entity, Level world, Set<Integer> slots,
-            Integer albumId) {
-
-        IItemHandlerModifiable handler = getPhoneItemHandler(entity);
-        ItemStack albumStack = getAlbumFromPhoneHandler(handler, albumId);
-
-        if (!(albumStack.getItem() instanceof AlbumItem))
-            return;
-
-        AlbumInventory inventory = CameraModHelper.newAlbumInventory(world, albumStack);
-        deleteSlotsFromAlbum(inventory, slots);
-
-        handler.setStackInSlot(albumId, albumStack);
-    }
-
     @Nullable
     public static IItemHandlerModifiable getPhoneItemHandler(Player player) {
         ItemStack held = player.getMainHandItem();
@@ -138,16 +107,6 @@ public class CrazyPhoneHelper {
         }
         return null;
     }
-
-    //? if neoforge {
-    public static ItemStack getAlbumFromPhoneHandler(IItemHandlerModifiable handler, int albumIndex) {
-        if (handler == null)
-            return ItemStack.EMPTY;
-        if (albumIndex < 0 || albumIndex >= handler.getSlots())
-            return ItemStack.EMPTY;
-        return handler.getStackInSlot(albumIndex);
-    }
-    //?}
 
     public static String getConversationNumber(String recipientNumber, Entity entity) {
         return getConversationNumber(
@@ -244,9 +203,9 @@ public class CrazyPhoneHelper {
      * on player login.
      */
     public static void addMessage(Level world, String conversationId, String senderNumber, String message,
-                              int timestampInMinutes, @Nullable ItemStack image) {
+                              int timestampInMinutes) {
         synchronized (messageLock) {
-            CompoundTag messageTag = createMessageTag(senderNumber, message, timestampInMinutes, image);
+            CompoundTag messageTag = createMessageTag(senderNumber, message, timestampInMinutes);
             ConversationSavedData.get(world).appendMessage(conversationId, messageTag);
             List<String> numbers = getGroupMembers(world, conversationId);
             notifyContacts(world, messageTag, numbers, senderNumber, message, timestampInMinutes, conversationId);
@@ -454,32 +413,11 @@ public class CrazyPhoneHelper {
         }
     }
 
-    private static CompoundTag createMessageTag(String senderNumber, String message, int timestampInMinutes,
-                                                @Nullable ItemStack image) {
+    private static CompoundTag createMessageTag(String senderNumber, String message, int timestampInMinutes) {
         CompoundTag tag = new CompoundTag();
         tag.putString("sender", senderNumber);
         tag.putString("value", message);
         tag.putInt("timecode", timestampInMinutes);
-        //? if neoforge {
-        if (image != null && !image.isEmpty() && image.getItem() instanceof ImageItem) {
-            //? if >=1.20.5 {
-            /*if (image.has(CameraModAccess.imageDataComponent())) {
-                ImageData imageData = image.get(CameraModAccess.imageDataComponent());
-                CompoundTag data = imageDataToCompoundTag(imageData);
-                tag.put("image", data);
-            }
-            *///? } else {
-            CompoundTag stackTag = image.getTag();
-            if (stackTag != null && stackTag.contains("image", Tag.TAG_COMPOUND)) {
-                tag.put("image", stackTag.getCompound("image").copy());
-            }
-            //?}
-        }
-        //?}
-        //? if fabric {
-        /*// TODO(#165): embed a Camerapture picture reference into the message tag, once the
-        // Camera mod -> Camerapture integration is written.
-        *///?}
         return tag;
     }
 
@@ -498,32 +436,6 @@ public class CrazyPhoneHelper {
         }
         return tag;
     }
-
-    //? if neoforge {
-    public static CompoundTag imageDataToCompoundTag(ImageData data) {
-        CompoundTag tag = new CompoundTag();
-
-        tag.putLong("image_id_most", data.getId().getMostSignificantBits());
-        tag.putLong("image_id_least", data.getId().getLeastSignificantBits());
-        tag.putLong("image_time", data.getTime());
-        tag.putString("owner", data.getOwner());
-
-        if (data.getBiome() != null) {
-            tag.putString("biome", data.getBiome().toString());
-        }
-
-        List<ResourceLocation> entities = data.getEntities();
-        if (entities != null && !entities.isEmpty()) {
-            ListTag entityListTag = new ListTag();
-            for (ResourceLocation entityID : entities) {
-                entityListTag.add(StringTag.valueOf(entityID.toString()));
-            }
-            tag.put("entities", entityListTag);
-        }
-
-        return tag;
-    }
-    //?}
 
     /**
      * Notifies the other participant(s) of {@code conversationId} that a new message arrived. Only ever
@@ -1107,32 +1019,20 @@ public class CrazyPhoneHelper {
             return MessageData.voice(timecode, sender, voiceId, NbtCompat.getInt(voiceTag, "voice_duration_ticks"), envelope);
         }
 
-        ItemStack stack = ItemStack.EMPTY;
+        // Native picture pipeline format, shared by both loaders (see addImageMessage) - bytes are fetched
+        // lazily on demand from PhotoSavedData, keyed by this id, never eagerly loaded here. A message
+        // persisted before the native pipeline existed (NeoForge only, real Camera-mod item data) has an
+        // "image" tag without this field - Camera mod's own classes are gone along with it, so that old
+        // image is unrecoverable and the message just renders as a plain (imageless) text bubble.
         if (NbtCompat.contains(messageTag, "image")) {
             CompoundTag imageTag = NbtCompat.getCompound(messageTag, "image");
-            // Native picture pipeline format, shared by both loaders (see addImageMessage) - bytes are
-            // fetched lazily on demand from PhotoSavedData, keyed by this id, never eagerly loaded here.
-            // Every image message written since the native pipeline was generalized to NeoForge carries
-            // this field; only a message persisted before that (NeoForge only, real Camera-mod item data)
-            // falls through to the legacy reconstruction below.
             if (NbtCompat.contains(imageTag, "image_id_most")) {
                 UUID imageId = new UUID(NbtCompat.getLong(imageTag, "image_id_most"), NbtCompat.getLong(imageTag, "image_id_least"));
                 return MessageData.image(timecode, sender, imageId);
             }
-            //? if neoforge && >=1.20.5 {
-            /*ImageData imageData = ImageData.fromImageTag(imageTag);
-            if (imageData != null) {
-                stack = new ItemStack(CameraModAccess.imageItem());
-                imageData.addToImage(stack);
-            }
-            *///?}
-            //? if neoforge && <1.20.5 {
-            stack = new ItemStack(CameraModAccess.imageItem());
-            stack.getOrCreateTag().put("image", imageTag.copy());
-            //?}
         }
 
-        return new MessageData(timecode, value, sender, stack);
+        return new MessageData(timecode, value, sender);
     }
 
     public static List<Contact> getContactsFromBuf(FriendlyByteBuf buffer) {
@@ -1187,68 +1087,4 @@ public class CrazyPhoneHelper {
         return profile;
     }
 
-    //? if neoforge {
-    public static void takeSelectedAlbumSlotsFromHeldPhone(Player entity, Level world, Set<Integer> slotsToCopy,
-            int albumId) {
-        IItemHandlerModifiable handler = getPhoneItemHandler(entity);
-        if (handler == null)
-            return;
-
-        ItemStack albumStack = getAlbumFromPhoneHandler(handler, albumId).copy();
-        if (!(albumStack.getItem() instanceof AlbumItem))
-            return;
-
-        AlbumInventory inventory = CameraModHelper.newAlbumInventory(world, albumStack);
-
-        for (int slot : slotsToCopy) {
-            if (slot < 0 || slot >= inventory.getContainerSize())
-                continue;
-            ItemStack itemToCopy = inventory.getItem(slot).copy();
-
-            if (itemToCopy.isEmpty())
-                continue;
-            boolean added = entity.getInventory().add(itemToCopy);
-            if (!added && !world.isClientSide()) {
-                entity.drop(itemToCopy, false);
-            }
-        }
-
-        // The album screen is a fully custom AbstractContainerMenu that never registers the player's own
-        // Inventory slots (it's a phone UI, not a chest-with-your-inventory-below layout), so vanilla's
-        // normal per-tick slot-change broadcast - which only compares slots actually registered in the
-        // currently open menu - never notices entity.getInventory().add() above. The server-side inventory
-        // was already correct; the client just never got a packet about it until the phone closed and a
-        // full resync happened as a side effect. Forcing that resync now is what makes it show up instantly.
-        if (entity instanceof ServerPlayer serverPlayer)
-            serverPlayer.inventoryMenu.broadcastFullState();
-    }
-
-    public static void sendSelectedAlbumSlotsFromHeldPhone(Player entity, Level world, Set<Integer> selectedSlots, int albumId, String conversationId) {
-
-        IItemHandlerModifiable handler = getPhoneItemHandler(entity);
-        if (handler == null)
-            return;
-
-        ItemStack albumStack = getAlbumFromPhoneHandler(handler, albumId).copy();
-        if (!(albumStack.getItem() instanceof AlbumItem))
-            return;
-        String senderNumber = GetCrazyPhoneNumberFromMainHandProcedure.execute(entity, null);
-        AlbumInventory inventory = CameraModHelper.newAlbumInventory(world, albumStack);
-		int timestampInMinutes = (int) (Instant.now().getEpochSecond() / 60);
-
-        for (int slot : selectedSlots) {
-            if (slot < 0 || slot >= inventory.getContainerSize())
-                continue;
-            ItemStack imageToSend = inventory.getItem(slot).copy();
-
-            if (imageToSend.isEmpty())
-                continue;
-            // addMessage already appends to ConversationSavedData (bounded, per-conversation) and notifies
-            // the receiver with a targeted packet - no follow-up full-registry sync needed here, unlike the
-            // old code's unconditional MapVariables.syncData(world) call which used to broadcast every
-            // conversation's full history to every player after every image send.
-            addMessage(world, conversationId, senderNumber, "", timestampInMinutes, imageToSend);
-        }
-    }
-    //?}
 }

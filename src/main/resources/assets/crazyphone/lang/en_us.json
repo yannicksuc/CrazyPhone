@@ -19,9 +19,6 @@
   "message.crazyphone.unknown_number": "Unknown number: %s",
   "message.crazyphone.unknown_voter": "Unknown: %s",
 
-  "message.crazyphone.image_upload_success": "✅ The image was successfully uploaded to the CrazyPhone.",
-  "message.crazyphone.image_upload_failed": "❌ Failed to upload the image to the CrazyPhone.",
-  "message.crazyphone.camera_feature_disabled": "❌ Camera photo insertion is disabled on this server.",
 
   "message.crazyphone.call_in_progress": "📞 Call in progress - %s · %s",
   "message.crazyphone.call_summary": "📞 Call - %s · %s",
@@ -34,6 +31,7 @@
 
   "message.crazyphone.candidate_not_found": "Candidate not found",
   "message.crazyphone.candidate_poster_added": "Poster successfully added to candidate!",
+  "message.crazyphone.candidate_poster_needs_photo": "Hold a CrazyPhone photo in your main hand to use it as a poster",
   "message.crazyphone.candidate_not_exist": "Candidate doesn't exist",
   "message.crazyphone.candidate_added": "New candidate added!",
   "message.crazyphone.candidate_already_registered": "Candidate already registered",

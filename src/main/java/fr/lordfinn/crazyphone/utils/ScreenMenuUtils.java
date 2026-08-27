@@ -30,10 +30,6 @@ import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneMayorCandidateScreenMenu
 //?}
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneMayorsCandidatesListMenu;
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhonePasswordScreenMenu;
-//? if neoforge {
-import fr.lordfinn.crazyphone.world.inventory.CrazyPhonePictureFoldersScreenMenu;
-import fr.lordfinn.crazyphone.world.inventory.CrazyPhonePicturesScreenMenu;
-//?}
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneSignInScreenMenu;
 import fr.lordfinn.crazyphone.world.inventory.CrazyphoneHomeScreenMenu;
 import net.minecraft.core.RegistryAccess;
@@ -53,12 +49,9 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
-//? if neoforge {
-import net.neoforged.neoforge.items.IItemHandlerModifiable;
-//? if >=1.20.5 {
+//? if neoforge && >=1.20.5 {
 /*import net.neoforged.neoforge.network.connection.ConnectionType;
 *///?}
-//?}
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.MinecraftServer;
@@ -132,10 +125,6 @@ public class ScreenMenuUtils {
                 openPhoneCustomMenu(player, hand, CrazyPhoneSignInScreenMenu.class);
             case "crazyphone:crazy_phone_password_screen" ->
                 openPhoneCustomMenu(player, hand, CrazyPhonePasswordScreenMenu.class);
-            case "crazyphone:crazy_phone_picture_folders_screen" ->
-                openPhoneCustomMenu(player, hand, CrazyPhonePictureFoldersScreenMenu.class);
-            case "crazyphone:crazy_phone_pictures_screen" ->
-                openPhoneAlbumMenuWithData(player, hand, screenData);
             case "crazyphone:crazy_phone_contacts_screen" ->
                 openPhoneContactsMenu(player, hand);
             case "crazyphone:crazy_phone_conversation" ->
@@ -274,22 +263,6 @@ public class ScreenMenuUtils {
     public static String serializeScreenHistory(List<String> history) {
         return String.join("|", history);
     }
-
-    //? if neoforge {
-    private static void openPhoneAlbumMenuWithData(Player player, InteractionHand hand, String screenData) {
-        if (screenData == null || screenData.isEmpty()) {
-            System.err.println("Missing data for screen 'album'");
-            return;
-        }
-
-        try {
-            int data = Integer.parseInt(screenData);
-            openPhoneAlbumMenu(player, hand, data);
-        } catch (NumberFormatException e) {
-            System.err.println("Invalid number for screen 'album': " + screenData);
-        }
-    }
-    //?}
 
     //? if neoforge {
     public static void openPhoneCustomMenu(Player player, InteractionHand hand,
@@ -610,53 +583,6 @@ public class ScreenMenuUtils {
             buf.writeUtf(contact.getSkin() == null ? "" : contact.getSkin());
         }
     }
-
-    //? if neoforge {
-    public static void openPhoneAlbumMenu(Player player, InteractionHand hand, int albumId) {
-        if (player instanceof ServerPlayer serverPlayer) {
-
-            SoundEvent sound = RegistryCompat.get(BuiltInRegistries.SOUND_EVENT, Crazyphone.parseId("minecraft:item.book.page_turn"));
-            if (sound != null) {
-                serverPlayer.playNotifySound(sound, SoundSource.PLAYERS, 0.7f, 1.2f);
-            }
-
-            // Resolved fresh from the server's own copy of the held phone right now, then transmitted whole
-            // (see CrazyPhonePicturesScreenMenu) - the client's own local copy of that item can still be a
-            // tick or two behind a photo that was just taken, which used to make it invisible until the
-            // album was reopened a second time.
-            IItemHandlerModifiable handler = CrazyPhoneHelper.getPhoneItemHandler(player);
-            ItemStack album = CrazyPhoneHelper.getAlbumFromPhoneHandler(handler, albumId);
-            CompoundTag albumTag = CrazyPhoneHelper.encodeItemStack(player.level(), album);
-
-            player.openMenu(new MenuProvider() {
-                @Override
-                public Component getDisplayName() {
-                    return Component.translatable("item.crazyphone.crazy_phone");
-                }
-
-                @Override
-                public AbstractContainerMenu createMenu(int id, Inventory inventory, Player player) {
-                    FriendlyByteBuf packetBuffer = new FriendlyByteBuf(Unpooled.buffer());
-                    packetBuffer.writeBlockPos(player.blockPosition());
-                    packetBuffer.writeByte(hand == InteractionHand.MAIN_HAND ? 0 : 1);
-                    packetBuffer.writeInt(albumId);
-                    packetBuffer.writeNbt(albumTag);
-
-                    try {
-                        return new CrazyPhonePicturesScreenMenu(id, inventory, packetBuffer);
-                    } catch (Exception e) {
-                        throw new RuntimeException("Failed to create menu instance", e);
-                    }
-                }
-            }, buf -> {
-                buf.writeBlockPos(player.blockPosition());
-                buf.writeByte(0); // Always Main Hand
-                buf.writeInt(albumId);
-                buf.writeNbt(albumTag);
-            });
-        }
-    }
-    //?}
 
     /**
      * Opens the conversation menu for {@code conversationId}. Unlike the old code, this does NOT embed the

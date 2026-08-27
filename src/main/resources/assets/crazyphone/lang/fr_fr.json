@@ -19,9 +19,6 @@
   "message.crazyphone.unknown_number": "Numéro inconnu : %s",
   "message.crazyphone.unknown_voter": "Inconnu : %s",
 
-  "message.crazyphone.image_upload_success": "✅ L'image a bien été uploadée dans le CrazyPhone.",
-  "message.crazyphone.image_upload_failed": "❌ Échec de l'upload de l'image dans le CrazyPhone.",
-  "message.crazyphone.camera_feature_disabled": "❌ L'insertion de photos appareil photo est désactivée sur ce serveur.",
 
   "message.crazyphone.call_in_progress": "📞 Appel en cours - %s · %s",
   "message.crazyphone.call_summary": "📞 Appel - %s · %s",
@@ -34,6 +31,7 @@
 
   "message.crazyphone.candidate_not_found": "Candidat introuvable",
   "message.crazyphone.candidate_poster_added": "Affiche ajoutée au candidat avec succès !",
+  "message.crazyphone.candidate_poster_needs_photo": "Tenez une photo CrazyPhone en main principale pour l'utiliser comme affiche",
   "message.crazyphone.candidate_not_exist": "Le candidat n'existe pas",
   "message.crazyphone.candidate_added": "Nouveau candidat ajouté !",
   "message.crazyphone.candidate_already_registered": "Candidat déjà enregistré",

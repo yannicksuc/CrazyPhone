@@ -45,11 +45,12 @@ navigation.
 conversations with their own settings (rename, custom icon, invite/exclude, admin); real-time text;
 sending photos from your album; read-notification badges; hover tooltips for timestamps/senders.
 
-**Camera & albums** - take photos and send them into a conversation.
-- On **NeoForge**, this requires the [Camera mod](https://github.com/henkelmax/camera): full albums,
-  zoomable viewer, give/save/multi-select-delete.
-- On **Fabric**, no external mod is needed - the phone takes a screenshot directly and sends it into the
-  open conversation. See the [platform table](#-platforms--versions) for the current scope difference.
+**Camera** - a native, dependency-free photo feature on both loaders: click the camera icon inside a
+conversation to open a full-screen capture overlay (mouse wheel to zoom, click to shoot, Escape to cancel),
+then send the shot straight into that conversation. The server keeps a small thumbnail (shown by default in
+chat and as the saved photo item's icon) and a larger full-size version, fetched on demand when a photo is
+opened full-size. Saving a photo to your inventory gives you a physical item that re-opens the same viewer
+on right-click. See the [platform table](#-platforms--versions) for which targets have this working today.
 
 **Voice calls & voice messages** *(NeoForge only, optional, requires [Simple Voice Chat](https://modrepo.de/minecraft/voicechat))*
 - 1:1 and group voice calls: ring notification, dedicated Incoming Call / Calling / In Call screens,
@@ -66,8 +67,8 @@ out of your death drops and hands them back on respawn.
 **Mayor election** *(optional)* - candidate list with campaign posters, in-app voting with a cooldown,
 commands to manage candidates and toggle the feature.
 
-**Per-feature toggles** - calls, voice messages, sending images, camera photo insertion, and the mayor
-election can each be turned on/off globally (config or command) and/or restricted to specific
+**Per-feature toggles** - calls, voice messages, sending images, and the mayor election can each be turned
+on/off globally (config or command) and/or restricted to specific
 players/groups via a permission node, if a permission plugin is installed - see [Commands](#-commands).
 Runtime-configurable on NeoForge; compiled-in defaults on Fabric for now.
 
@@ -89,22 +90,22 @@ primary development target; everything else is kept in sync with it.
 |---|:---:|:---:|:---:|:---:|:---:|
 | Phone, messaging, contacts, groups | ✅ | ✅ | ✅ | — | ✅ |
 | Mayor election | ✅ | ✅ | ✅ | — | ✅ |
-| Photos & albums | ✅ *(Camera mod)* | ✅ *(Camera mod)* | ✅ *(Camera mod)* | — | ✅ *(native, in-conversation only)* |
+| Native camera (capture/viewer/photo item) | ✅ | ✅ | — *(pending)* | — | ✅ |
 | Voice calls & voice messages | — *(see below)* | ✅ *(SVC)* | ✅ *(SVC)* | — | — |
 | Soulbound enchantment | — | ✅ | ✅ | — | ✅ |
 | Runtime-configurable settings | ✅ | ✅ | ✅ | — | — |
 
-- **NeoForge 1.20.1** isn't offered: the Camera mod (a hard dependency for photos) has no NeoForge build
-  for that version.
+- **NeoForge 1.21.10**'s camera feature compiles but doesn't work yet: Mojang reworked both item rendering
+  and the screenshot/texture APIs the native pipeline uses on that version, and porting to the new APIs is
+  a separate, tracked follow-up.
 - **NeoForge 1.20.4**'s voice calls/messages code is present but unusable in practice: Simple Voice Chat
   itself has no NeoForge build before 1.21.1, so there's nothing to integrate with on that version yet.
 - **Fabric 1.20.1** is a walking skeleton for now - the item exists and registers, but the phone's
   networking layer needs an API (`CustomPacketPayload`) that doesn't exist before 1.20.5, so none of the
-  screens/messaging work yet on that specific version.
-- **Fabric 1.21.1** has the core feature set, its own native photo pipeline (a screenshot sent straight
-  into the open conversation, no album/gallery yet), and the Soulbound enchantment - but no voice
-  calls/messages, since [Simple Voice Chat](https://modrepo.de/minecraft/voicechat) integration hasn't
-  been ported to Fabric yet.
+  screens/messaging/camera work yet on that specific version.
+- **Fabric 1.21.1** has the core feature set, the native camera pipeline, and the Soulbound enchantment -
+  but no voice calls/messages, since [Simple Voice Chat](https://modrepo.de/minecraft/voicechat)
+  integration hasn't been ported to Fabric yet.
 
 ---
 
@@ -115,12 +116,7 @@ primary development target; everything else is kept in sync with it.
 | Dependency | Required for |
 |---|---|
 | [NeoForge](https://neoforged.net/), matching your Minecraft version | Runtime |
-| [Camera by Max Henkel](https://github.com/henkelmax/camera), matching version | Runtime **and** build (hard dependency - see below) |
 | [Simple Voice Chat](https://modrepo.de/minecraft/voicechat), matching version | Runtime only, **optional** - calls/voice messages are simply unavailable without it |
-
-> [!IMPORTANT]
-> The Camera mod jar is **not bundled in this repository** (it isn't ours to redistribute). Grab it
-> yourself for both playing and building - see [Building from source](#-building-from-source).
 
 **Fabric** (1.20.1 or 1.21.1):
 
@@ -129,7 +125,7 @@ primary development target; everything else is kept in sync with it.
 | [Fabric Loader](https://fabricmc.net/) `0.16.9+`, matching your Minecraft version | Runtime |
 | [Fabric API](https://modrinth.com/mod/fabric-api), matching version | Runtime |
 
-No Camera mod, no Simple Voice Chat - see the [platform table](#-platforms--versions) for what that means
+No Simple Voice Chat on Fabric yet - see the [platform table](#-platforms--versions) for what that means
 feature-wise.
 
 ---
@@ -138,10 +134,9 @@ feature-wise.
 
 **NeoForge:**
 1. Install [NeoForge](https://neoforged.net/) for your target Minecraft version (1.20.4, 1.21.1, or 1.21.10).
-2. Install **[Camera](https://github.com/henkelmax/camera)** into `mods/` - CrazyPhone will not load without it.
-3. (Optional) Install **[Simple Voice Chat](https://modrepo.de/minecraft/voicechat)** into `mods/` for calls and voice messages.
-4. Drop the built `crazyphone-*.jar` for that version into `mods/`.
-5. Launch the game, craft/obtain a Crazy Phone, and register a number.
+2. (Optional) Install **[Simple Voice Chat](https://modrepo.de/minecraft/voicechat)** into `mods/` for calls and voice messages.
+3. Drop the built `crazyphone-*.jar` for that version into `mods/`.
+4. Launch the game, craft/obtain a Crazy Phone, and register a number.
 
 **Fabric:**
 1. Install [Fabric Loader](https://fabricmc.net/) and [Fabric API](https://modrinth.com/mod/fabric-api) for your target Minecraft version (1.20.1 or 1.21.1).
@@ -156,18 +151,6 @@ feature-wise.
 git clone https://github.com/<your-username>/CrazyPhone.git
 cd CrazyPhone
 ```
-
-Grab the Camera mod jar (`camera-neoforge-<minecraft_version>-<camera_jar_version>.jar`, version numbers
-in that node's `versions/<id>/gradle.properties`) from the
-[releases page of henkelmax/camera](https://github.com/henkelmax/camera/releases) and place it at:
-
-```
-libs/camera-neoforge-<minecraft_version>-<camera_jar_version>.jar
-```
-
-> [!NOTE]
-> `libs/` is gitignored on purpose: the jar belongs to a separate project with its own license, so it's
-> kept out of this repository. Only needed for the NeoForge targets - Fabric builds don't touch it.
 
 This is a [Stonecutter](https://stonecutter.kikugie.dev/) multi-version project: every version listed in
 [Platforms & versions](#-platforms--versions) is its own Gradle subproject under `versions/`, prefix every
@@ -212,12 +195,11 @@ file or via `/crazyphone feature`.
 | `maxStoredMessagesPerConversation` | `300` | 10-10000 | Messages kept on disk per conversation; oldest dropped first once exceeded. |
 | `maxMessagesSentPerRequest` | `100` | 10-1000 | Messages sent to a client in one page load of a conversation. |
 | `maxImagesStoredPerConversation` | `50` | 5-2000 | Image messages kept on disk per conversation (capped separately - heaviest text-adjacent payload). |
-| `maxAlbumSlotsPerPhone` | `27` | 1-97 | Album/photo storage slots in a phone's internal inventory. (NeoForge only) |
+| `maxPhotosStoredPerOwner` | `300` | 10-5000 | Photos (both resolutions) kept on disk per owning phone number; oldest dropped first once exceeded, independent of conversation trimming. |
 | `mayorElectionFeatureEnabled` | `true` | - | Global switch for the mayor election feature. |
 | `callsFeatureEnabled` | `true` | - | Global switch for voice calls. No effect without Simple Voice Chat installed. (NeoForge only) |
 | `voiceMessagesFeatureEnabled` | `true` | - | Global switch for recording/sending voice messages. No effect without Simple Voice Chat installed. (NeoForge only) |
-| `imagesFeatureEnabled` | `true` | - | Global switch for sending images from the album into a conversation. |
-| `cameraFeatureEnabled` | `true` | - | Global switch for inserting a photo into the phone. |
+| `imagesFeatureEnabled` | `true` | - | Global switch for sending images into a conversation. |
 | `voicechatIntegrationEnabled` | `true` | - | Master switch for the whole Simple Voice Chat integration (both calls and voice messages). (NeoForge only) |
 | `callRingTimeoutSeconds` | `30` | 5-120 | How long a call rings before an unanswered callee counts as a missed call. (NeoForge only) |
 | `aloneInCallKickSeconds` | `5` | 1-60 | How long a call stays open with one participant left before they're auto-removed. (NeoForge only) |
@@ -226,7 +208,7 @@ file or via `/crazyphone feature`.
 | `soulboundEnchantmentEnabled` | `true` | - | Whether the Soulbound enchantment actually keeps enchanted items on death. |
 
 **Permissions** *(NeoForge only for now)*: each toggleable feature also has a permission node
-(`crazyphone.feature.<calls|voice_messages|images|camera|mayor_voting>`), for restricting a feature to
+(`crazyphone.feature.<calls|voice_messages|images|mayor_voting>`), for restricting a feature to
 specific players/groups instead of the whole server. Allowed for everyone by default; only takes effect
 if a permission plugin (e.g. LuckPerms) is installed. A feature is usable only when **both** its global
 switch is on **and** the player has the permission.
@@ -237,7 +219,7 @@ switch is on **and** the player has the permission.
 
 Everything lives under `/crazyphone`. Arguments with a known set of values (registered phone numbers,
 mayor candidates, feature names) tab-complete. *(Command tree is ported to Fabric too, minus the
-Camera-mod-dependent `mayor candidate program` leaf.)*
+`mayor candidate program` leaf - not yet ported.)*
 
 | Command | Permission | Description |
 |---|:---:|---|
@@ -293,12 +275,13 @@ can further restrict any of these the same way it would any other command.
 </details>
 
 <details>
-<summary><b>Photos &amp; albums</b></summary>
+<summary><b>Camera (outdated screenshots)</b></summary>
 <br>
 
-Screenshots below are from the NeoForge build, where photos are taken with (and rendered through)
-[Camera](https://github.com/henkelmax/camera); the phone wraps it in its own UI. Fabric's native pipeline
-(no album/gallery yet) isn't pictured here:
+> [!NOTE]
+> These screenshots are from the old Camera-mod-backed album UI, since replaced by the native
+> capture-overlay/photo-item flow described under [Features](#-features). Kept here as history until
+> fresh screenshots of the new flow are taken.
 
 | A photo taken with the phone's camera | Albums | Album contents | Picking images to send |
 |:---:|:---:|:---:|:---:|
@@ -353,17 +336,17 @@ Stonecutter splits the codebase into a shared source tree and one subproject per
 CrazyPhone/
 ├── src/main/java/fr/lordfinn/crazyphone/   Shared source tree - every target compiles from here
 │   ├── client/gui/       Screens (one per phone page) + shared widgets
-│   ├── client/picture/   Fabric-native screenshot capture + texture cache (no Camera mod dependency)
+│   ├── client/picture/   Native screenshot capture + texture cache, shared by both loaders
 │   ├── command/          /crazyphone command tree
 │   ├── data/             SavedData + player attachments (the crash fix lives here)
 │   ├── enchantment/       Soulbound enchantment (≥1.20.5 only)
 │   ├── fabric/            Fabric entrypoints + per-loader registration glue
 │   ├── init/              Item/menu/screen/tab/sound/permission registration
-│   ├── item/              The Crazy Phone item, its vanilla item model & inventory capability
-│   ├── mixin/             Integration points into the Camera mod (NeoForge only)
+│   ├── item/              The Crazy Phone item and photo item, vanilla item models & inventory capability
+│   ├── mixin/             A single vanilla cursor-recentering fix (NeoForge only)
 │   ├── network/           Client-server packets
 │   ├── procedures/        Gameplay logic (ported from the original mod, adapted to the new data layer)
-│   ├── utils/              Shared helpers (contacts, screen navigation, camera-mod bridging)
+│   ├── utils/              Shared helpers (contacts, screen navigation, NBT/registry compat)
 │   ├── voicechat/         Optional Simple Voice Chat integration (NeoForge only)
 │   └── world/inventory/   Container menus backing each screen
 ├── versions/                One Stonecutter subproject per build target (1.20.4, 1.21.1, 1.21.10,
@@ -383,7 +366,6 @@ an abstraction layer - most files are identical on every target; only the files 
 
 ## 🙏 Credits
 
-- **[Camera](https://github.com/henkelmax/camera)** by [Max Henkel](https://github.com/henkelmax): the photography engine CrazyPhone's NeoForge build uses for its camera/album features.
 - **[Simple Voice Chat](https://modrepo.de/minecraft/voicechat)** by [henkelmax](https://github.com/henkelmax): the voice engine calls and voice messages are built on top of (NeoForge only).
 - Original `crazythings` project: source of the feature set and assets this mod ports and rebuilds. Made by me ;)
 

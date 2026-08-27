@@ -42,10 +42,6 @@ public class Config {
             .comment("Maximum number of photos (both resolutions) kept on disk per owning phone number - the oldest is discarded once a new one exceeds this, independent of conversation history trimming.")
             .defineInRange("maxPhotosStoredPerOwner", 300, 10, 5000);
 
-    private static final ModConfigSpec.IntValue MAX_ALBUM_SLOTS_PER_PHONE = BUILDER
-            .comment("Number of album/photo storage slots available in a phone's internal inventory.")
-            .defineInRange("maxAlbumSlotsPerPhone", 27, 1, 97);
-
     private static final ModConfigSpec.BooleanValue MAYOR_ELECTION_FEATURE_ENABLED = BUILDER
             .comment("Whether the mayor election/voting feature (accessible from the phone) is enabled.")
             .define("mayorElectionFeatureEnabled", true);
@@ -65,10 +61,6 @@ public class Config {
     private static final ModConfigSpec.BooleanValue IMAGES_FEATURE_ENABLED = BUILDER
             .comment("Whether sending images from the phone's album into a conversation is enabled.")
             .define("imagesFeatureEnabled", true);
-
-    private static final ModConfigSpec.BooleanValue CAMERA_FEATURE_ENABLED = BUILDER
-            .comment("Whether inserting a photo taken with the Camera mod into the phone's album is enabled.")
-            .define("cameraFeatureEnabled", true);
 
     // Optional Simple Voice Chat integration (calls + voice messages) - see fr.lordfinn.crazyphone.voicechat.
 
@@ -111,12 +103,10 @@ public class Config {
     public static int maxMessagesSentPerRequest;
     public static int maxImagesStoredPerConversation;
     public static int maxPhotosStoredPerOwner;
-    public static int maxAlbumSlotsPerPhone;
     public static boolean mayorElectionFeatureEnabled;
     public static boolean callsFeatureEnabled;
     public static boolean voiceMessagesFeatureEnabled;
     public static boolean imagesFeatureEnabled;
-    public static boolean cameraFeatureEnabled;
     public static boolean voicechatIntegrationEnabled;
     public static int callRingTimeoutSeconds;
     public static int aloneInCallKickSeconds;
@@ -131,12 +121,10 @@ public class Config {
         maxMessagesSentPerRequest = MAX_MESSAGES_SENT_PER_REQUEST.get();
         maxImagesStoredPerConversation = MAX_IMAGES_STORED_PER_CONVERSATION.get();
         maxPhotosStoredPerOwner = MAX_PHOTOS_STORED_PER_OWNER.get();
-        maxAlbumSlotsPerPhone = MAX_ALBUM_SLOTS_PER_PHONE.get();
         mayorElectionFeatureEnabled = MAYOR_ELECTION_FEATURE_ENABLED.get();
         callsFeatureEnabled = CALLS_FEATURE_ENABLED.get();
         voiceMessagesFeatureEnabled = VOICE_MESSAGES_FEATURE_ENABLED.get();
         imagesFeatureEnabled = IMAGES_FEATURE_ENABLED.get();
-        cameraFeatureEnabled = CAMERA_FEATURE_ENABLED.get();
         voicechatIntegrationEnabled = VOICECHAT_INTEGRATION_ENABLED.get();
         callRingTimeoutSeconds = CALL_RING_TIMEOUT_SECONDS.get();
         aloneInCallKickSeconds = ALONE_IN_CALL_KICK_SECONDS.get();
@@ -173,11 +161,6 @@ public class Config {
         SPEC.save();
     }
 
-    public static void setCameraFeatureEnabled(boolean enabled) {
-        CAMERA_FEATURE_ENABLED.set(enabled);
-        SPEC.save();
-    }
-
 }
 //?}
 //? if fabric {
@@ -191,12 +174,10 @@ public class Config {
     public static int maxMessagesSentPerRequest = 100;
     public static int maxImagesStoredPerConversation = 50;
     public static int maxPhotosStoredPerOwner = 300;
-    public static int maxAlbumSlotsPerPhone = 27;
     public static boolean mayorElectionFeatureEnabled = true;
     public static boolean callsFeatureEnabled = true;
     public static boolean voiceMessagesFeatureEnabled = true;
     public static boolean imagesFeatureEnabled = true;
-    public static boolean cameraFeatureEnabled = true;
     public static boolean voicechatIntegrationEnabled = true;
     public static int callRingTimeoutSeconds = 30;
     public static int aloneInCallKickSeconds = 5;
@@ -219,10 +200,6 @@ public class Config {
 
     public static void setImagesFeatureEnabled(boolean enabled) {
         imagesFeatureEnabled = enabled;
-    }
-
-    public static void setCameraFeatureEnabled(boolean enabled) {
-        cameraFeatureEnabled = enabled;
     }
 }
 *///?}

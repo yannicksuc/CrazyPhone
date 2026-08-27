@@ -32,7 +32,6 @@ public enum FeatureFlag {
     CALLS("calls", "Voice calls", () -> Config.callsFeatureEnabled, Config::setCallsFeatureEnabled),
     VOICE_MESSAGES("voice_messages", "Voice messages", () -> Config.voiceMessagesFeatureEnabled, Config::setVoiceMessagesFeatureEnabled),
     IMAGES("images", "Sending images", () -> Config.imagesFeatureEnabled, Config::setImagesFeatureEnabled),
-    CAMERA("camera", "Camera photo insertion", () -> Config.cameraFeatureEnabled, Config::setCameraFeatureEnabled),
     MAYOR_VOTING("mayor_voting", "Mayor election/voting", () -> Config.mayorElectionFeatureEnabled, Config::setMayorElectionFeatureEnabled);
     //?}
     //? if fabric {
@@ -43,7 +42,6 @@ public enum FeatureFlag {
     CALLS("calls", "Voice calls", () -> true, v -> {}),
     VOICE_MESSAGES("voice_messages", "Voice messages", () -> true, v -> {}),
     IMAGES("images", "Sending images", () -> true, v -> {}),
-    CAMERA("camera", "Camera photo insertion", () -> true, v -> {}),
     MAYOR_VOTING("mayor_voting", "Mayor election/voting", () -> true, v -> {});
     *///?}
 

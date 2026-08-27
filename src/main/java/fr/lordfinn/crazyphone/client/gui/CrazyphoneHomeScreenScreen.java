@@ -39,9 +39,12 @@ public class CrazyphoneHomeScreenScreen extends CrazyPhoneDefaultScreenScreen<Cr
     public void init() {
         super.init();
 
-        // Default positions
-        int photoX = this.leftPos + 12;
-        int albumsX = this.leftPos + 61;
+        // Default positions. The photo/albums icons that used to sit here were the Camera-mod-backed
+        // standalone capture/gallery entry points (no target conversation) - removed along with Camera mod
+        // itself, since the native pipeline always ties a photo to the conversation it's taken in (see the
+        // camera icon inside CrazyPhoneConversationScreen instead). Left as a TODO for whoever picks the
+        // home screen's next layout pass: contacts/elections currently just keep their original coordinates,
+        // leaving open space where those two icons used to be.
         int contactsX = this.leftPos + 34;
 
         boolean isElection = PhoneRegistrySavedData
@@ -52,8 +55,6 @@ public class CrazyphoneHomeScreenScreen extends CrazyPhoneDefaultScreenScreen<Cr
             contactsX -= 26;
         }
 
-        addImageButton("imagebutton_photo", 0, "crazyphone-photo-icon", photoX, this.topPos + 28, 46, 62);
-        addImageButton("imagebutton_albums", 1, "crazyphone-album-icon", albumsX, this.topPos + 28, 52, 62);
         addImageButton("imagebutton_contacts", 2, "crazyphone-contacts-icon", contactsX, this.topPos + 92, 53, 66);
     }
 

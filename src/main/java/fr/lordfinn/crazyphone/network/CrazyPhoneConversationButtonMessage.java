@@ -31,9 +31,6 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.core.BlockPos;
-//? if neoforge {
-import fr.lordfinn.crazyphone.world.inventory.CrazyPhonePictureFoldersScreenMenu;
-//?}
 import fr.lordfinn.crazyphone.procedures.GetCrazyPhoneNumberFromMainHandProcedure;
 import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
 import fr.lordfinn.crazyphone.utils.ScreenMenuUtils;
@@ -171,7 +168,7 @@ public record CrazyPhoneConversationButtonMessage(int buttonID, int x, int y, in
 				// message into a conversation it has no business being in.
 				if (senderNumber.isEmpty() || !CrazyPhoneHelper.getGroupMembers(world, conversationId).contains(senderNumber))
 					return;
-				CrazyPhoneHelper.addMessage(world, conversationId, senderNumber, message, timestampInMinutes, null);
+				CrazyPhoneHelper.addMessage(world, conversationId, senderNumber, message, timestampInMinutes);
 			} else {
 				//? if >=1.20.5 {
 				/*entity.playNotifySound(SoundEvents.WIND_CHARGE_THROW, SoundSource.NEUTRAL, 1, 1);
@@ -186,11 +183,6 @@ public record CrazyPhoneConversationButtonMessage(int buttonID, int x, int y, in
 			// center of the screen on every single message sent. The sender's own message is instead shown
 			// via an optimistic local append in CrazyPhoneConversationScreen's send handler - no server
 			// round trip, no menu reopen, no cursor jump.
-		} else if (buttonID == 1) {
-			//? if neoforge {
-			ScreenMenuUtils.openPhoneCustomMenu(entity, InteractionHand.MAIN_HAND, CrazyPhonePictureFoldersScreenMenu.class);
-			//?}
-			// TODO(#165): the picture-folders screen waits on the Camerapture integration on Fabric.
 		} else if (buttonID == 2) {
 			String conversationId = textstate.containsKey("conversationId") ? textstate.get("conversationId") : "";
 			if (conversationId.isEmpty())

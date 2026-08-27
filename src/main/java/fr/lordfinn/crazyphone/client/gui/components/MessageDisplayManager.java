@@ -161,7 +161,7 @@ public class MessageDisplayManager {
         ItemStack icon = icons.get(newMessage.getSender());
         if (icon == null)
             icon = new ItemStack(Items.PLAYER_HEAD);
-        MessageWidget widget = new MessageWidget(wrapped, isSender, icon, 0, newMessage.getImage(), this, false,
+        MessageWidget widget = new MessageWidget(wrapped, isSender, icon, 0, this, false,
                 newMessage.getVoiceId(), newMessage.getVoiceDurationTicks(), newMessage.getVoiceEnvelope(), newMessage.getImageId());
         return new MessageEntry(newMessage, widget);
     }
@@ -197,7 +197,7 @@ public class MessageDisplayManager {
             3, 3, 4, 3,
             newMessage.getSystemIcon()
         );
-        MessageWidget widget = new MessageWidget(wrapped, false, ItemStack.EMPTY, 0, null, this, true);
+        MessageWidget widget = new MessageWidget(wrapped, false, ItemStack.EMPTY, 0, this, true);
         widget.setShowIcon(false);
         return new MessageEntry(newMessage, widget);
     }

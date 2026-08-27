@@ -24,7 +24,6 @@ class FeatureFlagTest {
         Config.callsFeatureEnabled = true;
         Config.voiceMessagesFeatureEnabled = true;
         Config.imagesFeatureEnabled = true;
-        Config.cameraFeatureEnabled = true;
         Config.mayorElectionFeatureEnabled = true;
     }
 

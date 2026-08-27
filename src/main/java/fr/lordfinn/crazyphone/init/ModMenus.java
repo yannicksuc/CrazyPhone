@@ -44,8 +44,6 @@ import net.minecraft.core.registries.Registries;
 import fr.lordfinn.crazyphone.world.inventory.CrazyphoneHomeScreenMenu;
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneSignInScreenMenu;
 //? if neoforge {
-import fr.lordfinn.crazyphone.world.inventory.CrazyPhonePicturesScreenMenu;
-import fr.lordfinn.crazyphone.world.inventory.CrazyPhonePictureFoldersScreenMenu;
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneMayorCandidateScreenMenu;
 //?}
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhonePasswordScreenMenu;
@@ -75,9 +73,6 @@ public class ModMenus {
 	public static final DeferredHolder<MenuType<?>, MenuType<CrazyphoneHomeScreenMenu>> CRAZYPHONE_HOME_SCREEN = REGISTRY.register("crazyphone_home_screen", () -> IMenuTypeExtension.create(CrazyphoneHomeScreenMenu::new));
 	public static final DeferredHolder<MenuType<?>, MenuType<CrazyPhonePasswordScreenMenu>> CRAZY_PHONE_PASSWORD_SCREEN = REGISTRY.register("crazy_phone_password_screen", () -> IMenuTypeExtension.create(CrazyPhonePasswordScreenMenu::new));
 	public static final DeferredHolder<MenuType<?>, MenuType<CrazyPhoneSignInScreenMenu>> CRAZY_PHONE_SIGN_IN_SCREEN = REGISTRY.register("crazy_phone_sign_in_screen", () -> IMenuTypeExtension.create(CrazyPhoneSignInScreenMenu::new));
-	public static final DeferredHolder<MenuType<?>, MenuType<CrazyPhonePictureFoldersScreenMenu>> CRAZY_PHONE_PICTURE_FOLDERS_SCREEN = REGISTRY.register("crazy_phone_picture_folders_screen",
-			() -> IMenuTypeExtension.create(CrazyPhonePictureFoldersScreenMenu::new));
-	public static final DeferredHolder<MenuType<?>, MenuType<CrazyPhonePicturesScreenMenu>> CRAZY_PHONE_PICTURES_SCREEN = REGISTRY.register("crazy_phone_pictures_screen", () -> IMenuTypeExtension.create(CrazyPhonePicturesScreenMenu::new));
 	public static final DeferredHolder<MenuType<?>, MenuType<CrazyPhoneContactsScreenMenu>> CRAZY_PHONE_CONTACTS_SCREEN = REGISTRY.register("crazy_phone_contacts_screen", () -> IMenuTypeExtension.create(CrazyPhoneContactsScreenMenu::new));
 	public static final DeferredHolder<MenuType<?>, MenuType<CrazyPhoneContactInfoScreenMenu>> CRAZY_PHONE_CONTACT_INFO_SCREEN = REGISTRY.register("crazy_phone_contact_info_screen",
 			() -> IMenuTypeExtension.create(CrazyPhoneContactInfoScreenMenu::new));
@@ -146,8 +141,8 @@ public class ModMenus {
         CRAZY_PHONE_CALLING_SCREEN = registerMenu("crazy_phone_calling_screen", CrazyPhoneCallingScreenMenu::new);
         CRAZY_PHONE_IN_CALL_SCREEN = registerMenu("crazy_phone_in_call_screen", CrazyPhoneInCallScreenMenu::new);
         CRAZY_PHONE_INCOMING_CALL_SCREEN = registerMenu("crazy_phone_incoming_call_screen", CrazyPhoneIncomingCallScreenMenu::new);
-        // TODO(#165): CRAZY_PHONE_PICTURE_FOLDERS_SCREEN/CRAZY_PHONE_PICTURES_SCREEN/
-        // CRAZY_PHONE_MAYOR_CANDIDATE_SCREEN wait on the Camerapture integration.
+        // CRAZY_PHONE_MAYOR_CANDIDATE_SCREEN stays NeoForge-only, matching the mayor-poster feature itself
+        // (see build.fabric.gradle.kts) - the picture-folders/album screens it used to sit alongside are gone.
     }
     *///?}
 

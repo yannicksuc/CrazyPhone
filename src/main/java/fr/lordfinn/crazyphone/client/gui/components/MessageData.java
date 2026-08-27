@@ -9,7 +9,6 @@ public class MessageData {
     private final int timecode;
     private final String message;
     private final String sender;
-    private final ItemStack image;
     private final boolean system;
     private final Component systemText;
     private final ItemStack systemIcon;
@@ -25,24 +24,6 @@ public class MessageData {
         this.timecode = timecode;
         this.message = message;
         this.sender = sender;
-        this.image = ItemStack.EMPTY;
-        this.system = false;
-        this.systemText = null;
-        this.systemIcon = ItemStack.EMPTY;
-        this.voiceId = null;
-        this.voiceDurationTicks = 0;
-        this.voiceEnvelope = new byte[0];
-        this.callId = null;
-        this.callStartMillis = 0;
-        this.callDurationMillis = -1;
-        this.imageId = null;
-    }
-
-    public MessageData(int timecode, String message, String sender, ItemStack stack) {
-        this.timecode = timecode;
-        this.message = message;
-        this.sender = sender;
-        this.image = stack;
         this.system = false;
         this.systemText = null;
         this.systemIcon = ItemStack.EMPTY;
@@ -59,7 +40,6 @@ public class MessageData {
         this.timecode = timecode;
         this.message = "";
         this.sender = "";
-        this.image = ItemStack.EMPTY;
         this.system = true;
         this.systemText = systemText;
         this.systemIcon = systemIcon;
@@ -76,7 +56,6 @@ public class MessageData {
         this.timecode = timecode;
         this.message = "";
         this.sender = sender;
-        this.image = ItemStack.EMPTY;
         this.system = false;
         this.systemText = null;
         this.systemIcon = ItemStack.EMPTY;
@@ -93,7 +72,6 @@ public class MessageData {
         this.timecode = timecode;
         this.message = "";
         this.sender = "";
-        this.image = ItemStack.EMPTY;
         this.system = false;
         this.systemText = null;
         this.systemIcon = ItemStack.EMPTY;
@@ -106,15 +84,13 @@ public class MessageData {
         this.imageId = null;
     }
 
-    /** Fabric-native picture pipeline (task #165) variant - the actual PNG bytes are fetched from the
-     * server on demand, only when this message's bubble is actually rendered (see FabricPictureCache),
-     * same lazy shape as the voice-message audio fetch. NeoForge's image messages keep using the
-     * ItemStack-typed {@code image} field instead (a real Camera-mod picture item). */
+    /** A photo message - the actual PNG bytes are fetched from the server on demand, only when this
+     * message's bubble is actually rendered (see FabricPictureCache), same lazy shape as the voice-message
+     * audio fetch. */
     private MessageData(int timecode, String sender, UUID imageId) {
         this.timecode = timecode;
         this.message = "";
         this.sender = sender;
-        this.image = ItemStack.EMPTY;
         this.system = false;
         this.systemText = null;
         this.systemIcon = ItemStack.EMPTY;
@@ -202,10 +178,6 @@ public class MessageData {
 
     public String getSender() {
         return sender;
-    }
-
-    public ItemStack getImage() {
-        return image;
     }
 
     public boolean isSystem() {

@@ -219,13 +219,11 @@ sourceSets.main {
             "fr/lordfinn/crazyphone/procedures/LoadPhoneDataIntoItemstackProcedure.java",
             "fr/lordfinn/crazyphone/procedures/CrazyPhoneOpenPasswordScreenProcedure.java",
             "fr/lordfinn/crazyphone/procedures/CrazyPhoneOpenSignInScreenProcedure.java",
-            // CrazyPhoneOnUseProcedure - dispatches to the setup/lock/home flow. Its Camera-mod (offhand
-            // image upload) and call-redirect (CallRegistry) branches are gated neoforge-only with Fabric
-            // fallbacks, matching CrazyPhoneDefaultScreenButtonMessage's own "reset to home" pattern.
+            // CrazyPhoneOnUseProcedure - dispatches to the setup/lock/home flow. Its call-redirect
+            // (CallRegistry) branch is gated neoforge-only with a Fabric fallback; the rest (including the
+            // right-click dispatch below) is loader-agnostic now that Camera mod is gone.
             "fr/lordfinn/crazyphone/procedures/CrazyPhoneOnUseProcedure.java",
-            // CrazyPhoneRightclickedProcedure and CrazyPhoneOpenPictureFoldersScreenProcedure stay out -
-            // both are Camera-mod (album/gallery) coupled, out of scope for Fabric's native in-conversation-
-            // only photo pipeline (task #165, see FabricPictureCapture.java).
+            "fr/lordfinn/crazyphone/procedures/CrazyPhoneRightclickedProcedure.java",
             // CrazyPhoneConversationScreen needs these client-side helpers (all confirmed loader-agnostic).
             "fr/lordfinn/crazyphone/client/CursorEffects.java",
             "fr/lordfinn/crazyphone/client/FakePlayerPreview.java",
