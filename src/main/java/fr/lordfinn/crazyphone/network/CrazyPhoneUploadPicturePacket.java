@@ -1,8 +1,9 @@
 package fr.lordfinn.crazyphone.network;
 
 /**
- * Client -> server: uploads a captured photo's PNG bytes and immediately posts it as an image message in
- * the given conversation. Fabric-native picture pipeline (task #165) - there is no NeoForge side to this
+ * Client -> server: uploads a freshly-captured photo's two resolutions (thumbnail + full, both PNG,
+ * produced from the same screenshot - see FabricPictureCapture) and immediately posts it as an image
+ * message in the given conversation. Fabric-native picture pipeline - there is no NeoForge side to this
  * file at all, unlike every other dual-loader packet in this package: NeoForge's camera feature still goes
  * through Camera mod's own item/upload/disk-cache pipeline (see CrazyPhoneTakePhotoProcedure), so this type
  * is simply never registered or sent there. Mirrors VoiceMessageUploadPacket's shape closely - same
@@ -18,7 +19,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
 
 import fr.lordfinn.crazyphone.Crazyphone;
-import fr.lordfinn.crazyphone.data.ConversationSavedData;
+import fr.lordfinn.crazyphone.data.PhotoSavedData;
 import fr.lordfinn.crazyphone.procedures.GetCrazyPhoneNumberFromMainHandProcedure;
 import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
 
@@ -26,14 +27,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
-import java.util.UUID;
 
-public record CrazyPhoneUploadPicturePacket(String conversationId, byte[] pngBytes) implements CustomPacketPayload {
+public record CrazyPhoneUploadPicturePacket(String conversationId, byte[] thumbnailPng, byte[] fullPng) implements CustomPacketPayload {
     private static final Logger LOGGER = LoggerFactory.getLogger("crazyphone");
-    // A generous but real ceiling - the client already downscales/compresses before sending (see
+    // Generous but real ceilings - the client already downscales/compresses before sending (see
     // FabricPictureCapture), this is defense in depth against a modified client the same way
     // VoiceMessageUploadPacket caps PCM length.
-    private static final int MAX_PNG_BYTES = 1_500_000;
+    private static final int THUMBNAIL_MAX_BYTES = 200_000;
+    private static final int FULL_MAX_BYTES = 2_000_000;
 
     public static final Type<CrazyPhoneUploadPicturePacket> TYPE = new Type<>(
             Crazyphone.resource("upload_picture")
@@ -43,10 +44,12 @@ public record CrazyPhoneUploadPicturePacket(String conversationId, byte[] pngByt
             StreamCodec.of(
                     (RegistryFriendlyByteBuf buffer, CrazyPhoneUploadPicturePacket message) -> {
                         buffer.writeUtf(message.conversationId);
-                        buffer.writeByteArray(message.pngBytes);
+                        buffer.writeByteArray(message.thumbnailPng);
+                        buffer.writeByteArray(message.fullPng);
                     },
                     (RegistryFriendlyByteBuf buffer) -> new CrazyPhoneUploadPicturePacket(
                             buffer.readUtf(),
+                            buffer.readByteArray(),
                             buffer.readByteArray()
                     )
             );
@@ -56,9 +59,13 @@ public record CrazyPhoneUploadPicturePacket(String conversationId, byte[] pngByt
         return TYPE;
     }
 
-    private static void handle(ServerPlayer player, String conversationId, byte[] pngBytes) {
-        if (pngBytes.length == 0 || pngBytes.length > MAX_PNG_BYTES) {
-            LOGGER.warn("Picture upload rejected: {} bytes", pngBytes.length);
+    private static void handle(ServerPlayer player, String conversationId, byte[] thumbnailPng, byte[] fullPng) {
+        if (thumbnailPng.length == 0 || thumbnailPng.length > THUMBNAIL_MAX_BYTES) {
+            LOGGER.warn("Picture upload rejected: thumbnail {} bytes", thumbnailPng.length);
+            return;
+        }
+        if (fullPng.length == 0 || fullPng.length > FULL_MAX_BYTES) {
+            LOGGER.warn("Picture upload rejected: full image {} bytes", fullPng.length);
             return;
         }
         Level world = player.level();
@@ -66,14 +73,13 @@ public record CrazyPhoneUploadPicturePacket(String conversationId, byte[] pngByt
         if (senderNumber.isEmpty() || !CrazyPhoneHelper.getGroupMembers(world, conversationId).contains(senderNumber))
             return;
 
-        UUID imageId = UUID.randomUUID();
-        ConversationSavedData.get(world).storeImageBytes(imageId, conversationId, pngBytes);
         int timestampInMinutes = (int) (Instant.now().getEpochSecond() / 60);
-        CrazyPhoneHelper.addImageMessage(world, conversationId, senderNumber, imageId, timestampInMinutes);
+        java.util.UUID photoId = PhotoSavedData.get(world).storePhoto(senderNumber, conversationId, thumbnailPng, fullPng, timestampInMinutes);
+        CrazyPhoneHelper.addImageMessage(world, conversationId, senderNumber, photoId, timestampInMinutes);
     }
 
     public static void handleDataFabric(CrazyPhoneUploadPicturePacket message, net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.Context context) {
-        handle(context.player(), message.conversationId, message.pngBytes);
+        handle(context.player(), message.conversationId, message.thumbnailPng, message.fullPng);
     }
 
     public static void registerFabricType() {

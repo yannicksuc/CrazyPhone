@@ -7,6 +7,10 @@
 
   "item.crazyphone.crazy_phone": "Crazy Phone",
   "item.crazyphone.crazy_phone_photo": "Photo",
+  "gui.crazyphone.capture_overlay.title": "Camera",
+  "gui.crazyphone.photo_viewer.title": "Photo",
+  "gui.crazyphone.photo_viewer.back": "Back",
+  "gui.crazyphone.photo_viewer.save": "Save to Inventory",
   "item.crazyphone.custom_name": "CrazyPhone of %s",
   "item.crazyphone.lore_number": "Number: %s",
   "item.crazyphone.lore_owner": "Owner: %s",

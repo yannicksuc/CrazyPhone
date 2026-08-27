@@ -840,17 +840,11 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
                     CrazyPhoneConversationButtonMessage.handleButtonAction(entity, 1, x, y, z, getEditBoxAndCheckBoxValues());
                     //?}
                     //? if fabric && >=1.20.5 {
-                    /*// Fabric-native picture pipeline (task #165) - no picture-folders browser exists here
-                    // (that's still Camera-mod/Camerapture-coupled, see build.fabric.gradle.kts), so this
-                    // button instead takes a photo and sends it into THIS conversation in one click, the
-                    // same "in-chat camera" shape a real phone messaging app uses. Goes through
-                    // requestCapture (not a direct captureAsPng() call) so the phone screen itself is
-                    // hidden from the shot - see FabricPictureCapture's own doc comment.
-                    String conversationId = this.menu.getConversationId();
-                    fr.lordfinn.crazyphone.client.picture.FabricPictureCapture.requestCapture(png -> {
-                        if (png != null)
-                            NetworkAccess.sendToServer(new CrazyPhoneUploadPicturePacket(conversationId, png));
-                    });
+                    /*// Native picture pipeline - no picture-folders browser exists here (albums are gone
+                    // entirely, see the implementation plan), so this button opens the full-screen capture
+                    // overlay (zoom, then click to shoot) instead of a gallery.
+                    net.minecraft.client.Minecraft.getInstance().setScreen(
+                            new fr.lordfinn.crazyphone.client.gui.CrazyPhoneCaptureOverlayScreen(this.menu.getConversationId()));
                     *///?}
                 }) {
             @Override

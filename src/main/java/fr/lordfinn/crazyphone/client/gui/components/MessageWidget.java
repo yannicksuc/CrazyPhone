@@ -494,9 +494,9 @@ public class MessageWidget extends AbstractWidget {
     //?}
     //? if fabric {
     /*private void onImageClick(int button) {
-        // No full-screen image viewer on Fabric yet (task #165 follow-up) - the hover-zoom in renderImage
-        // already shows the picture larger in place, which covers the common case of "let me see that
-        // properly" without needing a whole extra screen.
+        if (button == 0 && fabricImageId != null)
+            net.minecraft.client.Minecraft.getInstance().setScreen(
+                    new fr.lordfinn.crazyphone.client.gui.CrazyPhonePhotoViewerScreen(fabricImageId));
     }
     *///?}
 
@@ -660,7 +660,8 @@ public class MessageWidget extends AbstractWidget {
             manager.resetPositions();
         }
 
-        net.minecraft.resources.ResourceLocation texture = fr.lordfinn.crazyphone.client.picture.FabricPictureCache.getOrRequest(fabricImageId);
+        fr.lordfinn.crazyphone.client.picture.FabricPictureCache.CachedTexture texture =
+                fr.lordfinn.crazyphone.client.picture.FabricPictureCache.getOrRequest(fabricImageId, fr.lordfinn.crazyphone.utils.PhotoResolution.THUMBNAIL);
         if (texture == null) return;
 
         int x = wrappedText.getX();
@@ -679,19 +680,24 @@ public class MessageWidget extends AbstractWidget {
             guiGraphics.fill(drawX + 1, drawY + 1, drawX + drawWidth + 1, drawY + drawHeight + 1, 0x66000000);
         }
 
-        GuiCompat.blit(guiGraphics, texture, drawX, drawY, 300, drawWidth, drawHeight);
+        GuiCompat.blit(guiGraphics, texture.location(), drawX, drawY, 300, drawWidth, drawHeight);
     }
 
     public void initImageScaling() {
         if (fabricImageId == null) return;
-        // Width is fixed to the message bubble's width regardless of the source image's own aspect ratio
-        // until the texture actually arrives (server fetch is async) - same "reasonable default, corrected
-        // once real data is in" shape as everything else in this lazy-fetch pipeline. Once
-        // FabricPictureCache resolves the texture this stays a fixed square; a true aspect-ratio-aware
-        // version would need the source dimensions threaded back from the fetch, left as follow-up polish.
         int maxWidth = wrappedText.getWidth();
-        this.imageWidth = maxWidth;
-        this.imageHeight = maxWidth;
+        fr.lordfinn.crazyphone.client.picture.FabricPictureCache.CachedTexture texture =
+                fr.lordfinn.crazyphone.client.picture.FabricPictureCache.getOrRequest(fabricImageId, fr.lordfinn.crazyphone.utils.PhotoResolution.THUMBNAIL);
+        if (texture != null) {
+            // Real aspect ratio once the texture has actually arrived (server fetch is async) - fit to the
+            // bubble's width, same as the NeoForge body above.
+            this.imageWidth = maxWidth;
+            this.imageHeight = Math.max(1, Math.round(maxWidth * ((float) texture.height() / texture.width())));
+        } else {
+            // Reasonable default until the fetch resolves - corrected on the next call once it does.
+            this.imageWidth = maxWidth;
+            this.imageHeight = maxWidth;
+        }
         wrappedText.setMinHeight(Math.max(18, this.imageHeight));
         this.setHeight(wrappedText.getHeight());
     }

@@ -38,6 +38,10 @@ public class Config {
             .comment("Maximum number of image messages kept on disk per conversation (images are the heaviest payload, capped separately from text messages).")
             .defineInRange("maxImagesStoredPerConversation", 50, 5, 2000);
 
+    private static final ModConfigSpec.IntValue MAX_PHOTOS_STORED_PER_OWNER = BUILDER
+            .comment("Maximum number of photos (both resolutions) kept on disk per owning phone number - the oldest is discarded once a new one exceeds this, independent of conversation history trimming.")
+            .defineInRange("maxPhotosStoredPerOwner", 300, 10, 5000);
+
     private static final ModConfigSpec.IntValue MAX_ALBUM_SLOTS_PER_PHONE = BUILDER
             .comment("Number of album/photo storage slots available in a phone's internal inventory.")
             .defineInRange("maxAlbumSlotsPerPhone", 27, 1, 97);
@@ -106,6 +110,7 @@ public class Config {
     public static int maxStoredMessagesPerConversation;
     public static int maxMessagesSentPerRequest;
     public static int maxImagesStoredPerConversation;
+    public static int maxPhotosStoredPerOwner;
     public static int maxAlbumSlotsPerPhone;
     public static boolean mayorElectionFeatureEnabled;
     public static boolean callsFeatureEnabled;
@@ -125,6 +130,7 @@ public class Config {
         maxStoredMessagesPerConversation = MAX_STORED_MESSAGES_PER_CONVERSATION.get();
         maxMessagesSentPerRequest = MAX_MESSAGES_SENT_PER_REQUEST.get();
         maxImagesStoredPerConversation = MAX_IMAGES_STORED_PER_CONVERSATION.get();
+        maxPhotosStoredPerOwner = MAX_PHOTOS_STORED_PER_OWNER.get();
         maxAlbumSlotsPerPhone = MAX_ALBUM_SLOTS_PER_PHONE.get();
         mayorElectionFeatureEnabled = MAYOR_ELECTION_FEATURE_ENABLED.get();
         callsFeatureEnabled = CALLS_FEATURE_ENABLED.get();
@@ -184,6 +190,7 @@ public class Config {
     public static int maxStoredMessagesPerConversation = 300;
     public static int maxMessagesSentPerRequest = 100;
     public static int maxImagesStoredPerConversation = 50;
+    public static int maxPhotosStoredPerOwner = 300;
     public static int maxAlbumSlotsPerPhone = 27;
     public static boolean mayorElectionFeatureEnabled = true;
     public static boolean callsFeatureEnabled = true;

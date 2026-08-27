@@ -125,7 +125,8 @@ sourceSets.main {
         // ConversationSavedData's get()/load()/save() are now loader-gated with real vanilla
         // SavedData/DimensionDataStorage signatures for Fabric (javap-verified against the Loom-remapped
         // vanilla jar - NeoForge's own SavedData.Factory has convenience overloads plain vanilla doesn't).
-        "fr/lordfinn/crazyphone/data/ConversationSavedData.java"
+        "fr/lordfinn/crazyphone/data/ConversationSavedData.java",
+        "fr/lordfinn/crazyphone/data/PhotoSavedData.java"
     )
     // CustomPacketPayload (and everything built on it: NetworkAccess's send methods, every packet record,
     // FeatureFlag's isEnabledFor gating) doesn't exist before 1.20.5 at all - see NetworkAccess.java's own
@@ -276,16 +277,21 @@ sourceSets.main {
             "fr/lordfinn/crazyphone/item/CrazyPhoneItemProperties.java",
             "fr/lordfinn/crazyphone/client/PhoneClickableCursorHandler.java",
             "fr/lordfinn/crazyphone/procedures/CrazyPhoneItemInInventoryTickProcedure.java",
-            // Fabric-native picture pipeline (task #165) - real photo capture/storage/display for Fabric,
-            // NOT a Camerapture integration (its own capture pipeline turns out to have no public "give me
-            // the bytes" hook, see FabricPictureCapture's own doc comment). Scoped to in-conversation
-            // capture+send+view only - no standalone Pictures/PictureFolders gallery or mayor-candidate
-            // photo posters, those stay excluded/TODO(#165) exactly as before.
+            // Native picture pipeline - real photo capture (with a full-screen zoom overlay)/storage/
+            // full-size viewer, replacing the old Camera-mod/album-based feature entirely. NOT a Camerapture
+            // integration (its own capture pipeline has no public "give me the bytes" hook, see
+            // FabricPictureCapture's own doc comment). Being generalized to NeoForge incrementally (see the
+            // implementation plan) - Fabric-only for now.
             "fr/lordfinn/crazyphone/network/CrazyPhoneUploadPicturePacket.java",
             "fr/lordfinn/crazyphone/network/CrazyPhonePictureRequestPacket.java",
             "fr/lordfinn/crazyphone/network/CrazyPhonePictureResponsePacket.java",
+            "fr/lordfinn/crazyphone/network/CrazyPhoneGivePhotoItemPacket.java",
             "fr/lordfinn/crazyphone/client/picture/FabricPictureCapture.java",
             "fr/lordfinn/crazyphone/client/picture/FabricPictureCache.java",
+            "fr/lordfinn/crazyphone/client/CrazyPhoneZoomController.java",
+            "fr/lordfinn/crazyphone/client/gui/CrazyPhoneCaptureOverlayScreen.java",
+            "fr/lordfinn/crazyphone/client/gui/CrazyPhonePhotoViewerScreen.java",
+            "fr/lordfinn/crazyphone/utils/PhotoItemData.java",
             // Task #164 (SavedData/player-attachment persistence): Soulbound enchantment death-drop
             // handling. ModEnchantments is loader-agnostic by inspection (only RegistryAccess/Registries.
             // ENCHANTMENT, no NeoForge imports); SoulboundStash now carries a Fabric Codec branch and
