@@ -98,8 +98,9 @@ public class ModCommands {
     *///?}
 
     /** Shared by both loaders' registration entrypoint - see those for how each reaches the dispatcher. The
-     * "candidate program" leaf (candidate's program poster, sourced from a Camera-mod image item in hand)
-     * stays NeoForge-only until the Camerapture integration (task #165) replaces that dependency. */
+     * "candidate program" leaf (candidate's program poster, sourced from the phone's own native photo item -
+     * no longer a Camera-mod dependency) stays NeoForge-only simply because it hasn't been ported to Fabric
+     * yet. */
     private static LiteralArgumentBuilder<CommandSourceStack> buildCommandTree() {
         LiteralArgumentBuilder<CommandSourceStack> candidate = Commands.literal("candidate").requires(s -> s.hasPermission(4))
                 .then(Commands.literal("add")

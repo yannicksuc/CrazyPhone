@@ -51,7 +51,12 @@ import fr.lordfinn.crazyphone.utils.NetworkAccess;
  */
 //? if neoforge {
 //? if <1.20.5 {
-@EventBusSubscriber(value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)
+// No bus= here (unlike this project's packet-registration classes, which subscribe to a genuine
+// mod-lifecycle event and belong on Bus.MOD): every @SubscribeEvent below is a regular client
+// render/input event (RenderGuiEvent, ViewportEvent, InputEvent, RenderHandEvent), which only exists
+// on the default game event bus - Bus.MOD rejects them at registration time with "This bus only
+// accepts subclasses of IModBusEvent".
+@EventBusSubscriber(value = Dist.CLIENT)
 //?} else {
 /*@EventBusSubscriber(value = Dist.CLIENT)
 *///?}

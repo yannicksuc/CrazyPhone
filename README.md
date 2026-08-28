@@ -12,7 +12,7 @@ versions.
 [![License](https://img.shields.io/badge/License-All%20Rights%20Reserved-red)](#-license)
 
 > [!NOTE]
-> CrazyPhone is a standalone, hand-written rewrite of the smartphone feature originally found in the
+> CrazyPhone is a standalone, hand-written rewrite of the smartphone feature originally found in my own
 > **crazythings** mod. It keeps the same look and core features, but the codebase was re-architected -
 > most importantly to fix a server-crashing data growth bug, see [Why this exists](#-why-this-exists).
 
@@ -379,7 +379,7 @@ an abstraction layer - most files are identical on every target; only the files 
 ## 🙏 Credits
 
 - **[Simple Voice Chat](https://modrepo.de/minecraft/voicechat)** by [henkelmax](https://github.com/henkelmax): the voice engine calls and voice messages are built on top of (NeoForge only).
-- Original `crazythings` project: source of the feature set and assets this mod ports and rebuilds. Made by me ;)
+- Original `crazythings` project (also mine): source of the feature set and assets this mod ports and rebuilds.
 
 ## 📄 License
 
