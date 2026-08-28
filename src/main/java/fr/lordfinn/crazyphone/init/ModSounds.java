@@ -33,16 +33,21 @@ public class ModSounds {
      * hand-shake pulses. */
     public static final DeferredHolder<SoundEvent, SoundEvent> PHONE_VIBRATING = REGISTRY.register("phone_vibrating",
             () -> SoundEvent.createVariableRangeEvent(Crazyphone.resource("phone_vibrating")));
+    /** Shutter click, played locally the moment a photo capture is triggered (see CrazyPhoneCaptureMode#triggerCapture). */
+    public static final DeferredHolder<SoundEvent, SoundEvent> TAKE_PICTURE = REGISTRY.register("take_picture",
+            () -> SoundEvent.createVariableRangeEvent(Crazyphone.resource("take_picture")));
     //?}
     //? if fabric {
     /*public static RegistryEntry<SoundEvent> RINGBACK_TONE;
     public static RegistryEntry<SoundEvent> RINGTONE;
     public static RegistryEntry<SoundEvent> PHONE_VIBRATING;
+    public static RegistryEntry<SoundEvent> TAKE_PICTURE;
 
     public static void register() {
         RINGBACK_TONE = new RegistryEntry<>(Registry.register(BuiltInRegistries.SOUND_EVENT, Crazyphone.resource("ringback_tone"), SoundEvent.createVariableRangeEvent(Crazyphone.resource("ringback_tone"))));
         RINGTONE = new RegistryEntry<>(Registry.register(BuiltInRegistries.SOUND_EVENT, Crazyphone.resource("ringtone"), SoundEvent.createVariableRangeEvent(Crazyphone.resource("ringtone"))));
         PHONE_VIBRATING = new RegistryEntry<>(Registry.register(BuiltInRegistries.SOUND_EVENT, Crazyphone.resource("phone_vibrating"), SoundEvent.createVariableRangeEvent(Crazyphone.resource("phone_vibrating"))));
+        TAKE_PICTURE = new RegistryEntry<>(Registry.register(BuiltInRegistries.SOUND_EVENT, Crazyphone.resource("take_picture"), SoundEvent.createVariableRangeEvent(Crazyphone.resource("take_picture"))));
     }
     *///?}
 }

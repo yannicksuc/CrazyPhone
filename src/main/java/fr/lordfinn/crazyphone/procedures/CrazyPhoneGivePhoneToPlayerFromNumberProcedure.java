@@ -19,11 +19,11 @@ public class CrazyPhoneGivePhoneToPlayerFromNumberProcedure {
 		ItemStack phone = ItemStack.EMPTY;
 		number = StringArgumentType.getString(arguments, "number");
 		phone = new ItemStack(ModItems.CRAZY_PHONE.get());
+		phone.setCount(1);
+		LoadPhoneDataIntoItemstackProcedure.execute(world, entity, phone, number);
 		if (entity instanceof Player _player) {
-			phone.setCount(1);
 			if (!_player.getInventory().add(phone))
 				_player.drop(phone, false);
 		}
-		LoadPhoneDataIntoItemstackProcedure.execute(world, entity, phone, number);
 	}
 }

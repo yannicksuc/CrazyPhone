@@ -17,6 +17,7 @@
   "item.crazyphone.crazy_phone_photo.lore_author": "Prise par : %s",
   "item.crazyphone.crazy_phone_photo.lore_date": "Prise le : %s",
 
+  "message.crazyphone.phone_locked_no_photo": "Déverrouille ce téléphone avant de prendre une photo.",
   "message.crazyphone.unknown_contact": "Inconnu",
   "message.crazyphone.unknown_number": "Numéro inconnu : %s",
   "message.crazyphone.unknown_voter": "Inconnu : %s",

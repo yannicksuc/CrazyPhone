@@ -18,10 +18,16 @@ import org.lwjgl.glfw.GLFW;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.item.ItemStack;
 
 import fr.lordfinn.crazyphone.client.picture.FabricPictureCapture;
+import fr.lordfinn.crazyphone.init.ModItems;
 import fr.lordfinn.crazyphone.network.CrazyPhoneUploadPicturePacket;
+import fr.lordfinn.crazyphone.procedures.IsPhoneOpenProcedure;
+import fr.lordfinn.crazyphone.procedures.IsPhoneSetupProcedure;
 import fr.lordfinn.crazyphone.utils.NetworkAccess;
 
 /**
@@ -82,6 +88,11 @@ public final class CrazyPhoneCaptureMode {
         if (active)
             return;
         Minecraft mc = Minecraft.getInstance();
+        if (!heldPhoneCanCapture(mc)) {
+            if (mc.player != null)
+                mc.player.displayClientMessage(Component.translatable("message.crazyphone.phone_locked_no_photo"), true);
+            return;
+        }
         conversationId = newConversationId;
         previousScreen = mc.screen;
         previousHideGui = mc.options.hideGui;
@@ -91,6 +102,19 @@ public final class CrazyPhoneCaptureMode {
         currentZoom = MIN_ZOOM;
         capturing = false;
         active = true;
+    }
+
+    /** Single choke point for every capture entry point (punch-to-shoot, the home screen's Photo icon, the
+     * conversation camera icon) - the latter two can only be reached by already going through setup/sign-in,
+     * but punch-to-shoot bypasses that whole flow (it's a raw attack-key shortcut), so a phone that was just
+     * crafted or is still locked could otherwise jump straight into framing a shot. */
+    private static boolean heldPhoneCanCapture(Minecraft mc) {
+        if (mc.player == null)
+            return false;
+        ItemStack held = mc.player.getItemInHand(InteractionHand.MAIN_HAND);
+        return held.getItem() == ModItems.CRAZY_PHONE.get()
+                && IsPhoneSetupProcedure.execute(held)
+                && IsPhoneOpenProcedure.execute(held);
     }
 
     public static void exit() {
@@ -121,6 +145,8 @@ public final class CrazyPhoneCaptureMode {
         if (!active || capturing)
             return;
         capturing = true;
+        if (Minecraft.getInstance().player != null)
+            Minecraft.getInstance().player.playSound(fr.lordfinn.crazyphone.init.ModSounds.TAKE_PICTURE.get(), 1.0f, 1.0f);
         FabricPictureCapture.requestCapture((thumbnailPng, fullPng) -> {
             capturing = false;
             if (thumbnailPng != null && fullPng != null)
