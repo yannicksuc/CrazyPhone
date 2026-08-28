@@ -78,7 +78,7 @@ public class CrazyPhonePhotoItem extends Item {
         net.fabricmc.fabric.api.client.rendering.v1.BuiltinItemRendererRegistry.INSTANCE.register(
                 fr.lordfinn.crazyphone.init.ModItems.CRAZY_PHONE_PHOTO.get(),
                 (stack, displayContext, poseStack, buffer, light, overlay) ->
-                        fr.lordfinn.crazyphone.client.render.CrazyPhonePhotoItemRenderer.render(stack, poseStack, buffer, light, overlay));
+                        fr.lordfinn.crazyphone.client.render.CrazyPhonePhotoItemRenderer.render(stack, displayContext, poseStack, buffer, light, overlay));
     }
     *///?}
     //? if neoforge && <1.21.10 {
@@ -100,7 +100,7 @@ public class CrazyPhonePhotoItem extends Item {
                         public void renderByItem(net.minecraft.world.item.ItemStack stack, net.minecraft.world.item.ItemDisplayContext displayContext,
                                                   com.mojang.blaze3d.vertex.PoseStack poseStack, net.minecraft.client.renderer.MultiBufferSource buffer,
                                                   int packedLight, int packedOverlay) {
-                            fr.lordfinn.crazyphone.client.render.CrazyPhonePhotoItemRenderer.render(stack, poseStack, buffer, packedLight, packedOverlay);
+                            fr.lordfinn.crazyphone.client.render.CrazyPhonePhotoItemRenderer.render(stack, displayContext, poseStack, buffer, packedLight, packedOverlay);
                         }
                     };
                 }

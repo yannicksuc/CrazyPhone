@@ -72,7 +72,9 @@ public record CrazyPhoneGivePhotoItemPacket(UUID photoId) implements CustomPacke
     }
     //?}
 
-    private static void handle(ServerPlayer player, UUID photoId) {
+    // Package-private (not private) - reused by CrazyPhoneMyPhotosActionMessage's TAKE action to give
+    // several photos at once with the exact same per-photo authorization/give logic.
+    static void handle(ServerPlayer player, UUID photoId) {
         Level world = player.level();
         PhotoSavedData.PhotoEntry entry = PhotoSavedData.get(world).getPhoto(photoId);
         if (entry == null)

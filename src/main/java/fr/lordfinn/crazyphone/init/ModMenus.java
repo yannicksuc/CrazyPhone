@@ -48,6 +48,7 @@ import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneMayorCandidateScreenMenu
 //?}
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhonePasswordScreenMenu;
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneMayorsCandidatesListMenu;
+import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneMyPhotosScreenMenu;
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneConversationMenu;
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneContactsScreenMenu;
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneContactInfoScreenMenu;
@@ -79,6 +80,8 @@ public class ModMenus {
 	public static final DeferredHolder<MenuType<?>, MenuType<CrazyPhoneConversationMenu>> CRAZY_PHONE_CONVERSATION = REGISTRY.register("crazy_phone_conversation", () -> IMenuTypeExtension.create(CrazyPhoneConversationMenu::new));
 	public static final DeferredHolder<MenuType<?>, MenuType<CrazyPhoneMayorsCandidatesListMenu>> CRAZY_PHONE_MAYORS_CANDIDATES_LIST = REGISTRY.register("crazy_phone_mayors_candidates_list",
 			() -> IMenuTypeExtension.create(CrazyPhoneMayorsCandidatesListMenu::new));
+	public static final DeferredHolder<MenuType<?>, MenuType<CrazyPhoneMyPhotosScreenMenu>> CRAZY_PHONE_MY_PHOTOS_SCREEN = REGISTRY.register("crazy_phone_my_photos_screen",
+			() -> IMenuTypeExtension.create(CrazyPhoneMyPhotosScreenMenu::new));
 	public static final DeferredHolder<MenuType<?>, MenuType<CrazyPhoneMayorCandidateScreenMenu>> CRAZY_PHONE_MAYOR_CANDIDATE_SCREEN = REGISTRY.register("crazy_phone_mayor_candidate_screen",
 			() -> IMenuTypeExtension.create(CrazyPhoneMayorCandidateScreenMenu::new));
 	public static final DeferredHolder<MenuType<?>, MenuType<CrazyPhoneGroupSettingsScreenMenu>> CRAZY_PHONE_GROUP_SETTINGS_SCREEN = REGISTRY.register("crazy_phone_group_settings_screen",
@@ -118,6 +121,7 @@ public class ModMenus {
     public static RegistryEntry<MenuType<CrazyPhoneContactInfoScreenMenu>> CRAZY_PHONE_CONTACT_INFO_SCREEN;
     public static RegistryEntry<MenuType<CrazyPhoneConversationMenu>> CRAZY_PHONE_CONVERSATION;
     public static RegistryEntry<MenuType<CrazyPhoneMayorsCandidatesListMenu>> CRAZY_PHONE_MAYORS_CANDIDATES_LIST;
+    public static RegistryEntry<MenuType<CrazyPhoneMyPhotosScreenMenu>> CRAZY_PHONE_MY_PHOTOS_SCREEN;
     public static RegistryEntry<MenuType<CrazyPhoneGroupSettingsScreenMenu>> CRAZY_PHONE_GROUP_SETTINGS_SCREEN;
     public static RegistryEntry<MenuType<CrazyPhoneCallingScreenMenu>> CRAZY_PHONE_CALLING_SCREEN;
     public static RegistryEntry<MenuType<CrazyPhoneInCallScreenMenu>> CRAZY_PHONE_IN_CALL_SCREEN;
@@ -137,6 +141,7 @@ public class ModMenus {
         CRAZY_PHONE_CONTACT_INFO_SCREEN = registerMenu("crazy_phone_contact_info_screen", CrazyPhoneContactInfoScreenMenu::new);
         CRAZY_PHONE_CONVERSATION = registerMenu("crazy_phone_conversation", CrazyPhoneConversationMenu::new);
         CRAZY_PHONE_MAYORS_CANDIDATES_LIST = registerMenu("crazy_phone_mayors_candidates_list", CrazyPhoneMayorsCandidatesListMenu::new);
+        CRAZY_PHONE_MY_PHOTOS_SCREEN = registerMenu("crazy_phone_my_photos_screen", CrazyPhoneMyPhotosScreenMenu::new);
         CRAZY_PHONE_GROUP_SETTINGS_SCREEN = registerMenu("crazy_phone_group_settings_screen", CrazyPhoneGroupSettingsScreenMenu::new);
         CRAZY_PHONE_CALLING_SCREEN = registerMenu("crazy_phone_calling_screen", CrazyPhoneCallingScreenMenu::new);
         CRAZY_PHONE_IN_CALL_SCREEN = registerMenu("crazy_phone_in_call_screen", CrazyPhoneInCallScreenMenu::new);

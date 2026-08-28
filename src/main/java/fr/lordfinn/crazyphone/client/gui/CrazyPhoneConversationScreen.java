@@ -97,6 +97,11 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
     private EditBox message;
     private Button button_envoyer;
     private ImageButton imagebutton_crazyphoneaddimage;
+    /** "Attach an existing photo" - browses the My Photos gallery in send mode instead of taking a fresh
+     * shot, sitting one slot above the mic/camera column (see ATTACH_PHOTO_ICON_Y) so it stays clear of the
+     * mic button whether or not Simple Voice Chat is installed. */
+    private Button imagebutton_attachphoto;
+    private static final int ATTACH_PHOTO_ICON_Y = 112;
 
     /** Voice message recording, replaces the text input row while active. NONE = normal text input;
      * RECORDING = mic capture in progress, [trash][waveform][pause] shown; REVIEWING = paused, waiting for
@@ -214,6 +219,7 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
         if (voiceRecordingState == VoiceRecordingState.NONE) {
             button_envoyer.render(guiGraphics, mouseX, mouseY, partialTicks);
             imagebutton_crazyphoneaddimage.render(guiGraphics, mouseX, mouseY, partialTicks);
+            imagebutton_attachphoto.render(guiGraphics, mouseX, mouseY, partialTicks);
             if (imagebutton_crazyphonevoicemessage != null)
                 imagebutton_crazyphonevoicemessage.render(guiGraphics, mouseX, mouseY, partialTicks);
         } else {
@@ -402,6 +408,16 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
             return;
         voiceRecordingState = VoiceRecordingState.RECORDING;
         VoiceMessageRecorder.startRecording();
+    }
+
+    private void onAttachExistingPhotoClicked() {
+        HashMap<String, String> values = getEditBoxAndCheckBoxValues();
+        //? if >=1.20.5 {
+        /*NetworkAccess.sendToServer(new CrazyPhoneConversationButtonMessage(1, x, y, z, values));
+        *///? } else {
+        PacketDistributor.SERVER.noArg().send(new CrazyPhoneConversationButtonMessage(1, x, y, z, values));
+        //?}
+        CrazyPhoneConversationButtonMessage.handleButtonAction(entity, 1, x, y, z, values);
     }
 
     /** [trash][waveform][pause-or-send] - replaces the normal text input row while recording/reviewing a
@@ -720,6 +736,10 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
     private void initializeButtons() {
         button_envoyer = createSendMessageButton();
         imagebutton_crazyphoneaddimage = createImageButton();
+        imagebutton_attachphoto = createSquareIconButton(this.leftPos + 100, this.topPos + ATTACH_PHOTO_ICON_Y,
+                Component.translatable("gui.crazyphone.crazy_phone_conversation.button_attach_photo"),
+                e -> onAttachExistingPhotoClicked());
+        imagebutton_attachphoto.setTooltip(Tooltip.create(Component.translatable("gui.crazyphone.crazy_phone_conversation.tooltip_attach_photo")));
         if (VoicechatIntegration.isAvailable()) {
             imagebutton_crazyphonevoicemessage = createVoiceMessageButton();
             button_voicetrash = createSquareIconButton(this.leftPos + TRASH_X, this.topPos + RECORDING_ROW_Y,
@@ -835,8 +855,7 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
                 // full-screen capture overlay (zoom, then click to shoot) instead of a gallery. Purely
                 // client-side (no server round trip needed to start framing a shot), unlike the old
                 // Camera-mod-backed album button this replaces.
-                e -> net.minecraft.client.Minecraft.getInstance().setScreen(
-                        new fr.lordfinn.crazyphone.client.gui.CrazyPhoneCaptureOverlayScreen(this.menu.getConversationId()))) {
+                e -> fr.lordfinn.crazyphone.client.CrazyPhoneCaptureMode.enter(this.menu.getConversationId())) {
             @Override
             public void renderWidget(GuiGraphics guiGraphics, int x, int y, float partialTicks) {
                 // No separate disabled sprite was provided to WidgetSprites (2-arg ctor), so sprites.get()
@@ -963,6 +982,7 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
         // they always paint on top of it (see the comment there) - addWidget still registers them for
         // click handling, keyboard navigation and tooltips without adding a second automatic render pass.
         this.addWidget(imagebutton_crazyphoneaddimage);
+        this.addWidget(imagebutton_attachphoto);
         this.addWidget(button_envoyer);
         if (imagebutton_crazyphonevoicemessage != null)
             this.addWidget(imagebutton_crazyphonevoicemessage);

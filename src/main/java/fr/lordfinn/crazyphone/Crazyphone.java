@@ -31,6 +31,9 @@ import fr.lordfinn.crazyphone.init.ModItems;
 import fr.lordfinn.crazyphone.init.ModMenus;
 import fr.lordfinn.crazyphone.init.ModSounds;
 import fr.lordfinn.crazyphone.init.ModTabs;
+//? if <1.21.10 {
+import fr.lordfinn.crazyphone.init.ModRecipes;
+//?}
 
 import org.slf4j.Logger;
 
@@ -81,6 +84,9 @@ public class Crazyphone {
         ModMenus.REGISTRY.register(modEventBus);
         ModSounds.REGISTRY.register(modEventBus);
         PhoneAttachmentTypes.ATTACHMENT_TYPES.register(modEventBus);
+        //? if <1.21.10 {
+        ModRecipes.REGISTRY.register(modEventBus);
+        //?}
         //? if >=1.20.5 {
         /*fr.lordfinn.crazyphone.init.ModLootModifiers.LOOT_MODIFIER_SERIALIZERS.register(modEventBus);
         *///?}

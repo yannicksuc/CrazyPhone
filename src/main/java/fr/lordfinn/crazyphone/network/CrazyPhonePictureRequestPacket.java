@@ -34,6 +34,9 @@ import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
 import fr.lordfinn.crazyphone.utils.NetworkAccess;
 import fr.lordfinn.crazyphone.utils.PhotoResolution;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.UUID;
 
 /**
@@ -43,6 +46,9 @@ import java.util.UUID;
  * {@link CrazyPhonePictureResponsePacket}.
  */
 public record CrazyPhonePictureRequestPacket(UUID photoId, PhotoResolution resolution) implements CustomPacketPayload {
+    // Temporary diagnostic logging for the "viewer shows nothing" investigation - remove once confirmed fixed
+    // live (see FabricPictureCache's matching client-side logging).
+    private static final Logger DEBUG_LOGGER = LoggerFactory.getLogger("crazyphone-picture-debug");
 
     //? if >=1.20.5 {
     /*public static final Type<CrazyPhonePictureRequestPacket> TYPE = new Type<>(
@@ -86,20 +92,40 @@ public record CrazyPhonePictureRequestPacket(UUID photoId, PhotoResolution resol
     private static void handle(ServerPlayer player, UUID photoId, PhotoResolution resolution) {
         Level world = player.level();
         PhotoSavedData.PhotoEntry entry = PhotoSavedData.get(world).getPhoto(photoId);
-        if (entry == null)
+        DEBUG_LOGGER.info("{} request from {} for photo {}: entry={}", resolution, player.getScoreboardName(), photoId,
+                entry == null ? "MISSING" : "owner=" + entry.owner() + " conv=" + entry.conversationId()
+                        + " thumbBytes=" + entry.thumbnail().length + " fullBytes=" + entry.full().length);
+        if (entry == null) {
+            // Empty bytes, not silence - FabricPictureCache marks a request FAILED (so it stops retrying and
+            // the caller can fall back to a placeholder) only once it actually gets a response; not
+            // responding at all leaves it stuck IN_FLIGHT forever with no error anywhere to explain why.
+            NetworkAccess.sendToPlayer(player, new CrazyPhonePictureResponsePacket(photoId, resolution, new byte[0]));
             return;
+        }
 
         // The owner can always fetch their own photo (e.g. opening the full-size viewer from the held item,
         // long after the conversation it was first sent in may have scrolled the message out of view) -
         // otherwise the same LIVE group-membership check every other conversation payload uses, checked
         // against the conversationId stored server-side at upload time, never a client-supplied one.
+        //
+        // Unlike every other request in this mod, this one very plausibly arrives while the player is
+        // holding the Photo item itself rather than their CrazyPhone (the item's own in-hand renderer and
+        // its right-click-to-view both trigger this) - the main-hand-only lookup below would silently starve
+        // that entirely legitimate case (empty requesterNumber -> never authorized -> no response ever sent,
+        // no error either), so it falls back to a phone-ownership scan that doesn't care what's in hand.
         String requesterNumber = GetCrazyPhoneNumberFromMainHandProcedure.execute(player, null);
+        if (requesterNumber.isEmpty())
+            requesterNumber = CrazyPhoneHelper.getOwnedPhoneNumber(world, player.getUUID());
         boolean authorized = !requesterNumber.isEmpty() && (requesterNumber.equals(entry.owner())
                 || CrazyPhoneHelper.getGroupMembers(world, entry.conversationId()).contains(requesterNumber));
-        if (!authorized)
+        DEBUG_LOGGER.info("requesterNumber='{}' authorized={}", requesterNumber, authorized);
+        if (!authorized) {
+            NetworkAccess.sendToPlayer(player, new CrazyPhonePictureResponsePacket(photoId, resolution, new byte[0]));
             return;
+        }
 
         byte[] bytes = resolution == PhotoResolution.THUMBNAIL ? entry.thumbnail() : entry.full();
+        DEBUG_LOGGER.info("Sending {} bytes for {} photo {} to {}", bytes.length, resolution, photoId, player.getScoreboardName());
         NetworkAccess.sendToPlayer(player, new CrazyPhonePictureResponsePacket(photoId, resolution, bytes));
     }
 

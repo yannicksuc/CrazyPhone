@@ -17,16 +17,26 @@ import net.neoforged.api.distmarker.Dist;
 
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.level.Level;
 
 import fr.lordfinn.crazyphone.init.ModItems;
+import fr.lordfinn.crazyphone.utils.Contact;
+import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
 import fr.lordfinn.crazyphone.utils.PhoneTagAccess;
+import fr.lordfinn.crazyphone.utils.PhotoItemData;
 
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 //? if neoforge {
 @EventBusSubscriber(value = {Dist.CLIENT})
 //?}
 public class CrazyPhoneItemInInventoryTickProcedure {
+	private static final DateTimeFormatter PHOTO_DATE_FORMATTER =
+			DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm").withZone(ZoneId.systemDefault());
+
 	//? if neoforge {
 	//? if <1.21.10 {
 	@OnlyIn(Dist.CLIENT)
@@ -57,6 +67,26 @@ public class CrazyPhoneItemInInventoryTickProcedure {
 			}
 			if (!name.isEmpty()) {
 				tooltip.add(Component.translatable("item.crazyphone.lore_owner", name));
+			}
+		} else if (itemstack.getItem() == ModItems.CRAZY_PHONE_PHOTO.get()) {
+			PhotoItemData data = PhotoItemData.fromStack(itemstack);
+			if (data != null) {
+				// This whole class only ever runs client-side (NeoForge: @OnlyIn(Dist.CLIENT) above; Fabric:
+				// ItemTooltipCallback is inherently client-only), so Minecraft.getInstance().level is safe -
+				// it's the synced client copy of PhoneRegistrySavedData, always up to date (see that class's
+				// own doc comment on why it's always broadcast in full).
+				Level level = net.minecraft.client.Minecraft.getInstance().level;
+				Contact contact = level != null ? CrazyPhoneHelper.getContact(level, data.owner()) : null;
+				String authorLabel = contact != null && contact.getName() != null && !contact.getName().isEmpty()
+						? contact.getName() + " (" + data.owner() + ")"
+						: data.owner();
+				tooltip.add(Component.translatable("item.crazyphone.crazy_phone_photo.lore_author",
+								Component.literal(authorLabel).withStyle(net.minecraft.ChatFormatting.YELLOW))
+						.withStyle(net.minecraft.ChatFormatting.GRAY));
+				tooltip.add(Component.translatable("item.crazyphone.crazy_phone_photo.lore_date",
+								Component.literal(PHOTO_DATE_FORMATTER.format(Instant.ofEpochSecond(data.createdMinutes() * 60L)))
+										.withStyle(net.minecraft.ChatFormatting.AQUA))
+						.withStyle(net.minecraft.ChatFormatting.GRAY));
 			}
 		}
 	}

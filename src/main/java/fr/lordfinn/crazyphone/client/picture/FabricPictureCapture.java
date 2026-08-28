@@ -26,7 +26,8 @@ import com.mojang.blaze3d.platform.NativeImage;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
 
-import fr.lordfinn.crazyphone.client.gui.CrazyPhoneCaptureOverlayScreen;
+import fr.lordfinn.crazyphone.Config;
+import fr.lordfinn.crazyphone.client.CrazyPhoneCaptureMode;
 
 import java.io.IOException;
 import java.util.function.BiConsumer;
@@ -37,9 +38,9 @@ import java.util.function.BiConsumer;
 public final class FabricPictureCapture {
     // Small on purpose: this is a "phone camera" feature, not a photography app - keeps upload/storage/
     // texture-cache costs bounded regardless of the player's actual render resolution. Two resolutions are
-    // captured from the SAME screenshot: THUMBNAIL is what's shown by default everywhere (chat bubbles, the
-    // photo item's own icon), FULL is only fetched on demand when a photo is actually opened full-size.
-    public static final int THUMBNAIL_MAX_DIMENSION = 128;
+    // derived from the SAME screenshot: the low-quality preview (target height set by
+    // Config#photoThumbnailPixelHeight) is what's shown by default everywhere (chat bubbles, the photo
+    // item's own icon), FULL is only fetched on demand when a photo is actually opened full-size.
     public static final int FULL_MAX_DIMENSION = 512;
 
     // Set for the span between requestCapture() being called and the deferred capture actually running -
@@ -74,13 +75,13 @@ public final class FabricPictureCapture {
     //?}
     //?}
 
-    // Ticks pending capture requests plus the capture overlay's own zoom lerp, if it's the currently open
-    // screen - called every client tick on both loaders (NeoForge via the event above, Fabric via
-    // CrazyphoneFabricClient's own END_CLIENT_TICK registration, mirroring CallRingtoneManager's shape).
+    // Ticks pending capture requests plus the capture mode's own zoom lerp - called every client tick on
+    // both loaders (NeoForge via the event above, Fabric via CrazyphoneFabricClient's own END_CLIENT_TICK
+    // registration, mirroring CallRingtoneManager's shape). CrazyPhoneCaptureMode#tick is itself a no-op
+    // when capture mode isn't active, so this is safe to call unconditionally every tick.
     public static void tickAll() {
         onClientTick();
-        if (Minecraft.getInstance().screen instanceof CrazyPhoneCaptureOverlayScreen overlay)
-            overlay.onClientTick();
+        CrazyPhoneCaptureMode.tick();
     }
 
     // Hides the phone screen for a moment, captures a clean shot of the world once that's actually taken
@@ -112,9 +113,19 @@ public final class FabricPictureCapture {
     private static void captureBothResolutions(BiConsumer<byte[], byte[]> callback) {
         Minecraft mc = Minecraft.getInstance();
         try (NativeImage full = Screenshot.takeScreenshot(mc.getMainRenderTarget())) {
-            try (NativeImage thumbnail = downscale(full, THUMBNAIL_MAX_DIMENSION);
-                 NativeImage fullScaled = downscale(full, FULL_MAX_DIMENSION)) {
-                callback.accept(thumbnail.asByteArray(), fullScaled.asByteArray());
+            try (NativeImage fullScaled = downscale(full, FULL_MAX_DIMENSION)) {
+                byte[] fullBytes = fullScaled.asByteArray();
+                int targetHeight = Config.photoThumbnailPixelHeight;
+                // 0 means "no separate low-quality preview" and a target at/above the photo's own height
+                // would only ever upscale it - both cases skip the resize and reuse the full bytes as the
+                // preview too, so PhotoSavedData#storePhoto only stores the one copy (see its own doc).
+                if (targetHeight <= 0 || targetHeight >= fullScaled.getHeight()) {
+                    callback.accept(fullBytes, fullBytes);
+                } else {
+                    try (NativeImage thumbnail = downscaleToHeight(fullScaled, targetHeight)) {
+                        callback.accept(thumbnail.asByteArray(), fullBytes);
+                    }
+                }
             }
         } catch (IOException e) {
             callback.accept(null, null);
@@ -138,6 +149,22 @@ public final class FabricPictureCapture {
         double scale = Math.min(1.0, (double) maxDimension / Math.max(width, height));
         int targetWidth = Math.max(1, (int) Math.round(width * scale));
         int targetHeight = Math.max(1, (int) Math.round(height * scale));
+
+        NativeImage target = new NativeImage(targetWidth, targetHeight, false);
+        source.resizeSubRectTo(0, 0, width, height, target);
+        return target;
+    }
+
+    // Same idea as downscale() but anchored on an exact target height instead of "fit within N on the
+    // longer side" - Config#photoThumbnailPixelHeight is specified in target height precisely so a low
+    // value gives a consistently chunky, pixel-art-like preview regardless of the source photo's aspect
+    // ratio. Callers must only pass a targetHeight smaller than source's own height (see
+    // captureBothResolutions - a photo is never upscaled for its preview).
+    private static NativeImage downscaleToHeight(NativeImage source, int targetHeight) {
+        int width = source.getWidth();
+        int height = source.getHeight();
+        double scale = (double) targetHeight / height;
+        int targetWidth = Math.max(1, (int) Math.round(width * scale));
 
         NativeImage target = new NativeImage(targetWidth, targetHeight, false);
         source.resizeSubRectTo(0, 0, width, height, target);

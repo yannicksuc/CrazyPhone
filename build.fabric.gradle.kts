@@ -37,6 +37,10 @@ java.toolchain.languageVersion = JavaLanguageVersion.of(if (minecraftVersionForT
 val minecraftVersion = property("minecraft_version") as String
 val fabricLoaderVersion = property("fabric_loader_version") as String
 val fabricApiVersion = property("fabric_api_version") as String
+// Same boundary as the NeoForge side's own mixinCompatibilityLevel (build.gradle.kts) - duplicated locally
+// since this script's modMetadataProperties map (fabric.mod.json/crazyphone.fabric.mixins.json expansion)
+// is deliberately separate from the NeoForge template's own token map (see that map's own doc comment).
+val mixinCompatibilityLevel = if (minecraftVersion.startsWith("1.20")) "JAVA_17" else "JAVA_21"
 
 dependencies {
     minecraft("com.mojang:minecraft:$minecraftVersion")
@@ -114,6 +118,7 @@ sourceSets.main {
         "fr/lordfinn/crazyphone/item/CrazyPhoneItem.java",
         "fr/lordfinn/crazyphone/utils/RegistryEntry.java",
         "fr/lordfinn/crazyphone/Config.java",
+        "fr/lordfinn/crazyphone/ClientConfig.java",
         "fr/lordfinn/crazyphone/utils/NbtCompat.java",
         "fr/lordfinn/crazyphone/utils/PhoneTagAccess.java",
         "fr/lordfinn/crazyphone/utils/RegistryCompat.java",
@@ -282,14 +287,54 @@ sourceSets.main {
             "fr/lordfinn/crazyphone/network/CrazyPhonePictureRequestPacket.java",
             "fr/lordfinn/crazyphone/network/CrazyPhonePictureResponsePacket.java",
             "fr/lordfinn/crazyphone/network/CrazyPhoneGivePhotoItemPacket.java",
+            "fr/lordfinn/crazyphone/network/CrazyPhoneMyPhotosActionMessage.java",
+            "fr/lordfinn/crazyphone/world/inventory/CrazyPhoneMyPhotosScreenMenu.java",
+            "fr/lordfinn/crazyphone/client/gui/CrazyPhoneMyPhotosScreenScreen.java",
             "fr/lordfinn/crazyphone/item/CrazyPhonePhotoItem.java",
             "fr/lordfinn/crazyphone/client/render/CrazyPhonePhotoItemRenderer.java",
             "fr/lordfinn/crazyphone/client/picture/FabricPictureCapture.java",
             "fr/lordfinn/crazyphone/client/picture/FabricPictureCache.java",
-            "fr/lordfinn/crazyphone/client/CrazyPhoneZoomController.java",
-            "fr/lordfinn/crazyphone/client/gui/CrazyPhoneCaptureOverlayScreen.java",
+            // CrazyPhoneCaptureMode's core (enter/exit/tick/triggerCapture/drawOverlay) is loader-neutral;
+            // the old Screen-based CrazyPhoneCaptureOverlayScreen/CrazyPhoneZoomController it replaced here
+            // are gone entirely (that design couldn't keep the mouse grabbed while framing a shot - a real
+            // Screen always releases it - so looking around while zoomed in was never possible on Fabric).
+            // These five mixins are the Fabric-only equivalents of NeoForge's ViewportEvent.ComputeFov/
+            // InputEvent.MouseScrollingEvent/InputEvent.MouseButton.Pre/RenderHandEvent/RenderGuiEvent.Post,
+            // none of which Fabric API has a direct equivalent for. See crazyphone.fabric.mixins.json,
+            // referenced only from fabric.mod.json.
+            "fr/lordfinn/crazyphone/client/CrazyPhoneCaptureMode.java",
+            "fr/lordfinn/crazyphone/mixin/CrazyPhoneCaptureFovMixin.java",
+            "fr/lordfinn/crazyphone/mixin/CrazyPhoneCaptureHandMixin.java",
+            "fr/lordfinn/crazyphone/mixin/CrazyPhoneCaptureGuiMixin.java",
+            "fr/lordfinn/crazyphone/mixin/CrazyPhoneCaptureScrollMixin.java",
+            "fr/lordfinn/crazyphone/mixin/CrazyPhoneCapturePressMixin.java",
+            // Sneak-presenting a photo (arm pose + centered held-card render) - fully loader-neutral now:
+            // CrazyPhonePresentPose and PlayerPresentPoseMixin have no NeoForge-specific parts left at all,
+            // and the presenting-aware branches live directly in CrazyPhonePhotoItemRenderer (both first- and
+            // third-person) instead of a separate render hook, so no Fabric-only mixin is needed for this
+            // feature beyond the arm-pose one itself.
+            "fr/lordfinn/crazyphone/client/CrazyPhonePresentPose.java",
+            "fr/lordfinn/crazyphone/mixin/PlayerPresentPoseMixin.java",
+            // Live-tunable knobs for the first-person presenting card, plus the /presentdebug client command
+            // that edits them from chat - see CrazyPhonePresentDebug's own doc comment on why (avoiding
+            // another recompile/relaunch round trip for every single 3D-offset guess).
+            "fr/lordfinn/crazyphone/client/CrazyPhonePresentDebug.java",
+            "fr/lordfinn/crazyphone/client/CrazyPhonePresentDebugCommand.java",
+            // Redirects the OTHER (non-holding) hand's bare-arm base offset toward the card too, so both
+            // hands visually appear to grip it instead of just the one actually holding the phone - see
+            // that mixin's own doc comment.
+            "fr/lordfinn/crazyphone/mixin/CrazyPhonePresentHandGripMixin.java",
+            "fr/lordfinn/crazyphone/mixin/CrazyPhonePresentHandGripInvokerMixin.java",
             "fr/lordfinn/crazyphone/client/gui/CrazyPhonePhotoViewerScreen.java",
+            // Punch-to-shoot - isHoldingPhone/clientOpenOverlay are loader-neutral, only the NeoForge event
+            // handlers inside are gated; Fabric wires clientOpenOverlay via ClientPreAttackCallback instead
+            // (see CrazyphoneFabricClient), which needs no separate empty-click handler of its own.
+            "fr/lordfinn/crazyphone/item/CrazyPhoneCaptureShortcut.java",
             "fr/lordfinn/crazyphone/utils/PhotoItemData.java",
+            // "Duplicate a photo with paper" crafting recipe - see CrazyPhoneDuplicatePhotoRecipe's own doc
+            // comment (NeoForge-1.21.10 not backported yet; no equivalent Fabric node exists in this project).
+            "fr/lordfinn/crazyphone/recipe/CrazyPhoneDuplicatePhotoRecipe.java",
+            "fr/lordfinn/crazyphone/init/ModRecipes.java",
             // Task #164 (SavedData/player-attachment persistence): Soulbound enchantment death-drop
             // handling. ModEnchantments is loader-agnostic by inspection (only RegistryAccess/Registries.
             // ENCHANTMENT, no NeoForge imports); SoulboundStash now carries a Fabric Codec branch and
@@ -316,7 +361,8 @@ val modMetadataProperties = mapOf(
     "mod_version" to property("mod_version"),
     "mod_authors" to property("mod_authors"),
     "mod_description" to property("mod_description"),
-    "fabric_loader_version_range" to property("fabric_loader_version_range")
+    "fabric_loader_version_range" to property("fabric_loader_version_range"),
+    "mixin_compatibility_level" to mixinCompatibilityLevel
 )
 val generateModMetadata = tasks.register<ProcessResources>("generateModMetadata") {
     inputs.properties(modMetadataProperties)

@@ -134,8 +134,11 @@ public record CrazyphoneHomeScreenButtonMessage(int buttonID, int x, int y, int 
 		// security measure to prevent arbitrary chunk generation
 		if (!world.hasChunkAt(new BlockPos(x, y, z)))
 			return;
-		// buttonID 0 (take photo) / 1 (picture folders) were the Camera-mod-backed standalone capture/gallery
-		// buttons, removed along with Camera mod and the home screen icons that used to send them.
+		// buttonID 0 (take photo) is purely client-side - see CrazyphoneHomeScreenScreen's own Photo button,
+		// which skips this packet's generic path entirely.
+		if (buttonID == 1) {
+			ScreenMenuUtils.openPhoneMyPhotosMenu(entity, InteractionHand.MAIN_HAND, "");
+		}
 		if (buttonID == 2) {
 			ScreenMenuUtils.openPhoneContactsMenu(entity, InteractionHand.MAIN_HAND);
 		}

@@ -11,6 +11,7 @@ import java.util.Set;
 import io.netty.buffer.Unpooled;
 import fr.lordfinn.crazyphone.data.PhoneAttachmentTypes;
 import fr.lordfinn.crazyphone.data.PhoneRegistrySavedData;
+import fr.lordfinn.crazyphone.data.PhotoSavedData;
 import fr.lordfinn.crazyphone.data.PlayerPhoneState;
 import fr.lordfinn.crazyphone.procedures.CrazyPhoneGetContactsProcedure;
 import fr.lordfinn.crazyphone.procedures.CrazyPhoneGetGroupsProcedure;
@@ -29,6 +30,7 @@ import java.util.UUID;
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneMayorCandidateScreenMenu;
 //?}
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneMayorsCandidatesListMenu;
+import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneMyPhotosScreenMenu;
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhonePasswordScreenMenu;
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneSignInScreenMenu;
 import fr.lordfinn.crazyphone.world.inventory.CrazyphoneHomeScreenMenu;
@@ -359,6 +361,85 @@ public class ScreenMenuUtils {
         }
     }
     //?}
+
+    /** Opens the flat "My Photos" gallery - every photo {@code player}'s phone owns, resolved server-side
+     * right now (never trust a client-cached list). {@code conversationId} empty means Delete/Take mode
+     * (opened from the home screen); non-empty means Send mode targeting that conversation (opened from
+     * inside it via the conversation screen's "attach existing photo" button) - simpler and less fragile
+     * than the old Camera-mod-era screen-history-introspection heuristic this replaces, same end result. */
+    public static void openPhoneMyPhotosMenu(Player player, InteractionHand hand, String conversationId) {
+        if (player instanceof ServerPlayer) {
+            String ownerNumber = GetCrazyPhoneNumberFromMainHandProcedure.execute(player, null);
+            List<UUID> photoIds = PhotoSavedData.get(player.level()).getPhotoIdsForOwner(ownerNumber);
+
+            //? if >=1.20.5 {
+            /*RegistryAccess registryAccess = player.registryAccess();
+            *///? }
+            //? if neoforge {
+            player.openMenu(new MenuProvider() {
+                @Override
+                public Component getDisplayName() {
+                    return Component.translatable("item.crazyphone.crazy_phone");
+                }
+
+                @Override
+                public AbstractContainerMenu createMenu(int id, Inventory inventory, Player player) {
+                    //? if >=1.20.5 {
+                    /*RegistryFriendlyByteBuf packetBuffer = new RegistryFriendlyByteBuf(Unpooled.buffer(), registryAccess);
+                    *///? } else {
+                    FriendlyByteBuf packetBuffer = new FriendlyByteBuf(Unpooled.buffer());
+                    //?}
+                    populateBufferWithMyPhotosData(packetBuffer, player, hand, conversationId, photoIds);
+                    try {
+                        return new CrazyPhoneMyPhotosScreenMenu(id, inventory, packetBuffer);
+                    } catch (Exception e) {
+                        throw new RuntimeException("Failed to create menu instance", e);
+                    }
+                }
+            }, buf -> populateBufferWithMyPhotosData(buf, player, hand, conversationId, photoIds));
+            //?}
+            //? if fabric && >=1.20.5 {
+            /*player.openMenu(new net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory<RegistryFriendlyByteBuf>() {
+                @Override
+                public Component getDisplayName() {
+                    return Component.translatable("item.crazyphone.crazy_phone");
+                }
+
+                @Override
+                public AbstractContainerMenu createMenu(int id, Inventory inventory, Player player) {
+                    RegistryFriendlyByteBuf packetBuffer = new RegistryFriendlyByteBuf(Unpooled.buffer(), registryAccess);
+                    populateBufferWithMyPhotosData(packetBuffer, player, hand, conversationId, photoIds);
+                    try {
+                        return new CrazyPhoneMyPhotosScreenMenu(id, inventory, packetBuffer);
+                    } catch (Exception e) {
+                        throw new RuntimeException("Failed to create menu instance", e);
+                    }
+                }
+
+                @Override
+                public RegistryFriendlyByteBuf getScreenOpeningData(ServerPlayer serverPlayer) {
+                    RegistryFriendlyByteBuf packetBuffer = new RegistryFriendlyByteBuf(Unpooled.buffer(), registryAccess);
+                    populateBufferWithMyPhotosData(packetBuffer, player, hand, conversationId, photoIds);
+                    return packetBuffer;
+                }
+            });
+            *///?}
+        }
+    }
+
+    //? if >=1.20.5 {
+    /*private static void populateBufferWithMyPhotosData(RegistryFriendlyByteBuf packetBuffer, Player player,
+    *///? } else {
+    private static void populateBufferWithMyPhotosData(FriendlyByteBuf packetBuffer, Player player,
+    //?}
+            InteractionHand hand, String conversationId, List<UUID> photoIds) {
+        packetBuffer.writeBlockPos(player.blockPosition());
+        packetBuffer.writeByte(hand == InteractionHand.MAIN_HAND ? 0 : 1);
+        packetBuffer.writeUtf(conversationId);
+        packetBuffer.writeVarInt(photoIds.size());
+        for (UUID id : photoIds)
+            packetBuffer.writeUUID(id);
+    }
 
     public static void openPhoneContactsMenu(Player player, InteractionHand hand) {
         if (player instanceof ServerPlayer) {

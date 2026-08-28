@@ -97,6 +97,22 @@ public class CrazyPhoneHelper {
     }
     //?}
 
+    /** Resolves a player's own phone number WITHOUT requiring their CrazyPhone item to currently be in hand -
+     * unlike {@link GetCrazyPhoneNumberFromMainHandProcedure} (the fast path every menu-opening flow uses,
+     * where holding the phone to interact with it is a given), this is for requests that can legitimately
+     * happen while the player is holding something ELSE the phone owns instead - a physical Photo item, for
+     * instance. Reverse-scans the registry's own "uuid" field (the owning player's uuid, written once at
+     * registration time - see RegisterNewPhoneFromFormProcedure) for a phone owned by this player. */
+    public static String getOwnedPhoneNumber(Level world, UUID playerUuid) {
+        CompoundTag phones = PhoneRegistrySavedData.get(world).phones;
+        String targetUuid = playerUuid.toString();
+        for (String number : NbtCompat.keySet(phones)) {
+            if (phones.get(number) instanceof CompoundTag phoneTag && targetUuid.equals(NbtCompat.getString(phoneTag, "uuid")))
+                return number;
+        }
+        return "";
+    }
+
     public static Contact getContact(Level world, String number) {
         Tag potentialContact = PhoneRegistrySavedData.get(world).phones.get(number);
         if (potentialContact != null && potentialContact instanceof CompoundTag contactTag) {

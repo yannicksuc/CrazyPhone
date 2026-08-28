@@ -29,6 +29,7 @@ import fr.lordfinn.crazyphone.client.gui.CrazyPhoneMayorCandidateScreenScreen;
 //?}
 import fr.lordfinn.crazyphone.client.gui.CrazyPhonePasswordScreenScreen;
 import fr.lordfinn.crazyphone.client.gui.CrazyPhoneMayorsCandidatesListScreen;
+import fr.lordfinn.crazyphone.client.gui.CrazyPhoneMyPhotosScreenScreen;
 import fr.lordfinn.crazyphone.client.gui.CrazyPhoneConversationScreen;
 import fr.lordfinn.crazyphone.client.gui.CrazyPhoneContactsScreenScreen;
 import fr.lordfinn.crazyphone.client.gui.CrazyPhoneContactInfoScreenScreen;
@@ -76,6 +77,7 @@ public class ModScreens {
 		event.register(ModMenus.CRAZY_PHONE_CONTACT_INFO_SCREEN.get(), CrazyPhoneContactInfoScreenScreen::new);
 		event.register(ModMenus.CRAZY_PHONE_CONVERSATION.get(), CrazyPhoneConversationScreen::new);
 		event.register(ModMenus.CRAZY_PHONE_MAYORS_CANDIDATES_LIST.get(), CrazyPhoneMayorsCandidatesListScreen::new);
+		event.register(ModMenus.CRAZY_PHONE_MY_PHOTOS_SCREEN.get(), CrazyPhoneMyPhotosScreenScreen::new);
 		event.register(ModMenus.CRAZY_PHONE_MAYOR_CANDIDATE_SCREEN.get(), CrazyPhoneMayorCandidateScreenScreen::new);
 		event.register(ModMenus.CRAZY_PHONE_GROUP_SETTINGS_SCREEN.get(), CrazyPhoneGroupSettingsScreenScreen::new);
 		event.register(ModMenus.CRAZY_PHONE_CALLING_SCREEN.get(), CrazyPhoneCallingScreenScreen::new);
@@ -95,8 +97,9 @@ public class ModScreens {
 		MenuScreens.register(ModMenus.CRAZY_PHONE_CONTACT_INFO_SCREEN.get(), CrazyPhoneContactInfoScreenScreen::new);
 		MenuScreens.register(ModMenus.CRAZY_PHONE_CONVERSATION.get(), CrazyPhoneConversationScreen::new);
 		MenuScreens.register(ModMenus.CRAZY_PHONE_MAYORS_CANDIDATES_LIST.get(), CrazyPhoneMayorsCandidatesListScreen::new);
+		MenuScreens.register(ModMenus.CRAZY_PHONE_MY_PHOTOS_SCREEN.get(), CrazyPhoneMyPhotosScreenScreen::new);
 		MenuScreens.register(ModMenus.CRAZY_PHONE_GROUP_SETTINGS_SCREEN.get(), CrazyPhoneGroupSettingsScreenScreen::new);
-		// TODO(#165): picture-folders/pictures/mayor-candidate screens wait on the Camerapture integration.
+		// Mayor-candidate poster screen stays NeoForge-only, matching the feature itself.
 		// TODO: calling/in-call/incoming-call screens wait on a voicechat.CallRegistry Fabric port.
 	}
 	*///?}

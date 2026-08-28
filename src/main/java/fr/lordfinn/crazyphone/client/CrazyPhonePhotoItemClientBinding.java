@@ -11,10 +11,12 @@ import net.neoforged.fml.common.Mod.EventBusSubscriber;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 //?}
 
+import fr.lordfinn.crazyphone.item.CrazyPhoneCaptureShortcut;
 import fr.lordfinn.crazyphone.item.CrazyPhonePhotoItem;
 
 /**
- * Wires {@link CrazyPhonePhotoItem#clientViewerOpener} on NeoForge. Deliberately a class of its own, never
+ * Wires {@link CrazyPhonePhotoItem#clientViewerOpener} and {@link CrazyPhoneCaptureShortcut#clientOpenOverlay}
+ * on NeoForge. Deliberately a class of its own, never
  * instantiated from common code (only ever used via NeoForge's own annotation-driven event scanning, exactly
  * like {@code CallRingtoneManager}/{@code CrazyPhoneItemProperties}) - unlike {@code CrazyPhonePhotoItem}
  * itself, which IS instantiated from common code (ModItems' DeferredRegister) and crashed a dedicated server
@@ -34,8 +36,11 @@ public class CrazyPhonePhotoItemClientBinding {
     //? if neoforge {
     @SubscribeEvent
     public static void onClientSetup(FMLClientSetupEvent event) {
-        event.enqueueWork(() -> CrazyPhonePhotoItem.clientViewerOpener = photoId ->
-                net.minecraft.client.Minecraft.getInstance().setScreen(new fr.lordfinn.crazyphone.client.gui.CrazyPhonePhotoViewerScreen(photoId)));
+        event.enqueueWork(() -> {
+            CrazyPhonePhotoItem.clientViewerOpener = photoId ->
+                    net.minecraft.client.Minecraft.getInstance().setScreen(new fr.lordfinn.crazyphone.client.gui.CrazyPhonePhotoViewerScreen(photoId, true));
+            CrazyPhoneCaptureShortcut.clientOpenOverlay = () -> CrazyPhoneCaptureMode.enter("");
+        });
     }
     //?}
 }

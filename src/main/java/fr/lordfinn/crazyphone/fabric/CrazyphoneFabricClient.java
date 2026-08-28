@@ -17,6 +17,7 @@ import fr.lordfinn.crazyphone.client.PhoneClickableCursorHandler;
 import fr.lordfinn.crazyphone.procedures.CrazyPhoneItemInInventoryTickProcedure;
 import fr.lordfinn.crazyphone.client.CallRingtoneManager;
 import fr.lordfinn.crazyphone.client.picture.FabricPictureCapture;
+import fr.lordfinn.crazyphone.item.CrazyPhoneCaptureShortcut;
 import fr.lordfinn.crazyphone.item.CrazyPhonePhotoItem;
 
 public class CrazyphoneFabricClient implements ClientModInitializer {
@@ -30,8 +31,24 @@ public class CrazyphoneFabricClient implements ClientModInitializer {
         CallRingtoneManager.register();
         CrazyPhonePhotoItem.registerFabricRenderer();
         CrazyPhonePhotoItem.clientViewerOpener = photoId ->
-                net.minecraft.client.Minecraft.getInstance().setScreen(new fr.lordfinn.crazyphone.client.gui.CrazyPhonePhotoViewerScreen(photoId));
+                net.minecraft.client.Minecraft.getInstance().setScreen(new fr.lordfinn.crazyphone.client.gui.CrazyPhonePhotoViewerScreen(photoId, true));
         ClientTickEvents.END_CLIENT_TICK.register(client -> FabricPictureCapture.tickAll());
+        // FabricPictureCache's maps are static and otherwise survive a disconnect - a request still
+        // IN_FLIGHT the moment the connection drops never gets its response, permanently blocking that one
+        // photo from ever loading again even after reconnecting (see that class's own reset() doc comment).
+        net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents.JOIN.register(
+                (handler, sender, client) -> fr.lordfinn.crazyphone.client.picture.FabricPictureCache.reset());
+        fr.lordfinn.crazyphone.client.CrazyPhonePresentDebugCommand.register();
+        // Punch-to-shoot: fires every tick the attack key is held, clickCount != 0 only on the actual
+        // click-down tick (see ClientPreAttackCallback's own doc comment) - returning true cancels the
+        // vanilla attack/block-break/hand-swing entirely, covering block/entity/empty-air uniformly (unlike
+        // NeoForge, which needs three separate events for the same three cases - see CrazyPhoneCaptureShortcut).
+        net.fabricmc.fabric.api.event.client.player.ClientPreAttackCallback.EVENT.register((client, player, clickCount) -> {
+            if (clickCount == 0 || !CrazyPhoneCaptureShortcut.isHoldingPhone(player))
+                return false;
+            fr.lordfinn.crazyphone.client.CrazyPhoneCaptureMode.enter("");
+            return true;
+        });
         CrazyphoneFabric.LOGGER.info("CrazyPhone (Fabric) client initializing");
     }
 }

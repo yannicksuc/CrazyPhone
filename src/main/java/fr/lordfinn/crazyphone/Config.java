@@ -42,6 +42,10 @@ public class Config {
             .comment("Maximum number of photos (both resolutions) kept on disk per owning phone number - the oldest is discarded once a new one exceeds this, independent of conversation history trimming.")
             .defineInRange("maxPhotosStoredPerOwner", 300, 10, 5000);
 
+    private static final ModConfigSpec.IntValue PHOTO_THUMBNAIL_PIXEL_HEIGHT = BUILDER
+            .comment("Target height in pixels for a photo's low-quality preview (thumbnails, chat bubbles) - lower looks more like pixel art, higher looks closer to the full photo. 0 disables the separate preview entirely (the full photo is reused as-is, so nothing extra is stored). If the photo's own height is already shorter than this, no resize happens either - a photo is never upscaled for its preview.")
+            .defineInRange("photoThumbnailPixelHeight", 16, 0, 256);
+
     private static final ModConfigSpec.BooleanValue MAYOR_ELECTION_FEATURE_ENABLED = BUILDER
             .comment("Whether the mayor election/voting feature (accessible from the phone) is enabled.")
             .define("mayorElectionFeatureEnabled", true);
@@ -103,6 +107,7 @@ public class Config {
     public static int maxMessagesSentPerRequest;
     public static int maxImagesStoredPerConversation;
     public static int maxPhotosStoredPerOwner;
+    public static int photoThumbnailPixelHeight;
     public static boolean mayorElectionFeatureEnabled;
     public static boolean callsFeatureEnabled;
     public static boolean voiceMessagesFeatureEnabled;
@@ -121,6 +126,7 @@ public class Config {
         maxMessagesSentPerRequest = MAX_MESSAGES_SENT_PER_REQUEST.get();
         maxImagesStoredPerConversation = MAX_IMAGES_STORED_PER_CONVERSATION.get();
         maxPhotosStoredPerOwner = MAX_PHOTOS_STORED_PER_OWNER.get();
+        photoThumbnailPixelHeight = PHOTO_THUMBNAIL_PIXEL_HEIGHT.get();
         mayorElectionFeatureEnabled = MAYOR_ELECTION_FEATURE_ENABLED.get();
         callsFeatureEnabled = CALLS_FEATURE_ENABLED.get();
         voiceMessagesFeatureEnabled = VOICE_MESSAGES_FEATURE_ENABLED.get();
@@ -174,6 +180,7 @@ public class Config {
     public static int maxMessagesSentPerRequest = 100;
     public static int maxImagesStoredPerConversation = 50;
     public static int maxPhotosStoredPerOwner = 300;
+    public static int photoThumbnailPixelHeight = 16;
     public static boolean mayorElectionFeatureEnabled = true;
     public static boolean callsFeatureEnabled = true;
     public static boolean voiceMessagesFeatureEnabled = true;

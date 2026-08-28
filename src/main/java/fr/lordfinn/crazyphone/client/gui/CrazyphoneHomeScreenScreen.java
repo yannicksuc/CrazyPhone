@@ -7,6 +7,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 //?}
 import fr.lordfinn.crazyphone.utils.NetworkAccess;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.ImageButton;
 import net.minecraft.network.chat.Component;
@@ -39,12 +40,9 @@ public class CrazyphoneHomeScreenScreen extends CrazyPhoneDefaultScreenScreen<Cr
     public void init() {
         super.init();
 
-        // Default positions. The photo/albums icons that used to sit here were the Camera-mod-backed
-        // standalone capture/gallery entry points (no target conversation) - removed along with Camera mod
-        // itself, since the native pipeline always ties a photo to the conversation it's taken in (see the
-        // camera icon inside CrazyPhoneConversationScreen instead). Left as a TODO for whoever picks the
-        // home screen's next layout pass: contacts/elections currently just keep their original coordinates,
-        // leaving open space where those two icons used to be.
+        // Default positions
+        int photoX = this.leftPos + 12;
+        int albumsX = this.leftPos + 61;
         int contactsX = this.leftPos + 34;
 
         boolean isElection = PhoneRegistrySavedData
@@ -55,6 +53,24 @@ public class CrazyphoneHomeScreenScreen extends CrazyPhoneDefaultScreenScreen<Cr
             contactsX -= 26;
         }
 
+        // Photo: purely client-side, opens the same capture overlay the conversation camera icon and
+        // punch-to-shoot use - bypasses addImageButton's generic send-packet-then-handleButtonAction
+        // machinery entirely since there's nothing server-authoritative about framing a shot.
+        net.minecraft.client.gui.components.ImageButton photoButton = new net.minecraft.client.gui.components.ImageButton(
+                photoX, this.topPos + 28, 46, 62,
+                new net.minecraft.client.gui.components.WidgetSprites(
+                        Crazyphone.parseId("crazyphone:textures/screens/crazyphone-photo-icon.png"),
+                        Crazyphone.parseId("crazyphone:textures/screens/crazyphone-photo-icon-hover.png")),
+                e -> fr.lordfinn.crazyphone.client.CrazyPhoneCaptureMode.enter("")) {
+            @Override
+            public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
+                fr.lordfinn.crazyphone.utils.GuiCompat.blit(guiGraphics, sprites.get(isActive(), isHoveredOrFocused()), getX(), getY(), 0, width, height);
+            }
+        };
+        guistate.put("button:imagebutton_photo", photoButton);
+        this.addRenderableWidget(photoButton);
+
+        addImageButton("imagebutton_albums", 1, "crazyphone-album-icon", albumsX, this.topPos + 28, 52, 62);
         addImageButton("imagebutton_contacts", 2, "crazyphone-contacts-icon", contactsX, this.topPos + 92, 53, 66);
     }
 

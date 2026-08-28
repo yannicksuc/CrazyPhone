@@ -183,6 +183,13 @@ public record CrazyPhoneConversationButtonMessage(int buttonID, int x, int y, in
 			// center of the screen on every single message sent. The sender's own message is instead shown
 			// via an optimistic local append in CrazyPhoneConversationScreen's send handler - no server
 			// round trip, no menu reopen, no cursor jump.
+		} else if (buttonID == 1) {
+			// "Attach an existing photo" - opens the flat My Photos gallery already in send mode, targeting
+			// this conversation (see ScreenMenuUtils#openPhoneMyPhotosMenu) - skips the old picture-folders
+			// album-browsing step entirely.
+			String conversationId = textstate.containsKey("conversationId") ? textstate.get("conversationId") : "";
+			if (!conversationId.isEmpty())
+				ScreenMenuUtils.openPhoneMyPhotosMenu(entity, InteractionHand.MAIN_HAND, conversationId);
 		} else if (buttonID == 2) {
 			String conversationId = textstate.containsKey("conversationId") ? textstate.get("conversationId") : "";
 			if (conversationId.isEmpty())

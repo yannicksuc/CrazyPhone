@@ -23,6 +23,11 @@ import net.minecraft.world.level.saveddata.SavedDataType;
 import fr.lordfinn.crazyphone.Config;
 import fr.lordfinn.crazyphone.utils.NbtCompat;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import javax.annotation.Nullable;
 
@@ -88,14 +93,19 @@ public class PhotoSavedData extends SavedData {
     *///?}
 
     /** Stores a freshly-captured photo under a new random id, evicting the owner's oldest photo first if
-     * this pushes them over {@link Config#maxPhotosStoredPerOwner}. */
+     * this pushes them over {@link Config#maxPhotosStoredPerOwner}. When the caller had no separate
+     * low-quality preview to offer (photoThumbnailPixelHeight disabled, or the source was already shorter
+     * than the configured target - see FabricPictureCapture#captureBothResolutions), thumbnailPng and
+     * fullPng are the exact same bytes - stored once, not twice (see the "thumbnail" tag omission below and
+     * getPhoto's matching fallback). */
     public UUID storePhoto(String owner, String conversationId, byte[] thumbnailPng, byte[] fullPng, int createdMinutes) {
         UUID photoId = UUID.randomUUID();
         CompoundTag entry = new CompoundTag();
         entry.putString("owner", owner);
         entry.putString("conversationId", conversationId);
         entry.putInt("created", createdMinutes);
-        entry.put("thumbnail", new ByteArrayTag(thumbnailPng));
+        if (!Arrays.equals(thumbnailPng, fullPng))
+            entry.put("thumbnail", new ByteArrayTag(thumbnailPng));
         entry.put("full", new ByteArrayTag(fullPng));
         photos.put(photoId.toString(), entry);
 
@@ -116,13 +126,49 @@ public class PhotoSavedData extends SavedData {
     public @Nullable PhotoEntry getPhoto(UUID photoId) {
         if (!(photos.get(photoId.toString()) instanceof CompoundTag entry))
             return null;
-        byte[] thumbnail = entry.get("thumbnail") instanceof ByteArrayTag tag ? tag.getAsByteArray() : new byte[0];
         byte[] full = entry.get("full") instanceof ByteArrayTag tag ? tag.getAsByteArray() : new byte[0];
+        // No separate "thumbnail" tag means it was never stored distinct from "full" - see storePhoto.
+        byte[] thumbnail = entry.get("thumbnail") instanceof ByteArrayTag tag ? tag.getAsByteArray() : full;
         return new PhotoEntry(NbtCompat.getString(entry, "owner"), NbtCompat.getString(entry, "conversationId"),
                 NbtCompat.getInt(entry, "created"), thumbnail, full);
     }
 
     public record PhotoEntry(String owner, String conversationId, int createdMinutes, byte[] thumbnail, byte[] full) {
+    }
+
+    /** Every photo id owned by this phone number, newest first (for the "My Photos" gallery - reverse of
+     * {@link #photosByOwner}'s own oldest-first eviction order). */
+    public List<UUID> getPhotoIdsForOwner(String owner) {
+        List<UUID> result = new ArrayList<>();
+        if (photosByOwner.get(owner) instanceof ListTag ownerList) {
+            for (Tag t : ownerList)
+                result.add(UUID.fromString(NbtCompat.asString(t)));
+        }
+        Collections.reverse(result);
+        return result;
+    }
+
+    /** Permanently removes the given photos from this owner's list (and their bytes). Ids not owned by
+     * {@code owner} (or already gone) are silently skipped - never trust a client-supplied id set as
+     * authoritative without this owner check. */
+    public void deletePhotos(String owner, Set<UUID> photoIds) {
+        if (!(photosByOwner.get(owner) instanceof ListTag ownerList))
+            return;
+        ListTag updated = new ListTag();
+        boolean changed = false;
+        for (Tag t : ownerList) {
+            String idString = NbtCompat.asString(t);
+            if (photoIds.contains(UUID.fromString(idString))) {
+                photos.remove(idString);
+                changed = true;
+            } else {
+                updated.add(t);
+            }
+        }
+        if (changed) {
+            photosByOwner.put(owner, updated);
+            setDirty();
+        }
     }
 
     public static PhotoSavedData get(LevelAccessor world) {

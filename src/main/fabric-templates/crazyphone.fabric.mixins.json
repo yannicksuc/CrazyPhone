@@ -5,7 +5,11 @@
   "compatibilityLevel": "${mixin_compatibility_level}",
   "mixins": [],
   "client": [
-    "MouseHandlerCursorMixin",
+    "CrazyPhoneCaptureFovMixin",
+    "CrazyPhoneCaptureHandMixin",
+    "CrazyPhoneCaptureGuiMixin",
+    "CrazyPhoneCaptureScrollMixin",
+    "CrazyPhoneCapturePressMixin",
     "PlayerPresentPoseMixin",
     "CrazyPhonePresentHandGripMixin",
     "CrazyPhonePresentHandGripInvokerMixin"

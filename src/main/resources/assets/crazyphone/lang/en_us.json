@@ -14,6 +14,8 @@
   "item.crazyphone.custom_name": "CrazyPhone of %s",
   "item.crazyphone.lore_number": "Number: %s",
   "item.crazyphone.lore_owner": "Owner: %s",
+  "item.crazyphone.crazy_phone_photo.lore_author": "Taken by: %s",
+  "item.crazyphone.crazy_phone_photo.lore_date": "Taken on: %s",
 
   "message.crazyphone.unknown_contact": "Unknown",
   "message.crazyphone.unknown_number": "Unknown number: %s",
@@ -132,8 +134,19 @@
 
   "gui.crazyphone.crazy_phone_mayors_candidates_list.title": "Mayor candidates",
 
+  "gui.crazyphone.crazy_phone_my_photos_screen.title": "My Photos",
+  "gui.crazyphone.crazy_phone_my_photos_screen.button_delete": "Delete",
+  "gui.crazyphone.crazy_phone_my_photos_screen.button_take": "Take",
+  "gui.crazyphone.crazy_phone_my_photos_screen.button_send": "Send",
+  "gui.crazyphone.crazy_phone_my_photos_screen.tooltip_select_photo": "Select a photo first",
+  "gui.crazyphone.crazy_phone_my_photos_screen.tooltip_delete_selected": "Delete the selected photos",
+  "gui.crazyphone.crazy_phone_my_photos_screen.tooltip_take_selected": "Get the selected photos as items",
+  "gui.crazyphone.crazy_phone_my_photos_screen.tooltip_send_selected": "Send the selected photos to this conversation",
+
   "gui.crazyphone.crazy_phone_conversation.message": "Write a message...",
   "gui.crazyphone.crazy_phone_conversation.button_envoyer": ">",
+  "gui.crazyphone.crazy_phone_conversation.button_attach_photo": "🖼",
+  "gui.crazyphone.crazy_phone_conversation.tooltip_attach_photo": "Attach an existing photo",
   "gui.crazyphone.crazy_phone_conversation.click_to_zoom": "Click to zoom on the image",
   "gui.crazyphone.crazy_phone_conversation.tooltip_send_image": "Send an image",
   "gui.crazyphone.crazy_phone_conversation.tooltip_send_image_disabled": "Sending images is disabled on this server",

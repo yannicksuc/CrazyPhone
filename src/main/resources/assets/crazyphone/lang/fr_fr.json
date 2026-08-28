@@ -14,6 +14,8 @@
   "item.crazyphone.custom_name": "CrazyPhone de %s",
   "item.crazyphone.lore_number": "Numéro : %s",
   "item.crazyphone.lore_owner": "Proprio : %s",
+  "item.crazyphone.crazy_phone_photo.lore_author": "Prise par : %s",
+  "item.crazyphone.crazy_phone_photo.lore_date": "Prise le : %s",
 
   "message.crazyphone.unknown_contact": "Inconnu",
   "message.crazyphone.unknown_number": "Numéro inconnu : %s",
@@ -132,8 +134,19 @@
 
   "gui.crazyphone.crazy_phone_mayors_candidates_list.title": "Candidats à la mairie",
 
+  "gui.crazyphone.crazy_phone_my_photos_screen.title": "Mes photos",
+  "gui.crazyphone.crazy_phone_my_photos_screen.button_delete": "Supprimer",
+  "gui.crazyphone.crazy_phone_my_photos_screen.button_take": "Récupérer",
+  "gui.crazyphone.crazy_phone_my_photos_screen.button_send": "Envoyer",
+  "gui.crazyphone.crazy_phone_my_photos_screen.tooltip_select_photo": "Sélectionne d'abord une photo",
+  "gui.crazyphone.crazy_phone_my_photos_screen.tooltip_delete_selected": "Supprimer les photos sélectionnées",
+  "gui.crazyphone.crazy_phone_my_photos_screen.tooltip_take_selected": "Récupérer les photos sélectionnées sous forme d'objets",
+  "gui.crazyphone.crazy_phone_my_photos_screen.tooltip_send_selected": "Envoyer les photos sélectionnées dans cette conversation",
+
   "gui.crazyphone.crazy_phone_conversation.message": "Ecrire un message...",
   "gui.crazyphone.crazy_phone_conversation.button_envoyer": ">",
+  "gui.crazyphone.crazy_phone_conversation.button_attach_photo": "🖼",
+  "gui.crazyphone.crazy_phone_conversation.tooltip_attach_photo": "Joindre une photo existante",
   "gui.crazyphone.crazy_phone_conversation.click_to_zoom": "Clique pour zoomer sur l'image",
   "gui.crazyphone.crazy_phone_conversation.tooltip_send_image": "Envoyer une image",
   "gui.crazyphone.crazy_phone_conversation.tooltip_send_image_disabled": "L'envoi d'images est désactivé sur ce serveur",

@@ -106,12 +106,21 @@ public record CrazyPhoneUploadPicturePacket(String conversationId, byte[] thumbn
         }
         Level world = player.level();
         String senderNumber = GetCrazyPhoneNumberFromMainHandProcedure.execute(player, null);
-        if (senderNumber.isEmpty() || !CrazyPhoneHelper.getGroupMembers(world, conversationId).contains(senderNumber))
+        if (senderNumber.isEmpty())
+            return;
+
+        // Empty conversationId means a standalone shot (taken via the home screen's Photo icon or the
+        // punch-to-shoot shortcut, neither of which has a target conversation) - saved to the phone's own
+        // photo list only, never posted as a message anywhere. A real conversationId still needs the usual
+        // live-membership check.
+        boolean standalone = conversationId.isEmpty();
+        if (!standalone && !CrazyPhoneHelper.getGroupMembers(world, conversationId).contains(senderNumber))
             return;
 
         int timestampInMinutes = (int) (Instant.now().getEpochSecond() / 60);
         UUID photoId = PhotoSavedData.get(world).storePhoto(senderNumber, conversationId, thumbnailPng, fullPng, timestampInMinutes);
-        CrazyPhoneHelper.addImageMessage(world, conversationId, senderNumber, photoId, timestampInMinutes);
+        if (!standalone)
+            CrazyPhoneHelper.addImageMessage(world, conversationId, senderNumber, photoId, timestampInMinutes);
     }
 
     //? if neoforge {

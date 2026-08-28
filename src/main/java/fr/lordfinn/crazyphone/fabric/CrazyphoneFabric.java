@@ -18,6 +18,7 @@ package fr.lordfinn.crazyphone.fabric;
 import fr.lordfinn.crazyphone.init.ModSounds;
 import fr.lordfinn.crazyphone.init.ModTabs;
 import fr.lordfinn.crazyphone.init.ModMenus;
+import fr.lordfinn.crazyphone.init.ModRecipes;
 import fr.lordfinn.crazyphone.data.PhoneAttachmentTypes;
 import fr.lordfinn.crazyphone.command.ModCommands;
 import fr.lordfinn.crazyphone.data.OrphanedCallCleanup;
@@ -36,6 +37,7 @@ public class CrazyphoneFabric implements ModInitializer {
         ModSounds.register();
         ModTabs.register();
         ModMenus.register();
+        ModRecipes.register();
         ModPackets.registerCommon();
         ModPackets.registerServer();
         PhoneAttachmentTypes.register();
