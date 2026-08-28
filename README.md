@@ -104,15 +104,13 @@ primary development target; everything else is kept in sync with it.
 | Mayor election | ✅ | ✅ | ✅ | — | ✅ |
 | Native camera (capture/viewer/photo item/My Photos) | ✅ | ✅ | — *(pending)* | — | ✅ |
 | Sneak-presenting (hold a photo up, two-hand grip) | ✅ | ✅ | — *(pending)* | — | ✅ |
-| Voice calls & voice messages | — *(see below)* | ✅ *(SVC)* | ✅ *(SVC)* | — | — |
+| Voice calls & voice messages | ✅ *(SVC)* | ✅ *(SVC)* | ✅ *(SVC)* | — | — |
 | Soulbound enchantment | — | ✅ | ✅ | — | ✅ |
 | Runtime-configurable settings | ✅ | ✅ | ✅ | — | — |
 
 - **NeoForge 1.21.10**'s camera and sneak-presenting features compile but don't work yet: Mojang reworked
   both item rendering and the screenshot/texture APIs the native pipeline uses on that version, and porting
   to the new APIs is a separate, tracked follow-up.
-- **NeoForge 1.20.4**'s voice calls/messages code is present but unusable in practice: Simple Voice Chat
-  itself has no NeoForge build before 1.21.1, so there's nothing to integrate with on that version yet.
 - **Fabric 1.20.1** is a walking skeleton for now - the item exists and registers, but the phone's
   networking layer needs an API (`CustomPacketPayload`) that doesn't exist before 1.20.5, so none of the
   screens/messaging/camera work yet on that specific version.
