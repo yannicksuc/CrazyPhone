@@ -45,12 +45,24 @@ navigation.
 conversations with their own settings (rename, custom icon, invite/exclude, admin); real-time text;
 sending photos from your album; read-notification badges; hover tooltips for timestamps/senders.
 
-**Camera** - a native, dependency-free photo feature on both loaders: click the camera icon inside a
-conversation to open a full-screen capture overlay (mouse wheel to zoom, click to shoot, Escape to cancel),
-then send the shot straight into that conversation. The server keeps a small thumbnail (shown by default in
-chat and as the saved photo item's icon) and a larger full-size version, fetched on demand when a photo is
-opened full-size. Saving a photo to your inventory gives you a physical item that re-opens the same viewer
-on right-click. See the [platform table](#-platforms--versions) for which targets have this working today.
+**Camera** - a native, dependency-free photo feature on both loaders, with three ways into the same
+full-screen capture overlay (mouse wheel to zoom, right-click to shoot, left-click/Escape to cancel; the
+mouse stays grabbed the whole time, so you can still look around while framing a shot): the camera icon
+inside a conversation (sends the shot into that conversation), the home screen's Photo icon, or simply
+punching while holding the phone - the latter two save straight to the phone's own photo list instead of a
+conversation. **My Photos**, reachable from the home screen, is a flat, scrollable grid of every photo a
+phone owns (no album/folder layer) with delete, save-to-inventory, and send-to-conversation actions. The
+server keeps a small thumbnail (shown by default in chat, as the saved photo item's icon, and in My Photos)
+and a larger full-size version, fetched on demand when a photo is opened full-size. Saving a photo to your
+inventory gives you a physical item that re-opens the same viewer on right-click, always the same visual
+width regardless of the photo's actual resolution (height adapts). A locked or not-yet-registered phone
+can't take a photo through any of the three entry points. See the [platform table](#-platforms--versions)
+for which targets have this working today.
+
+**Sneak-presenting** - sneak while holding a photo item to hold it up in front of you, both hands gripping
+it, visible to yourself (first-person, rendered in-world with real lighting rather than a flat GUI overlay)
+and to everyone else (third-person). Held-photo size is always the same visual width regardless of the
+photo's resolution, matching the item's normal rendering.
 
 **Voice calls & voice messages** *(NeoForge only, optional, requires [Simple Voice Chat](https://modrepo.de/minecraft/voicechat))*
 - 1:1 and group voice calls: ring notification, dedicated Incoming Call / Calling / In Call screens,
@@ -90,22 +102,24 @@ primary development target; everything else is kept in sync with it.
 |---|:---:|:---:|:---:|:---:|:---:|
 | Phone, messaging, contacts, groups | ✅ | ✅ | ✅ | — | ✅ |
 | Mayor election | ✅ | ✅ | ✅ | — | ✅ |
-| Native camera (capture/viewer/photo item) | ✅ | ✅ | — *(pending)* | — | ✅ |
+| Native camera (capture/viewer/photo item/My Photos) | ✅ | ✅ | — *(pending)* | — | ✅ |
+| Sneak-presenting (hold a photo up, two-hand grip) | ✅ | ✅ | — *(pending)* | — | ✅ |
 | Voice calls & voice messages | — *(see below)* | ✅ *(SVC)* | ✅ *(SVC)* | — | — |
 | Soulbound enchantment | — | ✅ | ✅ | — | ✅ |
 | Runtime-configurable settings | ✅ | ✅ | ✅ | — | — |
 
-- **NeoForge 1.21.10**'s camera feature compiles but doesn't work yet: Mojang reworked both item rendering
-  and the screenshot/texture APIs the native pipeline uses on that version, and porting to the new APIs is
-  a separate, tracked follow-up.
+- **NeoForge 1.21.10**'s camera and sneak-presenting features compile but don't work yet: Mojang reworked
+  both item rendering and the screenshot/texture APIs the native pipeline uses on that version, and porting
+  to the new APIs is a separate, tracked follow-up.
 - **NeoForge 1.20.4**'s voice calls/messages code is present but unusable in practice: Simple Voice Chat
   itself has no NeoForge build before 1.21.1, so there's nothing to integrate with on that version yet.
 - **Fabric 1.20.1** is a walking skeleton for now - the item exists and registers, but the phone's
   networking layer needs an API (`CustomPacketPayload`) that doesn't exist before 1.20.5, so none of the
   screens/messaging/camera work yet on that specific version.
-- **Fabric 1.21.1** has the core feature set, the native camera pipeline, and the Soulbound enchantment -
-  but no voice calls/messages, since [Simple Voice Chat](https://modrepo.de/minecraft/voicechat)
-  integration hasn't been ported to Fabric yet.
+- **Fabric 1.21.1** has the core feature set, the native camera pipeline (including punch-to-shoot,
+  standalone capture, and My Photos), sneak-presenting, and the Soulbound enchantment - but no voice
+  calls/messages, since [Simple Voice Chat](https://modrepo.de/minecraft/voicechat) integration hasn't been
+  ported to Fabric yet.
 
 ---
 
