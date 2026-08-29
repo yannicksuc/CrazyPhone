@@ -29,8 +29,6 @@ import net.minecraft.world.level.Level;
 
 import fr.lordfinn.crazyphone.Crazyphone;
 import fr.lordfinn.crazyphone.data.PhotoSavedData;
-import fr.lordfinn.crazyphone.procedures.GetCrazyPhoneNumberFromMainHandProcedure;
-import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
 import fr.lordfinn.crazyphone.utils.NetworkAccess;
 import fr.lordfinn.crazyphone.utils.PhotoResolution;
 
@@ -103,27 +101,13 @@ public record CrazyPhonePictureRequestPacket(UUID photoId, PhotoResolution resol
             return;
         }
 
-        // The owner can always fetch their own photo (e.g. opening the full-size viewer from the held item,
-        // long after the conversation it was first sent in may have scrolled the message out of view) -
-        // otherwise the same LIVE group-membership check every other conversation payload uses, checked
-        // against the conversationId stored server-side at upload time, never a client-supplied one.
-        //
-        // Unlike every other request in this mod, this one very plausibly arrives while the player is
-        // holding the Photo item itself rather than their CrazyPhone (the item's own in-hand renderer and
-        // its right-click-to-view both trigger this) - the main-hand-only lookup below would silently starve
-        // that entirely legitimate case (empty requesterNumber -> never authorized -> no response ever sent,
-        // no error either), so it falls back to a phone-ownership scan that doesn't care what's in hand.
-        String requesterNumber = GetCrazyPhoneNumberFromMainHandProcedure.execute(player, null);
-        if (requesterNumber.isEmpty())
-            requesterNumber = CrazyPhoneHelper.getOwnedPhoneNumber(world, player.getUUID());
-        boolean authorized = !requesterNumber.isEmpty() && (requesterNumber.equals(entry.owner())
-                || CrazyPhoneHelper.getGroupMembers(world, entry.conversationId()).contains(requesterNumber));
-        DEBUG_LOGGER.info("requesterNumber='{}' authorized={}", requesterNumber, authorized);
-        if (!authorized) {
-            NetworkAccess.sendToPlayer(player, new CrazyPhonePictureResponsePacket(photoId, resolution, new byte[0]));
-            return;
-        }
-
+        // Viewing a photo only requires knowing its id (the item's own in-hand/GUI/ground renderer and the
+        // full-size viewer all fetch by photoId, never by conversation) - there's no legitimate way to end up
+        // with a photoId you shouldn't be able to look at, and gating this on "which phone number is
+        // currently in your main hand" produced real false negatives (a player who owns/registered multiple
+        // phones sees their OWN earlier photos go blank the moment a different phone is in hand). Capturing
+        // a NEW photo is still gated elsewhere (an unlocked phone is required to take one at all) - this is
+        // purely about reading bytes for a photo that already exists.
         byte[] bytes = resolution == PhotoResolution.THUMBNAIL ? entry.thumbnail() : entry.full();
         DEBUG_LOGGER.info("Sending {} bytes for {} photo {} to {}", bytes.length, resolution, photoId, player.getScoreboardName());
         NetworkAccess.sendToPlayer(player, new CrazyPhonePictureResponsePacket(photoId, resolution, bytes));
