@@ -104,10 +104,23 @@ public final class FabricPictureCache {
             FAILED.add(key);
         }
         //? } else {
-        /*// TODO: 1.21.10 changed DynamicTexture's constructor (now takes a name Supplier) and
-        // TextureManager#register's key type (ResourceLocation, not a plain String) - not backported yet,
-        // tracked alongside FabricPictureCapture's own 1.21.10 TODO. Fails closed like a decode error would.
-        FAILED.add(key);
+        /*// 1.21.10 changed DynamicTexture's constructor (now takes a name Supplier and uploads itself) and
+        // TextureManager#register's key type (Identifier, not a plain String) - implemented against the real
+        // API instead of the plain-String id the <1.21.10 branch uses, since Identifier paths need the same
+        // lowercase [a-z0-9/._-] validation as everywhere else (a UUID's hex+hyphens already satisfies this,
+        // so the id shape itself is unchanged, just wrapped through Crazyphone.resource()).
+        try {
+            NativeImage image = NativeImage.read(new java.io.ByteArrayInputStream(pngBytes));
+            net.minecraft.resources./^$ res_loc {^/ResourceLocation/^$}^/ id = fr.lordfinn.crazyphone.Crazyphone.resource(
+                    "crazyphone-picture-" + resolution.name().toLowerCase(java.util.Locale.ROOT) + "-" + photoId);
+            DynamicTexture texture = new DynamicTexture(id::toString, image);
+            Minecraft.getInstance().getTextureManager().register(id, texture);
+            RESOLVED.put(key, new CachedTexture(id, image.getWidth(), image.getHeight()));
+            LOGGER.info("Decoded {} photo {} as {}x{}", resolution, photoId, image.getWidth(), image.getHeight());
+        } catch (Exception e) {
+            LOGGER.warn("Failed to decode {} photo {}", resolution, photoId, e);
+            FAILED.add(key);
+        }
         *///?}
     }
 }
