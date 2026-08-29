@@ -13,6 +13,8 @@ import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.fml.common.Mod.EventBusSubscriber;
 //?}
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.api.distmarker.OnlyIn;
+import net.neoforged.api.distmarker.Dist;
 //?}
 
 import net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/;
@@ -140,10 +142,15 @@ public record PlayerPhoneStateSyncPacket(PlayerPhoneState data) implements Custo
     }
     *///?}
     //? if neoforge && <1.20.5 {
+    @OnlyIn(Dist.CLIENT)
+    private static void applyState(PlayerPhoneStateSyncPacket message) {
+        Minecraft.getInstance().player.getData(fr.lordfinn.crazyphone.data.PhoneAttachmentTypes.PLAYER_PHONE_STATE)
+                .deserializeNBT(message.data.serializeNBT());
+    }
+
     public static void handleData(final PlayerPhoneStateSyncPacket message, final PlayPayloadContext context) {
         if (context.flow() == PacketFlow.CLIENTBOUND) {
-            context.workHandler().submitAsync(() -> Minecraft.getInstance().player.getData(fr.lordfinn.crazyphone.data.PhoneAttachmentTypes.PLAYER_PHONE_STATE)
-                    .deserializeNBT(message.data.serializeNBT())).exceptionally(e -> {
+            context.workHandler().submitAsync(() -> applyState(message)).exceptionally(e -> {
                 context.packetHandler().disconnect(Component.literal(e.getMessage()));
                 return null;
             });

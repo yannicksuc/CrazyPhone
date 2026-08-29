@@ -13,6 +13,8 @@ import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.fml.common.Mod.EventBusSubscriber;
 //?}
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.api.distmarker.OnlyIn;
+import net.neoforged.api.distmarker.Dist;
 //?}
 
 import net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/;
@@ -92,12 +94,15 @@ public record PhoneRegistrySyncPacket(PhoneRegistrySavedData data) implements Cu
         }
     }
     *///? } else {
+    @OnlyIn(Dist.CLIENT)
+    private static void applySync(PhoneRegistrySyncPacket message) {
+        PhoneRegistrySavedData clientSide = PhoneRegistrySavedData.get(Minecraft.getInstance().player.level());
+        clientSide.readFrom(message.data.save(new CompoundTag()));
+    }
+
     public static void handleData(final PhoneRegistrySyncPacket message, final PlayPayloadContext context) {
         if (context.flow() == PacketFlow.CLIENTBOUND) {
-            context.workHandler().submitAsync(() -> {
-                PhoneRegistrySavedData clientSide = PhoneRegistrySavedData.get(Minecraft.getInstance().player.level());
-                clientSide.readFrom(message.data.save(new CompoundTag()));
-            }).exceptionally(e -> {
+            context.workHandler().submitAsync(() -> applySync(message)).exceptionally(e -> {
                 context.packetHandler().disconnect(Component.literal(e.getMessage()));
                 return null;
             });
@@ -128,6 +133,10 @@ public record PhoneRegistrySyncPacket(PhoneRegistrySavedData data) implements Cu
         PhoneRegistrySavedData clientSide = PhoneRegistrySavedData.get(net.minecraft.client.Minecraft.getInstance().player.level());
         clientSide.readFrom(message.data.save(new CompoundTag(), net.minecraft.client.Minecraft.getInstance().player.registryAccess()));
     }
+    // (Fabric's own >=1.20.5 payload carries a real registryAccess() the >=1.20.5 NeoForge branch's
+    // applySync(PhoneRegistrySyncPacket) helper above doesn't need - kept as its own inline body here
+    // rather than sharing that helper, since Fabric has no equivalent NeoForge dist-scan crash to guard
+    // against in the first place (see PORTING-26x.md's own note on this whole dist-leak sweep).
 
     public static void registerFabricType() {
         fr.lordfinn.crazyphone.fabric.FabricNetworking.registerS2CType(TYPE, STREAM_CODEC);

@@ -12,6 +12,8 @@ import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.fml.common.Mod.EventBusSubscriber;
 //?}
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.api.distmarker.OnlyIn;
+import net.neoforged.api.distmarker.Dist;
 
 import net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -83,24 +85,35 @@ public record CrazyPhoneIncomingCallNotificationPacket(String conversationId, St
     }
     //?}
 
-    private static void showToast(CrazyPhoneIncomingCallNotificationPacket messagePacket) {
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null)
-            return;
+    // See CrazyPhoneGroupMembershipNotificationPacket's own doc comment on this pattern - nesting
+    // Registration alone isn't enough, the risky method itself must live in its own separate class.
+    //? if neoforge {
+    //? if <1.20.5 {
+    @EventBusSubscriber(value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)
+    //?} else {
+    /*@EventBusSubscriber(value = Dist.CLIENT)
+    *///?}
+    //?}
+    static class ClientHandler {
+        static void showToast(CrazyPhoneIncomingCallNotificationPacket messagePacket) {
+            Minecraft mc = Minecraft.getInstance();
+            if (mc.player == null)
+                return;
 
-        Component callerName = Component.literal(messagePacket.callerName)
-                .withStyle(style -> style.withBold(true).withColor(0x55FFFF));
-        Component toast = Component.translatable("message.crazyphone.incoming_call_toast", callerName)
-                .withStyle(style -> style.withColor(0x00FF55).withItalic(true));
-        //? if <1.21.10 {
-        mc.player.sendSystemMessage(toast);
-        //? } else {
-        /*CrazyPhoneHelper.sendClientMessage(mc.player, toast, false);
-        *///?}
+            Component callerName = Component.literal(messagePacket.callerName)
+                    .withStyle(style -> style.withBold(true).withColor(0x55FFFF));
+            Component toast = Component.translatable("message.crazyphone.incoming_call_toast", callerName)
+                    .withStyle(style -> style.withColor(0x00FF55).withItalic(true));
+            //? if <1.21.10 {
+            mc.player.sendSystemMessage(toast);
+            //? } else {
+            /*CrazyPhoneHelper.sendClientMessage(mc.player, toast, false);
+            *///?}
 
-        SoundEvent sound = fr.lordfinn.crazyphone.utils.RegistryCompat.get(BuiltInRegistries.SOUND_EVENT, Crazyphone.parseId("block.note_block.bell"));
-        if (sound != null) {
-            CrazyPhoneHelper.playNotifySound(mc.player, sound, SoundSource.PLAYERS, 0.8f, 1.2f);
+            SoundEvent sound = fr.lordfinn.crazyphone.utils.RegistryCompat.get(BuiltInRegistries.SOUND_EVENT, Crazyphone.parseId("block.note_block.bell"));
+            if (sound != null) {
+                CrazyPhoneHelper.playNotifySound(mc.player, sound, SoundSource.PLAYERS, 0.8f, 1.2f);
+            }
         }
     }
 
@@ -108,7 +121,7 @@ public record CrazyPhoneIncomingCallNotificationPacket(String conversationId, St
     /*public static void handleData(final CrazyPhoneIncomingCallNotificationPacket messagePacket, final IPayloadContext context) {
         if (context.flow() != PacketFlow.CLIENTBOUND)
             return;
-        context.enqueueWork(() -> showToast(messagePacket)).exceptionally(e -> {
+        context.enqueueWork(() -> ClientHandler.showToast(messagePacket)).exceptionally(e -> {
             context.connection().disconnect(Component.literal(e.getMessage()));
             return null;
         });
@@ -117,7 +130,7 @@ public record CrazyPhoneIncomingCallNotificationPacket(String conversationId, St
     public static void handleData(final CrazyPhoneIncomingCallNotificationPacket messagePacket, final PlayPayloadContext context) {
         if (context.flow() != PacketFlow.CLIENTBOUND)
             return;
-        context.workHandler().submitAsync(() -> showToast(messagePacket)).exceptionally(e -> {
+        context.workHandler().submitAsync(() -> ClientHandler.showToast(messagePacket)).exceptionally(e -> {
             context.packetHandler().disconnect(Component.literal(e.getMessage()));
             return null;
         });

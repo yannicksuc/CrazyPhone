@@ -13,6 +13,8 @@ import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.fml.common.Mod.EventBusSubscriber;
 //?}
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.api.distmarker.OnlyIn;
+import net.neoforged.api.distmarker.Dist;
 //?}
 
 import net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/;
@@ -90,44 +92,63 @@ public record CrazyPhoneGroupMembershipNotificationPacket(String groupLabel, Str
     }
     //?}
 
-    private static void showToast(CrazyPhoneGroupMembershipNotificationPacket messagePacket) {
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null) return;
+    // NeoForge 26.x removed @OnlyIn's runtime member-stripping entirely (confirmed via its own
+    // OnlyInWarningsHandler log warning) - a method-level annotation no longer keeps a client-only method
+    // body's bytecode out of the class the dedicated server loads, so AutomaticEventSubscriber's
+    // Class.forName(...) scan of this record (needed unconditionally on both sides, for registerMessage)
+    // fully verifies EVERY method on it, including one that touches Minecraft.getInstance() - crashing the
+    // dedicated server with NoClassDefFoundError: LocalPlayer. The fix has to be structural: showToast's
+    // body now lives in a genuinely separate nested class, carrying its OWN @EventBusSubscriber(Dist.CLIENT)
+    // - the same class-level pattern CrazyPhonePhotoItemClientBinding already established - so NeoForge's
+    // dist-aware scanner skips loading THIS class entirely on the dedicated server, the same way it already
+    // skips that one. See PORTING-26x.md for the full sweep across every packet class with this shape.
+    //? if neoforge {
+    //? if <1.20.5 {
+    @EventBusSubscriber(value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)
+    //?} else {
+    /*@EventBusSubscriber(value = Dist.CLIENT)
+    *///?}
+    //?}
+    static class ClientHandler {
+        static void showToast(CrazyPhoneGroupMembershipNotificationPacket messagePacket) {
+            Minecraft mc = Minecraft.getInstance();
+            if (mc.player == null) return;
 
-        Component actorName = Component.literal(messagePacket.actorName)
-                .withStyle(style -> style.withBold(true).withColor(messagePacket.added ? 0x00FF55 : 0xFF5555));
-        Component groupLabel = Component.literal(messagePacket.groupLabel)
-                .withStyle(style -> style.withBold(true).withColor(0xFFAA00));
-        Component toast = Component.translatable(
-                messagePacket.added ? "message.crazyphone.group_added" : "message.crazyphone.group_removed",
-                actorName, groupLabel)
-            .withStyle(style -> style.withColor(messagePacket.added ? 0x55FFFF : 0xFF5555).withItalic(true));
-        //? if <1.21.10 {
-        mc.player.sendSystemMessage(toast);
-        //? } else {
-        /*CrazyPhoneHelper.sendClientMessage(mc.player, toast, false);
-        *///?}
+            Component actorName = Component.literal(messagePacket.actorName)
+                    .withStyle(style -> style.withBold(true).withColor(messagePacket.added ? 0x00FF55 : 0xFF5555));
+            Component groupLabel = Component.literal(messagePacket.groupLabel)
+                    .withStyle(style -> style.withBold(true).withColor(0xFFAA00));
+            Component toast = Component.translatable(
+                    messagePacket.added ? "message.crazyphone.group_added" : "message.crazyphone.group_removed",
+                    actorName, groupLabel)
+                .withStyle(style -> style.withColor(messagePacket.added ? 0x55FFFF : 0xFF5555).withItalic(true));
+            //? if <1.21.10 {
+            mc.player.sendSystemMessage(toast);
+            //? } else {
+            /*CrazyPhoneHelper.sendClientMessage(mc.player, toast, false);
+            *///?}
 
-        /*$ res_loc {*/ResourceLocation/*$}*/ soundId = messagePacket.added
-            ? Crazyphone.parseId("block.note_block.pling")
-            : Crazyphone.parseId("entity.villager.no");
-        SoundEvent sound = fr.lordfinn.crazyphone.utils.RegistryCompat.get(BuiltInRegistries.SOUND_EVENT, soundId);
-        if (sound != null) {
-            CrazyPhoneHelper.playNotifySound(mc.player, sound, SoundSource.PLAYERS, 0.6f, 1.0f);
+            /*$ res_loc {*/ResourceLocation/*$}*/ soundId = messagePacket.added
+                ? Crazyphone.parseId("block.note_block.pling")
+                : Crazyphone.parseId("entity.villager.no");
+            SoundEvent sound = fr.lordfinn.crazyphone.utils.RegistryCompat.get(BuiltInRegistries.SOUND_EVENT, soundId);
+            if (sound != null) {
+                CrazyPhoneHelper.playNotifySound(mc.player, sound, SoundSource.PLAYERS, 0.6f, 1.0f);
+            }
         }
     }
 
     //? if neoforge && >=1.20.5 {
     /*public static void handleData(final CrazyPhoneGroupMembershipNotificationPacket messagePacket, final IPayloadContext context) {
         if (context.flow() == PacketFlow.CLIENTBOUND) {
-            context.enqueueWork(() -> showToast(messagePacket));
+            context.enqueueWork(() -> ClientHandler.showToast(messagePacket));
         }
     }
     *///?}
     //? if neoforge && <1.20.5 {
     public static void handleData(final CrazyPhoneGroupMembershipNotificationPacket messagePacket, final PlayPayloadContext context) {
         if (context.flow() == PacketFlow.CLIENTBOUND) {
-            context.workHandler().submitAsync(() -> showToast(messagePacket));
+            context.workHandler().submitAsync(() -> ClientHandler.showToast(messagePacket));
         }
     }
     //?}
@@ -144,7 +165,7 @@ public record CrazyPhoneGroupMembershipNotificationPacket(String groupLabel, Str
     //?}
     //? if fabric && >=1.20.5 {
     /*public static void handleDataFabric(CrazyPhoneGroupMembershipNotificationPacket messagePacket, net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.Context context) {
-        showToast(messagePacket);
+        ClientHandler.showToast(messagePacket);
     }
 
     public static void registerFabricType() {

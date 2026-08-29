@@ -13,6 +13,8 @@ import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.fml.common.Mod.EventBusSubscriber;
 //?}
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.api.distmarker.OnlyIn;
+import net.neoforged.api.distmarker.Dist;
 //?}
 
 import net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/;
@@ -79,37 +81,44 @@ public record UpdateContactInfoMessage(String name, String uuid, String number) 
     }
     //?}
 
+    // See CrazyPhoneGroupMembershipNotificationPacket's own doc comment on this pattern - NeoForge 26.x
+    // removed @OnlyIn's runtime stripping, so a genuinely separate, class-level-@EventBusSubscriber(Dist.
+    // CLIENT)-annotated nested class is what keeps AutomaticEventSubscriber's dedicated-server scan from
+    // ever loading this method's Minecraft.getInstance() reference at all.
+    //? if neoforge {
+    //? if <1.20.5 {
+    @EventBusSubscriber(value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)
+    //?} else {
+    /*@EventBusSubscriber(value = Dist.CLIENT)
+    *///?}
+    //?}
+    static class ClientHandler {
+        static void applyUpdate(UpdateContactInfoMessage message) {
+            Minecraft mc = Minecraft.getInstance();
+            if (mc./*$ mc_get_screen {*/screen/*$}*/ instanceof CrazyPhoneContactInfoScreenScreen screen) {
+                screen.updateContactInfo(message.name, message.uuid, message.number);
+            }
+        }
+    }
+
     //? if neoforge {
     //? if >=1.20.5 {
     /*public static void handleData(final UpdateContactInfoMessage message, final IPayloadContext context) {
         if (context.flow() == PacketFlow.CLIENTBOUND) {
-            context.enqueueWork(() -> {
-                Minecraft mc = Minecraft.getInstance();
-                if (mc./^$ mc_get_screen {^/screen/^$}^/ instanceof CrazyPhoneContactInfoScreenScreen screen) {
-                    screen.updateContactInfo(message.name, message.uuid, message.number);
-                }
-            });
+            context.enqueueWork(() -> ClientHandler.applyUpdate(message));
         }
     }
     *///? } else {
     public static void handleData(final UpdateContactInfoMessage message, final PlayPayloadContext context) {
         if (context.flow() == PacketFlow.CLIENTBOUND) {
-            context.workHandler().submitAsync(() -> {
-                Minecraft mc = Minecraft.getInstance();
-                if (mc./*$ mc_get_screen {*/screen/*$}*/ instanceof CrazyPhoneContactInfoScreenScreen screen) {
-                    screen.updateContactInfo(message.name, message.uuid, message.number);
-                }
-            });
+            context.workHandler().submitAsync(() -> ClientHandler.applyUpdate(message));
         }
     }
     //?}
     //?}
     //? if fabric && >=1.20.5 {
     /*public static void handleDataFabric(UpdateContactInfoMessage message, net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.Context context) {
-        Minecraft mc = Minecraft.getInstance();
-        if (mc./^$ mc_get_screen {^/screen/^$}^/ instanceof CrazyPhoneContactInfoScreenScreen screen) {
-            screen.updateContactInfo(message.name, message.uuid, message.number);
-        }
+        ClientHandler.applyUpdate(message);
     }
 
     public static void registerFabricType() {

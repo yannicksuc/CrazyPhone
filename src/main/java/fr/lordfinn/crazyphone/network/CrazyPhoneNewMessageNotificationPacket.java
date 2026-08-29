@@ -13,6 +13,8 @@ import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.fml.common.Mod.EventBusSubscriber;
 //?}
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.api.distmarker.OnlyIn;
+import net.neoforged.api.distmarker.Dist;
 //?}
 
 import net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/;
@@ -93,50 +95,63 @@ public record CrazyPhoneNewMessageNotificationPacket(
     }
     //?}
 
-    private static void applyNotification(CrazyPhoneNewMessageNotificationPacket messagePacket) {
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null) return;
-        MessageData message = CrazyPhoneHelper.getMessageFromTag(messagePacket.messageTag);
-        if (message == null) return;
+    // See CrazyPhoneGroupMembershipNotificationPacket's own doc comment on this pattern - NeoForge 26.x
+    // removed @OnlyIn's runtime stripping, so a genuinely separate, class-level-@EventBusSubscriber(Dist.
+    // CLIENT)-annotated nested class is what keeps AutomaticEventSubscriber's dedicated-server scan from
+    // ever loading this method's Minecraft.getInstance() reference at all.
+    //? if neoforge {
+    //? if <1.20.5 {
+    @EventBusSubscriber(value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)
+    //?} else {
+    /*@EventBusSubscriber(value = Dist.CLIENT)
+    *///?}
+    //?}
+    static class ClientHandler {
+        static void applyNotification(CrazyPhoneNewMessageNotificationPacket messagePacket) {
+            Minecraft mc = Minecraft.getInstance();
+            if (mc.player == null) return;
+            MessageData message = CrazyPhoneHelper.getMessageFromTag(messagePacket.messageTag);
+            if (message == null) return;
 
-        // System events (group renamed/icon changed/member excluded/admin reassigned) aren't
-        // "a message received from someone" - they get their own in-feed entry, not this toast.
-        if (!message.isSystem()) {
-            Component senderName = Component.literal(messagePacket.senderName)
-                    .withStyle(style -> style.withBold(true).withColor(0x00FF55));
-            Component notifText = Component.translatable("message.crazyphone.new_message_received", senderName)
-                .withStyle(style -> style.withColor(0x55FFFF).withItalic(true));
-            //? if <1.21.10 {
-            mc.player.sendSystemMessage(notifText);
-            //? } else {
-            /*CrazyPhoneHelper.sendClientMessage(mc.player, notifText, false);
-            *///?}
+            // System events (group renamed/icon changed/member excluded/admin reassigned) aren't
+            // "a message received from someone" - they get their own in-feed entry, not this toast.
+            if (!message.isSystem()) {
+                Component senderName = Component.literal(messagePacket.senderName)
+                        .withStyle(style -> style.withBold(true).withColor(0x00FF55));
+                Component notifText = Component.translatable("message.crazyphone.new_message_received", senderName)
+                    .withStyle(style -> style.withColor(0x55FFFF).withItalic(true));
+                //? if <1.21.10 {
+                mc.player.sendSystemMessage(notifText);
+                //? } else {
+                /*CrazyPhoneHelper.sendClientMessage(mc.player, notifText, false);
+                *///?}
 
-            SoundEvent sound = fr.lordfinn.crazyphone.utils.RegistryCompat.get(BuiltInRegistries.SOUND_EVENT, Crazyphone.parseId("block.note_block.pling"));
-            if (sound != null) {
-                CrazyPhoneHelper.playNotifySound(mc.player, sound, SoundSource.PLAYERS, 0.6f, 1.0f);
+                SoundEvent sound = fr.lordfinn.crazyphone.utils.RegistryCompat.get(BuiltInRegistries.SOUND_EVENT, Crazyphone.parseId("block.note_block.pling"));
+                if (sound != null) {
+                    CrazyPhoneHelper.playNotifySound(mc.player, sound, SoundSource.PLAYERS, 0.6f, 1.0f);
+                }
             }
-        }
-        // Mise a jour de l'ecran s'il est ouvert
-        if (mc./*$ mc_get_screen {*/screen/*$}*/ instanceof CrazyPhoneConversationScreen screen) {
-            screen.addMessage(
-                messagePacket.senderName,
-                message
-            );
+            // Mise a jour de l'ecran s'il est ouvert
+            if (mc./*$ mc_get_screen {*/screen/*$}*/ instanceof CrazyPhoneConversationScreen screen) {
+                screen.addMessage(
+                    messagePacket.senderName,
+                    message
+                );
+            }
         }
     }
 
     //? if neoforge && >=1.20.5 {
     /*public static void handleData(final CrazyPhoneNewMessageNotificationPacket messagePacket, final IPayloadContext context) {
         if (context.flow() == PacketFlow.CLIENTBOUND) {
-            context.enqueueWork(() -> applyNotification(messagePacket));
+            context.enqueueWork(() -> ClientHandler.applyNotification(messagePacket));
         }
     }
     *///?}
     //? if neoforge && <1.20.5 {
     public static void handleData(final CrazyPhoneNewMessageNotificationPacket messagePacket, final PlayPayloadContext context) {
         if (context.flow() == PacketFlow.CLIENTBOUND) {
-            context.workHandler().submitAsync(() -> applyNotification(messagePacket));
+            context.workHandler().submitAsync(() -> ClientHandler.applyNotification(messagePacket));
         }
     }
     //?}
@@ -153,7 +168,7 @@ public record CrazyPhoneNewMessageNotificationPacket(
     //?}
     //? if fabric && >=1.20.5 {
     /*public static void handleDataFabric(CrazyPhoneNewMessageNotificationPacket messagePacket, net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.Context context) {
-        applyNotification(messagePacket);
+        ClientHandler.applyNotification(messagePacket);
     }
 
     public static void registerFabricType() {

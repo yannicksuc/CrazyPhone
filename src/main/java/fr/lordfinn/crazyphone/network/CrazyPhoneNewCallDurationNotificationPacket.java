@@ -12,6 +12,8 @@ import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.fml.common.Mod.EventBusSubscriber;
 //?}
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.api.distmarker.OnlyIn;
+import net.neoforged.api.distmarker.Dist;
 
 import net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -83,17 +85,31 @@ public record CrazyPhoneNewCallDurationNotificationPacket(String conversationId,
     }
     //?}
 
-    private static void applyUpdate(CrazyPhoneNewCallDurationNotificationPacket message) {
-        Minecraft mc = Minecraft.getInstance();
-        if (mc./*$ mc_get_screen {*/screen/*$}*/ instanceof CrazyPhoneConversationScreen screen)
-            screen.updateCallDuration(message.conversationId, message.callId, message.durationMillis);
+    // See CrazyPhoneGroupMembershipNotificationPacket's own doc comment on this pattern. Note this needs to
+    // be a genuinely separate class even though Registration below is already nested - NeoForge still has
+    // to fully load+verify THIS class (including whichever methods live directly on it) the moment
+    // Registration's own register() resolves the ::handleData method reference during Common Setup, so
+    // nesting Registration alone isn't enough; the risky method itself must live somewhere else entirely.
+    //? if neoforge {
+    //? if <1.20.5 {
+    @EventBusSubscriber(value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)
+    //?} else {
+    /*@EventBusSubscriber(value = Dist.CLIENT)
+    *///?}
+    //?}
+    static class ClientHandler {
+        static void applyUpdate(CrazyPhoneNewCallDurationNotificationPacket message) {
+            Minecraft mc = Minecraft.getInstance();
+            if (mc./*$ mc_get_screen {*/screen/*$}*/ instanceof CrazyPhoneConversationScreen screen)
+                screen.updateCallDuration(message.conversationId, message.callId, message.durationMillis);
+        }
     }
 
     //? if >=1.20.5 {
     /*public static void handleData(final CrazyPhoneNewCallDurationNotificationPacket message, final IPayloadContext context) {
         if (context.flow() != PacketFlow.CLIENTBOUND)
             return;
-        context.enqueueWork(() -> applyUpdate(message)).exceptionally(e -> {
+        context.enqueueWork(() -> ClientHandler.applyUpdate(message)).exceptionally(e -> {
             context.connection().disconnect(Component.literal(e.getMessage()));
             return null;
         });
@@ -102,7 +118,7 @@ public record CrazyPhoneNewCallDurationNotificationPacket(String conversationId,
     public static void handleData(final CrazyPhoneNewCallDurationNotificationPacket message, final PlayPayloadContext context) {
         if (context.flow() != PacketFlow.CLIENTBOUND)
             return;
-        context.workHandler().submitAsync(() -> applyUpdate(message)).exceptionally(e -> {
+        context.workHandler().submitAsync(() -> ClientHandler.applyUpdate(message)).exceptionally(e -> {
             context.packetHandler().disconnect(Component.literal(e.getMessage()));
             return null;
         });
