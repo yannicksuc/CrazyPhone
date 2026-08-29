@@ -23,8 +23,10 @@ stonecutter {
         versions("1.20.4", "1.21.1", "1.21.10", "26.1", "26.2")
         version("1.21.1-fabric", "1.21.1").buildscript("build.fabric.gradle.kts")
         version("1.20.1-fabric", "1.20.1").buildscript("build.fabric.gradle.kts")
-        version("26.1-fabric", "26.1").buildscript("build.fabric.gradle.kts")
-        version("26.2-fabric", "26.2").buildscript("build.fabric.gradle.kts")
+        // 26.x is unobfuscated by Mojang - a genuinely different Loom plugin id/mode, no mappings
+        // dependency at all (see build.fabric26.gradle.kts's own doc comment for the full explanation).
+        version("26.1-fabric", "26.1").buildscript("build.fabric26.gradle.kts")
+        version("26.2-fabric", "26.2").buildscript("build.fabric26.gradle.kts")
         vcsVersion = "1.21.1"
     }
     create(rootProject)
