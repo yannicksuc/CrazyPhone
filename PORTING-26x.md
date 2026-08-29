@@ -5,17 +5,35 @@ task turned out to be much bigger than expected once actually attempted - this f
 that progress isn't lost and the next session (or a live human) can pick it up without
 re-discovering everything from scratch.
 
-## Update: 26.1 is essentially done - 26.2 needs its own separate investigation
+## Update: `:26.1:compileJava` is fully clean - 26.2 needs its own separate investigation
 
-**`:26.1:compileJava` is down to 26 errors, all in two already-scoped files** (see their own
-sections below): `CrazyPhoneGameTests.java` (a `net.minecraft.gametest.framework.GameTest`
-class-not-found - the whole GameTest annotation/framework isn't present anywhere in the decompiled
-26.1.2 tree, not yet investigated) and `CrazyPhoneMayorCandidateScreenScreen.java` (the
-already-documented dynamic-imageWidth design question). Every other file in the entire GUI
-rendering rework - the full `GuiGraphics` -> `GuiGraphicsExtractor` migration across ~26 screen/
-widget files, `GuiCompat.java`'s own signature breaks (including a proper fix for
-`renderEntityInInventory`, not just a flag) - is done and compiles clean. This was genuinely the
-bulk of the whole port; 26.1 is close to a real, shippable state pending live testing.
+**`:26.1:compileJava` now compiles with zero errors.** Both previously-open files are resolved:
+
+- **`CrazyPhoneGameTests.java`** - restructured from `@GameTest`-annotated methods into the new
+  registration model (see "GameTest finding" below for the full mechanism). The `<26` branch keeps
+  the original annotation-based code entirely unchanged; the `>=26` branch registers the same 9
+  test bodies (untouched logic, just referenced via method reference) through
+  `RegisterEvent(Registries.TEST_FUNCTION, ...)` + `RegisterGameTestsEvent`, with one
+  `TestEnvironmentDefinition` per old batch name (empty `AllOf(List.of())`, since the old "batch"
+  concept was purely about test isolation, not actual environment effects) preserving the same
+  test-isolation grouping as before. Wired into `Crazyphone.java`'s mod-bus listener registration.
+- **`CrazyPhoneMayorCandidateScreenScreen.java`** - turned out NOT to need a real design decision
+  after all, once actually read closely: it was never using `imageWidth`/`imageHeight` for the
+  screen's own panel size (that's fixed at 122x195 by the base class constructor and never
+  referenced again - `drawScreenBackground` blits a hardcoded-size texture regardless). It was
+  reusing those inherited fields purely as ad-hoc scratch storage for the candidate poster photo's
+  own lazily-computed render size, which happened to work pre-26 only because the fields were
+  freely mutable after construction. Fixed by giving the poster its own `posterWidth`/`posterHeight`
+  fields, leaving the inherited (now-final) `imageWidth`/`imageHeight` untouched - no behavior
+  change, no design tradeoff needed. Also picked up the same `GuiGraphics`/`renderBg`/`renderLabels`
+  rework already applied to every sibling screen (this file was skipped in that earlier batch
+  specifically because of the imageWidth blocker).
+
+Every file in the entire GUI rendering rework - the full `GuiGraphics` -> `GuiGraphicsExtractor`
+migration across ~26 screen/widget files, `GuiCompat.java`'s own signature breaks (including a
+proper fix for `renderEntityInInventory`, not just a flag), and now the GameTest registration model
+- is done and compiles clean, on all 5 pre-existing targets too (regression-checked). **26.1 NeoForge
+is code-complete pending live testing** (not yet done - see "Pending" at the bottom).
 
 **`:26.2:compileJava` has 25 MORE errors on top of those same two files - a real, separate
 rendering change that only shows up on 26.2, not 26.1.** `net.minecraft.client.renderer.MultiBufferSource`
@@ -33,22 +51,25 @@ from the 26.1 work), roughly comparable in likely scope to redoing that whole in
 just for item/entity rendering instead of GUI rendering. Given how much ground the GUI rework alone
 took, this deserves its own dedicated pass rather than guessing at 25 errors blind.
 
-**Practical implication**: 26.1 can realistically be finished (GameTest investigation + the
-Mayor-candidate design decision) and live-tested soon. 26.2 needs someone to sit down with the
-decompiled `net.minecraft.client.renderer.rendertype` package and `CrazyPhonePhotoItemRenderer.java`
-together and work out the new vertex-submission model from scratch - treat it as its own project,
-not a quick follow-up to the GUI work above.
+**Practical implication**: 26.1 NeoForge's compile work is done; what's left is live testing (and
+the Fabric side, see below). 26.2 needs someone to sit down with the decompiled
+`net.minecraft.client.renderer.rendertype` package and `CrazyPhonePhotoItemRenderer.java` together
+and work out the new vertex-submission model from scratch - treat it as its own project, not a
+quick follow-up to the GUI work above.
 
-**GameTest finding**: vanilla's `net.minecraft.gametest.framework.GameTest` annotation is genuinely
-gone from the decompiled tree, but NeoForge's OWN gametest package
-(`net.neoforged.neoforge.gametest`) still exists on 26.1.2, now centered on `RegisterGameTestsEvent`
-(confirmed present in the real NeoForge 26.1.2.100 sources) instead of an `@GameTest`-annotated
-method scan. This looks like the same "annotation -> event registration" shift already seen for
-`ItemProperties`/`RegisterConditionalItemModelPropertyEvent` - i.e. `CrazyPhoneGameTests.java`
-likely needs restructuring from a class of `@GameTest`-annotated methods into an event handler that
-registers each test with `RegisterGameTestsEvent` instead. Not yet attempted - real design/structure
-work, not a rename, and test-only code (doesn't block the shipped mod jar's actual functionality),
-so lower priority than the two items above.
+**GameTest finding (resolved, see above for the fix actually applied)**: vanilla's
+`net.minecraft.gametest.framework.GameTest` annotation is genuinely gone from the decompiled tree -
+the whole annotation-scanning model is replaced by two registries a mod must populate explicitly:
+`Registries.TEST_FUNCTION` (a "simple" built-in registry, same kind SoundEvents already use in this
+mod, holding the actual `Consumer<GameTestHelper>` test bodies - moddable via the standard
+`RegisterEvent`) and `Registries.TEST_INSTANCE` (the per-test metadata: which function, which
+structure, which `TestEnvironmentDefinition`/batch - populated via NeoForge's own
+`RegisterGameTestsEvent`, confirmed present in the real NeoForge 26.1.2.100 sources, firing only
+when `GameTestHooks.isGametestEnabled()` is true, same conditions the old scanner ran under). This
+is the same "annotation -> event registration" shift already seen for `ItemProperties`/
+`RegisterConditionalItemModelPropertyEvent`. `FunctionGameTestInstance` (vanilla, in
+`net.minecraft.gametest.framework`) is the built-in `GameTestInstance` implementation that just
+wraps a `TEST_FUNCTION` key + `TestData` - no custom `GameTestInstance` subclass was needed.
 
 ## Update: Java 25 installed, Fabric 26.x infrastructure unblocked
 
@@ -237,49 +258,32 @@ Also unrelated to the GuiGraphics rework but still broken: `MojangProfileLookup.
 `cannot find symbol: variable Util` (`Util.backgroundExecutor()`) - `Util` itself likely moved
 package or the method was renamed too; not yet investigated.
 
-## Why this stopped here instead of pushing through
+## Historical note: why this stopped mid-GUI-rework the first time (now resolved)
 
-1. **The GUI rework is a real design task in places** (the `renderBg`/`renderBackground` merge,
-   and especially `CrazyPhoneMayorCandidateScreenScreen`'s dynamic sizing), not purely mechanical -
-   pushing through all 25 remaining files blind risked introducing subtle, hard-to-spot bugs
-   (wrong draw order, misaligned text, a screen that silently doesn't draw its background) across
-   nearly every screen in the mod.
-2. **No way to runtime-verify anything on this machine right now**: Minecraft 26.x requires Java
-   25, and only Java 21 (`C:\Users\yanni\.jdks\ms-21.0.12`) is installed. This session deliberately
-   did **not** download/install a JDK unilaterally - that's a real download-and-install action, and
-   outside what an unattended session should decide on its own. This project's whole development
-   discipline so far has been "compile, launch, look at it, iterate" - continuing to push rendering
-   changes with zero ability to actually look at the result felt like the wrong tradeoff for an
-   unattended run, however much time was left.
-3. Given both of the above, the highest-value thing to do with the rest of the night was to lock
-   in everything that's genuinely done and verified (committed to `dev`, not merged to `main`), and
-   leave a concrete, accurate map of what's left instead of a vague "GUI broke, TODO" note.
+Earlier in this task, `:26.1:compileJava` was paused at 26 remaining errors (this file's "Files
+that reference GuiGraphics" list above, plus the imageWidth/GameTest questions) because Java 25
+wasn't installed yet, so nothing could be runtime-verified, and the mayor-candidate screen's
+constructor looked like it needed a real design call. Both concerns turned out to be resolvable:
+Java 25 got installed (`C:\Users\yanni\.jdks\ms-25.0.4.1`), and the imageWidth question dissolved
+once the file was actually read closely (see the top of this file - it wasn't a design decision at
+all, just a field-reuse pattern that no longer compiles). The GuiGraphics migration table and file
+list above are kept as reference for how each rename/merge was actually handled, in case a similar
+question comes up in the still-open 26.2 investigation.
 
-## Recommended next steps
+## Remaining work (as of this update)
 
-1. Install a Java 25 JDK (e.g. via IntelliJ's JDK downloader, the same way
-   `C:\Users\yanni\.jdks\ms-21.0.12` presumably got there) and point `JAVA_HOME` at it. This
-   unblocks two independent things: `:26.1-fabric`/`:26.2-fabric` can then even *configure* (Fabric
-   Loom's Minecraft-provisioning step checks the driving JVM's own version, not just a per-project
-   toolchain setting - confirmed live, `--configure-on-demand` was the workaround used throughout
-   this session to keep testing `:26.1`/`:26.2` NeoForge without touching the Fabric nodes), and
-   actual live testing of 26.1 becomes possible again.
-2. Start with `CrazyPhoneDefaultScreenScreen.java` (the shared base class) - get its
-   `render`/`renderBackground`/`renderBg`/`renderLabels`/`init` overrides and its three anonymous
-   `ImageButton`s' `renderWidget` overrides converted using the table above. Compile
-   `:26.1:compileJava` after, expect it to surface how much (if anything) changes for subclasses.
-3. Work outward to the other 24 files. Given how many of them likely share very similar shapes
-   (most are probably a `render` override + a handful of `renderWidget` anonymous buttons, per the
-   error patterns already seen), once 2-3 are done by hand the rest may be mechanical enough to
-   delegate to parallel agents with a concrete worked example - the way the `ResourceLocation` swap
-   rollout was done earlier in this same session (5 parallel agents, ~50 files, clean result).
-4. Handle `CrazyPhoneMayorCandidateScreenScreen.java`'s dynamic-imageWidth case as its own small
-   design decision once the mechanical part of the rest is done and there's a clearer picture of
-   what "normal" looks like in this codebase post-port.
-5. Fix `MojangProfileLookup.java`'s `Util.backgroundExecutor()` break (small, unrelated, not yet
-   investigated).
-6. Once `:26.1:compileJava` (and then `:26.2:compileJava`) succeed, do a full regression pass
+1. **26.2's separate `MultiBufferSource`/`ItemRenderer` removal** - the big remaining item, see the
+   dedicated section above. Not started beyond confirming the old classes are gone.
+2. **Live-test `:26.1:runClient`** - compiles clean now but has not actually been launched and
+   clicked through yet. Do this before considering 26.1 NeoForge done.
+3. **Re-verify `:26.1-fabric:compileJava`/`:26.2-fabric:compileJava`** after all the GuiGraphics/
+   GameTest fixes - last known state was 188 errors on `:26.1-fabric`, from before most of this
+   file's fixes landed, so that number is stale. Since the GameTest file is excluded from the
+   Fabric source set entirely (see `build.fabric26.gradle.kts`'s `includes` list) this doesn't add
+   new Fabric-side work, but the GUI fixes share the same source tree and should shrink that count
+   significantly - needs an actual fresh compile to confirm.
+4. Once both loaders compile clean on both versions, do the full 5-target regression pass
    (`:1.20.4:compileJava :1.21.1:compileJava :1.21.1-fabric:compileJava :1.21.10:compileJava
-   :1.20.1-fabric:compileJava`) before considering this close to done, and then actually launch
-   `:26.1:runClient` and live-test the way every other version in this project has been tested.
-7. This file should be deleted once the port is actually complete and merged.
+   :1.20.1-fabric:compileJava`) one more time, then live-test each new target the way every other
+   version in this project has been tested.
+5. This file should be deleted once the port is actually complete and merged.

@@ -90,6 +90,10 @@ public class Crazyphone {
         //? if >=1.20.5 {
         /*fr.lordfinn.crazyphone.init.ModLootModifiers.LOOT_MODIFIER_SERIALIZERS.register(modEventBus);
         *///?}
+        //? if >=26 {
+        /*modEventBus.addListener(fr.lordfinn.crazyphone.gametest.CrazyPhoneGameTests::registerTestFunctions);
+        modEventBus.addListener(fr.lordfinn.crazyphone.gametest.CrazyPhoneGameTests::registerGameTests);
+        *///?}
 
         //? if >=1.20.5 {
         /*modContainer.registerConfig(ModConfig.Type.COMMON, Config.SPEC);

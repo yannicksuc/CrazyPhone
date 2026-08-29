@@ -13,7 +13,9 @@ import fr.lordfinn.crazyphone.voicechat.CallRegistry;
 import fr.lordfinn.crazyphone.utils.PhoneTagAccess;
 
 import net.minecraft.commands.CommandSourceStack;
+//? if <26 {
 import net.minecraft.gametest.framework.GameTest;
+//?}
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -21,8 +23,10 @@ import net.minecraft.nbt.StringTag;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemStack;
+//? if <26 {
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
+//?}
 
 import java.util.List;
 import java.util.Optional;
@@ -36,8 +40,10 @@ import java.util.UUID;
  * no block-placement behavior of its own to test, only entity/item/data interactions, so the platform
  * exists purely to give the test player somewhere to legally stand.
  */
+//? if <26 {
 @GameTestHolder(Crazyphone.MODID)
 @PrefixGameTestTemplate(false) // every method below shares the one "platform" structure, no per-class prefix needed
+//?}
 public class CrazyPhoneGameTests {
 
     private static ItemStack freshCrazyPhone() {
@@ -109,7 +115,9 @@ public class CrazyPhoneGameTests {
      * the opened screen there via ScreenMenuUtils.pushScreen) runs before ServerPlayer#openMenu's own
      * packet send, but containerMenu itself is only assigned AFTER that send succeeds - which it can't,
      * against the mock player's handshake-less connection (see ignoringMockConnectionPacketLimits). */
+    //? if <26 {
     @GameTest(template = "platform", batch = "unregisteredPhone")
+    //?}
     public static void unregisteredPhone_useOpensPasswordScreen(GameTestHelper helper) {
         resetRegistry(helper);
         ServerPlayer player = makeTestPlayer(helper);
@@ -132,7 +140,9 @@ public class CrazyPhoneGameTests {
      * CrazyPhoneOnUseProcedure behavior, not a bug in it) must open straight to the home screen. See
      * unregisteredPhone_useOpensPasswordScreen's javadoc for why PlayerPhoneState is checked instead of
      * containerMenu. */
+    //? if <26 {
     @GameTest(template = "platform", batch = "registeredPhone")
+    //?}
     public static void registeredPhone_useOpensHomeScreen(GameTestHelper helper) {
         resetRegistry(helper);
         ServerPlayer player = makeTestPlayer(helper);
@@ -160,7 +170,9 @@ public class CrazyPhoneGameTests {
      * state - see SvcCallBridge.isCallable/createCallGroup. Wrapped in ignoringMockConnectionPacketLimits
      * because even the "no SVC, bail out early" path may get far enough to attempt a state-sync packet
      * before failing - that's the mock connection's limitation, not evidence startCall itself crashed. */
+    //? if <26 {
     @GameTest(template = "platform", batch = "startCallNoSvc")
+    //?}
     public static void startCall_withoutSvcInstalled_degradesGracefullyInsteadOfCrashing(GameTestHelper helper) {
         ServerPlayer initiator = makeTestPlayer(helper);
         ServerPlayer callee = makeTestPlayer(helper);
@@ -193,7 +205,9 @@ public class CrazyPhoneGameTests {
      * candidate, open voting, cast a vote via the actual "/crazyphone mayor vote" command, then confirm an
      * immediate re-vote attempt is blocked by the 600-tick cooldown - the tricky stateful logic that's hard
      * to reach without a real CommandSourceStack. */
+    //? if <26 {
     @GameTest(template = "platform", batch = "mayorVoteCooldown")
+    //?}
     public static void mayorVote_viaRealCommand_recordsVoteThenBlocksImmediateRevote(GameTestHelper helper) {
         resetRegistry(helper);
         ServerPlayer voter = makeTestPlayer(helper);
@@ -230,7 +244,9 @@ public class CrazyPhoneGameTests {
     /** The permission-node half of FeatureFlag#isEnabledFor needs a real PermissionAPI, which a plain
      * unit test can't provide - this confirms a globally-disabled feature actually blocks its command path
      * end-to-end (not just that the config bit flips). */
+    //? if <26 {
     @GameTest(template = "platform", batch = "mayorVoteFlagDisabled")
+    //?}
     public static void mayorVote_whileFeatureGloballyDisabled_isBlocked(GameTestHelper helper) {
         resetRegistry(helper);
         ServerPlayer voter = makeTestPlayer(helper);
@@ -266,7 +282,9 @@ public class CrazyPhoneGameTests {
      * from a voter's own vote being blocked/overwritten). Candidate add/remove both call
      * PhoneRegistrySavedData#syncToAll, which broadcasts to every connected player - including the mock
      * voter's handshake-less connection - hence ignoringMockConnectionPacketLimits around those two. */
+    //? if <26 {
     @GameTest(template = "platform", batch = "mayorCandidateAndVoteClearLifecycle")
+    //?}
     public static void mayorCandidateAndVoteClear_viaRealCommands_manageFullLifecycle(GameTestHelper helper) {
         resetRegistry(helper);
         ServerPlayer voter = makeTestPlayer(helper);
@@ -306,7 +324,9 @@ public class CrazyPhoneGameTests {
     /** Sanity check on the test helper itself: the phone actually held resolves to the number that was
      * stamped on it - if this ever fails, every other GameTest here that seeds a phone via CustomData is
      * suspect too. */
+    //? if <26 {
     @GameTest(template = "platform", batch = "heldPhoneNumberSanity")
+    //?}
     public static void heldPhoneNumber_resolvesCorrectly(GameTestHelper helper) {
         ServerPlayer player = makeTestPlayer(helper);
         ItemStack phone = freshCrazyPhone();
@@ -323,7 +343,9 @@ public class CrazyPhoneGameTests {
      * (back/home button handling) must not silently break or get blocked just because CallRegistry
      * considers this player to be in an active call - the two systems (screen history, call state) are
      * independent and neither should gate the other. */
+    //? if <26 {
     @GameTest(template = "platform", batch = "navigateWhileInCall")
+    //?}
     public static void screenNavigation_stillWorksNormally_whileInCall(GameTestHelper helper) {
         ServerPlayer caller = makeTestPlayer(helper);
         ServerPlayer callee = makeTestPlayer(helper);
@@ -351,7 +373,9 @@ public class CrazyPhoneGameTests {
      * the group-settings constructor tags it with the conversationId) - none of the group-settings screen
      * plumbing (#52-72) had a real-player GameTest before, only the underlying procedures via
      * GroupProceduresTest's mocked LevelAccessor. */
+    //? if <26 {
     @GameTest(template = "platform", batch = "openGroupSettingsMenu")
+    //?}
     public static void groupSettingsMenu_opensViaRealMenuPath_taggedWithConversationId(GameTestHelper helper) {
         resetRegistry(helper);
         ServerPlayer admin = makeTestPlayer(helper);
@@ -384,4 +408,61 @@ public class CrazyPhoneGameTests {
                 "the opened screen tag must carry the conversationId as its data, got " + opened);
         helper.succeed();
     }
+
+    //? if >=26 {
+    /*
+    // 26.x removed @GameTest/@GameTestHolder entirely - vanilla's own annotation scanner is gone, replaced
+    // by two separate registries a mod must populate explicitly: Registries.TEST_FUNCTION (the actual
+    // Consumer<GameTestHelper> test bodies, a "simple" built-in registry - moddable via RegisterEvent the
+    // same way this mod already adds custom SoundEvents, another "simple" registry, via ModSounds) and
+    // Registries.TEST_INSTANCE (the per-test metadata: which function, which structure, which environment/
+    // batch - populated via NeoForge's own RegisterGameTestsEvent, fired only when
+    // GameTestHooks.isGametestEnabled() is true, same conditions the old annotation scanner ran under).
+    // TestEnvironmentDefinition is the new home for what used to be @GameTest's plain "batch" string (tests
+    // sharing an environment run as one sequential batch) - registered once per old batch name as an empty
+    // AllOf(List.of()), since none of these tests need actual environment effects, only isolation from each
+    // other's static state (CallRegistry, PhoneRegistrySavedData).
+    private static final java.util.Map<String, net.minecraft.core.Holder<net.minecraft.gametest.framework.TestEnvironmentDefinition<?>>> ENVIRONMENTS = new java.util.HashMap<>();
+
+    private static net.minecraft.core.Holder<net.minecraft.gametest.framework.TestEnvironmentDefinition<?>> environment(net.neoforged.neoforge.event.RegisterGameTestsEvent event, String batchName) {
+        return ENVIRONMENTS.computeIfAbsent(batchName, name ->
+                event.registerEnvironment(Crazyphone.resource(name), new net.minecraft.gametest.framework.TestEnvironmentDefinition.AllOf(java.util.List.of())));
+    }
+
+    public static void registerTestFunctions(net.neoforged.neoforge.registries.RegisterEvent event) {
+        event.register(net.minecraft.core.registries.Registries.TEST_FUNCTION, helper -> {
+            helper.register(Crazyphone.resource("unregistered_phone_use_opens_password_screen"), (java.util.function.Consumer<GameTestHelper>) CrazyPhoneGameTests::unregisteredPhone_useOpensPasswordScreen);
+            helper.register(Crazyphone.resource("registered_phone_use_opens_home_screen"), (java.util.function.Consumer<GameTestHelper>) CrazyPhoneGameTests::registeredPhone_useOpensHomeScreen);
+            helper.register(Crazyphone.resource("start_call_without_svc_installed_degrades_gracefully"), (java.util.function.Consumer<GameTestHelper>) CrazyPhoneGameTests::startCall_withoutSvcInstalled_degradesGracefullyInsteadOfCrashing);
+            helper.register(Crazyphone.resource("mayor_vote_via_real_command_records_then_blocks_revote"), (java.util.function.Consumer<GameTestHelper>) CrazyPhoneGameTests::mayorVote_viaRealCommand_recordsVoteThenBlocksImmediateRevote);
+            helper.register(Crazyphone.resource("mayor_vote_while_feature_globally_disabled_is_blocked"), (java.util.function.Consumer<GameTestHelper>) CrazyPhoneGameTests::mayorVote_whileFeatureGloballyDisabled_isBlocked);
+            helper.register(Crazyphone.resource("mayor_candidate_and_vote_clear_lifecycle"), (java.util.function.Consumer<GameTestHelper>) CrazyPhoneGameTests::mayorCandidateAndVoteClear_viaRealCommands_manageFullLifecycle);
+            helper.register(Crazyphone.resource("held_phone_number_resolves_correctly"), (java.util.function.Consumer<GameTestHelper>) CrazyPhoneGameTests::heldPhoneNumber_resolvesCorrectly);
+            helper.register(Crazyphone.resource("screen_navigation_still_works_while_in_call"), (java.util.function.Consumer<GameTestHelper>) CrazyPhoneGameTests::screenNavigation_stillWorksNormally_whileInCall);
+            helper.register(Crazyphone.resource("group_settings_menu_opens_tagged_with_conversation_id"), (java.util.function.Consumer<GameTestHelper>) CrazyPhoneGameTests::groupSettingsMenu_opensViaRealMenuPath_taggedWithConversationId);
+        });
+    }
+
+    public static void registerGameTests(net.neoforged.neoforge.event.RegisterGameTestsEvent event) {
+        ENVIRONMENTS.clear();
+        registerTest(event, "unregistered_phone_use_opens_password_screen", "unregisteredPhone");
+        registerTest(event, "registered_phone_use_opens_home_screen", "registeredPhone");
+        registerTest(event, "start_call_without_svc_installed_degrades_gracefully", "startCallNoSvc");
+        registerTest(event, "mayor_vote_via_real_command_records_then_blocks_revote", "mayorVoteCooldown");
+        registerTest(event, "mayor_vote_while_feature_globally_disabled_is_blocked", "mayorVoteFlagDisabled");
+        registerTest(event, "mayor_candidate_and_vote_clear_lifecycle", "mayorCandidateAndVoteClearLifecycle");
+        registerTest(event, "held_phone_number_resolves_correctly", "heldPhoneNumberSanity");
+        registerTest(event, "screen_navigation_still_works_while_in_call", "navigateWhileInCall");
+        registerTest(event, "group_settings_menu_opens_tagged_with_conversation_id", "openGroupSettingsMenu");
+    }
+
+    private static void registerTest(net.neoforged.neoforge.event.RegisterGameTestsEvent event, String testName, String batchName) {
+        net.minecraft.resources.Identifier id = Crazyphone.resource(testName);
+        net.minecraft.core.Holder<net.minecraft.gametest.framework.TestEnvironmentDefinition<?>> env = environment(event, batchName);
+        net.minecraft.gametest.framework.TestData<net.minecraft.core.Holder<net.minecraft.gametest.framework.TestEnvironmentDefinition<?>>> testData =
+                new net.minecraft.gametest.framework.TestData<>(env, Crazyphone.resource("platform"), 100, 0, true);
+        event.registerTest(id, new net.minecraft.gametest.framework.FunctionGameTestInstance(
+                net.minecraft.resources.ResourceKey.create(net.minecraft.core.registries.Registries.TEST_FUNCTION, id), testData));
+    }
+    *///?}
 }
