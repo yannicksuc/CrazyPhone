@@ -68,15 +68,25 @@ public abstract class CrazyPhonePresentHandGripMixin {
     // Same "cancel then reapply the real camera angle" technique as CrazyPhonePhotoItemRenderer's own first-
     // person presenting branch (see that method's own doc comment) - duplicated here rather than shared
     // because this runs on a different class entirely with no common call site to factor it into.
+    //
+    // 1.20.4-only: live testing showed the grip was only correctly oriented while facing due north (yaw
+    // 180, pitch ~0) - exactly the one case where 180f-yaw/pitch below happen to compute to zero extra
+    // rotation. That means the CANCEL step alone (before any reapply) already lands camera-relative on
+    // this version, unlike >=1.20.5 where cancel-alone was proven (through the same kind of live testing)
+    // to land at world-space identity, which is what made reapplying the real camera angle necessary there
+    // in the first place. Reapplying it AGAIN here on a version where cancel is already camera-relative
+    // double-counts the rotation - skip the reapply entirely below <1.20.5.
     private static void crazyphone$applyGripTransform(PoseStack poseStack, HumanoidArm arm) {
         Vector3f pos = poseStack.last().pose().getTranslation(new Vector3f());
         poseStack.mulPose(poseStack.last().pose().getNormalizedRotation(new Quaternionf()).conjugate());
         poseStack.translate(-pos.x, -pos.y, -pos.z);
-        Camera camera = Minecraft.getInstance().gameRenderer.getMainCamera();
+        //? if >=1.20.5 {
+        /*Camera camera = Minecraft.getInstance().gameRenderer.getMainCamera();
         float yaw = camera.getYRot() * CrazyPhonePresentDebug.yawSign + CrazyPhonePresentDebug.yawOffset;
         float pitch = camera.getXRot() * CrazyPhonePresentDebug.pitchSign + CrazyPhonePresentDebug.pitchOffset;
         poseStack.mulPose(Axis.YP.rotationDegrees(180f - yaw));
         poseStack.mulPose(Axis.XP.rotationDegrees(pitch));
+        *///?}
         float side = arm == HumanoidArm.RIGHT ? 1f : -1f;
         poseStack.translate(side * CrazyPhonePresentDebug.handX, CrazyPhonePresentDebug.y + CrazyPhonePresentDebug.handY, 1f / 16f + CrazyPhonePresentDebug.z + CrazyPhonePresentDebug.handZ);
     }

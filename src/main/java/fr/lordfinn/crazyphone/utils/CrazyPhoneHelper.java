@@ -254,7 +254,7 @@ public class CrazyPhoneHelper {
 
             data.appendMessage(conversationId, messageTag);
             List<String> numbers = getGroupMembers(world, conversationId);
-            notifyContacts(world, messageTag, numbers, senderNumber, "ðŸŽ¤", timestampInMinutes, conversationId);
+            notifyContacts(world, messageTag, numbers, senderNumber, "🎤", timestampInMinutes, conversationId);
         }
     }
 

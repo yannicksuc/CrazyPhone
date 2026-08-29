@@ -8,7 +8,8 @@
     "MouseHandlerCursorMixin",
     "PlayerPresentPoseMixin",
     "CrazyPhonePresentHandGripMixin",
-    "CrazyPhonePresentHandGripInvokerMixin"
+    "CrazyPhonePresentHandGripInvokerMixin",
+    "CrazyPhonePhotoItemRenderMixin"
   ],
   "injectors": {
     "defaultRequire": 1

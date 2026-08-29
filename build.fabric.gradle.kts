@@ -308,6 +308,7 @@ sourceSets.main {
             "fr/lordfinn/crazyphone/mixin/CrazyPhoneCaptureGuiMixin.java",
             "fr/lordfinn/crazyphone/mixin/CrazyPhoneCaptureScrollMixin.java",
             "fr/lordfinn/crazyphone/mixin/CrazyPhoneCapturePressMixin.java",
+            "fr/lordfinn/crazyphone/mixin/CrazyPhoneCaptureEscapeMixin.java",
             // Sneak-presenting a photo (arm pose + centered held-card render) - fully loader-neutral now:
             // CrazyPhonePresentPose and PlayerPresentPoseMixin have no NeoForge-specific parts left at all,
             // and the presenting-aware branches live directly in CrazyPhonePhotoItemRenderer (both first- and

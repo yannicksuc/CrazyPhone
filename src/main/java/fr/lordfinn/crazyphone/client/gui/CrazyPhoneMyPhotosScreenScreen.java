@@ -246,7 +246,10 @@ public class CrazyPhoneMyPhotosScreenScreen extends CrazyPhoneDefaultScreenScree
         Minecraft.getInstance().player.playSound(SoundEvents.EXPERIENCE_ORB_PICKUP, 1.0F, 1.0F);
         selectedPhotoIds.clear();
         updateActionButtonsState();
-        onClose();
+        // Not onClose() - that closes the whole phone UI rather than returning to the conversation this
+        // gallery was opened from to send into. Same "pop one entry off the screen history" navigation the
+        // Back button itself uses.
+        onBackButtonPressed();
     }
 
     private void sendAction(CrazyPhoneMyPhotosActionMessage.Action action) {

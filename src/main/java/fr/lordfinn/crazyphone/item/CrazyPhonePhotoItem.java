@@ -90,9 +90,11 @@ public class CrazyPhonePhotoItem extends Item {
 
     @Override
     public void initializeClient(java.util.function.Consumer<IClientItemExtensions> consumer) {
+        org.slf4j.LoggerFactory.getLogger("crazyphone-capture-debug").info("CrazyPhonePhotoItem.initializeClient() called");
         consumer.accept(new IClientItemExtensions() {
             @Override
             public net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer getCustomRenderer() {
+                org.slf4j.LoggerFactory.getLogger("crazyphone-capture-debug").info("CrazyPhonePhotoItem.getCustomRenderer() called, renderer==null? {}", renderer == null);
                 if (renderer == null) {
                     net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
                     renderer = new net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer(mc.getBlockEntityRenderDispatcher(), mc.getEntityModels()) {

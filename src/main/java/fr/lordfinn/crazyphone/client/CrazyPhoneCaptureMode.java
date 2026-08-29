@@ -10,9 +10,16 @@ import net.neoforged.fml.common.Mod.EventBusSubscriber;
 *///?}
 import net.neoforged.neoforge.client.event.ViewportEvent;
 import net.neoforged.neoforge.client.event.InputEvent;
-import net.neoforged.neoforge.client.event.RenderGuiEvent;
 import net.neoforged.neoforge.client.event.RenderHandEvent;
+import net.neoforged.neoforge.client.event.RenderGuiEvent;
 import org.lwjgl.glfw.GLFW;
+//? if <1.20.5 {
+import net.neoforged.neoforge.client.event.RenderGuiOverlayEvent;
+import net.neoforged.neoforge.client.gui.overlay.VanillaGuiOverlay;
+//?} else {
+/*import net.neoforged.neoforge.client.event.RenderGuiLayerEvent;
+import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
+*///?}
 //?}
 
 import net.minecraft.client.Minecraft;
@@ -62,6 +69,7 @@ import fr.lordfinn.crazyphone.utils.NetworkAccess;
 *///?}
 //?}
 public final class CrazyPhoneCaptureMode {
+    private static final org.slf4j.Logger DEBUG_LOGGER = org.slf4j.LoggerFactory.getLogger("crazyphone-capture-debug");
     private static final float MIN_ZOOM = 1.0f;
     private static final float MAX_ZOOM = 4.0f;
     private static final float ZOOM_STEP = 0.25f;
@@ -70,7 +78,6 @@ public final class CrazyPhoneCaptureMode {
     private static boolean active = false;
     private static String conversationId = "";
     private static Screen previousScreen = null;
-    private static boolean previousHideGui = false;
     private static boolean capturing = false;
     private static float targetZoom = MIN_ZOOM;
     private static float currentZoom = MIN_ZOOM;
@@ -100,13 +107,12 @@ public final class CrazyPhoneCaptureMode {
         }
         conversationId = newConversationId;
         previousScreen = mc.screen;
-        previousHideGui = mc.options.hideGui;
-        mc.options.hideGui = true;
         mc.setScreen(null);
         targetZoom = MIN_ZOOM;
         currentZoom = MIN_ZOOM;
         capturing = false;
         active = true;
+        DEBUG_LOGGER.info("enter() activated capture mode, conversationId='{}'", newConversationId);
     }
 
     /** Single choke point for every capture entry point (punch-to-shoot, the home screen's Photo icon, the
@@ -127,7 +133,6 @@ public final class CrazyPhoneCaptureMode {
             return;
         Minecraft mc = Minecraft.getInstance();
         active = false;
-        mc.options.hideGui = previousHideGui;
         mc.setScreen(previousScreen);
         previousScreen = null;
     }
@@ -150,10 +155,13 @@ public final class CrazyPhoneCaptureMode {
         if (!active || capturing)
             return;
         capturing = true;
+        DEBUG_LOGGER.info("triggerCapture() firing, requesting capture");
         if (Minecraft.getInstance().player != null)
             Minecraft.getInstance().player.playSound(fr.lordfinn.crazyphone.init.ModSounds.TAKE_PICTURE.get(), 1.0f, 1.0f);
         FabricPictureCapture.requestCapture((thumbnailPng, fullPng) -> {
             capturing = false;
+            DEBUG_LOGGER.info("capture callback: thumbnailPng={} bytes, fullPng={} bytes",
+                    thumbnailPng == null ? -1 : thumbnailPng.length, fullPng == null ? -1 : fullPng.length);
             if (thumbnailPng != null && fullPng != null)
                 NetworkAccess.sendToServer(new CrazyPhoneUploadPicturePacket(conversationId, thumbnailPng, fullPng));
             exit();
@@ -228,10 +236,82 @@ public final class CrazyPhoneCaptureMode {
             event.setCanceled(true);
     }
 
+    // Escape while framing a shot has no Screen to fall back on (mc.setScreen(null) in enter()), so vanilla
+    // opens the pause menu the same way it would on any other in-game Escape press - fired right before that
+    // actually happens, letting this redirect to a normal exit() (mouse-grab restored, previous screen if
+    // any reopened) instead.
+    @SubscribeEvent
+    public static void onScreenOpening(net.neoforged.neoforge.client.event.ScreenEvent.Opening event) {
+        if (active && event.getNewScreen() instanceof net.minecraft.client.gui.screens.PauseScreen) {
+            event.setCanceled(true);
+            exit();
+        }
+    }
+
+    // NeoForge's own Minecraft instance actually runs an ExtendedGui (a subclass that fully overrides
+    // render(), implementing its own per-overlay dispatch to fire RenderGuiOverlayEvent/RenderGuiLayerEvent
+    // for each vanilla element) - a Mixin targeting the parent Gui#render, tried first, silently never fires
+    // at all on NeoForge as a result (virtual dispatch always resolves to the override), which is what a
+    // Fabric-only equivalent of this exists for instead (see CrazyPhoneCaptureGuiMixin). RenderGuiEvent.Post
+    // itself DOES still fire correctly (it's raised from within ExtendedGui's own real method body), so this
+    // draws the overlay the same way the old pre-mixin version of this class did.
     @SubscribeEvent
     public static void onRenderGui(RenderGuiEvent.Post event) {
         drawOverlay(event.getGuiGraphics());
     }
+
+    // Suppresses every vanilla HUD element (hotbar, crosshair, health/food/xp bars, chat, etc.) individually
+    // while framing a shot, instead of the options.hideGui toggle this used to rely on - hideGui turned out
+    // to ALSO gate whether ExtendedGui fires RenderGuiEvent at all (confirmed live: the overlay above only
+    // ever drew while hideGui was OFF, the opposite of what this needs), so suppressing each element by
+    // name here leaves hideGui completely untouched.
+    //? if <1.20.5 {
+    private static final java.util.Set<net.minecraft.resources.ResourceLocation> HIDDEN_OVERLAYS = java.util.Set.of(
+            VanillaGuiOverlay.HOTBAR.id(), VanillaGuiOverlay.CROSSHAIR.id(),
+            VanillaGuiOverlay.PLAYER_HEALTH.id(), VanillaGuiOverlay.ARMOR_LEVEL.id(),
+            VanillaGuiOverlay.FOOD_LEVEL.id(), VanillaGuiOverlay.AIR_LEVEL.id(),
+            VanillaGuiOverlay.MOUNT_HEALTH.id(), VanillaGuiOverlay.JUMP_BAR.id(),
+            VanillaGuiOverlay.EXPERIENCE_BAR.id(), VanillaGuiOverlay.POTION_ICONS.id(),
+            VanillaGuiOverlay.BOSS_EVENT_PROGRESS.id(), VanillaGuiOverlay.CHAT_PANEL.id(),
+            VanillaGuiOverlay.SUBTITLES.id(), VanillaGuiOverlay.RECORD_OVERLAY.id(),
+            VanillaGuiOverlay.SCOREBOARD.id(), VanillaGuiOverlay.TITLE_TEXT.id(),
+            VanillaGuiOverlay.ITEM_NAME.id(), VanillaGuiOverlay.SLEEP_FADE.id(),
+            VanillaGuiOverlay.DEMO_OVERLAY.id(), VanillaGuiOverlay.DEBUG_SCREEN.id(),
+            VanillaGuiOverlay.PLAYER_LIST.id()
+    );
+
+    @SubscribeEvent
+    public static void onRenderGuiOverlay(RenderGuiOverlayEvent.Pre event) {
+        if (active && HIDDEN_OVERLAYS.contains(event.getOverlay().id()))
+            event.setCanceled(true);
+    }
+    //?}
+    //? if >=1.20.5 <1.21.10 {
+    /*private static final java.util.Set<net.minecraft.resources.ResourceLocation> HIDDEN_LAYERS = java.util.Set.of(
+            VanillaGuiLayers.HOTBAR, VanillaGuiLayers.CROSSHAIR,
+            VanillaGuiLayers.PLAYER_HEALTH, VanillaGuiLayers.ARMOR_LEVEL,
+            VanillaGuiLayers.FOOD_LEVEL, VanillaGuiLayers.AIR_LEVEL,
+            VanillaGuiLayers.VEHICLE_HEALTH, VanillaGuiLayers.JUMP_METER,
+            VanillaGuiLayers.EXPERIENCE_BAR, VanillaGuiLayers.EFFECTS,
+            VanillaGuiLayers.BOSS_OVERLAY, VanillaGuiLayers.CHAT,
+            VanillaGuiLayers.SUBTITLE_OVERLAY, VanillaGuiLayers.OVERLAY_MESSAGE,
+            VanillaGuiLayers.SCOREBOARD_SIDEBAR, VanillaGuiLayers.TITLE,
+            VanillaGuiLayers.SPECTATOR_TOOLTIP, VanillaGuiLayers.SELECTED_ITEM_NAME,
+            VanillaGuiLayers.SLEEP_OVERLAY, VanillaGuiLayers.DEMO_OVERLAY,
+            VanillaGuiLayers.DEBUG_OVERLAY, VanillaGuiLayers.TAB_LIST,
+            VanillaGuiLayers.SAVING_INDICATOR, VanillaGuiLayers.CAMERA_OVERLAYS
+    );
+
+    @SubscribeEvent
+    public static void onRenderGuiLayer(RenderGuiLayerEvent.Pre event) {
+        if (active && HIDDEN_LAYERS.contains(event.getName()))
+            event.setCanceled(true);
+    }
+    *///?}
+    // >=1.21.10: no-op - VanillaGuiLayers was reworked on that version (several fields used above no
+    // longer exist, e.g. JUMP_METER/EXPERIENCE_BAR/DEBUG_OVERLAY/SAVING_INDICATOR), and the capture
+    // feature as a whole is already known not to work there yet (see FabricPictureCapture/CrazyPhonePhotoItem's
+    // own 1.21.10 TODOs) - not worth chasing the new field names until that backport happens.
     //?}
     // tick() is called from FabricPictureCapture#tickAll instead of its own event subscriber here - that
     // class already has a client-tick hook registered on both loaders (mirroring CallRingtoneManager's

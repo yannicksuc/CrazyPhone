@@ -128,6 +128,7 @@ public final class FabricPictureCapture {
                 }
             }
         } catch (IOException e) {
+            org.slf4j.LoggerFactory.getLogger("crazyphone-capture-debug").warn("Screenshot capture failed", e);
             callback.accept(null, null);
         }
     }

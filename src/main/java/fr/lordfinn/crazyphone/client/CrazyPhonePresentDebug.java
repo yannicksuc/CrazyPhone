@@ -38,6 +38,14 @@ public final class CrazyPhonePresentDebug {
     public static float handY = 0.900f;
     public static float handZ = 1.200f;
 
+    // Temporary: when true, the third-person presenting branch renders 10 small colored candidate cards
+    // fanned out side by side instead of the one real card - each tries a different rotation formula, so a
+    // live tester can report back which COLOR stays locked to the arms while turning the camera, instead of
+    // one guess-compile-relaunch cycle per formula. See CrazyPhonePhotoItemRenderer#renderPresentingCandidates
+    // for the color/formula legend. Winning formula found (pink, index 7 - no cancel at all on 1.20.4) and
+    // applied directly in the real branch - left false, off, unless another round of this is needed.
+    public static boolean presentCandidateFan = false;
+
     public static String describe() {
         return String.format(java.util.Locale.ROOT,
                 "y=%.3f z=%.3f scale=%.3f yawSign=%.0f pitchSign=%.0f yawOffset=%.1f pitchOffset=%.1f flip=%s handX=%.3f handY=%.3f handZ=%.3f",

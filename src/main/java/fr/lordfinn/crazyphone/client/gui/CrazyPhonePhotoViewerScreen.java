@@ -53,6 +53,11 @@ public class CrazyPhonePhotoViewerScreen extends Screen implements PhoneScreen {
 
     @Override
     protected void init() {
+        // A window resize re-invokes init() (Screen#resize calls it again with the new width/height) -
+        // without clearing here first, the old buttons' still-registered click/focus dispatch (addRenderableWidget)
+        // and stale-positioned render (ownButtons) both stuck around alongside the freshly-added ones,
+        // showing as the same button doubled up and overlapping at two different positions.
+        ownButtons.clear();
         if (openedFromInventory)
             return;
         int buttonWidth = 90, buttonHeight = 20, spacing = 5;

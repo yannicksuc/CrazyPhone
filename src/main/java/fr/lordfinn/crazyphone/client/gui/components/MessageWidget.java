@@ -480,14 +480,15 @@ public class MessageWidget extends AbstractWidget {
     private void renderImage(GuiGraphics guiGraphics, int mouseX, int mouseY) {
         if (fabricImageId == null) return;
 
-        if (imageWidth <= 0 || imageHeight <= 0) {
+        if (imageWidth <= 0 || imageHeight <= 0 || !imageAspectResolved) {
             initImageScaling();
             adjustPosition();
             manager.resetPositions();
         }
 
         fr.lordfinn.crazyphone.client.picture.FabricPictureCache.CachedTexture texture =
-                fr.lordfinn.crazyphone.client.picture.FabricPictureCache.getOrRequest(fabricImageId, fr.lordfinn.crazyphone.utils.PhotoResolution.THUMBNAIL);
+                fr.lordfinn.crazyphone.client.picture.FabricPictureCache.getOrRequest(fabricImageId,
+                        fr.lordfinn.crazyphone.ClientConfig.phonePhotoListPixelated ? fr.lordfinn.crazyphone.utils.PhotoResolution.THUMBNAIL : fr.lordfinn.crazyphone.utils.PhotoResolution.FULL);
         if (texture == null) return;
 
         int x = wrappedText.getX();
@@ -509,19 +510,31 @@ public class MessageWidget extends AbstractWidget {
         GuiCompat.blit(guiGraphics, texture.location(), drawX, drawY, 300, drawWidth, drawHeight);
     }
 
+    // Set once the real aspect ratio (not the placeholder guess below) has actually been applied - the
+    // fetch is async, so the FIRST render() can easily land before FabricPictureCache has the texture yet.
+    // Without tracking this separately from imageWidth/imageHeight being merely non-zero, that render locked
+    // in the square placeholder permanently (the "imageWidth <= 0" re-run guard was already satisfied by the
+    // placeholder's own non-zero values), which is why only images fetched in time to have already resolved
+    // the real ratio came out looking correct and every other one stayed stuck square.
+    private boolean imageAspectResolved = false;
+
     public void initImageScaling() {
         if (fabricImageId == null) return;
         int maxWidth = wrappedText.getWidth();
         fr.lordfinn.crazyphone.client.picture.FabricPictureCache.CachedTexture texture =
-                fr.lordfinn.crazyphone.client.picture.FabricPictureCache.getOrRequest(fabricImageId, fr.lordfinn.crazyphone.utils.PhotoResolution.THUMBNAIL);
+                fr.lordfinn.crazyphone.client.picture.FabricPictureCache.getOrRequest(fabricImageId,
+                        fr.lordfinn.crazyphone.ClientConfig.phonePhotoListPixelated ? fr.lordfinn.crazyphone.utils.PhotoResolution.THUMBNAIL : fr.lordfinn.crazyphone.utils.PhotoResolution.FULL);
         if (texture != null) {
             // Real aspect ratio once the texture has actually arrived (server fetch is async).
             this.imageWidth = maxWidth;
             this.imageHeight = Math.max(1, Math.round(maxWidth * ((float) texture.height() / texture.width())));
+            this.imageAspectResolved = true;
         } else {
-            // Reasonable default until the fetch resolves - corrected on the next call once it does.
+            // Rectangular (not square) placeholder until the fetch resolves - re-run every call until it
+            // does (see imageAspectResolved), matching every real photo's own landscape-ish aspect ratio
+            // closely enough that the placeholder-to-real swap isn't visually jarring either.
             this.imageWidth = maxWidth;
-            this.imageHeight = maxWidth;
+            this.imageHeight = Math.max(1, Math.round(maxWidth * 0.75f));
         }
         wrappedText.setMinHeight(Math.max(18, this.imageHeight));
         this.setHeight(wrappedText.getHeight());

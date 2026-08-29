@@ -135,7 +135,19 @@ public final class CrazyPhonePhotoItemRenderer {
     private CrazyPhonePhotoItemRenderer() {
     }
 
+    // Temporary diagnostic - confirms whether render() is even reached at all on 1.20.4 (vs. never being
+    // called in the first place, which would point at custom-renderer registration instead of anything
+    // inside this method) and, if reached, whether PhotoItemData actually resolves. Throttled per
+    // displayContext so every hand/gui/ground/frame case gets its own log line without spamming.
+    private static final java.util.Set<ItemDisplayContext> crazyphone$loggedContexts = new java.util.HashSet<>();
+
     public static void render(ItemStack stack, ItemDisplayContext displayContext, PoseStack poseStack, MultiBufferSource bufferSource, int packedLight, int packedOverlay) {
+        if (crazyphone$loggedContexts.add(displayContext)) {
+            fr.lordfinn.crazyphone.utils.PhotoItemData loggedData = fr.lordfinn.crazyphone.utils.PhotoItemData.fromStack(stack);
+            org.slf4j.LoggerFactory.getLogger("crazyphone-capture-debug").info(
+                    "CrazyPhonePhotoItemRenderer.render() reached: displayContext={} photoData={}",
+                    displayContext, loggedData == null ? "null" : loggedData.photoId());
+        }
         boolean isLeftHand = displayContext == ItemDisplayContext.FIRST_PERSON_LEFT_HAND || displayContext == ItemDisplayContext.THIRD_PERSON_LEFT_HAND;
         boolean isHand = isLeftHand || displayContext == ItemDisplayContext.FIRST_PERSON_RIGHT_HAND || displayContext == ItemDisplayContext.THIRD_PERSON_RIGHT_HAND;
         boolean isFirstPersonHand = displayContext == ItemDisplayContext.FIRST_PERSON_LEFT_HAND || displayContext == ItemDisplayContext.FIRST_PERSON_RIGHT_HAND;
@@ -176,11 +188,21 @@ public final class CrazyPhonePhotoItemRenderer {
                     org.joml.Vector3f handPos = poseStack.last().pose().getTranslation(new org.joml.Vector3f());
                     poseStack.mulPose(poseStack.last().pose().getNormalizedRotation(new Quaternionf()).conjugate());
                     poseStack.translate(-handPos.x, -handPos.y, -handPos.z);
-                    net.minecraft.client.Camera camera = net.minecraft.client.Minecraft.getInstance().gameRenderer.getMainCamera();
+                    // 1.20.4-only: live testing showed this card (and CrazyPhonePresentHandGripMixin's own
+                    // grip, same root cause) was only correctly oriented while facing due north - exactly
+                    // the case where the reapply below computes to zero extra rotation. The cancel step
+                    // above already lands camera-relative on this version, unlike >=1.20.5 where cancel
+                    // alone was proven (through this same kind of live testing) to land at world-space
+                    // identity, which is what made reapplying the real camera angle necessary there in the
+                    // first place - reapplying it again here on a version where cancel is already
+                    // camera-relative double-counts the rotation, so it's skipped below <1.20.5.
+                    //? if >=1.20.5 {
+                    /*net.minecraft.client.Camera camera = net.minecraft.client.Minecraft.getInstance().gameRenderer.getMainCamera();
                     float debugYaw = camera.getYRot() * CrazyPhonePresentDebug.yawSign + CrazyPhonePresentDebug.yawOffset;
                     float debugPitch = camera.getXRot() * CrazyPhonePresentDebug.pitchSign + CrazyPhonePresentDebug.pitchOffset;
                     poseStack.mulPose(Axis.YP.rotationDegrees(180f - debugYaw));
                     poseStack.mulPose(Axis.XP.rotationDegrees(debugPitch));
+                    *///?}
                     poseStack.translate(0, CrazyPhonePresentDebug.y, NORMAL_OFFSET + CrazyPhonePresentDebug.z);
                     poseStack.scale(CrazyPhonePresentDebug.scale, CrazyPhonePresentDebug.scale, CrazyPhonePresentDebug.scale);
                     // Presenting means showing the photo's front to whoever's in front of you, so from your
@@ -197,26 +219,28 @@ public final class CrazyPhonePhotoItemRenderer {
                 boolean presenting = CrazyPhonePresentPose.presentingThisRender;
                 float presentEntityYaw = CrazyPhonePresentPose.presentingEntityYaw;
                 float presentHeadPitch = CrazyPhonePresentPose.presentingHeadPitch;
-                if (presenting) {
-                    // Cancel whatever rotation the arm bone (and everything above it) baked into the
-                    // poseStack by this point, exactly, instead of guessing a fixed compensating angle - see
-                    // PRESENT_SCALE's own doc comment for why. getNormalizedRotation/conjugate extracts and
-                    // inverts the ACTUAL current rotation regardless of what it is; re-applying the same
-                    // "180 - entityYaw" yaw LivingEntityRenderer itself uses restores exactly the body-facing
-                    // orientation, no more and no less - the card ends up in the same reference frame the
-                    // normal (non-presenting) one-handed carry below already renders correctly in, just
-                    // bigger, centered, and always facing forward instead of resting at hip height.
-                    poseStack.mulPose(poseStack.last().pose().getNormalizedRotation(new Quaternionf()).conjugate());
+                if (presenting && CrazyPhonePresentDebug.presentCandidateFan) {
+                    renderPresentingCandidates(poseStack, bufferSource, packedLight, packedOverlay, isLeftHand, presentEntityYaw, presentHeadPitch);
+                    poseStack.popPose();
+                    return;
+                } else if (presenting) {
+                    // Winning formula, confirmed live via a 10-color candidate fan test (see
+                    // renderPresentingCandidates, kept as dead code behind
+                    // CrazyPhonePresentDebug#presentCandidateFan for any future round of this): on 1.20.4 the
+                    // arm bone's own baked-in rotation is ALREADY correct at this point in the poseStack
+                    // chain - no cancellation needed at all. Every "cancel it, then reapply something"
+                    // attempt tried here (full reset to camera-relative identity, then reapplying the
+                    // entity's own body yaw/head pitch) instead left the card tracking the live camera while
+                    // turning the mouse alone with the body still, confirmed live - meaning the cancel step
+                    // itself was introducing the camera dependency, not removing it.
+                    // >=1.20.5 still needs the old cancel+reapply approach (untouched here, not re-tested
+                    // this round - that version's own poseStack chain lands somewhere different by this
+                    // point, per the first-person presenting branch's own doc comment on the same split).
+                    //? if >=1.20.5 {
+                    /*poseStack.mulPose(poseStack.last().pose().getNormalizedRotation(new Quaternionf()).conjugate());
                     poseStack.mulPose(Axis.YP.rotationDegrees(180f - presentEntityYaw));
-                    // Tilts the reference frame itself to match how much the arms are currently pitched up/
-                    // down (head.xRot alone - see applyArmTransform's own doc comment for why that's exactly
-                    // the arm's own "extra" delta beyond its fixed baseline), BEFORE the position offset
-                    // below - so that offset (and the card sitting at the end of it) tilts along as one rigid
-                    // piece with the hand, the same way a card actually resting on an upturned/downturned
-                    // palm would. Applying this after the translate instead (tried first) rotated the card
-                    // around its own center rather than the hand's own pivot, which read as an odd swinging/
-                    // lagging disconnect from the arms instead of a clean tilt.
                     poseStack.mulPose(Axis.XP.rotationDegrees(-(float) Math.toDegrees(presentHeadPitch)));
+                    *///?}
                     float centerX = isLeftHand ? PRESENT_CENTER_X : -PRESENT_CENTER_X;
                     poseStack.translate(centerX, PRESENT_Y_LIFT, NORMAL_OFFSET + PRESENT_Z_FORWARD);
                     poseStack.scale(PRESENT_SCALE, PRESENT_SCALE, PRESENT_SCALE);
@@ -257,6 +281,127 @@ public final class CrazyPhonePhotoItemRenderer {
         }
 
         poseStack.popPose();
+    }
+
+    // Debug only (see CrazyPhonePresentDebug#presentCandidateFan): draws 10 small flat colored rectangles
+    // side by side, each testing a different rotation formula for the third-person presenting card, so a
+    // live tester can report back which COLOR stays locked to the arms while turning the camera instead of
+    // one guess-compile-relaunch cycle per formula. Legend (color -> formula), all starting from the same
+    // "cancel the arm bone's baked-in rotation" step unless noted:
+    //   0 RED     - no reapply at all (cancel-only baseline - expected to face the camera/billboard)
+    //   1 ORANGE  - reapply yaw only: YP(180 - entityYaw)
+    //   2 YELLOW  - reapply yaw + pitch (the combo just tried live): YP(180-entityYaw), XP(-pitch)
+    //   3 GREEN   - reapply yaw only, opposite convention: YP(entityYaw)
+    //   4 CYAN    - reapply yaw only, negated: YP(-entityYaw)
+    //   5 BLUE    - yaw + pitch with pitch sign flipped: YP(180-entityYaw), XP(+pitch)
+    //   6 PURPLE  - pitch only, no yaw: XP(-pitch)
+    //   7 MAGENTA - no cancel at all (raw arm-bone transform, untouched)
+    //   8 WHITE   - cancel + reapply the LIVE CAMERA's own yaw/pitch (same technique the first-person branch
+    //               above uses), instead of the entity's own body/head model values
+    //   9 GRAY    - yaw + pitch, order swapped: XP(-pitch) applied BEFORE YP(180-entityYaw)
+    private static void renderPresentingCandidates(PoseStack poseStack, MultiBufferSource bufferSource, int packedLight, int packedOverlay,
+                                                     boolean isLeftHand, float presentEntityYaw, float presentHeadPitch) {
+        int[] colors = {
+                0xDC3232, 0xE68C28, 0xE6DC28, 0x3CC83C, 0x32C8C8,
+                0x3C5AE6, 0x963CDC, 0xE63CB4, 0xF0F0F0, 0x5A5A5A,
+        };
+        float spacing = 0.55f;
+        float fanScale = PRESENT_SCALE / 3.2f;
+        for (int i = 0; i < 10; i++) {
+            poseStack.pushPose();
+            // Spreads the 10 candidates apart BEFORE any candidate-specific rotation, in the arm bone's own
+            // (shared, un-rotated) local frame, so the separation is consistent across every candidate
+            // regardless of what that candidate's own formula does afterward - each candidate's rotation is
+            // then applied around its own already-offset position instead of around a shared center.
+            poseStack.translate((i - 4.5f) * spacing, 0, 0);
+            boolean cancel = i != 7;
+            if (cancel)
+                poseStack.mulPose(poseStack.last().pose().getNormalizedRotation(new Quaternionf()).conjugate());
+            switch (i) {
+                case 1 -> poseStack.mulPose(Axis.YP.rotationDegrees(180f - presentEntityYaw));
+                case 2 -> {
+                    poseStack.mulPose(Axis.YP.rotationDegrees(180f - presentEntityYaw));
+                    poseStack.mulPose(Axis.XP.rotationDegrees(-(float) Math.toDegrees(presentHeadPitch)));
+                }
+                case 3 -> poseStack.mulPose(Axis.YP.rotationDegrees(presentEntityYaw));
+                case 4 -> poseStack.mulPose(Axis.YP.rotationDegrees(-presentEntityYaw));
+                case 5 -> {
+                    poseStack.mulPose(Axis.YP.rotationDegrees(180f - presentEntityYaw));
+                    poseStack.mulPose(Axis.XP.rotationDegrees((float) Math.toDegrees(presentHeadPitch)));
+                }
+                case 6 -> poseStack.mulPose(Axis.XP.rotationDegrees(-(float) Math.toDegrees(presentHeadPitch)));
+                case 8 -> {
+                    net.minecraft.client.Camera camera = net.minecraft.client.Minecraft.getInstance().gameRenderer.getMainCamera();
+                    poseStack.mulPose(Axis.YP.rotationDegrees(180f - camera.getYRot()));
+                    poseStack.mulPose(Axis.XP.rotationDegrees(camera.getXRot()));
+                }
+                case 9 -> {
+                    poseStack.mulPose(Axis.XP.rotationDegrees(-(float) Math.toDegrees(presentHeadPitch)));
+                    poseStack.mulPose(Axis.YP.rotationDegrees(180f - presentEntityYaw));
+                }
+                default -> {
+                }
+            }
+            poseStack.translate(0, PRESENT_Y_LIFT, NORMAL_OFFSET + PRESENT_Z_FORWARD);
+            poseStack.scale(fanScale, fanScale, fanScale);
+            poseStack.mulPose(Axis.YP.rotationDegrees(180f));
+            drawColorTintedCard(poseStack, bufferSource, packedLight, packedOverlay, colors[i]);
+            poseStack.popPose();
+        }
+    }
+
+    // Plain colored rectangle (both faces, tinted, no photo) - reuses FRAME_TEXTURE (near-white) as the
+    // sampled texture purely so the existing vertex-color-tinting path works, not for its actual pixels.
+    private static void drawColorTintedCard(PoseStack poseStack, MultiBufferSource bufferSource, int light, int overlay, int rgb) {
+        PoseStack.Pose pose = poseStack.last();
+        VertexConsumer buffer = bufferSource.getBuffer(RenderType.entityCutout(FRAME_TEXTURE));
+        int r = (rgb >> 16) & 0xFF, g = (rgb >> 8) & 0xFF, b = rgb & 0xFF;
+        float h = FRAME_HALF;
+        tintedQuad(buffer, pose, light, overlay, r, g, b,
+                -h, h, 0, 0, 0,
+                -h, -h, 0, 0, 1,
+                h, -h, 0, 1, 1,
+                h, h, 0, 1, 0,
+                0, 0, 1);
+        tintedQuad(buffer, pose, light, overlay, r, g, b,
+                h, h, 0, 0, 0,
+                h, -h, 0, 0, 1,
+                -h, -h, 0, 1, 1,
+                -h, h, 0, 1, 0,
+                0, 0, -1);
+    }
+
+    private static void tintedQuad(VertexConsumer buffer, PoseStack.Pose pose, int light, int overlay, int r, int g, int b,
+                                    float x0, float y0, float z0, float u0, float v0,
+                                    float x1, float y1, float z1, float u1, float v1,
+                                    float x2, float y2, float z2, float u2, float v2,
+                                    float x3, float y3, float z3, float u3, float v3,
+                                    float nx, float ny, float nz) {
+        tintedVertex(buffer, pose, x0, y0, z0, u0, v0, light, overlay, nx, ny, nz, r, g, b);
+        tintedVertex(buffer, pose, x1, y1, z1, u1, v1, light, overlay, nx, ny, nz, r, g, b);
+        tintedVertex(buffer, pose, x2, y2, z2, u2, v2, light, overlay, nx, ny, nz, r, g, b);
+        tintedVertex(buffer, pose, x3, y3, z3, u3, v3, light, overlay, nx, ny, nz, r, g, b);
+    }
+
+    private static void tintedVertex(VertexConsumer buffer, PoseStack.Pose pose, float x, float y, float z,
+                                      float u, float v, int light, int overlay, float nx, float ny, float nz,
+                                      int r, int g, int b) {
+        //? if <1.20.5 {
+        buffer.vertex(pose.pose(), x, y, z)
+                .color(r, g, b, 255)
+                .uv(u, v)
+                .overlayCoords(overlay)
+                .uv2(light)
+                .normal(pose.normal(), nx, ny, nz)
+                .endVertex();
+        //? } else {
+        /*buffer.addVertex(pose, x, y, z)
+                .setColor(r, g, b, 255)
+                .setUv(u, v)
+                .setOverlay(overlay)
+                .setLight(light)
+                .setNormal(pose, nx, ny, nz);
+        *///?}
     }
 
     // Same Polaroid-style frame as renderFramedCard (front/back/1px edge, off-white frame texture), but

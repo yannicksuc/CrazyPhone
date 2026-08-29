@@ -338,6 +338,16 @@ principle carries through the voice features added later, and through Fabric's o
 audio, voice message audio, and image bytes are only ever sent to the players who actually need them, on
 demand, never broadcast.
 
+The original `crazythings` camera feature also depended on a third-party mod (Camera) for capture, storage,
+and rendering. That dependency is gone: capture (zoom, framing, shutter), dual-resolution storage, the
+custom photo item and its own per-instance renderer, and sneak-presenting are all original code here, wired
+into each loader's own item-rendering entry point (`IClientItemExtensions` on NeoForge,
+`BuiltinItemRendererRegistry` on Fabric) rather than through a shared external renderer. Some of the
+trickiest bugs in this rewrite lived exactly at that seam - a NeoForge SDK quirk on 1.20.4 where the
+platform never calls the standard renderer hook at all (worked around with a direct `ItemRenderer` mixin),
+and per-version differences in how much of the camera/hand transform chain is already baked into the
+pose stack by the time a custom renderer runs.
+
 ---
 
 ## 📁 Project structure

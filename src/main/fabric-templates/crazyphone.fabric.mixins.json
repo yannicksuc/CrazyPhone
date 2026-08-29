@@ -10,6 +10,7 @@
     "CrazyPhoneCaptureGuiMixin",
     "CrazyPhoneCaptureScrollMixin",
     "CrazyPhoneCapturePressMixin",
+    "CrazyPhoneCaptureEscapeMixin",
     "PlayerPresentPoseMixin",
     "CrazyPhonePresentHandGripMixin",
     "CrazyPhonePresentHandGripInvokerMixin"
