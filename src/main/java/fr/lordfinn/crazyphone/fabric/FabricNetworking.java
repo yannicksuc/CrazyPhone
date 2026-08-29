@@ -28,12 +28,12 @@ public final class FabricNetworking {
 
     public static <T extends CustomPacketPayload> void registerS2CType(
             CustomPacketPayload.Type<T> type, StreamCodec<? super RegistryFriendlyByteBuf, T> codec) {
-        PayloadTypeRegistry.playS2C().register(type, codec);
+        PayloadTypeRegistry./^$ fabric_payload_registry_s2c {^/playS2C/^$}^/().register(type, codec);
     }
 
     public static <T extends CustomPacketPayload> void registerC2SType(
             CustomPacketPayload.Type<T> type, StreamCodec<? super RegistryFriendlyByteBuf, T> codec) {
-        PayloadTypeRegistry.playC2S().register(type, codec);
+        PayloadTypeRegistry./^$ fabric_payload_registry_c2s {^/playC2S/^$}^/().register(type, codec);
     }
 
     // Only ever called from CrazyphoneFabricClient#onInitializeClient.

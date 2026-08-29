@@ -5,6 +5,93 @@ task turned out to be much bigger than expected once actually attempted - this f
 that progress isn't lost and the next session (or a live human) can pick it up without
 re-discovering everything from scratch.
 
+## Update: `:26.1-fabric:compileJava` down to ONE known blocker (from 188, then 51, now 1)
+
+Fabric API did its OWN sweeping API rework for 26.x, in parallel with (and mirroring) vanilla's own
+GuiGraphics/GameTest rework - confirmed by diffing the actual resolved fabric-api dependency tree
+and jar contents for 26.1.2 against what this codebase's pre-26 Fabric nodes use. All of the
+following turned out to be pure renames (same method/constructor shapes, javap-verified against the
+real 26.1.2-resolved jars) and are now fixed, mostly via new Stonecutter swaps so the rename doesn't
+need a full version-gated code duplication:
+
+- `net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerType(.ExtendedFactory)` ->
+  `net.fabricmc.fabric.api.menu.v1.ExtendedMenuType(.ExtendedFactory)` (module itself renamed
+  `fabric-screen-handler-api-v1` -> `fabric-menu-api-v1`) - new swaps `fabric_ext_menu_type_import`/
+  `fabric_ext_menu_type` in `stonecutter.gradle.kts`, applied in `ModMenus.java`.
+- `net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory` ->
+  `net.fabricmc.fabric.api.menu.v1.ExtendedMenuProvider` (same `getScreenOpeningData(ServerPlayer)`
+  method) - new swap `fabric_ext_menu_provider`, applied at all 5 anonymous-class sites in
+  `ScreenMenuUtils.java`.
+- `ScreenEvents#afterRender(Screen)` -> `#afterExtract(Screen)` (same callback shape, just typed
+  with `GuiGraphicsExtractor` now) - new swap `fabric_screen_events_after_render`, applied in
+  `PhoneClickableCursorHandler.java`.
+- `PayloadTypeRegistry#playS2C()/playC2S()` -> `#clientboundPlay()/#serverboundPlay()` (vanilla's own
+  clientbound/serverbound terminology replacing S2C/C2S) - new swaps `fabric_payload_registry_s2c`/
+  `_c2s`, applied in `FabricNetworking.java`.
+- `Gui#render(GuiGraphics, DeltaTracker)` -> `Gui#extractRenderState(GuiGraphicsExtractor,
+  DeltaTracker)` (matches the whole vanilla render->extractRenderState rework, just missed in the
+  earlier GuiGraphics batch since it's a mixin file, not a screen) - fixed directly in
+  `CrazyPhoneCaptureGuiMixin.java` with a 3-way version split (mixin `@Inject` "method" strings are
+  raw JVM descriptors, not Java signatures, so both the method name and the type's binary name
+  needed updating together - not a candidate for the swap mechanism since the descriptor STRING
+  itself changes shape, not just a type name inside otherwise-identical code).
+- `net.fabricmc.fabric.api.client.command.v2.ClientCommandManager` (the `literal(...)`/`argument(...)`
+  convenience wrapper) is gone entirely (`ClientCommandRegistrationCallback`/`FabricClientCommandSource`
+  are untouched) - fixed in `CrazyPhonePresentDebugCommand.java` (a dev-only `/presentdebug` command)
+  by calling brigadier's own `LiteralArgumentBuilder.literal(...)`/`RequiredArgumentBuilder.argument(...)`
+  directly, which is all `ClientCommandManager` ever did internally.
+- `net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup` (module `fabric-item-group-api-v1`) isn't
+  even a transitive fabric-api dependency anymore - it was only ever a thin `CreativeModeTab.Builder`
+  wrapper missing `withSearchBar()` (a NeoForge-only builder addition), so `ModTabs.java`'s `>=26`
+  Fabric branch now calls vanilla's own `CreativeModeTab.builder(Row, int)` directly. Note the
+  overload difference from the neoforge branch's `CreativeModeTab.builder()` (no-arg): that no-arg
+  overload only exists on NeoForge's own *patched* Minecraft jar (`versions/*/build/moddev/artifacts/
+  minecraft-patched-*-sources.jar`) - true/plain vanilla, what Fabric Loom actually compiles against,
+  only ever had the `(Row, int)` overload. **Worth remembering for future 26.x work: NeoForge's
+  "patched" decompiled sources are not 1:1 with what Fabric sees** - always double-check a
+  surprising vanilla API shape against Fabric's own resolved jar before assuming it's identical.
+- Two unrelated, pre-existing latent bugs newly exposed simply because 26.1-fabric is the FIRST
+  Fabric node in this project to ever cross the `>=1.21.10` boundary (every prior Fabric node -
+  1.20.1-fabric, 1.21.1-fabric - stayed below it): `ModRecipes.java`'s and
+  `PhoneRegistrySavedData.java`/`ConversationSavedData.java`/`PhotoSavedData.java`'s Fabric branches
+  were gated `fabric && >=1.20.5` with **no upper bound**, silently relying on there never being a
+  Fabric node past 1.21.10. Fixed: `ModRecipes` gained a proper `<1.21.10` cap (matching
+  `CrazyPhoneDuplicatePhotoRecipe.java`'s own existing `<1.21.10` scope) plus a `fabric && >=1.21.10`
+  no-op stub; the three SavedData classes' `>=1.21.10` `computeIfAbsent(TYPE)` call (already written,
+  previously neoforge-only) turned out to be plain vanilla with no loader-specific types involved at
+  all - widened from `neoforge && >=1.21.10` to a shared `>=1.21.10`, and the old
+  `SavedData.Factory`-based fabric branch capped at `<1.21.10` to match.
+- `CrazyPhoneItemProperties.java`'s NeoForge-only `RegisterConditionalItemModelPropertyEvent` branch
+  had the exact same missing-loader-gate bug (`>=1.21.10` with no `neoforge &&`) - see "Known,
+  documented gap" below, since this ONE genuinely has no Fabric equivalent yet.
+
+**One blocker remains, deliberately not guessed at**: `CrazyPhonePhotoItem.java`'s
+`net.fabricmc.fabric.api.client.rendering.v1.BuiltinItemRendererRegistry` (the old-style
+PoseStack+MultiBufferSource custom item renderer hook) doesn't exist in the 26.1.2-resolved
+fabric-rendering-v1 jar at all - replaced by an unfamiliar declarative set of classes
+(`PictureInPictureRendererRegistry`, `FabricModel`, `TransformCopyingModel`, `FabricRenderState`,
+`ExtractItemDecorationsCallback`) that clearly mirror vanilla's own new render-state-extraction
+architecture, not a renamed version of the old immediate-mode callback. **This is the exact same
+underlying problem as `:26.2:compileJava`'s already-flagged `MultiBufferSource` removal below - not
+a second, separate issue.** Confirmed by checking `:26.2-fabric:compileJava` (24 errors, spanning
+`CrazyPhonePhotoItemRenderer.java`, `CrazyPhoneCaptureMode.java`, `CrazyPhoneCaptureHandMixin.java`
+and 9 screen/message files that reference `RenderType`/`MultiBufferSource` for text/item rendering)
+- the SAME custom-item-rendering pipeline needs one unified redesign that works for both loaders on
+both 26.1 (Fabric only, since NeoForge 26.1 still has the old APIs) and 26.2 (both loaders). Treat
+`CrazyPhonePhotoItemRenderer.java`'s rewrite as the single highest-value remaining task - fixing it
+once likely resolves 26.1-fabric's last error AND most of 26.2's 25 errors on both loaders at once.
+
+**Known, documented gap (not a compile error, a silent functionality gap)**:
+`CrazyPhoneItemProperties.java`'s phone icon states (lit/calling/called_in/in_call) do not update on
+Fabric >=1.21.10 (26.1-fabric/26.2-fabric). The registration mechanism
+(`ConditionalItemModelProperty`) is populated via a plain static `ExtraCodecs.LateBoundIdMapper` in
+vanilla's own `ConditionalItemModelProperties.bootstrap()` - NeoForge patches an event-post call
+directly into that vanilla method (confirmed against the real decompiled 26.1.2 source), which is
+why `RegisterConditionalItemModelPropertyEvent` only exists on NeoForge. Searched every fabric-api
+submodule jar resolved for 26.1.2 for any mention of `ConditionalItemModelProperty` - no matches
+anywhere. A real fix needs a Fabric-side Mixin into that bootstrap method (or reflection onto its
+private `ID_MAPPER` field) - genuine investigation/design work, intentionally not guessed at here.
+
 ## Update: `:26.1:compileJava` is fully clean - 26.2 needs its own separate investigation
 
 **`:26.1:compileJava` now compiles with zero errors.** Both previously-open files are resolved:
@@ -272,18 +359,31 @@ question comes up in the still-open 26.2 investigation.
 
 ## Remaining work (as of this update)
 
-1. **26.2's separate `MultiBufferSource`/`ItemRenderer` removal** - the big remaining item, see the
-   dedicated section above. Not started beyond confirming the old classes are gone.
-2. **Live-test `:26.1:runClient`** - compiles clean now but has not actually been launched and
-   clicked through yet. Do this before considering 26.1 NeoForge done.
-3. **Re-verify `:26.1-fabric:compileJava`/`:26.2-fabric:compileJava`** after all the GuiGraphics/
-   GameTest fixes - last known state was 188 errors on `:26.1-fabric`, from before most of this
-   file's fixes landed, so that number is stale. Since the GameTest file is excluded from the
-   Fabric source set entirely (see `build.fabric26.gradle.kts`'s `includes` list) this doesn't add
-   new Fabric-side work, but the GUI fixes share the same source tree and should shrink that count
-   significantly - needs an actual fresh compile to confirm.
-4. Once both loaders compile clean on both versions, do the full 5-target regression pass
-   (`:1.20.4:compileJava :1.21.1:compileJava :1.21.1-fabric:compileJava :1.21.10:compileJava
-   :1.20.1-fabric:compileJava`) one more time, then live-test each new target the way every other
-   version in this project has been tested.
-5. This file should be deleted once the port is actually complete and merged.
+Current compile status, freshly verified: `:26.1:compileJava` (NeoForge) - **0 errors**.
+`:26.1-fabric:compileJava` - **1 error** (`BuiltinItemRendererRegistry`, see above).
+`:26.2:compileJava`/`:26.2-fabric:compileJava` - the shared custom-item-rendering pipeline rework
+below is the only known remaining gap for both (25 and 24 errors respectively, before that rework).
+All 5 pre-existing targets (`1.20.4`, `1.21.1`, `1.21.1-fabric`, `1.21.10`, `1.20.1-fabric`)
+regression-checked clean alongside `:26.1:compileJava` in the same pass.
+
+1. **The unified custom-item-rendering pipeline rework** - the one real remaining piece of design
+   work, and now understood to be a SINGLE task rather than two separate ones (see above): rewrite
+   `CrazyPhonePhotoItemRenderer.java`'s vertex-submission logic around whatever the new
+   `PictureInPictureRendererRegistry`/`FabricModel`/`FabricRenderState` (Fabric) and
+   `PreparedRenderType`/`RenderSetup`/`OutputTarget`/`LayeringTransform` (vanilla/NeoForge) API
+   actually wants, then re-wire `CrazyPhonePhotoItem.java`'s two registration branches
+   (`BuiltinItemRendererRegistry` on Fabric, the NeoForge `IClientItemExtensions`/
+   `BlockEntityWithoutLevelRenderer` path - itself still a `<1.21.10`-only TODO on NeoForge, see that
+   file's own comment) accordingly. Also touches `CrazyPhoneCaptureMode.java`,
+   `CrazyPhoneCaptureHandMixin.java`, and ~9 screen/message files that reference `RenderType`/
+   `MultiBufferSource` for text/item rendering on 26.2 specifically (per the `:26.2-fabric` error
+   list). Not started beyond confirming the old classes are gone on both loaders - budget this as
+   comparable in scope to the whole GuiGraphics rework already done, not a quick follow-up.
+2. **The Fabric `ConditionalItemModelProperty` gap** (phone icon states not updating on Fabric
+   >=1.21.10) - needs a Mixin into vanilla's `ConditionalItemModelProperties.bootstrap()`, see above.
+   Lower priority than #1 (cosmetic - a static "dark" phone icon, no functional breakage) but a real,
+   documented gap, not silently left broken.
+3. **Live-test `:26.1:runClient`** - compiles clean now but has not actually been launched and
+   clicked through yet. Do this once #1 is resolved enough to get a client actually rendering (a
+   broken item renderer might crash on first render of the item, not just look wrong).
+4. This file should be deleted once the port is actually complete and merged.

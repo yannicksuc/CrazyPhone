@@ -301,7 +301,7 @@ public class ScreenMenuUtils {
     /*public static void openPhoneCustomMenu(Player player, InteractionHand hand,
             Class<? extends AbstractContainerMenu> menuClass) {
         if (player instanceof ServerPlayer serverPlayer) {
-            player.openMenu(new net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory<RegistryFriendlyByteBuf>() {
+            player.openMenu(new /^$ fabric_ext_menu_provider {^/net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory/^$}^/<RegistryFriendlyByteBuf>() {
                 @Override
                 public Component getDisplayName() {
                     return Component.translatable("item.crazyphone.crazy_phone");
@@ -399,7 +399,7 @@ public class ScreenMenuUtils {
             }, buf -> populateBufferWithMyPhotosData(buf, player, hand, conversationId, photoIds));
             //?}
             //? if fabric && >=1.20.5 {
-            /*player.openMenu(new net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory<RegistryFriendlyByteBuf>() {
+            /*player.openMenu(new /^$ fabric_ext_menu_provider {^/net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory/^$}^/<RegistryFriendlyByteBuf>() {
                 @Override
                 public Component getDisplayName() {
                     return Component.translatable("item.crazyphone.crazy_phone");
@@ -490,7 +490,7 @@ public class ScreenMenuUtils {
             }, buf -> populateBufferWithMenuData(buf, player, hand, favorites, contacts, groups));
             //?}
             //? if fabric && >=1.20.5 {
-            /*player.openMenu(new net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory<RegistryFriendlyByteBuf>() {
+            /*player.openMenu(new /^$ fabric_ext_menu_provider {^/net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory/^$}^/<RegistryFriendlyByteBuf>() {
                 @Override
                 public Component getDisplayName() {
                     return Component.translatable("item.crazyphone.crazy_phone");
@@ -596,7 +596,7 @@ public class ScreenMenuUtils {
             }, buf -> populateBufferWithGroupSettingsData(buf, player, conversationId));
             //?}
             //? if fabric && >=1.20.5 {
-            /*player.openMenu(new net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory<RegistryFriendlyByteBuf>() {
+            /*player.openMenu(new /^$ fabric_ext_menu_provider {^/net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory/^$}^/<RegistryFriendlyByteBuf>() {
                 @Override
                 public Component getDisplayName() {
                     return Component.translatable("item.crazyphone.crazy_phone");
@@ -740,7 +740,7 @@ public class ScreenMenuUtils {
                 // 2-arg player.openMenu(MenuProvider, writer) overload at all on Fabric: that path routes
                 // through MenuType.create(id, inventory) on the client, which ExtendedScreenHandlerType
                 // overrides to throw - it MUST go through ExtendedScreenHandlerFactory instead.
-                player.openMenu(new net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory<RegistryFriendlyByteBuf>() {
+                player.openMenu(new /^$ fabric_ext_menu_provider {^/net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory/^$}^/<RegistryFriendlyByteBuf>() {
                     @Override
                     public Component getDisplayName() {
                         return Component.translatable("item.crazyphone.crazy_phone");

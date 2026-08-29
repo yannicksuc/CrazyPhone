@@ -17,11 +17,15 @@ package fr.lordfinn.crazyphone.mixin;
  *
  * Gui#render's own signature changed from {@code (GuiGraphics, float)} to
  * {@code (GuiGraphics, DeltaTracker)} at the 1.20.5 boundary (confirmed via decompiled source for both
- * Fabric nodes' Minecraft versions), hence the nested version gate.
+ * Fabric nodes' Minecraft versions), hence the nested version gate. 26.x renamed the method itself too,
+ * matching the whole GuiGraphics->GuiGraphicsExtractor rework: Gui#render(GuiGraphics, DeltaTracker) became
+ * Gui#extractRenderState(GuiGraphicsExtractor, DeltaTracker) - confirmed against the real decompiled 26.1.2
+ * Gui.java. The @Inject "method" string is a raw JVM method descriptor, not a Java signature, so both the
+ * method name AND the type's binary name (GuiGraphicsExtractor, same package) need updating together.
  */
 //? if fabric {
 /*import net.minecraft.client.gui.Gui;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui./^$ gui_graphics_type {^/GuiGraphics/^$}^/;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -39,14 +43,24 @@ public abstract class CrazyPhoneCaptureGuiMixin {
             ci.cancel();
         }
     }
-    ^///?} else {
-    @Inject(method = "render(Lnet/minecraft/client/gui/GuiGraphics;Lnet/minecraft/client/DeltaTracker;)V", at = @At("HEAD"), cancellable = true)
+    ^///?}
+    //? if >=1.20.5 <26 {
+    /^@Inject(method = "render(Lnet/minecraft/client/gui/GuiGraphics;Lnet/minecraft/client/DeltaTracker;)V", at = @At("HEAD"), cancellable = true)
     private void crazyphone$replaceHudWithCaptureOverlay(GuiGraphics guiGraphics, net.minecraft.client.DeltaTracker deltaTracker, CallbackInfo ci) {
         if (CrazyPhoneCaptureMode.isActive()) {
             CrazyPhoneCaptureMode.drawOverlay(guiGraphics);
             ci.cancel();
         }
     }
-    //?}
+    ^///?}
+    //? if >=26 {
+    /^@Inject(method = "extractRenderState(Lnet/minecraft/client/gui/GuiGraphicsExtractor;Lnet/minecraft/client/DeltaTracker;)V", at = @At("HEAD"), cancellable = true)
+    private void crazyphone$replaceHudWithCaptureOverlay(GuiGraphicsExtractor guiGraphics, net.minecraft.client.DeltaTracker deltaTracker, CallbackInfo ci) {
+        if (CrazyPhoneCaptureMode.isActive()) {
+            CrazyPhoneCaptureMode.drawOverlay(guiGraphics);
+            ci.cancel();
+        }
+    }
+    ^///?}
 }
 *///?}

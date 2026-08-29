@@ -66,4 +66,24 @@ stonecutter parameters {
     swaps.put("widget_render", if (is26) "extractRenderState" else "render")
     // 26.x moved net.minecraft.Util to net.minecraft.util.Util (backgroundExecutor() etc. unchanged).
     swaps.put("util_pkg", if (semantics.eval(current.version, ">=26")) "net.minecraft.util.Util" else "net.minecraft.Util")
+    // Fabric API's own 26.x release renamed the "screen handler" module to "menu" (fabric-screen-handler-api-v1
+    // -> fabric-menu-api-v1, confirmed against the actual resolved fabric-api dependency tree and jar contents
+    // for 26.1.2 - the old module isn't even a transitive dependency anymore). ExtendedScreenHandlerType(.
+    // ExtendedFactory) -> ExtendedMenuType(.ExtendedFactory) and ExtendedScreenHandlerFactory ->
+    // ExtendedMenuProvider are otherwise identical in shape (constructor/method signatures match exactly,
+    // javap-verified against the real 26.1.2-resolved jar) - pure renames, not a design change.
+    val fabricMenuRework = semantics.eval(current.version, ">=26")
+    swaps.put("fabric_ext_menu_type_import", if (fabricMenuRework) "net.fabricmc.fabric.api.menu.v1.ExtendedMenuType" else "net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerType")
+    swaps.put("fabric_ext_menu_type", if (fabricMenuRework) "ExtendedMenuType" else "ExtendedScreenHandlerType")
+    swaps.put("fabric_ext_menu_provider", if (fabricMenuRework) "net.fabricmc.fabric.api.menu.v1.ExtendedMenuProvider" else "net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory")
+    // Fabric API's fabric-screen-api-v1 renamed ScreenEvents#afterRender(Screen) -> #afterExtract(Screen) for
+    // 26.x, matching vanilla's own render->extractRenderState rework - same callback shape otherwise
+    // (Screen, GuiGraphicsExtractor, mouseX, mouseY, partialTick), javap-verified against the real
+    // 26.1.2-resolved jar.
+    swaps.put("fabric_screen_events_after_render", if (fabricMenuRework) "afterExtract" else "afterRender")
+    // Fabric API's fabric-networking-api-v1 renamed PayloadTypeRegistry#playS2C()/playC2S() ->
+    // #clientboundPlay()/#serverboundPlay() for 26.x (same semantics, vanilla's own clientbound/serverbound
+    // terminology instead of S2C/C2S - javap-verified against the real 26.1.2-resolved jar).
+    swaps.put("fabric_payload_registry_s2c", if (fabricMenuRework) "clientboundPlay" else "playS2C")
+    swaps.put("fabric_payload_registry_c2s", if (fabricMenuRework) "serverboundPlay" else "playC2S")
 }

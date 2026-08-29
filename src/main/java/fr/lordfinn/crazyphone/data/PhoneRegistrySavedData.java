@@ -160,7 +160,10 @@ public class PhoneRegistrySavedData extends SavedData {
                     //? if neoforge && >=1.20.5 <1.21.10 {
                     /*.computeIfAbsent(new SavedData.Factory<>(PhoneRegistrySavedData::new, PhoneRegistrySavedData::load), DATA_NAME);
                     *///?}
-                    //? if neoforge && >=1.21.10 {
+                    // >=1.21.10's computeIfAbsent(SavedDataType) overload and TYPE itself are both plain
+                    // vanilla (no loader-specific types involved) - shared across both loaders instead of
+                    // duplicating a fabric-only copy of the same call.
+                    //? if >=1.21.10 {
                     /*.computeIfAbsent(TYPE);
                     *///?}
                     // Fabric branches use real vanilla SavedData/DimensionDataStorage signatures (javap-
@@ -168,7 +171,7 @@ public class PhoneRegistrySavedData extends SavedData {
                     //? if fabric && <1.20.5 {
                     /*.computeIfAbsent(PhoneRegistrySavedData::load, PhoneRegistrySavedData::new, DATA_NAME);
                     *///?}
-                    //? if fabric && >=1.20.5 {
+                    //? if fabric && >=1.20.5 <1.21.10 {
                     /*.computeIfAbsent(new SavedData.Factory<>(PhoneRegistrySavedData::new, PhoneRegistrySavedData::load, DataFixTypes.LEVEL), DATA_NAME);
                     *///?}
         }

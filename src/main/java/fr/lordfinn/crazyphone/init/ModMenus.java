@@ -20,7 +20,7 @@ import net.neoforged.fml.common.Mod.EventBusSubscriber;
 import net.neoforged.bus.api.SubscribeEvent;
 //?}
 //? if fabric && >=1.20.5 {
-/*import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerType;
+/*import /^$ fabric_ext_menu_type_import {^/net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerType/^$}^/;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import fr.lordfinn.crazyphone.utils.RegistryEntry;
@@ -128,9 +128,9 @@ public class ModMenus {
     public static RegistryEntry<MenuType<CrazyPhoneIncomingCallScreenMenu>> CRAZY_PHONE_INCOMING_CALL_SCREEN;
 
     private static <T extends net.minecraft.world.inventory.AbstractContainerMenu> RegistryEntry<MenuType<T>> registerMenu(
-            String id, ExtendedScreenHandlerType.ExtendedFactory<T, RegistryFriendlyByteBuf> factory) {
+            String id, /^$ fabric_ext_menu_type {^/ExtendedScreenHandlerType/^$}^/.ExtendedFactory<T, RegistryFriendlyByteBuf> factory) {
         return new RegistryEntry<>(Registry.register(BuiltInRegistries.MENU, Crazyphone.resource(id),
-                new ExtendedScreenHandlerType<>(factory, PASSTHROUGH_CODEC)));
+                new /^$ fabric_ext_menu_type {^/ExtendedScreenHandlerType/^$}^/<>(factory, PASSTHROUGH_CODEC)));
     }
 
     public static void register() {

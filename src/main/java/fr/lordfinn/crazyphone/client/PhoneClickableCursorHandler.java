@@ -43,7 +43,7 @@ public class PhoneClickableCursorHandler {
     //? if fabric && >=1.20.5 {
     /*public static void register() {
         ScreenEvents.AFTER_INIT.register((client, screen, scaledWidth, scaledHeight) ->
-                ScreenEvents.afterRender(screen).register((s, guiGraphics, mouseX, mouseY, tickDelta) -> onAfterRender(s)));
+                ScreenEvents./^$ fabric_screen_events_after_render {^/afterRender/^$}^/(screen).register((s, guiGraphics, mouseX, mouseY, tickDelta) -> onAfterRender(s)));
     }
     *///?}
 

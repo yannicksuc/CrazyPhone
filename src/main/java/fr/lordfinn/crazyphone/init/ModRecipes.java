@@ -20,7 +20,7 @@ public class ModRecipes {
             REGISTRY.register("crafting_special_duplicate_photo", () -> new SimpleCraftingRecipeSerializer<>(CrazyPhoneDuplicatePhotoRecipe::new));
 }
 //?}
-//? if fabric && >=1.20.5 {
+//? if fabric && >=1.20.5 <1.21.10 {
 /*import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.item.crafting.RecipeSerializer;
@@ -36,6 +36,15 @@ public class ModRecipes {
         DUPLICATE_PHOTO = new RegistryEntry<>(Registry.register(BuiltInRegistries.RECIPE_SERIALIZER,
                 Crazyphone.resource("crafting_special_duplicate_photo"),
                 new SimpleCraftingRecipeSerializer<>(CrazyPhoneDuplicatePhotoRecipe::new)));
+    }
+}
+*///?}
+//? if fabric && >=1.21.10 {
+/*// Duplicate-photo recipe isn't backported past 1.21.10 (see CrazyPhoneDuplicatePhotoRecipe's own doc
+// comment) - this no-op keeps CrazyphoneFabric.java's unconditional ModRecipes.register() call compiling
+// on 26.x instead of needing its own version gate there too.
+public class ModRecipes {
+    public static void register() {
     }
 }
 *///?}
