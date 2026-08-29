@@ -48,4 +48,6 @@ stonecutter parameters {
     // handled in GuiCompat.java, confirmed against the real 26.1.2 vanilla jar. Every GuiGraphics-typed
     // parameter/field/import across the codebase goes through this one swap.
     swaps.put("gui_graphics_type", if (semantics.eval(current.version, ">=26")) "GuiGraphicsExtractor" else "GuiGraphics")
+    // 26.x moved net.minecraft.Util to net.minecraft.util.Util (backgroundExecutor() etc. unchanged).
+    swaps.put("util_pkg", if (semantics.eval(current.version, ">=26")) "net.minecraft.util.Util" else "net.minecraft.Util")
 }

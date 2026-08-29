@@ -5,7 +5,7 @@ import com.mojang.authlib.GameProfileRepository;
 import com.mojang.authlib.ProfileLookupCallback;
 import com.mojang.authlib.yggdrasil.YggdrasilAuthenticationService;
 
-import net.minecraft.Util;
+import /*$ util_pkg {*/net.minecraft.Util/*$}*/;
 
 import java.net.Proxy;
 import java.util.Map;
