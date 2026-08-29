@@ -17,7 +17,7 @@ package fr.lordfinn.crazyphone.client;
  * </ul>
  */
 import net.minecraft.client.model.HumanoidModel;
-import net.minecraft.client.model.PlayerModel;
+import /*$ player_model_pkg {*/net.minecraft.client.model.PlayerModel/*$}*/;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.entity.LivingEntity;

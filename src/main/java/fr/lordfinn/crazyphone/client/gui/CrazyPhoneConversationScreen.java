@@ -42,7 +42,10 @@ import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneConversationMenu;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui./*$ gui_graphics_type {*/GuiGraphics/*$}*/;
+//? if >=26 {
+/*import net.minecraft.client.gui.GuiGraphicsExtractor;
+*///?}
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.ImageButton;
@@ -162,6 +165,76 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
         return guistate;
     }
 
+    //? if >=26 {
+    /*@Override
+    public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTicks) {
+        //? if fabric && >=1.20.5 {
+        /^// Skipped for the handful of frames a Fabric-native photo capture is pending, so the screenshot
+        // shows the world instead of this screen itself - see FabricPictureCapture's own doc comment.
+        if (fr.lordfinn.crazyphone.client.picture.FabricPictureCapture.suppressPhoneRendering)
+            return;
+        ^///?}
+        message.visible = voiceRecordingState == VoiceRecordingState.NONE;
+        // button_envoyer sits at the exact same coordinates/size as button_voicepause/button_voicesend
+        // (leftPos+100, topPos+158, 14x14) - without this it stayed clickable (its own .visible was never
+        // touched, only its render() call was skipped) and, being registered first, silently swallowed
+        // every click on that spot via sendCurrentMessage()'s empty-text no-op before pause/send ever saw it.
+        button_envoyer.visible = voiceRecordingState == VoiceRecordingState.NONE;
+        if (button_voicetrash != null) {
+            button_voicetrash.visible = voiceRecordingState != VoiceRecordingState.NONE;
+            button_voicepause.visible = voiceRecordingState == VoiceRecordingState.RECORDING;
+            button_voicesend.visible = voiceRecordingState == VoiceRecordingState.REVIEWING;
+        }
+        // maxVoiceMessageRecordingSeconds - without this a recording could run indefinitely; reuses the
+        // same stop-and-move-to-REVIEWING branch the pause button itself triggers, so hitting the cap
+        // behaves exactly like the player pausing manually right at that moment.
+        if (voiceRecordingState == VoiceRecordingState.RECORDING
+                && VoiceMessageRecorder.getElapsedSeconds() >= Config.maxVoiceMessageRecordingSeconds)
+            onPauseSendClicked();
+        updateButtonVisibility(mouseX, mouseY);
+        super.extractRenderState(guiGraphics, mouseX, mouseY, partialTicks);
+        this.renderBanner(guiGraphics);
+        if (menu.isGroup())
+            renderGroupSettingsIcon(guiGraphics, mouseX, mouseY);
+        if (VoicechatIntegration.isAvailable())
+            renderCallIcon(guiGraphics, mouseX, mouseY);
+        renderMessageWidget(guiGraphics, mouseX, mouseY, partialTicks);
+        // Tooltip only, deferred until after the message feed: the feed's own (opaque) content renders
+        // right after the icon in normal flow and, since the tooltip pops up below the cursor, overlapped
+        // and painted over it - the box's thin border could survive at the edges while the text underneath
+        // got covered, which is exactly the "wide box, no text" look this was producing.
+        // >=26 always implies >=1.21.10, so these two hardcode the setComponentTooltipForNextFrame path -
+        // no nested <1.21.10 split needed (and one couldn't be written as a further comment pair nested
+        // inside this branch's own outer comment anyway).
+        if (menu.isGroup() && isHoveringGroupSettingsIcon(mouseX, mouseY)) {
+            guiGraphics.setComponentTooltipForNextFrame(this.font, List.of(groupSettingsTooltip), mouseX, mouseY);
+        }
+        if (VoicechatIntegration.isAvailable() && isHoveringCallIcon(mouseX, mouseY)) {
+            guiGraphics.setComponentTooltipForNextFrame(this.font, List.of(callIconTooltip()), mouseX, mouseY);
+        }
+        // Drawn again here, after the message feed: button_envoyer/imagebutton_crazyphoneaddimage sit at
+        // the bottom-right corner of the message crop zone (y 144-173, crop ends at 158) as a deliberate
+        // floating overlay, but the standard renderable pass (inside super.render() above) draws them
+        // BEFORE the message feed - so a right-aligned message bubble reaching that corner painted over
+        // them, most visibly hiding the add-image icon right as hovering the send button revealed it.
+        // They're registered via addWidget (not addRenderableWidget) so this is their only render call.
+        if (voiceRecordingState == VoiceRecordingState.NONE) {
+            button_envoyer.extractRenderState(guiGraphics, mouseX, mouseY, partialTicks);
+            imagebutton_crazyphoneaddimage.extractRenderState(guiGraphics, mouseX, mouseY, partialTicks);
+            imagebutton_attachphoto.extractRenderState(guiGraphics, mouseX, mouseY, partialTicks);
+            if (imagebutton_crazyphonevoicemessage != null)
+                imagebutton_crazyphonevoicemessage.extractRenderState(guiGraphics, mouseX, mouseY, partialTicks);
+        } else {
+            renderVoiceRecordingRow(guiGraphics, mouseX, mouseY, partialTicks);
+        }
+        renderHoveredHeadTooltip(guiGraphics, mouseX, mouseY);
+        renderHoveredTimestampTooltip(guiGraphics, mouseX, mouseY);
+        this.extractTooltip(guiGraphics, mouseX, mouseY);
+        // CursorEffects.endFrame() is NOT called here - PhoneClickableCursorHandler does it once, in a
+        // ScreenEvent.Render.Post listener that fires after this whole method returns, so it can also
+        // pick up the standard-button hover requests it makes itself without a premature reset.
+    }
+    *///? } else {
     @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
         //? if fabric && >=1.20.5 {
@@ -235,6 +308,7 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
         // ScreenEvent.Render.Post listener that fires after this whole method returns, so it can also
         // pick up the standard-button hover requests it makes itself without a premature reset.
     }
+    //?}
 
     /**
      * The message feed is scissor-cropped to this rect (see renderMessageWidget) - hover tooltips must
@@ -253,7 +327,7 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
                 && mouseY >= this.topPos + 27 && mouseY < this.topPos + 158;
     }
 
-    private void renderHoveredHeadTooltip(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+    private void renderHoveredHeadTooltip(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int mouseX, int mouseY) {
         if (!isWithinMessageCropZone(mouseX, mouseY))
             return;
         for (MessageEntry entry : messageManager.getMessages()) {
@@ -272,7 +346,7 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
         }
     }
 
-    private void renderHoveredTimestampTooltip(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+    private void renderHoveredTimestampTooltip(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int mouseX, int mouseY) {
         if (!isWithinMessageCropZone(mouseX, mouseY))
             return;
         for (MessageEntry entry : messageManager.getMessages()) {
@@ -303,7 +377,7 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
         return sentAt.format(formatter);
     }
 
-    private void renderBanner(GuiGraphics guiGraphics) {
+    private void renderBanner(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics) {
         String ownerNumber = GetCrazyPhoneNumberFromMainHandProcedure.execute(this.menu.entity, null);
 
         // Filter out self from contacts
@@ -326,7 +400,7 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
         return otherContacts.isEmpty() ? ItemStack.EMPTY : CrazyPhoneHelper.createContactHead(otherContacts.get(0));
     }
 
-    private void renderGroupSettingsIcon(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+    private void renderGroupSettingsIcon(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int mouseX, int mouseY) {
         int iconX = this.leftPos + GROUP_SETTINGS_ICON_X;
         int iconY = this.topPos + GROUP_SETTINGS_ICON_Y;
         boolean hovered = isHoveringGroupSettingsIcon(mouseX, mouseY);
@@ -334,7 +408,7 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
             CursorEffects.requestPointerCursor();
             guiGraphics.fill(iconX, iconY, iconX + 16, iconY + 16, 0x80FFFFFF);
         }
-        guiGraphics.renderItem(groupSettingsIcon, iconX, iconY);
+        guiGraphics./*$ gui_render_item {*/renderItem/*$}*/(groupSettingsIcon, iconX, iconY);
     }
 
     private boolean isHoveringGroupSettingsIcon(double mouseX, double mouseY) {
@@ -356,7 +430,7 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
         return !hasMyActiveCallHere() && !ClientFeatureFlagState.isEnabled(FeatureFlag.CALLS);
     }
 
-    private void renderCallIcon(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+    private void renderCallIcon(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int mouseX, int mouseY) {
         int iconX = callIconX();
         int iconY = this.topPos + CALL_ICON_Y;
         boolean hovered = isHoveringCallIcon(mouseX, mouseY);
@@ -373,7 +447,7 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
             color = CrazyPhoneColors.ACCENT_YELLOW; // same "you could join/rejoin this" color as the contacts-list badge
         else
             color = 0xFFFFFFFF;
-        guiGraphics.drawString(this.font, "📞", iconX + 4, iconY + 4, color, true);
+        guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(this.font, "📞", iconX + 4, iconY + 4, color, true);
     }
 
     private boolean isHoveringCallIcon(double mouseX, double mouseY) {
@@ -431,6 +505,25 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
      * buttons - not image-textured icon buttons like button_envoyer/imagebutton_crazyphoneaddimage.
      * Rendered via their own .render() calls here (they're addWidget-registered, not addRenderableWidget,
      * matching how this screen already draws its other floating buttons after the message feed). */
+    //? if >=26 {
+    /*private void renderVoiceRecordingRow(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTicks) {
+        int rowY = this.topPos + RECORDING_ROW_Y;
+        int waveformX = this.leftPos + WAVEFORM_X;
+
+        button_voicetrash.extractRenderState(guiGraphics, mouseX, mouseY, partialTicks);
+
+        // Light-blue rectangle, deliberately distinct from the phone's own background texture. Even height
+        // (12) so the white histogram bars inside it (see renderWaveformBars) center exactly, with no
+        // rounding remainder from an odd height/2.
+        guiGraphics.fill(waveformX, rowY, waveformX + WAVEFORM_WIDTH, rowY + 14, 0xFF3FA9F5);
+        renderWaveformBars(guiGraphics, waveformX, rowY);
+
+        if (voiceRecordingState == VoiceRecordingState.RECORDING)
+            button_voicepause.extractRenderState(guiGraphics, mouseX, mouseY, partialTicks);
+        else
+            button_voicesend.extractRenderState(guiGraphics, mouseX, mouseY, partialTicks);
+    }
+    *///? } else {
     private void renderVoiceRecordingRow(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
         int rowY = this.topPos + RECORDING_ROW_Y;
         int waveformX = this.leftPos + WAVEFORM_X;
@@ -448,8 +541,9 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
         else
             button_voicesend.render(guiGraphics, mouseX, mouseY, partialTicks);
     }
+    //?}
 
-    private void renderWaveformBars(GuiGraphics guiGraphics, int waveformX, int rowY) {
+    private void renderWaveformBars(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int waveformX, int rowY) {
         float[] levels = VoiceMessageRecorder.getRecentLevels();
         int barCount = levels.length;
         // 1px inset on both sides (matching the sent-message bubble's waveform), not just the left -
@@ -554,7 +648,7 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
         }
     }
 
-    private void renderMessageWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
+    private void renderMessageWidget(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int mouseX, int mouseY, float partialTicks) {
         guiGraphics.enableScissor(this.leftPos, this.topPos + 27, this.leftPos + 200, this.topPos + 158);
         // Widgets outside the visible crop (scrolled off-screen) still get rendered here - the scissor
         // only clips what's drawn, not the widgets' own hover checks (image zoom/shadow, cursor change).
@@ -767,12 +861,21 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
                     new WidgetSprites(Crazyphone.parseId("crazyphone:textures/screens/crazyphone-send-message.png"),
                             Crazyphone.parseId("crazyphone:textures/screens/crazyphone-send-message-hover.png")),
                     e -> onPauseSendClicked()) {
+                //? if >=26 {
+                /*@Override
+                public void extractContents(GuiGraphicsExtractor guiGraphics, int x, int y, float partialTicks) {
+                    // Manual blit, not vanilla ImageButton's default GUI-sprite-atlas lookup - same reason
+                    // as every other send-style icon button in this class (see createSendMessageButton).
+                    GuiCompat.blit(guiGraphics, sprites.get(isActive(), isHoveredOrFocused()), getX(), getY(), 300, width, height);
+                }
+                *///? } else {
                 @Override
                 public void renderWidget(GuiGraphics guiGraphics, int x, int y, float partialTicks) {
                     // Manual blit, not vanilla ImageButton's default GUI-sprite-atlas lookup - same reason
                     // as every other send-style icon button in this class (see createSendMessageButton).
                     GuiCompat.blit(guiGraphics, sprites.get(isActive(), isHoveredOrFocused()), getX(), getY(), 300, width, height);
                 }
+                //?}
             };
         }
     }
@@ -787,6 +890,29 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
      */
     private Button createSquareIconButton(int x, int y, Component icon, Button.OnPress onPress) {
         return new Button(x, y, 14, 14, icon, onPress, supplier -> icon.copy()) {
+            //? if >=26 {
+            /*@Override
+            public void extractContents(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
+                // 26.x's AbstractButton has no default extractContents body left to call via super - the
+                // background sprite and default label are now two independent, separately-invokable pieces
+                // (extractDefaultSprite(GuiGraphicsExtractor)/extractDefaultLabel(ActiveTextCollector), the
+                // latter part of a new text-collection pipeline this button never needs to touch since it
+                // always draws its own custom-positioned label instead of the default one) - only the sprite
+                // half is relevant here, so call that directly instead of blanking/restoring the message
+                // around a super call that no longer exists.
+                Component message = getMessage();
+                this.extractDefaultSprite(guiGraphics);
+
+                var font = Minecraft.getInstance().font;
+                int textWidth = font.width(message);
+                int drawX = getX() + (getWidth() - textWidth) / 2;
+                int drawY = getY() + (getHeight() - 8) / 2;
+                GuiCompat.pushPose(guiGraphics);
+                GuiCompat.translate(guiGraphics, 0.5f, 0f);
+                guiGraphics./^$ gui_draw_string {^/drawString/^$}^/(font, message, drawX, drawY, 0xFFFFFFFF, true);
+                GuiCompat.popPose(guiGraphics);
+            }
+            *///? } else {
             @Override
             public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
                 Component message = getMessage();
@@ -800,9 +926,10 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
                 int drawY = getY() + (getHeight() - 8) / 2;
                 GuiCompat.pushPose(guiGraphics);
                 GuiCompat.translate(guiGraphics, 0.5f, 0f);
-                guiGraphics.drawString(font, message, drawX, drawY, 0xFFFFFFFF, true);
+                guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(font, message, drawX, drawY, 0xFFFFFFFF, true);
                 GuiCompat.popPose(guiGraphics);
             }
+            //?}
         };
     }
 
@@ -813,6 +940,18 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
     ImageButton button = new ImageButton(this.leftPos + 100, this.topPos + 158, 14, 14,
         new WidgetSprites(sendButtonImage, sendButtonHoverImage),
         e -> sendCurrentMessage()) {
+            //? if >=26 {
+            /*@Override
+            public void extractContents(GuiGraphicsExtractor guiGraphics, int x, int y, float partialTicks) {
+                // Z=300, not the MCreator-default 500 this used to carry: 500 sat above the vanilla
+                // tooltip's own Z (400), so the button won the depth test and hid its own tooltip box
+                // wherever they overlapped, regardless of draw order. 300 stays below the tooltip but
+                // above message-feed content (bubbles, head icons rendered via GuiGraphics#renderItem,
+                // which sit around Z 100-200), so it's still never covered when scrolled to the bottom -
+                // see the comment above button_envoyer's usage for why this is re-rendered a second time.
+                GuiCompat.blit(guiGraphics, sprites.get(isActive(), isHoveredOrFocused()), getX(), getY(), 300, width, height);
+            }
+            *///? } else {
             @Override
             public void renderWidget(GuiGraphics guiGraphics, int x, int y, float partialTicks) {
                 // Z=300, not the MCreator-default 500 this used to carry: 500 sat above the vanilla
@@ -823,6 +962,7 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
                 // see the comment above button_envoyer's usage for why this is re-rendered a second time.
                 GuiCompat.blit(guiGraphics, sprites.get(isActive(), isHoveredOrFocused()), getX(), getY(), 300, width, height);
             }
+            //?}
         };
     button.setTooltip(Tooltip.create(Component.translatable("gui.crazyphone.crazy_phone_conversation.tooltip_send_message")));
     return button;
@@ -867,6 +1007,18 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
                 // the shot lands in this conversation AND the phone's own My Photos list, same as any other
                 // capture. Purely client-side (no server round trip needed to start framing a shot).
                 e -> fr.lordfinn.crazyphone.client.CrazyPhoneCaptureMode.enter(this.menu.getConversationId())) {
+            //? if >=26 {
+            /*@Override
+            public void extractContents(GuiGraphicsExtractor guiGraphics, int x, int y, float partialTicks) {
+                // No separate disabled sprite was provided to WidgetSprites (2-arg ctor), so sprites.get()
+                // alone wouldn't visually dim this when inactive - unlike vanilla Button, which tints on its
+                // own. Fading the alpha here is what actually makes the IMAGES-disabled state visible.
+                if (!isActive())
+                    GuiCompat.blit(guiGraphics, sprites.get(isActive(), isHoveredOrFocused()), getX(), getY(), 300, width, height, 0.35f);
+                else
+                    GuiCompat.blit(guiGraphics, sprites.get(isActive(), isHoveredOrFocused()), getX(), getY(), 300, width, height);
+            }
+            *///? } else {
             @Override
             public void renderWidget(GuiGraphics guiGraphics, int x, int y, float partialTicks) {
                 // No separate disabled sprite was provided to WidgetSprites (2-arg ctor), so sprites.get()
@@ -877,6 +1029,7 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
                 else
                     GuiCompat.blit(guiGraphics, sprites.get(isActive(), isHoveredOrFocused()), getX(), getY(), 300, width, height);
             }
+            //?}
         };
         button.setTooltip(Tooltip.create(Component.translatable("gui.crazyphone.crazy_phone_conversation.tooltip_take_and_send_image")));
         button.visible = false;
@@ -890,6 +1043,15 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
                 new WidgetSprites(Crazyphone.parseId("crazyphone:textures/screens/crazyphone-add-image.png"),
                         Crazyphone.parseId("crazyphone:textures/screens/crazyphone-add-hover.png")),
                 e -> onAttachExistingPhotoClicked()) {
+            //? if >=26 {
+            /*@Override
+            public void extractContents(GuiGraphicsExtractor guiGraphics, int x, int y, float partialTicks) {
+                if (!isActive())
+                    GuiCompat.blit(guiGraphics, sprites.get(isActive(), isHoveredOrFocused()), getX(), getY(), 300, width, height, 0.35f);
+                else
+                    GuiCompat.blit(guiGraphics, sprites.get(isActive(), isHoveredOrFocused()), getX(), getY(), 300, width, height);
+            }
+            *///? } else {
             @Override
             public void renderWidget(GuiGraphics guiGraphics, int x, int y, float partialTicks) {
                 if (!isActive())
@@ -897,6 +1059,7 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
                 else
                     GuiCompat.blit(guiGraphics, sprites.get(isActive(), isHoveredOrFocused()), getX(), getY(), 300, width, height);
             }
+            //?}
         };
         button.setTooltip(Tooltip.create(Component.translatable("gui.crazyphone.crazy_phone_conversation.tooltip_send_image")));
         button.visible = false;
@@ -910,6 +1073,15 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
                 new WidgetSprites(Crazyphone.parseId("crazyphone:textures/screens/crazyphone-send-voice.png"),
                         Crazyphone.parseId("crazyphone:textures/screens/crazyphone-send-voice-hover.png")),
                 e -> onMicIconClicked()) {
+            //? if >=26 {
+            /*@Override
+            public void extractContents(GuiGraphicsExtractor guiGraphics, int x, int y, float partialTicks) {
+                if (!isActive())
+                    GuiCompat.blit(guiGraphics, sprites.get(isActive(), isHoveredOrFocused()), getX(), getY(), 300, width, height, 0.35f);
+                else
+                    GuiCompat.blit(guiGraphics, sprites.get(isActive(), isHoveredOrFocused()), getX(), getY(), 300, width, height);
+            }
+            *///? } else {
             @Override
             public void renderWidget(GuiGraphics guiGraphics, int x, int y, float partialTicks) {
                 if (!isActive())
@@ -917,6 +1089,7 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
                 else
                     GuiCompat.blit(guiGraphics, sprites.get(isActive(), isHoveredOrFocused()), getX(), getY(), 300, width, height);
             }
+            //?}
         };
         button.setTooltip(Tooltip.create(Component.translatable("gui.crazyphone.crazy_phone_conversation.tooltip_send_voice_message")));
         button.visible = false;

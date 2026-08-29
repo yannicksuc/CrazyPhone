@@ -57,6 +57,9 @@ stonecutter parameters {
     swaps.put("gui_draw_word_wrap", if (is26) "textWithWordWrap" else "drawWordWrap")
     swaps.put("gui_render_tooltip", if (is26) "setTooltipForNextFrame" else "renderTooltip")
     swaps.put("gui_render_component_tooltip", if (is26) "setComponentTooltipForNextFrame" else "renderComponentTooltip")
+    swaps.put("gui_render_transparent_background", if (is26) "extractTransparentBackground" else "renderTransparentBackground")
+    // 26.x moved PlayerModel into its own subpackage (net.minecraft.client.model.player.PlayerModel).
+    swaps.put("player_model_pkg", if (is26) "net.minecraft.client.model.player.PlayerModel" else "net.minecraft.client.model.PlayerModel")
     // 26.x moved net.minecraft.Util to net.minecraft.util.Util (backgroundExecutor() etc. unchanged).
     swaps.put("util_pkg", if (semantics.eval(current.version, ">=26")) "net.minecraft.util.Util" else "net.minecraft.Util")
 }

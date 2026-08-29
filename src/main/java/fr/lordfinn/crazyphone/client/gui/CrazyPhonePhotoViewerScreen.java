@@ -95,7 +95,7 @@ public class CrazyPhonePhotoViewerScreen extends Screen implements PhoneScreen {
     //? if >=26 {
     /*@Override
     public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
-        this.renderTransparentBackground(guiGraphics);
+        this./^$ gui_render_transparent_background {^/renderTransparentBackground/^$}^/(guiGraphics);
         FabricPictureCache.CachedTexture texture = FabricPictureCache.getOrRequest(photoId, PhotoResolution.FULL);
         if (texture != null)
             drawFitted(guiGraphics, texture);
@@ -105,7 +105,7 @@ public class CrazyPhonePhotoViewerScreen extends Screen implements PhoneScreen {
     *///? } else {
     @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        this.renderTransparentBackground(guiGraphics);
+        this./*$ gui_render_transparent_background {*/renderTransparentBackground/*$}*/(guiGraphics);
         FabricPictureCache.CachedTexture texture = FabricPictureCache.getOrRequest(photoId, PhotoResolution.FULL);
         if (texture != null)
             drawFitted(guiGraphics, texture);

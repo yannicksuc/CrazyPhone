@@ -25,7 +25,10 @@ import net.minecraft.client.resources.PlayerSkin;
 import net.minecraft.client.resources.SkinManager;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui./*$ gui_graphics_type {*/GuiGraphics/*$}*/;
+//? if >=26 {
+/*import net.minecraft.client.gui.GuiGraphicsExtractor;
+*///?}
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.item.ItemStack;
 
@@ -89,6 +92,24 @@ public class CrazyPhoneContactInfoScreenScreen extends CrazyPhoneDefaultScreenSc
 		return head;
 	}
 
+	//? if >=26 {
+	/*@Override
+	public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTicks) {
+		super.extractRenderState(guiGraphics, mouseX, mouseY, partialTicks);
+		renderHeader(guiGraphics, resolveHeaderIcon(),
+				Component.translatable("gui.crazyphone.crazy_phone_contact_info_screen.title"));
+		number.extractRenderState(guiGraphics, mouseX, mouseY, partialTicks);
+		if (fakePlayer != null) {
+			// Centered in the space between the header and the number field/button, matching every other
+			// screen's 8px side margins and giving the preview its own clear band instead of overlapping
+			// the label/input below it.
+			this.renderEntityInInventoryFollowsAngle(guiGraphics, this.leftPos + 61, this.topPos + 118, 40,
+				(float) Math.atan((this.leftPos + 85 - mouseX) / 40.0),
+				(float) Math.atan((this.topPos + 35 - mouseY) / 40.0), fakePlayer);
+		}
+		this.extractTooltip(guiGraphics, mouseX, mouseY);
+	}
+	*///? } else {
 	@Override
 	public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
 		super.render(guiGraphics, mouseX, mouseY, partialTicks);
@@ -105,6 +126,7 @@ public class CrazyPhoneContactInfoScreenScreen extends CrazyPhoneDefaultScreenSc
 		}
 		this.renderTooltip(guiGraphics, mouseX, mouseY);
 	}
+	//?}
 
 	private void createGuiDefaultFakePlayer() {
 		int randomIndex = new Random().nextInt(defaultNames.length);
@@ -148,17 +170,33 @@ public class CrazyPhoneContactInfoScreenScreen extends CrazyPhoneDefaultScreenSc
 		}
 	}
 
+	//? if >=26 {
+	/*@Override
+	public void resize(int width, int height) {
+		String numberValue = number.getValue();
+		super.resize(width, height);
+		number.setValue(numberValue);
+	}
+	*///? } else {
 	@Override
 	public void resize(Minecraft minecraft, int width, int height) {
 		String numberValue = number.getValue();
 		super.resize(minecraft, width, height);
 		number.setValue(numberValue);
 	}
+	//?}
 
+	//? if >=26 {
+	/*@Override
+	protected void extractLabels(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
+		guiGraphics./^$ gui_draw_string {^/drawString/^$}^/(this.font, Component.translatable("gui.crazyphone.crazy_phone_contact_info_screen.label_numero"), CONTENT_X, LABEL_Y, 0xFF3C3C3C, false);
+	}
+	*///? } else {
 	@Override
 	protected void renderLabels(GuiGraphics guiGraphics, int mouseX, int mouseY) {
-		guiGraphics.drawString(this.font, Component.translatable("gui.crazyphone.crazy_phone_contact_info_screen.label_numero"), CONTENT_X, LABEL_Y, 0xFF3C3C3C, false);
+		guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(this.font, Component.translatable("gui.crazyphone.crazy_phone_contact_info_screen.label_numero"), CONTENT_X, LABEL_Y, 0xFF3C3C3C, false);
 	}
+	//?}
 
 	@Override
 	public void init() {
@@ -206,7 +244,7 @@ public class CrazyPhoneContactInfoScreenScreen extends CrazyPhoneDefaultScreenSc
 		this.addRenderableWidget(button_ajouter);
 	}
 
-	private void renderEntityInInventoryFollowsAngle(GuiGraphics guiGraphics, int x, int y, int scale, float angleXComponent, float angleYComponent, LivingEntity entity) {
+	private void renderEntityInInventoryFollowsAngle(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int x, int y, int scale, float angleXComponent, float angleYComponent, LivingEntity entity) {
 		Quaternionf pose = new Quaternionf().rotateZ((float) Math.PI);
 		Quaternionf cameraOrientation = new Quaternionf().rotateX(angleYComponent * 20 * ((float) Math.PI / 180F));
 		pose.mul(cameraOrientation);

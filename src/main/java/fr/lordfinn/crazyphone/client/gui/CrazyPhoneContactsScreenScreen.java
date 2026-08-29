@@ -12,7 +12,10 @@ import net.minecraft.world.item.Items;
 import net.neoforged.neoforge.network.PacketDistributor;
 //?}
 import fr.lordfinn.crazyphone.utils.NetworkAccess;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui./*$ gui_graphics_type {*/GuiGraphics/*$}*/;
+//? if >=26 {
+/*import net.minecraft.client.gui.GuiGraphicsExtractor;
+*///?}
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
@@ -118,8 +121,8 @@ public class CrazyPhoneContactsScreenScreen extends CrazyPhoneDefaultScreenScree
 	}
 
 	@Override
-	protected void renderBg(GuiGraphics guiGraphics, float partialTicks, int gx, int gy) {
-		super.renderBg(guiGraphics, partialTicks, gx, gy);
+	protected void drawScreenBackground(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics) {
+		super.drawScreenBackground(guiGraphics);
 		//? if <1.21.10 {
 		com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1, 1, 1, 1);
 		com.mojang.blaze3d.systems.RenderSystem.enableBlend();
@@ -207,6 +210,29 @@ public class CrazyPhoneContactsScreenScreen extends CrazyPhoneDefaultScreenScree
 	 */
 	private Button createSquareIconButton(int x, int y, Component icon, Button.OnPress onPress) {
 		return new Button(x, y, 14, 14, icon, onPress, supplier -> icon.copy()) {
+			//? if >=26 {
+			/*@Override
+			public void extractContents(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
+				// 26.x's AbstractButton has no default extractContents body left to call via super - the
+				// background sprite and default label are now two independent, separately-invokable pieces
+				// (extractDefaultSprite(GuiGraphicsExtractor)/extractDefaultLabel(ActiveTextCollector), the
+				// latter part of a new text-collection pipeline this button never needs to touch since it
+				// always draws its own custom-positioned label instead of the default one) - only the sprite
+				// half is relevant here, so call that directly instead of blanking/restoring the message
+				// around a super call that no longer exists.
+				Component message = getMessage();
+				this.extractDefaultSprite(guiGraphics);
+
+				var font = Minecraft.getInstance().font;
+				int textWidth = font.width(message);
+				int drawX = getX() + (getWidth() - textWidth) / 2;
+				int drawY = getY() + (getHeight() - 8) / 2;
+				GuiCompat.pushPose(guiGraphics);
+				GuiCompat.translate(guiGraphics, 0.5f, 0f);
+				guiGraphics./^$ gui_draw_string {^/drawString/^$}^/(font, message, drawX, drawY, 0xFFFFFFFF, true);
+				GuiCompat.popPose(guiGraphics);
+			}
+			*///? } else {
 			@Override
 			public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
 				Component message = getMessage();
@@ -220,9 +246,10 @@ public class CrazyPhoneContactsScreenScreen extends CrazyPhoneDefaultScreenScree
 				int drawY = getY() + (getHeight() - 8) / 2;
 				GuiCompat.pushPose(guiGraphics);
 				GuiCompat.translate(guiGraphics, 0.5f, 0f);
-				guiGraphics.drawString(font, message, drawX, drawY, 0xFFFFFFFF, true);
+				guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(font, message, drawX, drawY, 0xFFFFFFFF, true);
 				GuiCompat.popPose(guiGraphics);
 			}
+			//?}
 		};
 	}
 
@@ -318,6 +345,46 @@ public class CrazyPhoneContactsScreenScreen extends CrazyPhoneDefaultScreenScree
 		return Math.max(0, layout.totalHeight - VIEWPORT_HEIGHT);
 	}
 
+	//? if >=26 {
+	/*@Override
+	public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTicks) {
+		this.layout = computeLayout();
+		super.extractRenderState(guiGraphics, mouseX, mouseY, partialTicks);
+		renderHeader(guiGraphics, new ItemStack(Items.WRITABLE_BOOK),
+				Component.translatable("gui.crazyphone.crazy_phone_contacts_screen.title"));
+
+		guiGraphics.enableScissor(scissorX0(), scissorY0(), scissorX1(), scissorY1());
+
+		List<Component> hoveredTooltip = null;
+		List<Component> t;
+
+		drawSectionTitle(guiGraphics, layout.favTitleY, sectionFavoritesTitle());
+		t = renderPersonSection(guiGraphics, mouseX, mouseY, menu.getFavorites(), layout.favItemsY, sectionFavoritesTitle());
+		if (t != null)
+			hoveredTooltip = t;
+
+		drawSectionTitle(guiGraphics, layout.contactsTitleY, sectionContactsTitle());
+		if (renderAddContactTile(guiGraphics, mouseX, mouseY))
+			hoveredTooltip = List.of(addContactIcon.getHoverName());
+		t = renderContactsSection(guiGraphics, mouseX, mouseY);
+		if (t != null)
+			hoveredTooltip = t;
+
+		drawSectionTitle(guiGraphics, layout.groupsTitleY, sectionGroupsTitle());
+		t = renderGroupIcons(guiGraphics, mouseX, mouseY);
+		if (t != null)
+			hoveredTooltip = t;
+
+		guiGraphics.disableScissor();
+
+		if (hoveredTooltip != null) {
+			// >=26 always implies >=1.21.10, so this always takes the setTooltipForNextFrame path - no
+			// nested <1.21.10 split needed here (and one couldn't be written as a further /* *\/ comment
+			// pair nested inside this branch's own outer /* *\/ comment anyway).
+			guiGraphics.setTooltipForNextFrame(this.font, hoveredTooltip.stream().map(Component::getVisualOrderText).toList(), mouseX, mouseY);
+		}
+	}
+	*///? } else {
 	@Override
 	public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
 		this.layout = computeLayout();
@@ -357,6 +424,7 @@ public class CrazyPhoneContactsScreenScreen extends CrazyPhoneDefaultScreenScree
 			*///?}
 		}
 	}
+	//?}
 
 	private int scissorX0() {
 		return this.leftPos + GRID_START_X;
@@ -391,14 +459,14 @@ public class CrazyPhoneContactsScreenScreen extends CrazyPhoneDefaultScreenScree
 	 * right edge regardless of word length. */
 	/** Draws a section title flush to the grid's left edge, followed by a real 1px-tall separator line
 	 * (not dashed text) reaching exactly TITLE_LINE_END_X regardless of word length. */
-	private void drawSectionTitle(GuiGraphics guiGraphics, int relY, Component word) {
+	private void drawSectionTitle(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int relY, Component word) {
 		String text = word.getString();
 		int drawX = this.leftPos + GRID_START_X;
 		int drawY = this.topPos + GRID_START_Y + CONTENT_Y_OFFSET + relY - scrollPosition;
 		GuiCompat.pushPose(guiGraphics);
 		GuiCompat.translate(guiGraphics, drawX, drawY);
 		GuiCompat.scale(guiGraphics, SECTION_TITLE_SCALE, SECTION_TITLE_SCALE);
-		guiGraphics.drawString(this.font, text, 0, 0, SECTION_TITLE_COLOR, false);
+		guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(this.font, text, 0, 0, SECTION_TITLE_COLOR, false);
 		GuiCompat.popPose(guiGraphics);
 
 		int textWidthPx = Math.round(this.font.width(text) * SECTION_TITLE_SCALE);
@@ -450,7 +518,7 @@ public class CrazyPhoneContactsScreenScreen extends CrazyPhoneDefaultScreenScree
 
 	/** Renders the favorites section (favorites always start at index 0 of their own section, no leading
 	 * tile). Returns the hovered person's tooltip lines, or null. */
-	private List<Component> renderPersonSection(GuiGraphics guiGraphics, int mouseX, int mouseY, List<Contact> people, int relItemsY, Component sectionLabel) {
+	private List<Component> renderPersonSection(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int mouseX, int mouseY, List<Contact> people, int relItemsY, Component sectionLabel) {
 		List<Component> hoveredTooltip = null;
 		for (int i = 0; i < people.size(); i++) {
 			int[] pos = posAt(relItemsY, i);
@@ -466,7 +534,7 @@ public class CrazyPhoneContactsScreenScreen extends CrazyPhoneDefaultScreenScree
 	/** Renders the contacts section - real contacts only, starting at index 1 (index 0 is the "add
 	 * contact" tile, drawn separately by {@link #renderAddContactTile}). Returns the hovered contact's
 	 * tooltip lines, or null. */
-	private List<Component> renderContactsSection(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+	private List<Component> renderContactsSection(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int mouseX, int mouseY) {
 		List<Contact> contacts = menu.getContacts();
 		List<Component> hoveredTooltip = null;
 		for (int i = 0; i < contacts.size(); i++) {
@@ -482,7 +550,7 @@ public class CrazyPhoneContactsScreenScreen extends CrazyPhoneDefaultScreenScree
 
 	/** Head icon + hover-grow + notification badge for one person tile - shared by the favorites and
 	 * contacts sections. Returns whether this tile is currently hovered. */
-	private boolean drawPersonTile(GuiGraphics guiGraphics, int mouseX, int mouseY, int[] pos, Contact person) {
+	private boolean drawPersonTile(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int mouseX, int mouseY, int[] pos, Contact person) {
 		int iconX = pos[0];
 		int iconY = pos[1];
 		boolean hovered = mouseX >= iconX && mouseX < iconX + 16 && mouseY >= iconY && mouseY < iconY + 16;
@@ -517,19 +585,19 @@ public class CrazyPhoneContactsScreenScreen extends CrazyPhoneDefaultScreenScree
 	 * for both the "shrink to match other icons" correction (add-contact tile) and the "grow while
 	 * hovered" effect (contact/favorite heads, the add-contact tile, group icons), which stack by just
 	 * multiplying the two scale factors together. */
-	private void renderIconScaled(GuiGraphics guiGraphics, int iconX, int iconY, ItemStack stack, float scale) {
+	private void renderIconScaled(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int iconX, int iconY, ItemStack stack, float scale) {
 		int centerX = iconX + 8;
 		int centerY = iconY + 8;
 		GuiCompat.pushPose(guiGraphics);
 		GuiCompat.translate(guiGraphics, centerX, centerY);
 		GuiCompat.scale(guiGraphics, scale, scale);
 		GuiCompat.translate(guiGraphics, -centerX, -centerY);
-		guiGraphics.renderItem(stack, iconX, iconY);
+		guiGraphics./*$ gui_render_item {*/renderItem/*$}*/(stack, iconX, iconY);
 		GuiCompat.popPose(guiGraphics);
 	}
 
 	/** The "add contact" tile - always the first cell of the contacts section. Returns whether hovered. */
-	private boolean renderAddContactTile(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+	private boolean renderAddContactTile(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int mouseX, int mouseY) {
 		int[] pos = posAt(layout.contactsItemsY, 0);
 		int iconX = pos[0];
 		int iconY = pos[1];
@@ -554,7 +622,7 @@ public class CrazyPhoneContactsScreenScreen extends CrazyPhoneDefaultScreenScree
 	 * in their own section below favorites/contacts, cycling through each member's head over time so a
 	 * group with no custom icon still reads as "these people". Returns the hovered group's tooltip lines,
 	 * or null. */
-	private List<Component> renderGroupIcons(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+	private List<Component> renderGroupIcons(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int mouseX, int mouseY) {
 		List<CrazyPhoneContactsScreenMenu.GroupInfo> groups = menu.getGroups();
 		long time = System.currentTimeMillis();
 		List<Component> hoveredTooltip = null;

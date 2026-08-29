@@ -12,7 +12,6 @@ import javax.annotation.Nullable;
 *///? } else {
 import net.minecraft.client.renderer.item.ItemProperties;
 //?}
-import net.minecraft.resources.ResourceLocation;
 
 //? if neoforge {
 import net.neoforged.api.distmarker.Dist;
