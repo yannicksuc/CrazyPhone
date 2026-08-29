@@ -110,6 +110,25 @@ shared Fabric-side Mixin utility/pattern that injects at the tail of each (an `@
 than solving each one-off. That single piece of infrastructure would unblock all three gaps at
 once, including the icon-state gap already documented above.
 
+**One more concrete finding, ruling out the "easy" path**: vanilla ships a ready-made `ItemModel`
+implementation for exactly this situation, `SpecialModelWrapper` (JSON `"type": "minecraft:special"`,
+fields `base` + optional `transformation` + `model`) - checked its real source specifically to see
+if it could avoid writing a custom `ItemModel` entirely. It can't, for this renderer: its own
+`update()` only ever calls `ModelRenderProperties.applyToLayer(layer, displayContext)` - a STATIC
+per-displayContext transform table pulled from the `base` model's own vanilla `display` JSON block
+- with no hook for computing a transform at runtime. This mod's actual transform logic is
+fundamentally dynamic (live camera-relative rotation cancellation while presenting, `/presentdebug`
+live-tunable values, a whole conditional branch tree far beyond what a static per-context transform
+table can express) - `SpecialModelWrapper` genuinely can't express it. **Conclusion: write our own
+`ItemModel.Unbaked`/`ItemModel` pair (registered via `RegisterItemModelsEvent`, JSON `"type":
+"crazyphone:photo_card_model"` or similar, replacing today's `{"parent": "builtin/entity"}` in
+`crazy_phone_photo.json`), not just a `SpecialModelRenderer`.** Its `update()` becomes the new home
+for today's ENTIRE `render()` method's transform-branching logic (unchanged math, just building a
+scratch `PoseStack` and finishing with `layer.setLocalTransform(scratchPoseStack.last().pose())`
+instead of leaving the poseStack live) - `submit()` itself has no `ItemDisplayContext` parameter at
+all, so which case applies must be resolved in `update()` and carried across via whatever small
+argument type `setupSpecialModel(renderer, argument)` passes to `submit()`.
+
 **Recommended approach for whoever picks this up**: get it working on NeoForge 26.1 first (only
 one loader, and this file already documents the exact registration events), verify the OLD
 `<1.21.10` NeoForge path still needs its own separate backport too (see `CrazyPhonePhotoItem.java`'s
