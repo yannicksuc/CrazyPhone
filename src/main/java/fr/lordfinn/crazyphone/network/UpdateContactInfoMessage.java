@@ -85,7 +85,7 @@ public record UpdateContactInfoMessage(String name, String uuid, String number) 
         if (context.flow() == PacketFlow.CLIENTBOUND) {
             context.enqueueWork(() -> {
                 Minecraft mc = Minecraft.getInstance();
-                if (mc.screen instanceof CrazyPhoneContactInfoScreenScreen screen) {
+                if (mc./^$ mc_get_screen {^/screen/^$}^/ instanceof CrazyPhoneContactInfoScreenScreen screen) {
                     screen.updateContactInfo(message.name, message.uuid, message.number);
                 }
             });
@@ -96,7 +96,7 @@ public record UpdateContactInfoMessage(String name, String uuid, String number) 
         if (context.flow() == PacketFlow.CLIENTBOUND) {
             context.workHandler().submitAsync(() -> {
                 Minecraft mc = Minecraft.getInstance();
-                if (mc.screen instanceof CrazyPhoneContactInfoScreenScreen screen) {
+                if (mc./*$ mc_get_screen {*/screen/*$}*/ instanceof CrazyPhoneContactInfoScreenScreen screen) {
                     screen.updateContactInfo(message.name, message.uuid, message.number);
                 }
             });
@@ -107,7 +107,7 @@ public record UpdateContactInfoMessage(String name, String uuid, String number) 
     //? if fabric && >=1.20.5 {
     /*public static void handleDataFabric(UpdateContactInfoMessage message, net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.Context context) {
         Minecraft mc = Minecraft.getInstance();
-        if (mc.screen instanceof CrazyPhoneContactInfoScreenScreen screen) {
+        if (mc./^$ mc_get_screen {^/screen/^$}^/ instanceof CrazyPhoneContactInfoScreenScreen screen) {
             screen.updateContactInfo(message.name, message.uuid, message.number);
         }
     }

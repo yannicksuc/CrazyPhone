@@ -86,4 +86,14 @@ stonecutter parameters {
     // terminology instead of S2C/C2S - javap-verified against the real 26.1.2-resolved jar).
     swaps.put("fabric_payload_registry_s2c", if (fabricMenuRework) "clientboundPlay" else "playS2C")
     swaps.put("fabric_payload_registry_c2s", if (fabricMenuRework) "serverboundPlay" else "playC2S")
+    // 26.2 (not 26.1 - confirmed absent only starting there) removed Minecraft's own public `screen` field
+    // and `setScreen(Screen)` method entirely, moving them to the Gui instance (Minecraft#gui) as
+    // `screen()`/`setScreen(Screen)` - confirmed via decompiled source diff between 26.1.2 (both still on
+    // Minecraft directly) and 26.2.0.71 (both gone from Minecraft). `Minecraft#setScreenAndShow(Screen)`
+    // (present on both versions) is the more faithful replacement for the old `setScreen` - it forces an
+    // immediate render frame the same way the old field-setting setScreen's callers likely expected,
+    // confirmed by reading its body (delegates to gui.setScreen then renderFrame).
+    val is262 = semantics.eval(current.version, ">=26.2")
+    swaps.put("mc_get_screen", if (is262) "gui.screen()" else "screen")
+    swaps.put("mc_set_screen", if (is262) "setScreenAndShow" else "setScreen")
 }

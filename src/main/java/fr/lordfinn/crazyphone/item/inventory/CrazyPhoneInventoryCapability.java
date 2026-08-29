@@ -58,7 +58,7 @@ public class CrazyPhoneInventoryCapability extends ItemStackHandler {
     //?}
     public static void onItemDropped(ItemTossEvent event) {
         if (event.getEntity().getItem().getItem() == ModItems.CRAZY_PHONE.get()) {
-            if (Minecraft.getInstance().screen instanceof PhoneScreen) {
+            if (Minecraft.getInstance()./*$ mc_get_screen {*/screen/*$}*/ instanceof PhoneScreen) {
                 Minecraft.getInstance().player.closeContainer();
             }
         }

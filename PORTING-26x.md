@@ -5,6 +5,23 @@ task turned out to be much bigger than expected once actually attempted - this f
 that progress isn't lost and the next session (or a live human) can pick it up without
 re-discovering everything from scratch.
 
+## Update: `Minecraft#screen`/`#setScreen` fixed (26.2-only) - both 26.2 targets now isolated to the rendering pipeline
+
+Found and fixed one more small, real, 26.2-*specific* break while investigating the rendering
+pipeline item below: `Minecraft`'s public `screen` field and `setScreen(Screen)` method are gone
+entirely on 26.2 (confirmed present, unchanged, on 26.1 - checked both decompiled sources side by
+side), moved onto the `Minecraft#gui` (`Gui`) instance as `screen()`/`setScreen(Screen)`.
+`Minecraft#setScreenAndShow(Screen)` (present on both versions) is the closer behavioral
+replacement for the old setter - its body forces an immediate render frame the same way the old
+field-setting setter's callers likely relied on, whereas the low-level `gui.setScreen(...)` is just
+the raw field write `Gui` itself uses internally. Fixed via two new swaps (`mc_get_screen`,
+`mc_set_screen` in `stonecutter.gradle.kts`, keyed `>=26.2` specifically) applied across 21 call
+sites in 15 files (screen-history lookups, capture-mode enter/exit, "open the photo viewer"
+call sites). **Result: `:26.2:compileJava` and `:26.2-fabric:compileJava` are now isolated to
+exactly the item-rendering pipeline work below** - every other error on both is gone. All 5
+pre-existing targets + `:26.1`/`:26.1-fabric` regression-checked clean (no change to their error
+counts - this was purely additive, 26.2-gated).
+
 ## Update: the item-rendering pipeline replacement, investigated and now a concrete recipe
 
 This is the one remaining real piece of work (blocks `:26.1-fabric`'s last error and all of
@@ -455,25 +472,22 @@ question comes up in the still-open 26.2 investigation.
 
 ## Remaining work (as of this update)
 
-Current compile status, freshly verified: `:26.1:compileJava` (NeoForge) - **0 errors**.
-`:26.1-fabric:compileJava` - **1 error** (`BuiltinItemRendererRegistry`, see above).
-`:26.2:compileJava`/`:26.2-fabric:compileJava` - the shared custom-item-rendering pipeline rework
-below is the only known remaining gap for both (25 and 24 errors respectively, before that rework).
-All 5 pre-existing targets (`1.20.4`, `1.21.1`, `1.21.1-fabric`, `1.21.10`, `1.20.1-fabric`)
-regression-checked clean alongside `:26.1:compileJava` in the same pass.
+Current compile status, freshly verified in one pass: `:26.1:compileJava` (NeoForge) - **0
+errors**. `:26.1-fabric:compileJava` - **1 error** (`BuiltinItemRendererRegistry`, see above).
+`:26.2:compileJava` - **7 errors**, `:26.2-fabric:compileJava` - **10 errors** - both now isolated
+entirely to the item-rendering pipeline rework below (confirmed - every other error on both is
+gone as of the `Minecraft#screen` fix above). All 5 pre-existing targets (`1.20.4`, `1.21.1`,
+`1.21.1-fabric`, `1.21.10`, `1.20.1-fabric`) regression-checked clean in the same pass.
 
 1. **The unified custom-item-rendering pipeline rework** - the one real remaining piece of design
-   work, and now understood to be a SINGLE task rather than two separate ones (see above): rewrite
-   `CrazyPhonePhotoItemRenderer.java`'s vertex-submission logic around whatever the new
-   `PictureInPictureRendererRegistry`/`FabricModel`/`FabricRenderState` (Fabric) and
-   `PreparedRenderType`/`RenderSetup`/`OutputTarget`/`LayeringTransform` (vanilla/NeoForge) API
-   actually wants, then re-wire `CrazyPhonePhotoItem.java`'s two registration branches
-   (`BuiltinItemRendererRegistry` on Fabric, the NeoForge `IClientItemExtensions`/
-   `BlockEntityWithoutLevelRenderer` path - itself still a `<1.21.10`-only TODO on NeoForge, see that
-   file's own comment) accordingly. Also touches `CrazyPhoneCaptureMode.java`,
-   `CrazyPhoneCaptureHandMixin.java`, and ~9 screen/message files that reference `RenderType`/
-   `MultiBufferSource` for text/item rendering on 26.2 specifically (per the `:26.2-fabric` error
-   list). Not started beyond confirming the old classes are gone on both loaders - budget this as
+   work, and now understood to be a SINGLE task rather than two separate ones, with a concrete
+   recipe written up above (`ItemModel`/`ItemStackRenderState`/`SpecialModelRenderer`/
+   `SubmitNodeCollector`, `RegisterItemModelsEvent`/`RegisterSpecialModelRendererEvent` on NeoForge,
+   a confirmed Fabric registration gap needing a Mixin). Also touches `CrazyPhoneCaptureMode.java`,
+   `CrazyPhoneCaptureHandMixin.java`, and several screen/message files that reference `RenderType`/
+   `MultiBufferSource` for text/item rendering on 26.2 specifically (per the `:26.2`/`:26.2-fabric`
+   error lists - now down to 7/10 respectively, all attributable to this one item). Not started
+   beyond the investigation above - budget this as
    comparable in scope to the whole GuiGraphics rework already done, not a quick follow-up.
 2. **The Fabric `ConditionalItemModelProperty` gap** (phone icon states not updating on Fabric
    >=1.21.10) - needs a Mixin into vanilla's `ConditionalItemModelProperties.bootstrap()`, see above.

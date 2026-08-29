@@ -108,7 +108,7 @@ public class ModScreens {
 	public static void handleTextBoxMessage(GuiSyncMessage message) {
 		String editbox = message.editbox();
 		String value = message.value();
-		Screen currentScreen = Minecraft.getInstance().screen;
+		Screen currentScreen = Minecraft.getInstance()./*$ mc_get_screen {*/screen/*$}*/;
 		if (currentScreen instanceof CrazyPhoneDefaultScreenScreen sc) {
 			HashMap<String, Object> widgets = sc.getWidgets();
 			Object obj = widgets.get("text:" + editbox);

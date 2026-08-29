@@ -118,7 +118,7 @@ public record CrazyPhoneNewMessageNotificationPacket(
             }
         }
         // Mise a jour de l'ecran s'il est ouvert
-        if (mc.screen instanceof CrazyPhoneConversationScreen screen) {
+        if (mc./*$ mc_get_screen {*/screen/*$}*/ instanceof CrazyPhoneConversationScreen screen) {
             screen.addMessage(
                 messagePacket.senderName,
                 message

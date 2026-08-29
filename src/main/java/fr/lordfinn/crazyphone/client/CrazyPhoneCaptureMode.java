@@ -110,8 +110,8 @@ public final class CrazyPhoneCaptureMode {
             return;
         }
         conversationId = newConversationId;
-        previousScreen = mc.screen;
-        mc.setScreen(null);
+        previousScreen = mc./*$ mc_get_screen {*/screen/*$}*/;
+        mc./*$ mc_set_screen {*/setScreen/*$}*/(null);
         targetZoom = MIN_ZOOM;
         currentZoom = MIN_ZOOM;
         capturing = false;
@@ -137,7 +137,7 @@ public final class CrazyPhoneCaptureMode {
             return;
         Minecraft mc = Minecraft.getInstance();
         active = false;
-        mc.setScreen(previousScreen);
+        mc./*$ mc_set_screen {*/setScreen/*$}*/(previousScreen);
         previousScreen = null;
     }
 

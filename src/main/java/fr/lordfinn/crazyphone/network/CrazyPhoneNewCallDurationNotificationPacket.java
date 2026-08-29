@@ -85,7 +85,7 @@ public record CrazyPhoneNewCallDurationNotificationPacket(String conversationId,
 
     private static void applyUpdate(CrazyPhoneNewCallDurationNotificationPacket message) {
         Minecraft mc = Minecraft.getInstance();
-        if (mc.screen instanceof CrazyPhoneConversationScreen screen)
+        if (mc./*$ mc_get_screen {*/screen/*$}*/ instanceof CrazyPhoneConversationScreen screen)
             screen.updateCallDuration(message.conversationId, message.callId, message.durationMillis);
     }
 

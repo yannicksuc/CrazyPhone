@@ -71,7 +71,7 @@ public class CrazyPhoneContactInfoScreenScreen extends CrazyPhoneDefaultScreenSc
 
 	public static HashMap<String, String> getEditBoxAndCheckBoxValues() {
 		HashMap<String, String> textstate = new HashMap<>();
-		if (Minecraft.getInstance().screen instanceof CrazyPhoneContactInfoScreenScreen sc) {
+		if (Minecraft.getInstance()./*$ mc_get_screen {*/screen/*$}*/ instanceof CrazyPhoneContactInfoScreenScreen sc) {
 			textstate.put("textin:number", sc.number.getValue());
 		}
 		return textstate;

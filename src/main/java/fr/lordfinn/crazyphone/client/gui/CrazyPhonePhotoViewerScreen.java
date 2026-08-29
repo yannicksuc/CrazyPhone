@@ -46,7 +46,7 @@ public class CrazyPhonePhotoViewerScreen extends Screen implements PhoneScreen {
         super(Component.translatable("gui.crazyphone.photo_viewer.title"));
         this.photoId = photoId;
         this.openedFromInventory = openedFromInventory;
-        this.previousScreen = Minecraft.getInstance().screen;
+        this.previousScreen = Minecraft.getInstance()./*$ mc_get_screen {*/screen/*$}*/;
     }
 
     @Override
@@ -138,6 +138,6 @@ public class CrazyPhonePhotoViewerScreen extends Screen implements PhoneScreen {
 
     @Override
     public void onClose() {
-        Minecraft.getInstance().setScreen(previousScreen);
+        Minecraft.getInstance()./*$ mc_set_screen {*/setScreen/*$}*/(previousScreen);
     }
 }

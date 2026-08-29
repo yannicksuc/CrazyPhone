@@ -191,7 +191,7 @@ public class CrazyPhoneMyPhotosScreenScreen extends CrazyPhoneDefaultScreenScree
                     selectedPhotoIds.remove(photoId);
                 updateActionButtonsState();
             } else {
-                Minecraft.getInstance().setScreen(new CrazyPhonePhotoViewerScreen(photoId));
+                Minecraft.getInstance()./*$ mc_set_screen {*/setScreen/*$}*/(new CrazyPhonePhotoViewerScreen(photoId));
             }
             return true;
         }

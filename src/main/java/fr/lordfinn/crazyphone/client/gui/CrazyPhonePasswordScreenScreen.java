@@ -57,7 +57,7 @@ public class CrazyPhonePasswordScreenScreen extends CrazyPhoneDefaultScreenScree
 
     public static HashMap<String, String> getEditBoxAndCheckBoxValues() {
         HashMap<String, String> textstate = new HashMap<>();
-        if (Minecraft.getInstance().screen instanceof CrazyPhonePasswordScreenScreen sc) {
+        if (Minecraft.getInstance()./*$ mc_get_screen {*/screen/*$}*/ instanceof CrazyPhonePasswordScreenScreen sc) {
             if (sc.number != null)
                 textstate.put("textin:number", sc.number.getValue());
             if (sc.name != null)
