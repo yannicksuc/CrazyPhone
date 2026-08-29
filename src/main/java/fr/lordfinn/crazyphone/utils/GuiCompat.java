@@ -140,9 +140,29 @@ public final class GuiCompat {
     public static void renderEntityInInventory(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int x, int y, int scale, Vector3f translation, Quaternionf rotation, @Nullable Quaternionf cameraOrientation, LivingEntity entity) {
         //? if <1.21.10 {
         net.minecraft.client.gui.screens.inventory.InventoryScreen.renderEntityInInventory(guiGraphics, x, y, scale, translation, rotation, cameraOrientation, entity);
-        //? } else {
+        //?}
+        //? if >=1.21.10 <26 {
         /*int half = Math.max(scale * 3, 1);
         net.minecraft.client.gui.screens.inventory.InventoryScreen.renderEntityInInventory(guiGraphics, x - half, y - half, x + half, y + half, scale, translation, rotation, cameraOrientation, entity);
+        *///?}
+        //? if >=26 {
+        /*// 26.x replaced this exact overload with an angle-driven one (renderEntityInInventoryFollowsAngle,
+        // taking a coarse xAngle/yAngle pair that INTERNALLY overrides the render state's own bodyRot/yRot/
+        // xRot fields) - that would silently discard the caller's own already-computed
+        // yBodyRot/setYRot/setXRot/yHeadRot values (see CallBustPreview#render, the only caller), which is
+        // exactly the fine-grained control this method exists to preserve. Its own underlying primitive,
+        // GuiGraphicsExtractor#entity(EntityRenderState, scale, translation, rotation, overrideCameraAngle,
+        // x0,y0,x1,y1), is still a real quaternion-based call and still public - this replicates the small
+        // render-state-extraction helper InventoryScreen keeps private, then calls that primitive directly,
+        // preserving this method's original signature/semantics exactly (confirmed against the real
+        // decompiled 26.1.2 InventoryScreen source for both the wrapper and the extraction helper's body).
+        int half = Math.max(scale * 3, 1);
+        net.minecraft.client.renderer.entity.EntityRenderDispatcher dispatcher = net.minecraft.client.Minecraft.getInstance().getEntityRenderDispatcher();
+        net.minecraft.client.renderer.entity.EntityRenderer<? super LivingEntity, ?> renderer = dispatcher.getRenderer(entity);
+        net.minecraft.client.renderer.entity.state.EntityRenderState renderState = renderer.createRenderState(entity, 1.0f);
+        renderState.shadowPieces.clear();
+        renderState.outlineColor = 0;
+        guiGraphics.entity(renderState, scale, translation, rotation, cameraOrientation, x - half, y - half, x + half, y + half);
         *///?}
     }
 }

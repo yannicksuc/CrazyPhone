@@ -23,7 +23,10 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 //?}
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui./*$ gui_graphics_type {*/GuiGraphics/*$}*/;
+//? if >=26 {
+/*import net.minecraft.client.gui.GuiGraphicsExtractor;
+*///?}
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
@@ -169,14 +172,14 @@ public final class CrazyPhoneCaptureMode {
         });
     }
 
-    public static void drawOverlay(GuiGraphics guiGraphics) {
+    public static void drawOverlay(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics) {
         if (!active || FabricPictureCapture.suppressPhoneRendering)
             return;
         drawReticle(guiGraphics);
         drawZoomReadout(guiGraphics);
     }
 
-    private static void drawReticle(GuiGraphics guiGraphics) {
+    private static void drawReticle(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics) {
         Minecraft mc = Minecraft.getInstance();
         int width = mc.getWindow().getGuiScaledWidth();
         int height = mc.getWindow().getGuiScaledHeight();
@@ -195,12 +198,12 @@ public final class CrazyPhoneCaptureMode {
         guiGraphics.fill(right - 2, bottom - size, right, bottom, color);
     }
 
-    private static void drawZoomReadout(GuiGraphics guiGraphics) {
+    private static void drawZoomReadout(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics) {
         Minecraft mc = Minecraft.getInstance();
         int width = mc.getWindow().getGuiScaledWidth();
         int height = mc.getWindow().getGuiScaledHeight();
         String text = Math.round(currentZoom * 100) + "%";
-        guiGraphics.drawCenteredString(mc.font, text, width / 2, height - 40, 0xFFFFFFFF);
+        guiGraphics./*$ gui_draw_centered_string {*/drawCenteredString/*$}*/(mc.font, text, width / 2, height - 40, 0xFFFFFFFF);
     }
 
     //? if neoforge {

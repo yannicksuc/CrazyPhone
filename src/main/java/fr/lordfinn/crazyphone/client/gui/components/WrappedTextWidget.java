@@ -2,7 +2,10 @@ package fr.lordfinn.crazyphone.client.gui.components;
 
 import fr.lordfinn.crazyphone.utils.GuiCompat;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui./*$ gui_graphics_type {*/GuiGraphics/*$}*/;
+//? if >=26 {
+/*import net.minecraft.client.gui.GuiGraphicsExtractor;
+*///?}
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.gui.Font;
@@ -92,8 +95,19 @@ public class WrappedTextWidget extends AbstractWidget {
         this.height = calculateHeight();
     }
 
+    //? if >=26 {
+    /*@Override
+    public void extractWidgetRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTicks) {
+        drawContent(guiGraphics);
+    }
+    *///? } else {
     @Override
     public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
+        drawContent(guiGraphics);
+    }
+    //?}
+
+    private void drawContent(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics) {
         int renderX = getX();
         int renderY = getY();
         int renderWidth = width;
@@ -103,7 +117,7 @@ public class WrappedTextWidget extends AbstractWidget {
 
         if (!leadingIcon.isEmpty()) {
             int iconY = renderY + (renderHeight - 16) / 2;
-            guiGraphics.renderItem(leadingIcon, renderX + 2, iconY);
+            guiGraphics./*$ gui_render_item {*/renderItem/*$}*/(leadingIcon, renderX + 2, iconY);
         }
 
         List<FormattedCharSequence> lines = font.split(getMessage(), (int) ((width - paddingLeft - paddingRight) / textScale));
@@ -119,7 +133,7 @@ public class WrappedTextWidget extends AbstractWidget {
         for (int i = 0; i < lines.size(); i++) {
             FormattedCharSequence line = lines.get(i);
             int lineY = (int) (textStartY / textScale) + i * font.lineHeight;
-            guiGraphics.drawString(font, line, (int) ((getX() + paddingLeft) / textScale), lineY, textColor, false);
+            guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(font, line, (int) ((getX() + paddingLeft) / textScale), lineY, textColor, false);
         }
 
         GuiCompat.popPose(guiGraphics);

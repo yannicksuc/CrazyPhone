@@ -1,7 +1,7 @@
 package fr.lordfinn.crazyphone.client.gui.components;
 
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui./*$ gui_graphics_type {*/GuiGraphics/*$}*/;
 import net.minecraft.network.chat.Component;
 
 /**
@@ -31,10 +31,10 @@ public final class ScrollingText {
     /** Draws {@code text} left-aligned at ({@code x}, {@code y}), scrolling within {@code width} pixels if
      * it doesn't fit, else drawn as-is (not centered - callers that want centering when it fits should
      * check {@code font.width(text) <= width} themselves and use a centered draw in that branch instead). */
-    public static void render(GuiGraphics guiGraphics, Font font, Component text, int x, int y, int width, int color) {
+    public static void render(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, Font font, Component text, int x, int y, int width, int color) {
         int textWidth = font.width(text);
         if (textWidth <= width) {
-            guiGraphics.drawString(font, text, x, y, color, false);
+            guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(font, text, x, y, color, false);
             return;
         }
 
@@ -44,8 +44,8 @@ public final class ScrollingText {
         long t = System.currentTimeMillis() % cycleMs;
         int offset = t < PAUSE_MS ? 0 : Math.round((t - PAUSE_MS) / 1000f * PIXELS_PER_SECOND);
 
-        guiGraphics.drawString(font, text, x - offset, y, color, false);
-        guiGraphics.drawString(font, text, x - offset + loopWidth, y, color, false);
+        guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(font, text, x - offset, y, color, false);
+        guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(font, text, x - offset + loopWidth, y, color, false);
         guiGraphics.disableScissor();
     }
 }

@@ -4,7 +4,7 @@ import fr.lordfinn.crazyphone.init.ModItems;
 import fr.lordfinn.crazyphone.utils.Contact;
 import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui./*$ gui_graphics_type {*/GuiGraphics/*$}*/;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -49,7 +49,7 @@ public class MessageDisplayManager {
         }
     }
 
-    public void render(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+    public void render(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int mouseX, int mouseY) {
         // A call entry's own text (and therefore height) changes every frame while live - see
         // MessageWidget#computeCallText, called from its renderWidget before this loop even runs - but
         // resetPositions() was previously only invoked on scroll/add/prepend, never in response to a
@@ -68,10 +68,10 @@ public class MessageDisplayManager {
                 hoveredImageEntry = entry;
                 continue;
             }
-            entry.widget.render(guiGraphics, mouseX, mouseY, 0);
+            entry.widget./*$ widget_render {*/render/*$}*/(guiGraphics, mouseX, mouseY, 0);
         }
         if (hoveredImageEntry != null) {
-            hoveredImageEntry.widget.render(guiGraphics, mouseX, mouseY, 0);
+            hoveredImageEntry.widget./*$ widget_render {*/render/*$}*/(guiGraphics, mouseX, mouseY, 0);
         }
     }
 

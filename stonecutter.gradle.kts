@@ -60,6 +60,10 @@ stonecutter parameters {
     swaps.put("gui_render_transparent_background", if (is26) "extractTransparentBackground" else "renderTransparentBackground")
     // 26.x moved PlayerModel into its own subpackage (net.minecraft.client.model.player.PlayerModel).
     swaps.put("player_model_pkg", if (is26) "net.minecraft.client.model.player.PlayerModel" else "net.minecraft.client.model.PlayerModel")
+    // Renderable/AbstractWidget's own public render dispatcher (what any caller uses to render a widget or
+    // Button from outside, as opposed to the renderWidget/extractContents hook a widget overrides to draw
+    // its own content) - render(...) -> extractRenderState(...), same param order.
+    swaps.put("widget_render", if (is26) "extractRenderState" else "render")
     // 26.x moved net.minecraft.Util to net.minecraft.util.Util (backgroundExecutor() etc. unchanged).
     swaps.put("util_pkg", if (semantics.eval(current.version, ">=26")) "net.minecraft.util.Util" else "net.minecraft.Util")
 }

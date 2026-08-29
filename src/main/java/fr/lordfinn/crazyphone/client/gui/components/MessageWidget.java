@@ -15,7 +15,10 @@ import fr.lordfinn.crazyphone.network.VoiceMessageAudioRequestPacket;
 import fr.lordfinn.crazyphone.network.VoiceMessageStopPacket;
 import fr.lordfinn.crazyphone.utils.NetworkAccess;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui./*$ gui_graphics_type {*/GuiGraphics/*$}*/;
+//? if >=26 {
+/*import net.minecraft.client.gui.GuiGraphicsExtractor;
+*///?}
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.network.chat.Component;
@@ -141,6 +144,19 @@ public class MessageWidget extends AbstractWidget {
         wrappedText.setPosition(x, adjustedY);
     }
 
+    //? if >=26 {
+    /*@Override
+    public void extractWidgetRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTicks) {
+        if (callId != null) {
+            wrappedText.setMessage(computeCallText());
+            this.setHeight(wrappedText.getHeight());
+        }
+        wrappedText.extractWidgetRenderState(guiGraphics, mouseX, mouseY, partialTicks);
+        if (voiceId != null)
+            renderVoiceContent(guiGraphics, mouseX, mouseY);
+        renderItemHead(guiGraphics, mouseX, mouseY);
+    }
+    *///? } else {
     @Override
     public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
         if (callId != null) {
@@ -158,6 +174,7 @@ public class MessageWidget extends AbstractWidget {
             renderVoiceContent(guiGraphics, mouseX, mouseY);
         renderItemHead(guiGraphics, mouseX, mouseY);
     }
+    //?}
 
     /** Recomputed every frame while the call is still ongoing (callDurationMillis == -1) - see the field's
      * own javadoc and WrappedTextWidget#renderWidget, which re-reads its message fresh each frame too, so
@@ -245,7 +262,7 @@ public class MessageWidget extends AbstractWidget {
         return isSender ? 0xFFFFFFFF : 0xFF0084FF;
     }
 
-    private void renderVoiceContent(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+    private void renderVoiceContent(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int mouseX, int mouseY) {
         var font = Minecraft.getInstance().font;
         float textScale = wrappedText.getTextScale();
         int bubbleX = wrappedText.getX();
@@ -293,9 +310,9 @@ public class MessageWidget extends AbstractWidget {
         // the transform re-multiplies them back up to real screen pixels.
         GuiCompat.pushPose(guiGraphics);
         GuiCompat.scale(guiGraphics, textScale, textScale);
-        guiGraphics.drawString(font, playIcon, (int) (voicePlayIconX / textScale), (int) (voicePlayIconY / textScale), accentColor, false);
-        guiGraphics.drawString(font, timeLabel, (int) (timeX / textScale), (int) (voiceLabelY / textScale), accentColor, false);
-        guiGraphics.drawString(font, speedLabel, (int) (voiceSpeedLabelX / textScale), (int) (voiceLabelY / textScale), hoveringSpeed ? CrazyPhoneColors.ACCENT_YELLOW : accentColor, false);
+        guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(font, playIcon, (int) (voicePlayIconX / textScale), (int) (voicePlayIconY / textScale), accentColor, false);
+        guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(font, timeLabel, (int) (timeX / textScale), (int) (voiceLabelY / textScale), accentColor, false);
+        guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(font, speedLabel, (int) (voiceSpeedLabelX / textScale), (int) (voiceLabelY / textScale), hoveringSpeed ? CrazyPhoneColors.ACCENT_YELLOW : accentColor, false);
         GuiCompat.popPose(guiGraphics);
 
         // Live waveform, to the right of the time - a static preview of the whole clip's envelope normally,
@@ -305,7 +322,7 @@ public class MessageWidget extends AbstractWidget {
         renderVoiceWaveform(guiGraphics, waveformX, waveformEnd, bubbleY, bubbleH, playing, elapsedTicks, accentColor);
     }
 
-    private void renderVoiceWaveform(GuiGraphics guiGraphics, int startX, int endX, int bubbleY, int bubbleH, boolean playing, int elapsedTicks, int accentColor) {
+    private void renderVoiceWaveform(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int startX, int endX, int bubbleY, int bubbleH, boolean playing, int elapsedTicks, int accentColor) {
         if (voiceEnvelope.length == 0 || endX <= startX)
             return;
         int barCount = voiceEnvelope.length;
@@ -343,7 +360,7 @@ public class MessageWidget extends AbstractWidget {
                 && mouseY >= voiceLabelY && mouseY < voiceLabelY + 8;
     }
 
-    private void renderItemHead(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+    private void renderItemHead(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int mouseX, int mouseY) {
         int itemX = isSender
                 ? wrappedText.getX() + wrappedText.getWidth()
                 : wrappedText.getX() - 16;
@@ -351,7 +368,7 @@ public class MessageWidget extends AbstractWidget {
         if (fabricImageId != null)
             renderImage(guiGraphics, mouseX, mouseY);
         if (showIcon && !isSystem)
-            guiGraphics.renderItem(icon, itemX, itemY);
+            guiGraphics./*$ gui_render_item {*/renderItem/*$}*/(icon, itemX, itemY);
      }
 
     /** Head icon hit box, matching the position computed in {@link #renderItemHead}. Used by the screen to show a name/number tooltip on hover. */
@@ -477,7 +494,7 @@ public class MessageWidget extends AbstractWidget {
     }
 
     // Resolves the texture through FabricPictureCache (lazy server fetch keyed by photoId).
-    private void renderImage(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+    private void renderImage(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int mouseX, int mouseY) {
         if (fabricImageId == null) return;
 
         if (imageWidth <= 0 || imageHeight <= 0 || !imageAspectResolved) {

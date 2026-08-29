@@ -13,7 +13,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.RemotePlayer;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui./*$ gui_graphics_type {*/GuiGraphics/*$}*/;
 import net.minecraft.util.Mth;
 
 import fr.lordfinn.crazyphone.client.ClientCallState;
@@ -131,7 +131,7 @@ public final class CallBustPreview {
         fakePlayers.clear();
     }
 
-    public void render(GuiGraphics guiGraphics, UUID participantId, int cellX, int cellY, int cellSize, CropMode cropMode, boolean animated) {
+    public void render(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, UUID participantId, int cellX, int cellY, int cellSize, CropMode cropMode, boolean animated) {
         Player fake = fakePlayers.get(participantId);
         if (fake == null)
             return;

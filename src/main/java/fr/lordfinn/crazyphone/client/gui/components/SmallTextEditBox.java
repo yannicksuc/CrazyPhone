@@ -3,7 +3,10 @@ package fr.lordfinn.crazyphone.client.gui.components;
 import fr.lordfinn.crazyphone.utils.GuiCompat;
 
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui./*$ gui_graphics_type {*/GuiGraphics/*$}*/;
+//? if >=26 {
+/*import net.minecraft.client.gui.GuiGraphicsExtractor;
+*///?}
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.network.chat.Component;
 //? if neoforge && <1.21.10 {
@@ -33,6 +36,27 @@ public class SmallTextEditBox extends EditBox {
         this.requestedHeight = height;
     }
 
+    //? if >=26 {
+    /*@Override
+    public void extractWidgetRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
+        int x = this.getX();
+        int y = this.getY();
+        float renderedHeight = this.getHeight() * SCALE_FACTOR;
+        float bottomAlignOffset = requestedHeight - renderedHeight;
+        GuiCompat.pushPose(guiGraphics);
+        GuiCompat.translate(guiGraphics, x, y + bottomAlignOffset);
+        GuiCompat.scale(guiGraphics, SCALE_FACTOR, SCALE_FACTOR);
+
+        this.setX(0);
+        this.setY(0);
+
+        super.extractWidgetRenderState(guiGraphics, (int)(mouseX * (1/SCALE_FACTOR) - x * (1/SCALE_FACTOR)),(int)(mouseY * (1/SCALE_FACTOR) - y * (1/SCALE_FACTOR)), partialTick);
+
+        GuiCompat.popPose(guiGraphics);
+        this.setX(x);
+        this.setY(y);
+    }
+    *///? } else {
     @Override
     public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
 
@@ -55,6 +79,7 @@ public class SmallTextEditBox extends EditBox {
         this.setX(x);
 		this.setY(y);
     }
+    //?}
 
     //? if <1.21.10 {
     @Override
