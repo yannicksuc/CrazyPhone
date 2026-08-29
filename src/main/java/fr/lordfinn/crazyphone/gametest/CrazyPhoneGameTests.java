@@ -445,15 +445,15 @@ public class CrazyPhoneGameTests {
 
     public static void registerGameTests(net.neoforged.neoforge.event.RegisterGameTestsEvent event) {
         ENVIRONMENTS.clear();
-        registerTest(event, "unregistered_phone_use_opens_password_screen", "unregisteredPhone");
-        registerTest(event, "registered_phone_use_opens_home_screen", "registeredPhone");
-        registerTest(event, "start_call_without_svc_installed_degrades_gracefully", "startCallNoSvc");
-        registerTest(event, "mayor_vote_via_real_command_records_then_blocks_revote", "mayorVoteCooldown");
-        registerTest(event, "mayor_vote_while_feature_globally_disabled_is_blocked", "mayorVoteFlagDisabled");
-        registerTest(event, "mayor_candidate_and_vote_clear_lifecycle", "mayorCandidateAndVoteClearLifecycle");
-        registerTest(event, "held_phone_number_resolves_correctly", "heldPhoneNumberSanity");
-        registerTest(event, "screen_navigation_still_works_while_in_call", "navigateWhileInCall");
-        registerTest(event, "group_settings_menu_opens_tagged_with_conversation_id", "openGroupSettingsMenu");
+        registerTest(event, "unregistered_phone_use_opens_password_screen", "unregistered_phone");
+        registerTest(event, "registered_phone_use_opens_home_screen", "registered_phone");
+        registerTest(event, "start_call_without_svc_installed_degrades_gracefully", "start_call_no_svc");
+        registerTest(event, "mayor_vote_via_real_command_records_then_blocks_revote", "mayor_vote_cooldown");
+        registerTest(event, "mayor_vote_while_feature_globally_disabled_is_blocked", "mayor_vote_flag_disabled");
+        registerTest(event, "mayor_candidate_and_vote_clear_lifecycle", "mayor_candidate_and_vote_clear_lifecycle");
+        registerTest(event, "held_phone_number_resolves_correctly", "held_phone_number_sanity");
+        registerTest(event, "screen_navigation_still_works_while_in_call", "navigate_while_in_call");
+        registerTest(event, "group_settings_menu_opens_tagged_with_conversation_id", "open_group_settings_menu");
     }
 
     private static void registerTest(net.neoforged.neoforge.event.RegisterGameTestsEvent event, String testName, String batchName) {
