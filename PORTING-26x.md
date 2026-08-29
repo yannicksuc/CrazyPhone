@@ -5,6 +5,102 @@ task turned out to be much bigger than expected once actually attempted - this f
 that progress isn't lost and the next session (or a live human) can pick it up without
 re-discovering everything from scratch.
 
+## Update: the item-rendering pipeline replacement, investigated and now a concrete recipe
+
+This is the one remaining real piece of work (blocks `:26.1-fabric`'s last error and all of
+`:26.2`/`:26.2-fabric`'s ~25 errors each). It looked like a scary unknown at first - vanilla's
+`MultiBufferSource`/`net.minecraft.client.renderer.entity.ItemRenderer` and Fabric's
+`BuiltinItemRendererRegistry` are BOTH just gone, with no renamed drop-in replacement - but a real
+investigation (decompiled 26.2.0.71 vanilla source + the actual NeoForge 26.1.2.100 jar) turned up
+a complete, concrete, mechanically-followable path. Writing it down here in full since actually
+implementing it is a substantial rewrite (~600 lines in `CrazyPhonePhotoItemRenderer.java` alone)
+that deserves its own dedicated pass with real live-testing (3D geometry correctness can't be
+verified by reading code), not a blind guess during an unattended run.
+
+**What actually changed, architecturally**: item rendering moved to the same "extract render
+state, then submit" split already seen everywhere else in 26.x (GuiGraphics, GameTest, entity
+render states). There is no more "get a `VertexConsumer` from a `MultiBufferSource` and push
+vertices into it immediately" - instead:
+
+1. A per-item `net.minecraft.client.renderer.item.ItemModel` (this interface already existed
+   before 26.x, tied to the same >=1.21.10 rework `CrazyPhonePhotoItem.java`'s own TODO already
+   referenced) has one method, `update(ItemStackRenderState output, ItemStack item,
+   ItemModelResolver resolver, ItemDisplayContext displayContext, ClientLevel level, ItemOwner
+   owner, int seed)`, called fresh on every render (the `seed` param confirms this isn't a
+   bake-once cache) to populate `output` - this is where **all of this file's existing
+   `render()`-method transform logic belongs now** (the whole isHand/GROUND/FIXED/presenting
+   poseStack.translate/mulPose/scale chain, completely unchanged math-wise).
+2. `output.newLayer()` returns an `ItemStackRenderState.LayerRenderState` with two methods that
+   matter here: `setLocalTransform(Matrix4fc)` (an arbitrary transform matrix - build a scratch
+   `PoseStack`, run the exact same translate/mulPose/scale calls this file already has, then pass
+   `poseStack.last().pose()` here) and `setupSpecialModel(SpecialModelRenderer<T> renderer, T
+   argument)` (registers the actual drawing logic for this layer, `T` being any small
+   data-carrier - e.g. an enum/record for "which of the current render() branches applies" plus
+   the resolved photo texture).
+3. `net.minecraft.client.renderer.special.SpecialModelRenderer<T>.submit(T argument, PoseStack
+   poseStack, SubmitNodeCollector submitNodeCollector, int lightCoords, int overlayCoords, boolean
+   hasFoil, int outlineColor)` is called later (render phase), with `poseStack` **already carrying
+   the `localTransform` from step 2 baked in** - this is where the ACTUAL vertex-drawing code
+   belongs, and it needs almost no changes: `SubmitNodeCollector.submitCustomGeometry(PoseStack,
+   RenderType, SubmitNodeCollector.CustomGeometryRenderer)` takes a
+   `CustomGeometryRenderer.render(PoseStack.Pose pose, VertexConsumer buffer)` callback - **the
+   exact same `(PoseStack.Pose pose, VertexConsumer buffer)` shape every existing helper method in
+   this file already uses** (`quad`, `slice`, `sliceBack`, `doubleSidedQuad`, `tintedQuad`,
+   `vertex`/`tintedVertex`). Every current `bufferSource.getBuffer(RenderType.entityCutout(tex))`
+   call site becomes `submitNodeCollector.submitCustomGeometry(poseStack, RenderTypes.entityCutout(tex),
+   (pose, buffer) -> { /* same quad(...)/slice(...) calls as today, just using pose/buffer here */ })`.
+
+**Net effect**: `renderFramedCard`/`renderHandFramedCard`/`renderPresentingCandidates` and every
+quad/vertex helper below them survive almost verbatim - only their outer signature (take
+`SubmitNodeCollector` instead of `MultiBufferSource`, wrap each texture's draw calls in one
+`submitCustomGeometry` block instead of calling `bufferSource.getBuffer(...)` directly) changes.
+The `render()` method itself needs to actually split into two: the transform-computation half
+(-> `ItemModel.update()`) and the draw half (-> `SpecialModelRenderer.submit()`), connected by
+whatever small argument type carries "which case, which texture" across that boundary.
+
+**Registration (NeoForge)** - both are real, standard mod-bus events, confirmed present in the
+real NeoForge 26.1.2.100 jar (`net.neoforged.neoforge.client.event`):
+- `RegisterItemModelsEvent#register(Identifier, MapCodec<? extends ItemModel.Unbaked>)` - registers
+  a custom `ItemModel.Unbaked` "type" (referenced by id from the item's own model JSON, e.g.
+  `assets/crazyphone/models/item/crazy_phone_photo.json` would need `{"type":
+  "crazyphone:photo_card"}` instead of whatever it references today - check that file).
+- `RegisterSpecialModelRendererEvent#register(Identifier, MapCodec<? extends
+  SpecialModelRenderer.Unbaked<?>>)` - registers the actual renderer type the `ItemModel.Unbaked`'s
+  own `bake(...)` method would reference/construct.
+- Same "simple built-in registry populated via a LateBoundIdMapper, NeoForge patches an event-post
+  call into vanilla's own bootstrap method" shape as `ConditionalItemModelProperties`/
+  `TEST_FUNCTION` (see this file's other sections) - expect the same kind of vanilla bootstrap
+  class to exist for these two (not yet located by name - search the decompiled source for
+  `ItemModels.bootstrap`/`SpecialModelRenderers.bootstrap` or similar).
+
+**Registration (Fabric) - confirmed, and it's the SAME gap as `ConditionalItemModelProperty`**:
+checked the real decompiled 26.1.2 `ItemModels.java`/`SpecialModelRenderers.java` directly - both
+are a private static `ExtraCodecs.LateBoundIdMapper` populated once via a `bootstrap()` method,
+and (exactly like `ConditionalItemModelProperties.bootstrap()`) NeoForge patches
+`ModLoader.postEvent(new Register...Event(ID_MAPPER))` directly into the END of that vanilla
+method as a source patch - not something vanilla itself does, and not backed by a `BuiltInRegistries`
+entry either (checked - no hits), so it's not moddable via `RegisterEvent` the way `TEST_FUNCTION`
+turned out to be. Also checked `fabric-rendering-v1`'s own classes
+(`PictureInPictureRendererRegistry`, `FabricModel`, `FabricRenderState`, `TransformCopyingModel`,
+`ExtractItemDecorationsCallback`) for a Fabric-provided alternative - none fit
+(`PictureInPictureRendererRegistry` is for GUI-only picture-in-picture renderers like
+map-in-inventory, not held/world item rendering; the rest are entity/block model composition
+helpers or item-decoration overlays). **This makes THREE separate vanilla bootstrap methods now
+confirmed to have this exact same NeoForge-only-patched-event shape with no Fabric equivalent**
+(`ConditionalItemModelProperties`, `ItemModels`, `SpecialModelRenderers`) - worth building ONE
+shared Fabric-side Mixin utility/pattern that injects at the tail of each (an `@Inject` at
+`RETURN`, then either an `@Accessor` for the private static `ID_MAPPER` field or reflection) rather
+than solving each one-off. That single piece of infrastructure would unblock all three gaps at
+once, including the icon-state gap already documented above.
+
+**Recommended approach for whoever picks this up**: get it working on NeoForge 26.1 first (only
+one loader, and this file already documents the exact registration events), verify the OLD
+`<1.21.10` NeoForge path still needs its own separate backport too (see `CrazyPhonePhotoItem.java`'s
+own pre-existing TODO - this rework affects 1.21.10 through main, not just 26.x), THEN tackle
+Fabric once the vanilla-side registration mechanism is confirmed. Live-test after every step -
+this is exactly the kind of change (3D geometry, transform order, render-layer bucketing) that
+looks right in a diff and renders as a black square or an invisible item in practice.
+
 ## Update: `:26.1-fabric:compileJava` down to ONE known blocker (from 188, then 51, now 1)
 
 Fabric API did its OWN sweeping API rework for 26.x, in parallel with (and mirroring) vanilla's own
