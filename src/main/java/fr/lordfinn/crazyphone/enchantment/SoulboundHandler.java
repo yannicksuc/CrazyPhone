@@ -18,7 +18,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
-import net.minecraft.world.level.GameRules;
+import /^$ game_rules_pkg {^/net.minecraft.world.level.GameRules/^$}^/;
 
 import fr.lordfinn.crazyphone.Config;
 import fr.lordfinn.crazyphone.data.PhoneAttachmentTypes;
@@ -37,7 +37,7 @@ public class SoulboundHandler {
         if (!(event.getEntity() instanceof ServerPlayer player))
             return;
         // keepInventory already keeps everything, including anything soulbound - nothing to stash.
-        if (player.level().getGameRules().getBoolean(GameRules.RULE_KEEPINVENTORY))
+        if (player.level().getGameRules()./^$ keep_inventory_call {^/getBoolean(GameRules.RULE_KEEPINVENTORY)/^$}^/)
             return;
 
         Holder<Enchantment> soulbound = resolveSoulbound(player);
@@ -99,7 +99,7 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
-import net.minecraft.world.level.GameRules;
+import /^$ game_rules_pkg {^/net.minecraft.world.level.GameRules/^$}^/;
 
 import fr.lordfinn.crazyphone.Config;
 import fr.lordfinn.crazyphone.data.PhoneAttachmentTypes;
@@ -143,7 +143,7 @@ public class SoulboundHandler {
 
     private static void stashSoulboundItems(ServerPlayer player) {
         // keepInventory already keeps everything, including anything soulbound - nothing to stash.
-        if (player.level().getGameRules().getBoolean(GameRules.RULE_KEEPINVENTORY))
+        if (player.level().getGameRules()./^$ keep_inventory_call {^/getBoolean(GameRules.RULE_KEEPINVENTORY)/^$}^/)
             return;
 
         Holder<Enchantment> soulbound = resolveSoulbound(player);

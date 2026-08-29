@@ -50,7 +50,7 @@ import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.components.WidgetSprites;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 //? if neoforge {
@@ -807,8 +807,8 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
     }
 
     private ImageButton createSendMessageButton() {
-    ResourceLocation sendButtonImage = Crazyphone.parseId("crazyphone:textures/screens/crazyphone-send-message.png");
-    ResourceLocation sendButtonHoverImage = Crazyphone.parseId("crazyphone:textures/screens/crazyphone-send-message-hover.png");
+    /*$ res_loc {*/ResourceLocation/*$}*/ sendButtonImage = Crazyphone.parseId("crazyphone:textures/screens/crazyphone-send-message.png");
+    /*$ res_loc {*/ResourceLocation/*$}*/ sendButtonHoverImage = Crazyphone.parseId("crazyphone:textures/screens/crazyphone-send-message-hover.png");
 
     ImageButton button = new ImageButton(this.leftPos + 100, this.topPos + 158, 14, 14,
         new WidgetSprites(sendButtonImage, sendButtonHoverImage),

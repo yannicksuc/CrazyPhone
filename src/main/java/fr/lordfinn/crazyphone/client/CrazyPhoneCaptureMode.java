@@ -36,6 +36,7 @@ import fr.lordfinn.crazyphone.network.CrazyPhoneUploadPicturePacket;
 import fr.lordfinn.crazyphone.procedures.IsPhoneOpenProcedure;
 import fr.lordfinn.crazyphone.procedures.IsPhoneSetupProcedure;
 import fr.lordfinn.crazyphone.utils.NetworkAccess;
+import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
 
 /**
  * Event-driven replacement for the capture overlay's old {@code Screen}-based design: a real {@code Screen}
@@ -102,7 +103,7 @@ public final class CrazyPhoneCaptureMode {
         Minecraft mc = Minecraft.getInstance();
         if (!heldPhoneCanCapture(mc)) {
             if (mc.player != null)
-                mc.player.displayClientMessage(Component.translatable("message.crazyphone.phone_locked_no_photo"), true);
+                CrazyPhoneHelper.sendClientMessage(mc.player, Component.translatable("message.crazyphone.phone_locked_no_photo"), true);
             return;
         }
         conversationId = newConversationId;
@@ -266,7 +267,7 @@ public final class CrazyPhoneCaptureMode {
     // ever drew while hideGui was OFF, the opposite of what this needs), so suppressing each element by
     // name here leaves hideGui completely untouched.
     //? if <1.20.5 {
-    private static final java.util.Set<net.minecraft.resources.ResourceLocation> HIDDEN_OVERLAYS = java.util.Set.of(
+    private static final java.util.Set<net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/> HIDDEN_OVERLAYS = java.util.Set.of(
             VanillaGuiOverlay.HOTBAR.id(), VanillaGuiOverlay.CROSSHAIR.id(),
             VanillaGuiOverlay.PLAYER_HEALTH.id(), VanillaGuiOverlay.ARMOR_LEVEL.id(),
             VanillaGuiOverlay.FOOD_LEVEL.id(), VanillaGuiOverlay.AIR_LEVEL.id(),
@@ -287,7 +288,7 @@ public final class CrazyPhoneCaptureMode {
     }
     //?}
     //? if >=1.20.5 <1.21.10 {
-    /*private static final java.util.Set<net.minecraft.resources.ResourceLocation> HIDDEN_LAYERS = java.util.Set.of(
+    /*private static final java.util.Set<net.minecraft.resources./^$ res_loc {^/ResourceLocation/^$}^/> HIDDEN_LAYERS = java.util.Set.of(
             VanillaGuiLayers.HOTBAR, VanillaGuiLayers.CROSSHAIR,
             VanillaGuiLayers.PLAYER_HEALTH, VanillaGuiLayers.ARMOR_LEVEL,
             VanillaGuiLayers.FOOD_LEVEL, VanillaGuiLayers.AIR_LEVEL,

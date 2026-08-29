@@ -23,7 +23,7 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 *///? }
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
 
@@ -77,7 +77,7 @@ public record CrazyPhoneUploadPicturePacket(String conversationId, byte[] thumbn
         return TYPE;
     }
     *///? } else {
-    public static final ResourceLocation ID = Crazyphone.resource("upload_picture");
+    public static final /*$ res_loc {*/ResourceLocation/*$}*/ ID = Crazyphone.resource("upload_picture");
 
     public CrazyPhoneUploadPicturePacket(FriendlyByteBuf buffer) {
         this(buffer.readUtf(), buffer.readByteArray(), buffer.readByteArray());
@@ -90,7 +90,7 @@ public record CrazyPhoneUploadPicturePacket(String conversationId, byte[] thumbn
     }
 
     @Override
-    public ResourceLocation id() {
+    public /*$ res_loc {*/ResourceLocation/*$}*/ id() {
         return ID;
     }
     //?}

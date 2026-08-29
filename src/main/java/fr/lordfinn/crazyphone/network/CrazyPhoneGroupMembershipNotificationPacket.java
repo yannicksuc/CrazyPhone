@@ -15,7 +15,7 @@ import net.neoforged.fml.common.Mod.EventBusSubscriber;
 import net.neoforged.bus.api.SubscribeEvent;
 //?}
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.network.protocol.PacketFlow;
 //? if >=1.20.5 {
@@ -30,6 +30,7 @@ import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
 
 import fr.lordfinn.crazyphone.Crazyphone;
+import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
 
 /**
  * Server -> client: notifies a single player that their membership in a group conversation just changed -
@@ -71,7 +72,7 @@ public record CrazyPhoneGroupMembershipNotificationPacket(String groupLabel, Str
         return TYPE;
     }
     *///? } else {
-    public static final ResourceLocation ID = new ResourceLocation(Crazyphone.MODID, "group_membership_notification");
+    public static final /*$ res_loc {*/ResourceLocation/*$}*/ ID = new /*$ res_loc {*/ResourceLocation/*$}*/(Crazyphone.MODID, "group_membership_notification");
 
     public CrazyPhoneGroupMembershipNotificationPacket(FriendlyByteBuf buffer) {
         this(buffer.readUtf(), buffer.readUtf(), buffer.readBoolean());
@@ -84,7 +85,7 @@ public record CrazyPhoneGroupMembershipNotificationPacket(String groupLabel, Str
     }
 
     @Override
-    public ResourceLocation id() {
+    public /*$ res_loc {*/ResourceLocation/*$}*/ id() {
         return ID;
     }
     //?}
@@ -104,15 +105,15 @@ public record CrazyPhoneGroupMembershipNotificationPacket(String groupLabel, Str
         //? if <1.21.10 {
         mc.player.sendSystemMessage(toast);
         //? } else {
-        /*mc.player.displayClientMessage(toast, false);
+        /*CrazyPhoneHelper.sendClientMessage(mc.player, toast, false);
         *///?}
 
-        ResourceLocation soundId = messagePacket.added
+        /*$ res_loc {*/ResourceLocation/*$}*/ soundId = messagePacket.added
             ? Crazyphone.parseId("block.note_block.pling")
             : Crazyphone.parseId("entity.villager.no");
         SoundEvent sound = fr.lordfinn.crazyphone.utils.RegistryCompat.get(BuiltInRegistries.SOUND_EVENT, soundId);
         if (sound != null) {
-            mc.player.playNotifySound(sound, SoundSource.PLAYERS, 0.6f, 1.0f);
+            CrazyPhoneHelper.playNotifySound(mc.player, sound, SoundSource.PLAYERS, 0.6f, 1.0f);
         }
     }
 

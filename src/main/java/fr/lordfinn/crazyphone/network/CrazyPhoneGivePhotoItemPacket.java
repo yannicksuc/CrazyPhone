@@ -23,7 +23,7 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 *///? }
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
@@ -56,7 +56,7 @@ public record CrazyPhoneGivePhotoItemPacket(UUID photoId) implements CustomPacke
         return TYPE;
     }
     *///? } else {
-    public static final ResourceLocation ID = Crazyphone.resource("give_photo_item");
+    public static final /*$ res_loc {*/ResourceLocation/*$}*/ ID = Crazyphone.resource("give_photo_item");
 
     public CrazyPhoneGivePhotoItemPacket(FriendlyByteBuf buffer) {
         this(buffer.readUUID());
@@ -67,7 +67,7 @@ public record CrazyPhoneGivePhotoItemPacket(UUID photoId) implements CustomPacke
     }
 
     @Override
-    public ResourceLocation id() {
+    public /*$ res_loc {*/ResourceLocation/*$}*/ id() {
         return ID;
     }
     //?}

@@ -10,7 +10,7 @@ import fr.lordfinn.crazyphone.utils.NetworkAccess;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.player.Inventory;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/;
 import net.minecraft.network.chat.Component;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.components.WidgetSprites;
@@ -64,7 +64,7 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 		this.imageHeight = 195;
 	}
 
-	private static final ResourceLocation HEADER_BANNER_IMAGE = Crazyphone.parseId("crazyphone:textures/screens/crazyphone-header-background.png");
+	private static final /*$ res_loc {*/ResourceLocation/*$}*/ HEADER_BANNER_IMAGE = Crazyphone.parseId("crazyphone:textures/screens/crazyphone-header-background.png");
 	/** Height in pixels of the header strip drawn by {@link #renderHeader}, measured from the top of the phone background - every screen that shows one must start its own content at this y offset. */
 	protected static final int HEADER_HEIGHT = 27;
 

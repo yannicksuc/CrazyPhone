@@ -15,6 +15,7 @@ import net.minecraft.sounds.SoundSource;
 import fr.lordfinn.crazyphone.world.inventory.CrazyphoneHomeScreenMenu;
 import fr.lordfinn.crazyphone.init.ModItems;
 import fr.lordfinn.crazyphone.utils.ScreenMenuUtils;
+import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
 
 public class CrazyPhoneRightclickedProcedure {
 	public static void execute(LevelAccessor world, double x, double y, double z, Entity entity) {
@@ -31,7 +32,7 @@ public class CrazyPhoneRightclickedProcedure {
 					SoundEvent sound = fr.lordfinn.crazyphone.utils.RegistryCompat.get(BuiltInRegistries.SOUND_EVENT,
 							Crazyphone.parseId("crazyphone:pokedex"));
 					if (sound != null) {
-						serverPlayer.playNotifySound(sound, SoundSource.PLAYERS, 0.2f, 1f);
+						CrazyPhoneHelper.playNotifySound(serverPlayer, sound, SoundSource.PLAYERS, 0.2f, 1f);
 					}
 				}
 			}

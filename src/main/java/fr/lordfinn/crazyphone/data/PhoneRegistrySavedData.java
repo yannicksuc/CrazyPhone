@@ -15,6 +15,9 @@ import net.minecraft.util.datafix.DataFixTypes;
 import net.minecraft.util.datafix.DataFixTypes;
 import net.minecraft.world.level.saveddata.SavedDataType;
 *///?}
+//? if >=26 {
+/*import fr.lordfinn.crazyphone.Crazyphone;
+*///?}
 // Real vanilla SavedData.Factory always requires a DataFixTypes, at every version it exists at all - see
 // ConversationSavedData.java's import block for the full javap-verified explanation.
 //? if fabric && >=1.20.5 <1.21.10 {
@@ -84,7 +87,7 @@ public class PhoneRegistrySavedData extends SavedData {
             data -> data.writeNbt(new CompoundTag()));
 
     public static final SavedDataType<PhoneRegistrySavedData> TYPE =
-            new SavedDataType<>(DATA_NAME, PhoneRegistrySavedData::new, CODEC, DataFixTypes.LEVEL);
+            new SavedDataType<>(/^$ saved_data_id {^/DATA_NAME/^$}^/, PhoneRegistrySavedData::new, CODEC, DataFixTypes.LEVEL);
     *///?}
 
     private void read(CompoundTag nbt) {

@@ -50,8 +50,10 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.ComponentSerialization;
 import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.sounds.SoundEvent;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.nbt.NbtOps;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
@@ -70,6 +72,32 @@ import net.neoforged.neoforge.items.IItemHandlerModifiable;
 //?}
 
 public class CrazyPhoneHelper {
+
+    // 26.x split Player#displayClientMessage(Component, boolean) into two separate methods -
+    // sendSystemMessage(Component) for the normal chat log, sendOverlayMessage(Component) for the action
+    // bar - dropping the boolean entirely rather than renaming it (confirmed via decompiling the real
+    // 26.1.2 vanilla jar). One shared choke point here instead of branching each of the ~20 call sites
+    // across the codebase individually.
+    public static void sendClientMessage(Player player, Component message, boolean actionBar) {
+        //? if >=26 {
+        /*if (actionBar)
+            player.sendOverlayMessage(message);
+        else
+            player.sendSystemMessage(message);
+        *///?} else {
+        player.displayClientMessage(message, actionBar);
+        //?}
+    }
+
+    // 26.x removed Player#playNotifySound(SoundEvent, SoundSource, float, float) entirely (confirmed via
+    // decompiling the real 26.1.2 vanilla jar - only the SoundSource-less Entity#playSound(SoundEvent,
+    // float, float) survived). The full Level#playSound(Player/Entity, double, double, double, SoundEvent,
+    // SoundSource, float, float) overload this replaces it with is unchanged across every version this mod
+    // targets (only its "except" parameter's declared type widened from Player to Entity on 26.x, which a
+    // Player argument satisfies either way), so no stonecutter branching is needed here.
+    public static void playNotifySound(Player player, SoundEvent sound, SoundSource source, float volume, float pitch) {
+        player.level().playSound(player, player.getX(), player.getY(), player.getZ(), sound, source, volume, pitch);
+    }
 
     /** The item in entity's main hand, or ItemStack.EMPTY for a non-living entity (e.g. a fake player) or none held. */
     public static ItemStack getMainHandItemOrEmpty(Entity entity) {
@@ -447,7 +475,7 @@ public class CrazyPhoneHelper {
         tag.put("systemText", ComponentSerialization.CODEC.encodeStart(NbtOps.INSTANCE, text).getOrThrow(false, s -> {}));
         //?}
         if (icon != null && !icon.isEmpty()) {
-            ResourceLocation id = BuiltInRegistries.ITEM.getKey(icon.getItem());
+            /*$ res_loc {*/ResourceLocation/*$}*/ id = BuiltInRegistries.ITEM.getKey(icon.getItem());
             tag.putString("systemIcon", id.toString());
         }
         return tag;
@@ -1017,7 +1045,7 @@ public class CrazyPhoneHelper {
                     : Component.empty();
             ItemStack icon = ItemStack.EMPTY;
             if (NbtCompat.contains(messageTag, "systemIcon")) {
-                ResourceLocation id = ResourceLocation.tryParse(NbtCompat.getString(messageTag, "systemIcon"));
+                /*$ res_loc {*/ResourceLocation/*$}*/ id = /*$ res_loc {*/ResourceLocation/*$}*/.tryParse(NbtCompat.getString(messageTag, "systemIcon"));
                 if (id != null && BuiltInRegistries.ITEM.containsKey(id))
                     icon = new ItemStack(RegistryCompat.get(BuiltInRegistries.ITEM, id));
             }

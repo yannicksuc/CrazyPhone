@@ -10,7 +10,7 @@ package fr.lordfinn.crazyphone.client.picture;
 import com.mojang.blaze3d.platform.NativeImage;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.DynamicTexture;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/;
 
 import fr.lordfinn.crazyphone.network.CrazyPhonePictureRequestPacket;
 import fr.lordfinn.crazyphone.utils.NetworkAccess;
@@ -30,7 +30,7 @@ public final class FabricPictureCache {
     // there's no way to tell request-never-sent / no-response / decode-failure apart without this. Remove
     // once the viewer bug is confirmed fixed live.
     private static final Logger LOGGER = LoggerFactory.getLogger("crazyphone-picture-debug");
-    public record CachedTexture(ResourceLocation location, int width, int height) {
+    public record CachedTexture(/*$ res_loc {*/ResourceLocation/*$}*/ location, int width, int height) {
     }
 
     private record Key(UUID photoId, PhotoResolution resolution) {
@@ -95,7 +95,7 @@ public final class FabricPictureCache {
             // images - no size ceiling tied to the native stack at all.
             NativeImage image = NativeImage.read(new java.io.ByteArrayInputStream(pngBytes));
             DynamicTexture texture = new DynamicTexture(image);
-            ResourceLocation id = Minecraft.getInstance().getTextureManager().register(
+            /*$ res_loc {*/ResourceLocation/*$}*/ id = Minecraft.getInstance().getTextureManager().register(
                     "crazyphone-picture-" + resolution.name().toLowerCase(java.util.Locale.ROOT) + "-" + photoId, texture);
             RESOLVED.put(key, new CachedTexture(id, image.getWidth(), image.getHeight()));
             LOGGER.info("Decoded {} photo {} as {}x{}", resolution, photoId, image.getWidth(), image.getHeight());

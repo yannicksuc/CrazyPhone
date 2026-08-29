@@ -15,7 +15,7 @@ import net.neoforged.fml.common.Mod.EventBusSubscriber;
 import net.neoforged.bus.api.SubscribeEvent;
 //?}
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.network.protocol.PacketFlow;
 //? if >=1.20.5 {
@@ -80,7 +80,7 @@ public record VoiceMessageUploadPacket(String conversationId, UUID voiceId, byte
         return TYPE;
     }
     *///? } else {
-    public static final ResourceLocation ID = Crazyphone.resource("voice_message_upload");
+    public static final /*$ res_loc {*/ResourceLocation/*$}*/ ID = Crazyphone.resource("voice_message_upload");
 
     public VoiceMessageUploadPacket(FriendlyByteBuf buffer) {
         this(
@@ -101,7 +101,7 @@ public record VoiceMessageUploadPacket(String conversationId, UUID voiceId, byte
     }
 
     @Override
-    public ResourceLocation id() {
+    public /*$ res_loc {*/ResourceLocation/*$}*/ id() {
         return ID;
     }
     //?}

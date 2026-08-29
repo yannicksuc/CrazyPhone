@@ -11,7 +11,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.ImageButton;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/;
 import net.minecraft.world.entity.player.Inventory;
 
 import fr.lordfinn.crazyphone.data.PhoneRegistrySavedData;
@@ -76,8 +76,8 @@ public class CrazyphoneHomeScreenScreen extends CrazyPhoneDefaultScreenScreen<Cr
 
     // No tooltips on these - the home screen's 4 icon buttons are meant to be read at a glance, not hovered.
     private void addImageButton(String key, int buttonId, String baseIconName, int x, int y, int width, int height) {
-        ResourceLocation normal = Crazyphone.parseId("crazyphone:textures/screens/" + baseIconName + ".png");
-        ResourceLocation hover = Crazyphone.parseId("crazyphone:textures/screens/" + baseIconName + "-hover.png");
+        /*$ res_loc {*/ResourceLocation/*$}*/ normal = Crazyphone.parseId("crazyphone:textures/screens/" + baseIconName + ".png");
+        /*$ res_loc {*/ResourceLocation/*$}*/ hover = Crazyphone.parseId("crazyphone:textures/screens/" + baseIconName + "-hover.png");
 
         ImageButton button = new ImageButton(x, y, width, height, new net.minecraft.client.gui.components.WidgetSprites(normal, hover), e -> {
             var values = getEditBoxAndCheckBoxValues();

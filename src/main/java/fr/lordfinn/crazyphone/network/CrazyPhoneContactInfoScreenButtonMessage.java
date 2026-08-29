@@ -22,7 +22,7 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.PacketFlow;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Player;
@@ -65,7 +65,7 @@ public record CrazyPhoneContactInfoScreenButtonMessage(int buttonID, int x, int 
 		return TYPE;
 	}
 	*///? } else {
-	public static final ResourceLocation ID = new ResourceLocation(Crazyphone.MODID, "crazy_phone_contact_info_screen_buttons");
+	public static final /*$ res_loc {*/ResourceLocation/*$}*/ ID = new /*$ res_loc {*/ResourceLocation/*$}*/(Crazyphone.MODID, "crazy_phone_contact_info_screen_buttons");
 
 	public CrazyPhoneContactInfoScreenButtonMessage(FriendlyByteBuf buffer) {
 		this(buffer.readInt(), buffer.readInt(), buffer.readInt(), buffer.readInt(), readTextState(buffer));
@@ -80,7 +80,7 @@ public record CrazyPhoneContactInfoScreenButtonMessage(int buttonID, int x, int 
 	}
 
 	@Override
-	public ResourceLocation id() {
+	public /*$ res_loc {*/ResourceLocation/*$}*/ id() {
 		return ID;
 	}
 	//?}

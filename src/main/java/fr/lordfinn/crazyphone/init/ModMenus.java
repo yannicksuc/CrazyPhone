@@ -29,7 +29,7 @@ import io.netty.buffer.Unpooled;
 
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.network.protocol.PacketFlow;
 //? if >=1.20.5 {
@@ -182,7 +182,7 @@ public class ModMenus {
 			return TYPE;
 		}
 		*///? } else {
-		public static final ResourceLocation ID = new ResourceLocation(Crazyphone.MODID, "gui_sync");
+		public static final /*$ res_loc {*/ResourceLocation/*$}*/ ID = new /*$ res_loc {*/ResourceLocation/*$}*/(Crazyphone.MODID, "gui_sync");
 
 		public GuiSyncMessage(FriendlyByteBuf buffer) {
 			this(buffer.readUtf(), buffer.readUtf());
@@ -194,7 +194,7 @@ public class ModMenus {
 		}
 
 		@Override
-		public ResourceLocation id() {
+		public /*$ res_loc {*/ResourceLocation/*$}*/ id() {
 			return ID;
 		}
 		//?}

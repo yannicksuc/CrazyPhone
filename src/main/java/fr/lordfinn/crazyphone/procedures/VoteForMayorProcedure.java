@@ -50,7 +50,7 @@ public class VoteForMayorProcedure {
 			if (currentTime - lastVoteTime < 600) {
 				if (entity instanceof Player _player && !_player.level().isClientSide()) {
 					long remainingSeconds = (600 - (currentTime - lastVoteTime)) / 20;
-					_player.displayClientMessage(
+					CrazyPhoneHelper.sendClientMessage(_player,
 						Component.translatable("message.crazyphone.vote_cooldown", remainingSeconds)
 							.withStyle(ChatFormatting.RED),
 						false
@@ -70,7 +70,7 @@ public class VoteForMayorProcedure {
 
 		if (PhoneRegistrySavedData.get(world).mayorsCandidates.get(numberStr) == null) {
 			if (entity instanceof Player _player && !_player.level().isClientSide()) {
-				_player.displayClientMessage(
+				CrazyPhoneHelper.sendClientMessage(_player,
 					Component.translatable("message.crazyphone.candidate_not_found_vote").withStyle(ChatFormatting.RED, ChatFormatting.BOLD),
 					false
 				);
@@ -108,7 +108,7 @@ public class VoteForMayorProcedure {
 			PhoneRegistrySavedData.get(world).setDirty();
 
 			if (entity instanceof ServerPlayer _player) {
-				_player.displayClientMessage(
+				CrazyPhoneHelper.sendClientMessage(_player,
 					Component.translatable("message.crazyphone.vote_success").withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD),
 					false
 				);

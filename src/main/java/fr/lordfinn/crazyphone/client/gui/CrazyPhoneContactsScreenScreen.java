@@ -21,7 +21,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/;
 import net.minecraft.sounds.SoundEvents;
 
 import fr.lordfinn.crazyphone.client.ClientCallState;
@@ -52,12 +52,12 @@ import java.util.Set;
 public class CrazyPhoneContactsScreenScreen extends CrazyPhoneDefaultScreenScreen<CrazyPhoneContactsScreenMenu> {
 	private static final float HEAD_HOVER_GROW_SCALE = 1.15f;
 	private final static HashMap<String, Object> guistate = CrazyPhoneContactsScreenMenu.guistate;
-	private static final ResourceLocation NOTIFICATION_IMAGE = Crazyphone.parseId("crazyphone:textures/screens/crazyphone-notification.png");
-	private static final ResourceLocation IN_CALL_BADGE_IMAGE = Crazyphone.parseId("crazyphone:textures/screens/crazyphone-in-call-badge.png");
+	private static final /*$ res_loc {*/ResourceLocation/*$}*/ NOTIFICATION_IMAGE = Crazyphone.parseId("crazyphone:textures/screens/crazyphone-notification.png");
+	private static final /*$ res_loc {*/ResourceLocation/*$}*/ IN_CALL_BADGE_IMAGE = Crazyphone.parseId("crazyphone:textures/screens/crazyphone-in-call-badge.png");
 	/** Amber variant of the badge above - a call is active for this conversation, but it's not the local
 	 * player's own currently-active call (they left it, or were never on it) - see
 	 * ClientCallState#hasJoinableCallElsewhere. */
-	private static final ResourceLocation REJOIN_CALL_BADGE_IMAGE = Crazyphone.parseId("crazyphone:textures/screens/crazyphone-rejoin-call-badge.png");
+	private static final /*$ res_loc {*/ResourceLocation/*$}*/ REJOIN_CALL_BADGE_IMAGE = Crazyphone.parseId("crazyphone:textures/screens/crazyphone-rejoin-call-badge.png");
 	/** Player heads with a resolved skin profile render as a 3D skull model that visually reads larger
 	 * than other flat icons next to it - scaled down here (matching the add-contact tile) so they read as
 	 * the same size. */

@@ -13,6 +13,7 @@ import com.mojang.brigadier.arguments.IntegerArgumentType;
 import net.minecraft.commands.CommandSourceStack;
 
 import fr.lordfinn.crazyphone.data.PhoneRegistrySavedData;
+import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
 
 public class RemoveVoteByNumberProcedure {
 	public static void execute(Level world, CommandContext<CommandSourceStack> arguments, Entity entity) {
@@ -31,7 +32,7 @@ public class RemoveVoteByNumberProcedure {
 			PhoneRegistrySavedData.get(world).setDirty();
 
 			if (entity instanceof Player player) {
-				player.displayClientMessage(
+				CrazyPhoneHelper.sendClientMessage(player,
 					Component.translatable("message.crazyphone.vote_removed", numberStr)
 						.withStyle(ChatFormatting.GREEN),
 					false
@@ -39,7 +40,7 @@ public class RemoveVoteByNumberProcedure {
 			}
 		} else {
 			if (entity instanceof Player player) {
-				player.displayClientMessage(
+				CrazyPhoneHelper.sendClientMessage(player,
 					Component.translatable("message.crazyphone.vote_not_found", numberStr)
 						.withStyle(ChatFormatting.GRAY),
 					false

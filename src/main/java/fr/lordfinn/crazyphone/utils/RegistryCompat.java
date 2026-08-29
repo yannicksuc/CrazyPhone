@@ -4,7 +4,7 @@ import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/;
 
 /** Single choke point for Registry#get(ResourceLocation) - it returned the value directly pre-1.21.10 and
  *  now returns Optional&lt;Holder.Reference&lt;T&gt;&gt;, matching every other registry lookup (see
@@ -14,7 +14,7 @@ public final class RegistryCompat {
     private RegistryCompat() {
     }
 
-    public static <T> T get(Registry<T> registry, ResourceLocation id) {
+    public static <T> T get(Registry<T> registry, /*$ res_loc {*/ResourceLocation/*$}*/ id) {
         //? if <1.21.10 {
         return registry.get(id);
         //? } else {

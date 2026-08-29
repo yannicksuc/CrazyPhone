@@ -18,7 +18,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 
 import net.minecraft.world.level.Level;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -33,6 +33,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneContactsScreenMenu;
 import fr.lordfinn.crazyphone.utils.ScreenMenuUtils;
+import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
 import fr.lordfinn.crazyphone.Crazyphone;
 
 import java.util.Map;
@@ -61,7 +62,7 @@ public record CrazyPhoneMayorsCandidatesButtonMessage(int buttonID, int x, int y
 		return TYPE;
 	}
 	*///? } else {
-	public static final ResourceLocation ID = new ResourceLocation(Crazyphone.MODID, "crazy_phone_mayors_candidates_buttons");
+	public static final /*$ res_loc {*/ResourceLocation/*$}*/ ID = new /*$ res_loc {*/ResourceLocation/*$}*/(Crazyphone.MODID, "crazy_phone_mayors_candidates_buttons");
 
 	public CrazyPhoneMayorsCandidatesButtonMessage(FriendlyByteBuf buffer) {
 		this(buffer.readInt(), buffer.readInt(), buffer.readInt(), buffer.readInt(), readTextState(buffer));
@@ -76,7 +77,7 @@ public record CrazyPhoneMayorsCandidatesButtonMessage(int buttonID, int x, int y
 	}
 
 	@Override
-	public ResourceLocation id() {
+	public /*$ res_loc {*/ResourceLocation/*$}*/ id() {
 		return ID;
 	}
 	//?}
@@ -141,7 +142,7 @@ public record CrazyPhoneMayorsCandidatesButtonMessage(int buttonID, int x, int y
 			if (!world.isClientSide()) {
 				SoundEvent sound = fr.lordfinn.crazyphone.utils.RegistryCompat.get(BuiltInRegistries.SOUND_EVENT, Crazyphone.parseId("minecraft:ui.button.click"));
 				if (sound != null) {
-					entity.playNotifySound(sound, SoundSource.PLAYERS, 0.2f, 1.0f);
+					CrazyPhoneHelper.playNotifySound(entity, sound, SoundSource.PLAYERS, 0.2f, 1.0f);
 				}
 				String candidateNumber = textstate.get("candidateNumber");
 				//? if neoforge {

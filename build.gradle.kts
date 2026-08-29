@@ -46,8 +46,14 @@ tasks.withType<AbstractArchiveTask>().configureEach {
 // weaves one of our classes (e.g. MouseHandlerCursorMixin) into a vanilla target, the merged class inherits
 // the higher version stamp, and the actual Java 17 game runtime then refuses to load it with
 // UnsupportedClassVersionError - crashing on boot right after the mod is found and its mixins are applied.
+// The 26.x line bumped the requirement again, to Java 25 (confirmed live: NeoForge's moddev plugin refuses
+// to even configure a 26.1.2 project under a Java 21 daemon with "Minecraft 26.1.2 requires Java 25").
 val minecraftVersionForToolchain = property("minecraft_version") as String
-java.toolchain.languageVersion = JavaLanguageVersion.of(if (minecraftVersionForToolchain.startsWith("1.20")) 17 else 21)
+java.toolchain.languageVersion = JavaLanguageVersion.of(when {
+    minecraftVersionForToolchain.startsWith("1.20") -> 17
+    minecraftVersionForToolchain.startsWith("26.") -> 25
+    else -> 21
+})
 
 val modId = property("mod_id") as String
 val minecraftVersion = property("minecraft_version") as String

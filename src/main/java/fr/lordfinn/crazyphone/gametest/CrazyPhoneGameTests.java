@@ -114,7 +114,7 @@ public class CrazyPhoneGameTests {
         resetRegistry(helper);
         ServerPlayer player = makeTestPlayer(helper);
         player.getInventory().setItem(0, freshCrazyPhone());
-        player.getInventory().selected = 0;
+        player.getInventory()/*$ set_selected_slot_0 {*/.selected = 0/*$}*/;
 
         ignoringMockConnectionPacketLimits(() ->
                 CrazyPhoneOnUseProcedure.execute(helper.getLevel(), player.getX(), player.getY(), player.getZ(), player));
@@ -143,7 +143,7 @@ public class CrazyPhoneGameTests {
             tag.putBoolean("isOpen", true);
         });
         player.getInventory().setItem(0, phone);
-        player.getInventory().selected = 0;
+        player.getInventory()/*$ set_selected_slot_0 {*/.selected = 0/*$}*/;
         PhoneRegistrySavedData.get(helper.getLevel()).phones.put("555", new CompoundTag());
 
         ignoringMockConnectionPacketLimits(() ->
@@ -204,7 +204,7 @@ public class CrazyPhoneGameTests {
             tag.putString("number", "555");
         });
         voter.getInventory().setItem(0, voterPhone);
-        voter.getInventory().selected = 0;
+        voter.getInventory()/*$ set_selected_slot_0 {*/.selected = 0/*$}*/;
 
         PhoneRegistrySavedData registry = PhoneRegistrySavedData.get(helper.getLevel());
         registry.phones.put("555", new CompoundTag());
@@ -240,7 +240,7 @@ public class CrazyPhoneGameTests {
             tag.putString("number", "555");
         });
         voter.getInventory().setItem(0, voterPhone);
-        voter.getInventory().selected = 0;
+        voter.getInventory()/*$ set_selected_slot_0 {*/.selected = 0/*$}*/;
 
         PhoneRegistrySavedData registry = PhoneRegistrySavedData.get(helper.getLevel());
         registry.phones.put("555", new CompoundTag());
@@ -276,7 +276,7 @@ public class CrazyPhoneGameTests {
             tag.putString("number", "555");
         });
         voter.getInventory().setItem(0, voterPhone);
-        voter.getInventory().selected = 0;
+        voter.getInventory()/*$ set_selected_slot_0 {*/.selected = 0/*$}*/;
 
         PhoneRegistrySavedData registry = PhoneRegistrySavedData.get(helper.getLevel());
         registry.phones.put("555", new CompoundTag());
@@ -312,7 +312,7 @@ public class CrazyPhoneGameTests {
         ItemStack phone = freshCrazyPhone();
         PhoneTagAccess.updateTag(phone, tag -> tag.putString("number", "999"));
         player.getInventory().setItem(0, phone);
-        player.getInventory().selected = 0;
+        player.getInventory()/*$ set_selected_slot_0 {*/.selected = 0/*$}*/;
 
         String number = GetCrazyPhoneNumberFromMainHandProcedure.execute(player, null);
         assertValueEqual(helper, number, "999", "held phone number");
@@ -361,7 +361,7 @@ public class CrazyPhoneGameTests {
             tag.putString("number", "555");
         });
         admin.getInventory().setItem(0, adminPhone);
-        admin.getInventory().selected = 0;
+        admin.getInventory()/*$ set_selected_slot_0 {*/.selected = 0/*$}*/;
 
         String conversationId = "group-gametest-" + UUID.randomUUID();
         PhoneRegistrySavedData registry = PhoneRegistrySavedData.get(helper.getLevel());

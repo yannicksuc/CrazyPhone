@@ -8,7 +8,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundSoundPacket;
@@ -22,8 +22,8 @@ public static void execute(LevelAccessor world, double x, double y, double z, En
     if (entity == null || textstate == null)
         return;
 
-		ResourceKey<SoundEvent> successSoundKey = ResourceKey.create(Registries.SOUND_EVENT, ResourceLocation.tryParse("entity.experience_orb.pickup"));
-		ResourceKey<SoundEvent> failSoundKey = ResourceKey.create(Registries.SOUND_EVENT, ResourceLocation.tryParse("entity.villager.no"));
+		ResourceKey<SoundEvent> successSoundKey = ResourceKey.create(Registries.SOUND_EVENT, /*$ res_loc {*/ResourceLocation/*$}*/.tryParse("entity.experience_orb.pickup"));
+		ResourceKey<SoundEvent> failSoundKey = ResourceKey.create(Registries.SOUND_EVENT, /*$ res_loc {*/ResourceLocation/*$}*/.tryParse("entity.villager.no"));
 
 		Holder<SoundEvent> successSoundHolder = fr.lordfinn.crazyphone.utils.RegistryCompat.holderOrThrow(world.registryAccess(), Registries.SOUND_EVENT, successSoundKey);
 		Holder<SoundEvent> failSoundHolder = fr.lordfinn.crazyphone.utils.RegistryCompat.holderOrThrow(world.registryAccess(), Registries.SOUND_EVENT, failSoundKey);

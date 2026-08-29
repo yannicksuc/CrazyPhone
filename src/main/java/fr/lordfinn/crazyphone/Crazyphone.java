@@ -18,7 +18,7 @@ import net.neoforged.neoforge.network.event.RegisterPayloadHandlerEvent;
 //?}
 //?}
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/;
 //? if neoforge {
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 //? if >=1.20.5 {
@@ -58,20 +58,20 @@ public class Crazyphone {
     //?}
 
     //? if >=1.20.5 {
-    /*public static ResourceLocation resource(String path) {
-        return ResourceLocation.fromNamespaceAndPath(MODID, path);
+    /*public static /^$ res_loc {^/ResourceLocation/^$}^/ resource(String path) {
+        return /^$ res_loc {^/ResourceLocation/^$}^/.fromNamespaceAndPath(MODID, path);
     }
 
-    public static ResourceLocation parseId(String id) {
-        return ResourceLocation.parse(id);
+    public static /^$ res_loc {^/ResourceLocation/^$}^/ parseId(String id) {
+        return /^$ res_loc {^/ResourceLocation/^$}^/.parse(id);
     }
     *///? } else {
-    public static ResourceLocation resource(String path) {
-        return new ResourceLocation(MODID, path);
+    public static /*$ res_loc {*/ResourceLocation/*$}*/ resource(String path) {
+        return new /*$ res_loc {*/ResourceLocation/*$}*/(MODID, path);
     }
 
-    public static ResourceLocation parseId(String id) {
-        return new ResourceLocation(id);
+    public static /*$ res_loc {*/ResourceLocation/*$}*/ parseId(String id) {
+        return new /*$ res_loc {*/ResourceLocation/*$}*/(id);
     }
     //?}
 
@@ -144,12 +144,12 @@ public class Crazyphone {
     }
     *///?}
     //? if <1.20.5 {
-    private static final Map<ResourceLocation, NetworkMessage<?>> MESSAGES = new HashMap<>();
+    private static final Map</*$ res_loc {*/ResourceLocation/*$}*/, NetworkMessage<?>> MESSAGES = new HashMap<>();
 
     private record NetworkMessage<T extends CustomPacketPayload>(FriendlyByteBuf.Reader<T> reader, IPlayPayloadHandler<T> handler) {
     }
 
-    public static <T extends CustomPacketPayload> void addNetworkMessage(ResourceLocation id, FriendlyByteBuf.Reader<T> reader, IPlayPayloadHandler<T> handler) {
+    public static <T extends CustomPacketPayload> void addNetworkMessage(/*$ res_loc {*/ResourceLocation/*$}*/ id, FriendlyByteBuf.Reader<T> reader, IPlayPayloadHandler<T> handler) {
         if (networkingRegistered)
             throw new IllegalStateException("Cannot register new network messages after networking has been registered");
         MESSAGES.put(id, new NetworkMessage<>(reader, handler));

@@ -15,7 +15,7 @@ import net.neoforged.fml.common.Mod.EventBusSubscriber;
 import net.neoforged.bus.api.SubscribeEvent;
 //?}
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.network.protocol.PacketFlow;
 //? if >=1.20.5 {
@@ -61,7 +61,7 @@ public record UpdateContactInfoMessage(String name, String uuid, String number) 
         return TYPE;
     }
     *///? } else {
-    public static final ResourceLocation ID = Crazyphone.resource("update_contact_info");
+    public static final /*$ res_loc {*/ResourceLocation/*$}*/ ID = Crazyphone.resource("update_contact_info");
 
     public UpdateContactInfoMessage(FriendlyByteBuf buffer) {
         this(buffer.readUtf(), buffer.readUtf(), buffer.readUtf());
@@ -74,7 +74,7 @@ public record UpdateContactInfoMessage(String name, String uuid, String number) 
     }
 
     @Override
-    public ResourceLocation id() {
+    public /*$ res_loc {*/ResourceLocation/*$}*/ id() {
         return ID;
     }
     //?}

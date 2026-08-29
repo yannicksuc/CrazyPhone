@@ -1,7 +1,7 @@
 package fr.lordfinn.crazyphone.utils;
 
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/;
 import net.minecraft.world.entity.LivingEntity;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
@@ -68,7 +68,7 @@ public final class GuiCompat {
      *  now, not a manual z coordinate) and always draws opaque/untinted. Pass whatever blitOffset the old
      *  call used (0 for most call sites, some use a nonzero value to win against other overlapping content) -
      *  it's simply dropped on the 1.21.10 branch since there's no equivalent. */
-    public static void blit(GuiGraphics guiGraphics, ResourceLocation texture, int x, int y, int blitOffset, int width, int height) {
+    public static void blit(GuiGraphics guiGraphics, /*$ res_loc {*/ResourceLocation/*$}*/ texture, int x, int y, int blitOffset, int width, int height) {
         //? if <1.21.10 {
         guiGraphics.blit(texture, x, y, blitOffset, 0, 0, width, height, width, height);
         //? } else {
@@ -80,7 +80,7 @@ public final class GuiCompat {
      *  disabled/faded icon state). Pre-1.21.10 this is a plain {@code RenderSystem.setShaderColor} bracketing
      *  the same call as above; 1.21.10 has no shader-color state to set, so the alpha is folded into the
      *  packed ARGB color blit's new trailing color argument instead. */
-    public static void blit(GuiGraphics guiGraphics, ResourceLocation texture, int x, int y, int blitOffset, int width, int height, float alpha) {
+    public static void blit(GuiGraphics guiGraphics, /*$ res_loc {*/ResourceLocation/*$}*/ texture, int x, int y, int blitOffset, int width, int height, float alpha) {
         //? if <1.21.10 {
         com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1, 1, 1, alpha);
         guiGraphics.blit(texture, x, y, blitOffset, 0, 0, width, height, width, height);
@@ -100,7 +100,7 @@ public final class GuiCompat {
      *  (immediate-mode rendering, matching whichever <1.21.10 vertex API sub-version is active); 1.21.10 has
      *  no immediate-mode draw path left at all - GuiGraphics's own {@code blit(ResourceLocation, x0,y0,x1,y1,
      *  u0,v0,u1,v1)} overload (corners + normalized UV, always opaque/untinted) replaces the whole thing. */
-    public static void drawTexturedQuad(GuiGraphics guiGraphics, ResourceLocation texture, float x0, float y0, float x1, float y1, float u0, float v0, float u1, float v1) {
+    public static void drawTexturedQuad(GuiGraphics guiGraphics, /*$ res_loc {*/ResourceLocation/*$}*/ texture, float x0, float y0, float x1, float y1, float u0, float v0, float u1, float v1) {
         //? if <1.21.10 {
         com.mojang.blaze3d.systems.RenderSystem.setShader(net.minecraft.client.renderer.GameRenderer::getPositionTexShader);
         com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);

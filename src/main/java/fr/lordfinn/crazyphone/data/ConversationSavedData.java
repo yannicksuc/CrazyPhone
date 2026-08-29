@@ -16,6 +16,9 @@ import net.minecraft.util.datafix.DataFixTypes;
 import net.minecraft.util.datafix.DataFixTypes;
 import net.minecraft.world.level.saveddata.SavedDataType;
 *///?}
+//? if >=26 {
+/*import fr.lordfinn.crazyphone.Crazyphone;
+*///?}
 // Real vanilla SavedData.Factory (unlike NeoForge's own 2-arg convenience overload of the same class -
 // see the get() method below) always requires a DataFixTypes, at every version Factory exists in at all -
 // confirmed via javap on the Loom-remapped vanilla jar, not assumed from the NeoForge-side code above.
@@ -100,7 +103,7 @@ public class ConversationSavedData extends SavedData {
             data -> data.writeNbt(new CompoundTag()));
 
     public static final SavedDataType<ConversationSavedData> TYPE =
-            new SavedDataType<>(DATA_NAME, ConversationSavedData::new, CODEC, DataFixTypes.LEVEL);
+            new SavedDataType<>(/^$ saved_data_id {^/DATA_NAME/^$}^/, ConversationSavedData::new, CODEC, DataFixTypes.LEVEL);
     *///?}
 
     public void storeVoiceAudio(UUID voiceId, String conversationId, byte[] pcm) {

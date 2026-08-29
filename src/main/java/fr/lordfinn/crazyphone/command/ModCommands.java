@@ -85,6 +85,20 @@ public class ModCommands {
     private static final SuggestionProvider<CommandSourceStack> FEATURE_NAMES = (context, builder) ->
             SharedSuggestionProvider.suggest(java.util.Arrays.stream(FeatureFlag.values()).map(f -> f.id).toList(), builder);
 
+    // 26.x replaced CommandSourceStack#hasPermission(int) - a simple 0-4 OP level - with a PermissionSet/
+    // PermissionCheck-based system (confirmed via decompiling the real 26.1.2 vanilla jar); the new
+    // equivalent for a bare `.requires(...)` gate is Commands.hasPermission(Commands.LEVEL_X), where
+    // LEVEL_ALL/LEVEL_MODERATORS/LEVEL_GAMEMASTERS/LEVEL_ADMINS/LEVEL_OWNERS map to the old levels 0-4 in
+    // order (confirmed against vanilla's own OpCommand, which uses this exact call shape). Every command
+    // here only ever used level 2 or 4, so this only needs to cover those two.
+    private static java.util.function.Predicate<CommandSourceStack> permLevel(int level) {
+        //? if >=26 {
+        /*return Commands.hasPermission(level >= 4 ? Commands.LEVEL_OWNERS : Commands.LEVEL_GAMEMASTERS);
+        *///?} else {
+        return s -> s.hasPermission(level);
+        //?}
+    }
+
     //? if neoforge {
     @SubscribeEvent
     public static void registerCommand(RegisterCommandsEvent event) {
@@ -102,7 +116,7 @@ public class ModCommands {
      * no longer a Camera-mod dependency) stays NeoForge-only simply because it hasn't been ported to Fabric
      * yet. */
     private static LiteralArgumentBuilder<CommandSourceStack> buildCommandTree() {
-        LiteralArgumentBuilder<CommandSourceStack> candidate = Commands.literal("candidate").requires(s -> s.hasPermission(4))
+        LiteralArgumentBuilder<CommandSourceStack> candidate = Commands.literal("candidate").requires(permLevel(4))
                 .then(Commands.literal("add")
                         .then(Commands.argument("phoneNumber", IntegerArgumentType.integer(100, 999)).suggests(REGISTERED_NUMBERS)
                                 .executes(ModCommands::mayorCandidateAdd)))
@@ -115,36 +129,36 @@ public class ModCommands {
                         .executes(ModCommands::mayorCandidateProgram)));
         //?}
         return Commands.literal("crazyphone")
-                .then(Commands.literal("give").requires(s -> s.hasPermission(4))
+                .then(Commands.literal("give").requires(permLevel(4))
                         .then(Commands.argument("number", StringArgumentType.word()).suggests(REGISTERED_NUMBERS)
                                 .executes(ModCommands::give)))
-                .then(Commands.literal("delete").requires(s -> s.hasPermission(4))
+                .then(Commands.literal("delete").requires(permLevel(4))
                         .then(Commands.argument("number", StringArgumentType.word()).suggests(REGISTERED_NUMBERS)
                                 .executes(ModCommands::delete)))
-                .then(Commands.literal("list").requires(s -> s.hasPermission(4))
+                .then(Commands.literal("list").requires(permLevel(4))
                         .executes(ModCommands::list)
                         .then(Commands.argument("search", StringArgumentType.word())
                                 .executes(ModCommands::list)))
-                .then(Commands.literal("feature").requires(s -> s.hasPermission(2))
+                .then(Commands.literal("feature").requires(permLevel(2))
                         .then(Commands.literal("list").executes(ModCommands::featureList))
                         .then(Commands.argument("name", StringArgumentType.word()).suggests(FEATURE_NAMES)
-                                .requires(s -> s.hasPermission(4))
+                                .requires(permLevel(4))
                                 .then(Commands.argument("enabled", BoolArgumentType.bool())
                                         .executes(ModCommands::featureSet))))
                 .then(Commands.literal("mayor")
                         .then(Commands.literal("vote")
                                 .then(Commands.argument("phoneNumber", IntegerArgumentType.integer(100, 999)).suggests(REGISTERED_NUMBERS)
                                         .executes(ModCommands::mayorVote)))
-                        .then(Commands.literal("election").requires(s -> s.hasPermission(4))
+                        .then(Commands.literal("election").requires(permLevel(4))
                                 .then(Commands.argument("isOn", BoolArgumentType.bool())
                                         .executes(ModCommands::mayorElection)))
-                        .then(Commands.literal("voting").requires(s -> s.hasPermission(4))
+                        .then(Commands.literal("voting").requires(permLevel(4))
                                 .then(Commands.argument("isOn", BoolArgumentType.bool())
                                         .executes(ModCommands::mayorVoting)))
                         .then(Commands.literal("votes")
-                                .then(Commands.literal("show").requires(s -> s.hasPermission(2))
+                                .then(Commands.literal("show").requires(permLevel(2))
                                         .executes(ModCommands::mayorVotesShow))
-                                .then(Commands.literal("clear").requires(s -> s.hasPermission(4))
+                                .then(Commands.literal("clear").requires(permLevel(4))
                                         .then(Commands.argument("phoneNumber", IntegerArgumentType.integer(100, 999)).suggests(REGISTERED_NUMBERS)
                                                 .executes(ModCommands::mayorVotesClear))))
                         .then(candidate));

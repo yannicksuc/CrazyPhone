@@ -29,10 +29,14 @@ tasks.withType<AbstractArchiveTask>().configureEach {
     isReproducibleFileOrder = false
 }
 
-// Same Java-version boundary as the NeoForge side: 1.20.1 runs on Java 17, everything from 1.20.5 (and
-// thus every later Fabric node we add) needs Java 21.
+// Same Java-version boundary as the NeoForge side: 1.20.1 runs on Java 17, 1.20.5 through the 1.21.x line
+// needs Java 21, and 26.x needs Java 25 - see build.gradle.kts's own version of this same check.
 val minecraftVersionForToolchain = property("minecraft_version") as String
-java.toolchain.languageVersion = JavaLanguageVersion.of(if (minecraftVersionForToolchain.startsWith("1.20")) 17 else 21)
+java.toolchain.languageVersion = JavaLanguageVersion.of(when {
+    minecraftVersionForToolchain.startsWith("1.20") -> 17
+    minecraftVersionForToolchain.startsWith("26.") -> 25
+    else -> 21
+})
 
 val minecraftVersion = property("minecraft_version") as String
 val fabricLoaderVersion = property("fabric_loader_version") as String

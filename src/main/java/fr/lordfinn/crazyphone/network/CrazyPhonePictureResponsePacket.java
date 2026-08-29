@@ -22,7 +22,7 @@ import net.minecraft.network.protocol.PacketFlow;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 *///? }
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/;
 
 import fr.lordfinn.crazyphone.Crazyphone;
 import fr.lordfinn.crazyphone.client.picture.FabricPictureCache;
@@ -57,7 +57,7 @@ public record CrazyPhonePictureResponsePacket(UUID photoId, PhotoResolution reso
         return TYPE;
     }
     *///? } else {
-    public static final ResourceLocation ID = Crazyphone.resource("picture_response");
+    public static final /*$ res_loc {*/ResourceLocation/*$}*/ ID = Crazyphone.resource("picture_response");
 
     public CrazyPhonePictureResponsePacket(FriendlyByteBuf buffer) {
         this(buffer.readUUID(), PhotoResolution.values()[buffer.readByte()], buffer.readByteArray());
@@ -70,7 +70,7 @@ public record CrazyPhonePictureResponsePacket(UUID photoId, PhotoResolution reso
     }
 
     @Override
-    public ResourceLocation id() {
+    public /*$ res_loc {*/ResourceLocation/*$}*/ id() {
         return ID;
     }
     //?}

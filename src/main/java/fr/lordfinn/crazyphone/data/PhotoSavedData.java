@@ -16,6 +16,9 @@ import net.minecraft.util.datafix.DataFixTypes;
 import net.minecraft.util.datafix.DataFixTypes;
 import net.minecraft.world.level.saveddata.SavedDataType;
 *///?}
+//? if >=26 {
+/*import fr.lordfinn.crazyphone.Crazyphone;
+*///?}
 //? if fabric && >=1.20.5 <1.21.10 {
 /*import net.minecraft.util.datafix.DataFixTypes;
 *///?}
@@ -89,7 +92,7 @@ public class PhotoSavedData extends SavedData {
             data -> data.writeNbt(new CompoundTag()));
 
     public static final SavedDataType<PhotoSavedData> TYPE =
-            new SavedDataType<>(DATA_NAME, PhotoSavedData::new, CODEC, DataFixTypes.LEVEL);
+            new SavedDataType<>(/^$ saved_data_id {^/DATA_NAME/^$}^/, PhotoSavedData::new, CODEC, DataFixTypes.LEVEL);
     *///?}
 
     /** Stores a freshly-captured photo under a new random id, evicting the owner's oldest photo first if

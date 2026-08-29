@@ -17,12 +17,13 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
 
 import fr.lordfinn.crazyphone.Config;
 import fr.lordfinn.crazyphone.init.ModItems;
+import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -198,6 +199,6 @@ public class CallTerminationListener {
     private static void playDisconnectSound(ServerPlayer player) {
         SoundEvent sound = fr.lordfinn.crazyphone.utils.RegistryCompat.get(BuiltInRegistries.SOUND_EVENT, Crazyphone.parseId("minecraft:entity.villager.no"));
         if (sound != null)
-            player.playNotifySound(sound, SoundSource.PLAYERS, 0.8f, 0.8f);
+            CrazyPhoneHelper.playNotifySound(player, sound, SoundSource.PLAYERS, 0.8f, 0.8f);
     }
 }

@@ -6,6 +6,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.network.chat.Component;
 
 import fr.lordfinn.crazyphone.data.PhoneRegistrySavedData;
+import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import net.minecraft.commands.CommandSourceStack;
@@ -19,10 +20,10 @@ public class CrazyPhoneRemoveMayorCandidateProcedure {
 			PhoneRegistrySavedData.get(world).mayorsCandidates.remove(numberStr);
 			PhoneRegistrySavedData.get(world).syncToAll(world);
 			if (entity instanceof Player _player && !_player.level().isClientSide())
-				_player.displayClientMessage(Component.translatable("message.crazyphone.candidate_removed"), false);
+				CrazyPhoneHelper.sendClientMessage(_player, Component.translatable("message.crazyphone.candidate_removed"), false);
 		} else {
 			if (entity instanceof Player _player && !_player.level().isClientSide())
-				_player.displayClientMessage(Component.translatable("message.crazyphone.candidate_not_exist"), false);
+				CrazyPhoneHelper.sendClientMessage(_player, Component.translatable("message.crazyphone.candidate_not_exist"), false);
 		}
 	}
 }

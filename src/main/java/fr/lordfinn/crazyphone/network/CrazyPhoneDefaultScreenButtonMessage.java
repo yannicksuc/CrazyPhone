@@ -18,7 +18,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 
 import net.minecraft.world.level.Level;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.network.protocol.PacketFlow;
 //? if >=1.20.5 {
@@ -70,7 +70,7 @@ public record CrazyPhoneDefaultScreenButtonMessage(int buttonID, int x, int y, i
 		return TYPE;
 	}
 	*///? } else {
-	public static final ResourceLocation ID = new ResourceLocation(Crazyphone.MODID, "crazy_phone_default_screen_buttons");
+	public static final /*$ res_loc {*/ResourceLocation/*$}*/ ID = new /*$ res_loc {*/ResourceLocation/*$}*/(Crazyphone.MODID, "crazy_phone_default_screen_buttons");
 
 	public CrazyPhoneDefaultScreenButtonMessage(FriendlyByteBuf buffer) {
 		this(buffer.readInt(), buffer.readInt(), buffer.readInt(), buffer.readInt(), readTextState(buffer));
@@ -85,7 +85,7 @@ public record CrazyPhoneDefaultScreenButtonMessage(int buttonID, int x, int y, i
 	}
 
 	@Override
-	public ResourceLocation id() {
+	public /*$ res_loc {*/ResourceLocation/*$}*/ id() {
 		return ID;
 	}
 	//?}

@@ -13,7 +13,7 @@ import net.neoforged.fml.common.Mod.EventBusSubscriber;
 //?}
 import net.neoforged.bus.api.SubscribeEvent;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.network.protocol.PacketFlow;
 //? if >=1.20.5 {
@@ -28,6 +28,7 @@ import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
 
 import fr.lordfinn.crazyphone.Crazyphone;
+import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
 
 import java.util.UUID;
 
@@ -64,7 +65,7 @@ public record CrazyPhoneIncomingCallNotificationPacket(String conversationId, St
         return TYPE;
     }
     *///? } else {
-    public static final ResourceLocation ID = new ResourceLocation(Crazyphone.MODID, "incoming_call_notification");
+    public static final /*$ res_loc {*/ResourceLocation/*$}*/ ID = new /*$ res_loc {*/ResourceLocation/*$}*/(Crazyphone.MODID, "incoming_call_notification");
 
     public CrazyPhoneIncomingCallNotificationPacket(FriendlyByteBuf buffer) {
         this(buffer.readUtf(), buffer.readUtf(), buffer.readUUID());
@@ -77,7 +78,7 @@ public record CrazyPhoneIncomingCallNotificationPacket(String conversationId, St
     }
 
     @Override
-    public ResourceLocation id() {
+    public /*$ res_loc {*/ResourceLocation/*$}*/ id() {
         return ID;
     }
     //?}
@@ -94,12 +95,12 @@ public record CrazyPhoneIncomingCallNotificationPacket(String conversationId, St
         //? if <1.21.10 {
         mc.player.sendSystemMessage(toast);
         //? } else {
-        /*mc.player.displayClientMessage(toast, false);
+        /*CrazyPhoneHelper.sendClientMessage(mc.player, toast, false);
         *///?}
 
         SoundEvent sound = fr.lordfinn.crazyphone.utils.RegistryCompat.get(BuiltInRegistries.SOUND_EVENT, Crazyphone.parseId("block.note_block.bell"));
         if (sound != null) {
-            mc.player.playNotifySound(sound, SoundSource.PLAYERS, 0.8f, 1.2f);
+            CrazyPhoneHelper.playNotifySound(mc.player, sound, SoundSource.PLAYERS, 0.8f, 1.2f);
         }
     }
 

@@ -19,7 +19,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -67,7 +67,7 @@ public record CrazyPhoneConversationButtonMessage(int buttonID, int x, int y, in
 		return TYPE;
 	}
 	*///? } else {
-	public static final ResourceLocation ID = new ResourceLocation(Crazyphone.MODID, "crazy_phone_conversation_buttons");
+	public static final /*$ res_loc {*/ResourceLocation/*$}*/ ID = new /*$ res_loc {*/ResourceLocation/*$}*/(Crazyphone.MODID, "crazy_phone_conversation_buttons");
 
 	public CrazyPhoneConversationButtonMessage(FriendlyByteBuf buffer) {
 		this(buffer.readInt(), buffer.readInt(), buffer.readInt(), buffer.readInt(), readTextState(buffer));
@@ -82,7 +82,7 @@ public record CrazyPhoneConversationButtonMessage(int buttonID, int x, int y, in
 	}
 
 	@Override
-	public ResourceLocation id() {
+	public /*$ res_loc {*/ResourceLocation/*$}*/ id() {
 		return ID;
 	}
 	//?}
@@ -171,9 +171,9 @@ public record CrazyPhoneConversationButtonMessage(int buttonID, int x, int y, in
 				CrazyPhoneHelper.addMessage(world, conversationId, senderNumber, message, timestampInMinutes);
 			} else {
 				//? if >=1.20.5 {
-				/*entity.playNotifySound(SoundEvents.WIND_CHARGE_THROW, SoundSource.NEUTRAL, 1, 1);
+				/*CrazyPhoneHelper.playNotifySound(entity, SoundEvents.WIND_CHARGE_THROW, SoundSource.NEUTRAL, 1, 1);
 				*///? } else {
-				entity.playNotifySound(SoundEvents.VILLAGER_NO, SoundSource.NEUTRAL, 1, 1);
+				CrazyPhoneHelper.playNotifySound(entity, SoundEvents.VILLAGER_NO, SoundSource.NEUTRAL, 1, 1);
 				//?}
 			}
 			// Deliberately NOT reopening the conversation menu here (the old code called

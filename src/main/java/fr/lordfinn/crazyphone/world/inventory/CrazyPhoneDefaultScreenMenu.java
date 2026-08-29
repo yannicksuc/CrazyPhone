@@ -20,7 +20,7 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/;
 import fr.lordfinn.crazyphone.init.ModItems;
 import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
 import fr.lordfinn.crazyphone.utils.ScreenMenuUtils;
@@ -131,7 +131,7 @@ abstract public class CrazyPhoneDefaultScreenMenu extends AbstractContainerMenu 
 		setCurrentPageHistoryData( null);
 	}
 	protected void setCurrentPageHistoryData(String screenData) {
-		ResourceLocation registryName = BuiltInRegistries.MENU.getKey(this.getType());
+		/*$ res_loc {*/ResourceLocation/*$}*/ registryName = BuiltInRegistries.MENU.getKey(this.getType());
 		String menuName = registryName != null ? registryName.toString() : "unknown";
 		setCurrentPageHistory(menuName, screenData);
 	}

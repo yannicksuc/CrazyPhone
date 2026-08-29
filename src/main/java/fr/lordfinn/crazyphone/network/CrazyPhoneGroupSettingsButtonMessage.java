@@ -21,7 +21,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.TagParser;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -74,7 +74,7 @@ public record CrazyPhoneGroupSettingsButtonMessage(int buttonID, int x, int y, i
 		return TYPE;
 	}
 	*///? } else {
-	public static final ResourceLocation ID = new ResourceLocation(Crazyphone.MODID, "crazy_phone_group_settings_buttons");
+	public static final /*$ res_loc {*/ResourceLocation/*$}*/ ID = new /*$ res_loc {*/ResourceLocation/*$}*/(Crazyphone.MODID, "crazy_phone_group_settings_buttons");
 
 	public CrazyPhoneGroupSettingsButtonMessage(FriendlyByteBuf buffer) {
 		this(buffer.readInt(), buffer.readInt(), buffer.readInt(), buffer.readInt(), readTextState(buffer));
@@ -89,7 +89,7 @@ public record CrazyPhoneGroupSettingsButtonMessage(int buttonID, int x, int y, i
 	}
 
 	@Override
-	public ResourceLocation id() {
+	public /*$ res_loc {*/ResourceLocation/*$}*/ id() {
 		return ID;
 	}
 	//?}

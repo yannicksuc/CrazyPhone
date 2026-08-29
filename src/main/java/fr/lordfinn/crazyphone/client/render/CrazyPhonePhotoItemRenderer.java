@@ -5,8 +5,8 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
 import org.joml.Quaternionf;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.RenderType;
-import net.minecraft.resources.ResourceLocation;
+import /*$ render_type_import {*/net.minecraft.client.renderer.RenderType/*$}*/;
+import net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 
@@ -36,8 +36,8 @@ import fr.lordfinn.crazyphone.client.CrazyPhonePresentDebug;
  * being looked at should look like an actual photo, not a bordered thumbnail.
  */
 public final class CrazyPhonePhotoItemRenderer {
-    private static final ResourceLocation PLACEHOLDER_TEXTURE = Crazyphone.parseId("crazyphone:textures/item/crazy_phone_photo_placeholder.png");
-    private static final ResourceLocation FRAME_TEXTURE = Crazyphone.parseId("crazyphone:textures/item/crazy_phone_photo_frame.png");
+    private static final /*$ res_loc {*/ResourceLocation/*$}*/ PLACEHOLDER_TEXTURE = Crazyphone.parseId("crazyphone:textures/item/crazy_phone_photo_placeholder.png");
+    private static final /*$ res_loc {*/ResourceLocation/*$}*/ FRAME_TEXTURE = Crazyphone.parseId("crazyphone:textures/item/crazy_phone_photo_frame.png");
 
     // Not-in-hand ("framed card") layout - a 16x16 frame with the photo inset 1px on every side (14x14).
     private static final float FRAME_HALF = 0.5f;
@@ -198,8 +198,8 @@ public final class CrazyPhonePhotoItemRenderer {
                     // camera-relative double-counts the rotation, so it's skipped below <1.20.5.
                     //? if >=1.20.5 {
                     /*net.minecraft.client.Camera camera = net.minecraft.client.Minecraft.getInstance().gameRenderer.getMainCamera();
-                    float debugYaw = camera.getYRot() * CrazyPhonePresentDebug.yawSign + CrazyPhonePresentDebug.yawOffset;
-                    float debugPitch = camera.getXRot() * CrazyPhonePresentDebug.pitchSign + CrazyPhonePresentDebug.pitchOffset;
+                    float debugYaw = camera./^$ cam_yaw {^/getYRot/^$}^/() * CrazyPhonePresentDebug.yawSign + CrazyPhonePresentDebug.yawOffset;
+                    float debugPitch = camera./^$ cam_pitch {^/getXRot/^$}^/() * CrazyPhonePresentDebug.pitchSign + CrazyPhonePresentDebug.pitchOffset;
                     poseStack.mulPose(Axis.YP.rotationDegrees(180f - debugYaw));
                     poseStack.mulPose(Axis.XP.rotationDegrees(debugPitch));
                     *///?}
@@ -332,8 +332,8 @@ public final class CrazyPhonePhotoItemRenderer {
                 case 6 -> poseStack.mulPose(Axis.XP.rotationDegrees(-(float) Math.toDegrees(presentHeadPitch)));
                 case 8 -> {
                     net.minecraft.client.Camera camera = net.minecraft.client.Minecraft.getInstance().gameRenderer.getMainCamera();
-                    poseStack.mulPose(Axis.YP.rotationDegrees(180f - camera.getYRot()));
-                    poseStack.mulPose(Axis.XP.rotationDegrees(camera.getXRot()));
+                    poseStack.mulPose(Axis.YP.rotationDegrees(180f - camera./*$ cam_yaw {*/getYRot/*$}*/()));
+                    poseStack.mulPose(Axis.XP.rotationDegrees(camera./*$ cam_pitch {*/getXRot/*$}*/()));
                 }
                 case 9 -> {
                     poseStack.mulPose(Axis.XP.rotationDegrees(-(float) Math.toDegrees(presentHeadPitch)));
@@ -354,7 +354,7 @@ public final class CrazyPhonePhotoItemRenderer {
     // sampled texture purely so the existing vertex-color-tinting path works, not for its actual pixels.
     private static void drawColorTintedCard(PoseStack poseStack, MultiBufferSource bufferSource, int light, int overlay, int rgb) {
         PoseStack.Pose pose = poseStack.last();
-        VertexConsumer buffer = bufferSource.getBuffer(RenderType.entityCutout(FRAME_TEXTURE));
+        VertexConsumer buffer = bufferSource.getBuffer(/*$ render_types {*/RenderType/*$}*/.entityCutout(FRAME_TEXTURE));
         int r = (rgb >> 16) & 0xFF, g = (rgb >> 8) & 0xFF, b = rgb & 0xFF;
         float h = FRAME_HALF;
         tintedQuad(buffer, pose, light, overlay, r, g, b,
@@ -409,7 +409,7 @@ public final class CrazyPhonePhotoItemRenderer {
     // the four 1x1 corner tiles and four edge strips of the frame texture stay a constant physical width,
     // only the edge strips' long axis stretches to fit whatever size the photo itself came out to.
     private static void renderHandFramedCard(PhotoItemData data, PoseStack poseStack, MultiBufferSource bufferSource, int packedLight, int packedOverlay) {
-        ResourceLocation photoTexture = PLACEHOLDER_TEXTURE;
+        /*$ res_loc {*/ResourceLocation/*$}*/ photoTexture = PLACEHOLDER_TEXTURE;
         float iw = 0.5f, ih = 0.5f;
         if (data != null) {
             FabricPictureCache.CachedTexture texture = FabricPictureCache.getOrRequest(data.photoId(), PhotoResolution.FULL);
@@ -427,7 +427,7 @@ public final class CrazyPhonePhotoItemRenderer {
         }
 
         PoseStack.Pose pose = poseStack.last();
-        VertexConsumer frameBuffer = bufferSource.getBuffer(RenderType.entityCutout(FRAME_TEXTURE));
+        VertexConsumer frameBuffer = bufferSource.getBuffer(/*$ render_types {*/RenderType/*$}*/.entityCutout(FRAME_TEXTURE));
         float t = HAND_CARD_THICKNESS_HALF;
         float b = HAND_FRAME_BORDER;
         float uB = FRAME_UV_BORDER;
@@ -468,7 +468,7 @@ public final class CrazyPhonePhotoItemRenderer {
         // Photo, front face only, full (uncropped) 0..1 UV - pushed slightly ahead of the frame's own front
         // face (and its edges overlapped slightly past iw/ih) to avoid z-fighting AND a raking-angle gap
         // against the frame's inner border (see PHOTO_Z_EPSILON/PHOTO_EDGE_OVERLAP's own doc comments).
-        VertexConsumer photoBuffer = bufferSource.getBuffer(RenderType.entityCutout(photoTexture));
+        VertexConsumer photoBuffer = bufferSource.getBuffer(/*$ render_types {*/RenderType/*$}*/.entityCutout(photoTexture));
         float pz = t + PHOTO_Z_EPSILON;
         float po = PHOTO_EDGE_OVERLAP;
         quad(photoBuffer, pose, packedLight, packedOverlay,
@@ -483,7 +483,7 @@ public final class CrazyPhonePhotoItemRenderer {
     // cover-cropped thumbnail inset 1px on the front only.
     private static void renderFramedCard(PhotoItemData data, PoseStack poseStack, MultiBufferSource bufferSource, int packedLight, int packedOverlay) {
         PoseStack.Pose pose = poseStack.last();
-        VertexConsumer frameBuffer = bufferSource.getBuffer(RenderType.entityCutout(FRAME_TEXTURE));
+        VertexConsumer frameBuffer = bufferSource.getBuffer(/*$ render_types {*/RenderType/*$}*/.entityCutout(FRAME_TEXTURE));
         float t = CARD_THICKNESS_HALF;
         float h = FRAME_HALF;
 
@@ -510,7 +510,7 @@ public final class CrazyPhonePhotoItemRenderer {
 
         // Inset photo, front face only - pushed slightly ahead of the frame's own front face to avoid
         // z-fighting with it.
-        ResourceLocation photoTexture = PLACEHOLDER_TEXTURE;
+        /*$ res_loc {*/ResourceLocation/*$}*/ photoTexture = PLACEHOLDER_TEXTURE;
         float u0 = 0, v0 = 0, u1 = 1, v1 = 1;
         if (data != null) {
             PhotoResolution resolution = fr.lordfinn.crazyphone.ClientConfig.itemPreviewPixelated ? PhotoResolution.THUMBNAIL : PhotoResolution.FULL;
@@ -529,7 +529,7 @@ public final class CrazyPhonePhotoItemRenderer {
                 }
             }
         }
-        VertexConsumer photoBuffer = bufferSource.getBuffer(RenderType.entityCutout(photoTexture));
+        VertexConsumer photoBuffer = bufferSource.getBuffer(/*$ render_types {*/RenderType/*$}*/.entityCutout(photoTexture));
         float p = PHOTO_INSET_HALF + PHOTO_EDGE_OVERLAP;
         float pz = t + PHOTO_Z_EPSILON;
         quad(photoBuffer, pose, packedLight, packedOverlay,

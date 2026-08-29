@@ -12,7 +12,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import fr.lordfinn.crazyphone.utils.RegistryEntry;
 *///?}
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/;
 import net.minecraft.sounds.SoundEvent;
 
 import fr.lordfinn.crazyphone.Crazyphone;

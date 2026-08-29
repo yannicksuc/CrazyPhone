@@ -16,7 +16,7 @@ import net.neoforged.fml.common.Mod.EventBusSubscriber;
 import net.neoforged.bus.api.SubscribeEvent;
 //?}
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.network.protocol.PacketFlow;
 //? if >=1.20.5 {
@@ -59,7 +59,7 @@ public record ConversationRequestPacket(String conversationId, int skipFromEnd) 
         return TYPE;
     }
     *///? } else {
-    public static final ResourceLocation ID = new ResourceLocation(Crazyphone.MODID, "conversation_request");
+    public static final /*$ res_loc {*/ResourceLocation/*$}*/ ID = new /*$ res_loc {*/ResourceLocation/*$}*/(Crazyphone.MODID, "conversation_request");
 
     public ConversationRequestPacket(FriendlyByteBuf buffer) {
         this(buffer.readUtf(), buffer.readVarInt());
@@ -71,7 +71,7 @@ public record ConversationRequestPacket(String conversationId, int skipFromEnd) 
     }
 
     @Override
-    public ResourceLocation id() {
+    public /*$ res_loc {*/ResourceLocation/*$}*/ id() {
         return ID;
     }
     //?}

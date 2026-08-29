@@ -33,10 +33,21 @@ public class SoulboundLootModifier extends LootModifier {
 
     private final float chance;
 
+    // 26.x's LootModifier gained a priority field, threaded through codecStart(...)'s own returned group (2
+    // fields now: conditions + priority, instead of just conditions) - so the generated codec now feeds this
+    // constructor an extra Integer, and the super constructor itself takes it too (confirmed against the
+    // real NeoForge 26.1.2.100 sources).
+    //? if >=26 {
+    /^public SoulboundLootModifier(LootItemCondition[] conditions, int priority, float chance) {
+        super(conditions, priority);
+        this.chance = chance;
+    }^/
+    //? } else {
     public SoulboundLootModifier(LootItemCondition[] conditions, float chance) {
         super(conditions);
         this.chance = chance;
     }
+    //?}
 
     @Override
     protected ObjectArrayList<ItemStack> doApply(ObjectArrayList<ItemStack> generatedLoot, LootContext context) {

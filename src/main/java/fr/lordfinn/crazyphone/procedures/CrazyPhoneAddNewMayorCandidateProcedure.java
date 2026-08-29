@@ -8,6 +8,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.commands.CommandSourceStack;
 
 import fr.lordfinn.crazyphone.data.PhoneRegistrySavedData;
+import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 
@@ -19,16 +20,16 @@ public class CrazyPhoneAddNewMayorCandidateProcedure {
 		if ((PhoneRegistrySavedData.get(world).mayorsCandidates.get(numberStr)) == null) {
 			if ((PhoneRegistrySavedData.get(world).phones.get(numberStr)) == null) {
 				if (entity instanceof Player _player && !_player.level().isClientSide())
-					_player.displayClientMessage(Component.translatable("message.crazyphone.candidate_not_exist"), false);
+					CrazyPhoneHelper.sendClientMessage(_player, Component.translatable("message.crazyphone.candidate_not_exist"), false);
 			} else {
 				PhoneRegistrySavedData.get(world).mayorsCandidates.put(numberStr, (new CompoundTag()));
 				if (entity instanceof Player _player && !_player.level().isClientSide())
-					_player.displayClientMessage(Component.translatable("message.crazyphone.candidate_added"), false);
+					CrazyPhoneHelper.sendClientMessage(_player, Component.translatable("message.crazyphone.candidate_added"), false);
 				PhoneRegistrySavedData.get(world).syncToAll(world);
 			}
 		} else {
 			if (entity instanceof Player _player && !_player.level().isClientSide())
-				_player.displayClientMessage(Component.translatable("message.crazyphone.candidate_already_registered"), false);
+				CrazyPhoneHelper.sendClientMessage(_player, Component.translatable("message.crazyphone.candidate_already_registered"), false);
 		}
 	}
 }
