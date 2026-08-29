@@ -6,7 +6,10 @@
   "mixins": [],
   "client": [
     "MouseHandlerCursorMixin",
+    "LivingEntityRenderStateMixin",
     "PlayerPresentPoseMixin",
+    "AvatarPresentPoseMixin",
+    "PlayerModelPresentPoseMixin",
     "CrazyPhonePresentHandGripMixin",
     "CrazyPhonePresentHandGripInvokerMixin",
     "CrazyPhonePhotoItemRenderMixin"
