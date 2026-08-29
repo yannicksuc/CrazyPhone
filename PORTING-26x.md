@@ -5,6 +5,108 @@ task turned out to be much bigger than expected once actually attempted - this f
 that progress isn't lost and the next session (or a live human) can pick it up without
 re-discovering everything from scratch.
 
+## Update: `:26.1:runServer` boots cleanly - first live 26.x dedicated-server boot, four real runtime bugs found and fixed
+
+Compiling clean and live-testing are different things. Launching `:26.1:runServer` for the first
+time surfaced four genuinely separate runtime bugs, none visible at compile time, fixed one at a
+time across four boot attempts until the server reached `Done (...)! For help, type "help"` with
+zero ERROR log lines - the first live-verified 26.x server boot in this whole porting effort.
+
+### 1. `NoClassDefFoundError: LocalPlayer` - a real regression, not a pre-existing bug
+
+The dedicated server crashed outright during mod construction. Initially misdiagnosed as
+"pre-existing, unrelated to tonight's work" - the user firmly corrected this (they'd tested a
+dedicated server across multiple NeoForge/Fabric versions before, launched earlier in this same
+overall session), which was then confirmed empirically: a `git worktree` checkout of the last
+commit before any 26.x work began (`ed56944`) booted `:1.21.1:runServer` successfully. This WAS a
+real regression introduced by this session's own porting work, and the user was right to push back
+on the initial assessment.
+
+**Root cause, confirmed via NeoForge's own `OnlyInWarningsHandler` log line** ("the mod crazyphone
+uses the @OnlyIn annotation; the runtime member-stripping behaviour of this annotation is no longer
+present"): NeoForge 26.x completely removed `@OnlyIn`'s bytecode-stripping mechanism. On older
+NeoForge (1.21.1, `neo_version=21.1.248`), `@OnlyIn(Dist.CLIENT)` on a method actually strips/
+replaces that method's body on the wrong dist at classload time - this genuinely worked there. On
+26.x it's now a no-op annotation with no runtime effect at all. Standard JVM classloading fully
+verifies every method's bytecode the moment a class is loaded (not lazily per-method) - so any
+class containing even one method referencing a client-only type (`Minecraft`, `LocalPlayer`, etc.)
+fails to load entirely on a dedicated server the instant anything triggers loading it, most commonly
+NeoForge's own `AutomaticEventSubscriber` scanning every `@EventBusSubscriber`-annotated class via
+`Class.forName(...)`.
+
+**The fix has to be structural, not annotation-based**: move the risky method into a genuinely
+separate nested class carrying its OWN class-level `@EventBusSubscriber(value = Dist.CLIENT)`
+annotation. That annotation's `Dist.CLIENT` value is read via ASM-based metadata inspection
+*before* `Class.forName()` runs - if the dist doesn't match, the scanner skips loading the class
+entirely, sidestepping verification altogether. This pattern already existed once in the codebase
+(`CrazyPhonePhotoItemClientBinding.java`), just not applied everywhere it needed to be. A subtlety
+that cost a second round of testing: nesting a nested `Registration` class alone is **not** enough
+if the risky method still lives on the outer class - `Registration.register()`'s own body creates a
+`OuterClass::handleData` method reference, which forces full verification of `OuterClass`
+regardless. The risky method itself has to live in the separate class, not just the registration
+call.
+
+Fixed across 5 files by extracting the client-only method into a new nested `ClientHandler` class:
+[CrazyPhoneGroupMembershipNotificationPacket.java](src/main/java/fr/lordfinn/crazyphone/network/CrazyPhoneGroupMembershipNotificationPacket.java),
+[CrazyPhoneNewMessageNotificationPacket.java](src/main/java/fr/lordfinn/crazyphone/network/CrazyPhoneNewMessageNotificationPacket.java),
+[UpdateContactInfoMessage.java](src/main/java/fr/lordfinn/crazyphone/network/UpdateContactInfoMessage.java),
+[CrazyPhoneNewCallDurationNotificationPacket.java](src/main/java/fr/lordfinn/crazyphone/network/CrazyPhoneNewCallDurationNotificationPacket.java),
+[CrazyPhoneIncomingCallNotificationPacket.java](src/main/java/fr/lordfinn/crazyphone/network/CrazyPhoneIncomingCallNotificationPacket.java).
+Two more files (`PhoneRegistrySyncPacket.java`, `PlayerPhoneStateSyncPacket.java`) were checked and
+found already safe for our target versions - their `Minecraft.getInstance()` usage was already
+confined to a `<1.20.5`-only branch, inactive on every version we actually ship.
+
+### 2. GameTest registration: invalid `Identifier` path from camelCase batch names
+
+`net.minecraft.IdentifierException: Non [a-z0-9/._-] character in path of location:
+crazyphone:unregisteredPhone`. Own bug from earlier in this session's `CrazyPhoneGameTests.java`
+`>=26` rework (see "GameTest finding" further down): the old `@GameTest(batch = "...")` camelCase
+batch-name strings (`"unregisteredPhone"`, `"mayorVoteCooldown"`, etc.) got reused directly as
+`TestEnvironmentDefinition` resource-path identifiers via `Crazyphone.resource(batchName)` in the
+new `>=26` registration path - `Identifier`/`ResourceLocation` path validation requires
+lowercase-only `[a-z0-9/._-]`. Fixed by converting the 9 batch-name arguments passed to
+`registerTest(event, testId, batchName)` in `registerGameTests(...)` to snake_case
+(`"unregistered_phone"`, `"mayor_vote_cooldown"`, etc.) - the `<26` annotation values themselves
+were untouched, since those are plain Java strings, not resource-path identifiers.
+
+### 3. NeoForge >=26 removed the global-loot-modifier index file entirely
+
+`Couldn't parse data file 'neoforge:global_loot_modifiers'... No key type in MapLike[...]`.
+Confirmed by diffing `LootModifierManager.java` between the real NeoForge 21.1.248 and 26.1.2.100
+sources jars: on 1.21.1, `LootModifierManager` reads a `neoforge:loot_modifiers/
+global_loot_modifiers.json` index file (`{"replace": bool, "entries": [...]}`) to decide which
+files under `loot_modifiers/` are actually enabled - anything not listed there is ignored. On 26.1,
+that whole indirection is gone: `LootModifierManager` now scans every file under `loot_modifiers/`
+directly via a type-keyed dispatch codec (`IGlobalLootModifier.DIRECT_CODEC`), same pattern as
+recipes/enchantments. `soulbound_ancient_city.json`/`soulbound_ancient_city_ice_box.json` already
+carry their own `"type"` key and load fine standalone - the old index file itself is what breaks on
+26.x, since it has no `"type"` key and gets scanned like any other file in the folder. Fixed by
+deleting `data/neoforge/loot_modifiers/global_loot_modifiers.json` from the **build output only**
+on `minecraftVersion.startsWith("26.")`, in `build.gradle.kts`'s `processResources` task - same
+"patch the build output, not the tracked shared resource" approach already used there for
+`crazy_phone_photo.json`.
+
+### 4. `duplicate_photo` recipe JSON orphaned on versions where its serializer isn't registered
+
+`Unknown registry key in ResourceKey[minecraft:root / minecraft:recipe_serializer]:
+crazyphone:crafting_special_duplicate_photo`. Not a new bug - `ModRecipes.java`/
+`CrazyPhoneDuplicatePhotoRecipe.java` already deliberately don't register this recipe's serializer
+on `>=1.21.10` for either loader (the Recipe/CraftingRecipe API rework there isn't backported yet -
+see their own doc comments). But the recipe JSON itself (`data/crazyphone/recipe/
+duplicate_photo.json` and the older `data/crazyphone/recipes/duplicate_photo.json` - the datapack
+folder was singularized at some point in this version range, both copies exist) is a shared
+resource with no per-version gating, so it still ships and fails to load once the serializer stops
+existing. Fixed the same way as #3: delete both files from the build output when
+`minecraftVersion == "1.21.10" || minecraftVersion.startsWith("26.")`.
+
+**Result**: `:26.1:runServer` now reaches `Done (0.853s)! For help, type "help"` with zero ERROR
+log lines. Full compile regression re-verified clean across all 6 previously-passing targets
+(`1.20.4`, `1.21.1`, `1.21.1-fabric`, `1.21.10`, `1.20.1-fabric`, `26.1`) after all four fixes.
+**Not yet done**: joining as a client to verify the item-rendering pipeline visually (see the next
+section - `:26.1:runClient` has been launched but not yet driven through an actual join/render
+check), and the equivalent server-boot check for `26.1-fabric`/`26.2`/`26.2-fabric` once their own
+remaining compile errors are resolved.
+
 ## Update: the NeoForge >=26 item-rendering rewrite is WRITTEN and COMPILES, but is NOT YET REACHABLE - one real decision left
 
 Implemented the recipe from the section below: `CrazyPhonePhotoItemRenderer.java` now has a
