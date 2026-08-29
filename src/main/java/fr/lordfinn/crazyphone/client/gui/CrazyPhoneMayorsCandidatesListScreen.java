@@ -1,6 +1,9 @@
 package fr.lordfinn.crazyphone.client.gui;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui./*$ gui_graphics_type {*/GuiGraphics/*$}*/;
+//? if >=26 {
+/*import net.minecraft.client.gui.GuiGraphicsExtractor;
+*///?}
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
@@ -67,20 +70,32 @@ public class CrazyPhoneMayorsCandidatesListScreen extends CrazyPhoneDefaultScree
 		return guistate;
 	}
 
+	//? if >=26 {
+	/*@Override
+	public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTicks) {
+		super.extractRenderState(guiGraphics, mouseX, mouseY, partialTicks);
+		renderCandidates(guiGraphics, mouseX, mouseY);
+	}
+	*///? } else {
 	@Override
 	public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
 		super.render(guiGraphics, mouseX, mouseY, partialTicks);
+		renderCandidates(guiGraphics, mouseX, mouseY);
+	}
+	//?}
+
+	private void renderCandidates(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int mouseX, int mouseY) {
 		renderHeader(guiGraphics, new ItemStack(net.minecraft.world.item.Items.PLAYER_HEAD),
 				Component.translatable("gui.crazyphone.crazy_phone_mayors_candidates_list.title"));
 
 		for (RenderSlot rs : renderSlots) {
 			int iconX = this.leftPos + rs.x;
 			int iconY = this.topPos + rs.y;
-			guiGraphics.renderItem(rs.stack, iconX, iconY);
+			guiGraphics./*$ gui_render_item {*/renderItem/*$}*/(rs.stack, iconX, iconY);
 			if (isHovering(rs, mouseX, mouseY)) {
 				guiGraphics.fill(iconX, iconY, iconX + 16, iconY + 16, 0x80FFFFFF);
 				//? if <1.21.10 {
-				guiGraphics.renderTooltip(this.font, rs.stack, mouseX, mouseY);
+				guiGraphics./*$ gui_render_tooltip {*/renderTooltip/*$}*/(this.font, rs.stack, mouseX, mouseY);
 				//? } else {
 				/*guiGraphics.setTooltipForNextFrame(this.font, rs.stack, mouseX, mouseY);
 				*///?}

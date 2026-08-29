@@ -8,7 +8,10 @@ import fr.lordfinn.crazyphone.utils.NetworkAccess;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.network.chat.Component;
 import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui./*$ gui_graphics_type {*/GuiGraphics/*$}*/;
+//? if >=26 {
+/*import net.minecraft.client.gui.GuiGraphicsExtractor;
+*///?}
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.ChatFormatting;
 
@@ -95,6 +98,19 @@ public class CrazyPhoneIncomingCallScreenScreen extends CrazyPhoneDefaultScreenS
         }
     }
 
+    //? if >=26 {
+    /*@Override
+    public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTicks) {
+        super.extractRenderState(guiGraphics, mouseX, mouseY, partialTicks);
+        renderHeader(guiGraphics, new ItemStack(ModItems.CRAZY_PHONE.get()),
+                Component.translatable("gui.crazyphone.crazy_phone_incoming_call_screen.title"));
+        renderCallerBust(guiGraphics);
+        guiGraphics.centeredText(this.font, Component.literal(menu.getDisplayTitle())
+                        .withStyle(style -> style.withColor(ChatFormatting.GRAY)),
+                this.leftPos + 61, this.topPos + 143, 0xFFFFFFFF);
+        this.extractTooltip(guiGraphics, mouseX, mouseY);
+    }
+    *///? } else {
     @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
         super.render(guiGraphics, mouseX, mouseY, partialTicks);
@@ -106,10 +122,11 @@ public class CrazyPhoneIncomingCallScreenScreen extends CrazyPhoneDefaultScreenS
                 this.leftPos + 61, this.topPos + 143, 0xFFFFFFFF);
         this.renderTooltip(guiGraphics, mouseX, mouseY);
     }
+    //?}
 
     /** A single big square bust of the caller, centered in the band between the header and the name/buttons -
      * same live pose/head-tracking preview as the InCall screen's grid, just one cell instead of several. */
-    private void renderCallerBust(GuiGraphics guiGraphics) {
+    private void renderCallerBust(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics) {
         List<CrazyPhoneInCallScreenMenu.CallParticipant> callers = menu.getParticipants();
         if (callers.isEmpty())
             return;

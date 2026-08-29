@@ -15,7 +15,10 @@ import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneMyPhotosScreenMenu;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui./*$ gui_graphics_type {*/GuiGraphics/*$}*/;
+//? if >=26 {
+/*import net.minecraft.client.gui.GuiGraphicsExtractor;
+*///?}
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
@@ -63,29 +66,44 @@ public class CrazyPhoneMyPhotosScreenScreen extends CrazyPhoneDefaultScreenScree
         return guistate;
     }
 
+    //? if >=26 {
+    /*@Override
+    public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTicks) {
+        super.extractRenderState(guiGraphics, mouseX, mouseY, partialTicks);
+        renderHeader(guiGraphics, new ItemStack(ModItems.CRAZY_PHONE_PHOTO.get()),
+                Component.translatable("gui.crazyphone.crazy_phone_my_photos_screen.title"));
+    }
+    *///? } else {
     @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
         super.render(guiGraphics, mouseX, mouseY, partialTicks);
         renderHeader(guiGraphics, new ItemStack(ModItems.CRAZY_PHONE_PHOTO.get()),
                 Component.translatable("gui.crazyphone.crazy_phone_my_photos_screen.title"));
     }
+    //?}
 
     @Override
-    protected void renderBg(GuiGraphics guiGraphics, float partialTicks, int gx, int gy) {
-        super.renderBg(guiGraphics, partialTicks, gx, gy);
+    protected void drawScreenBackground(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics) {
+        super.drawScreenBackground(guiGraphics);
         renderThumbnails(guiGraphics);
     }
 
+    //? if >=26 {
+    /*@Override
+    protected void extractLabels(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
+    }
+    *///? } else {
     @Override
     protected void renderLabels(GuiGraphics guiGraphics, int mouseX, int mouseY) {
     }
+    //?}
 
     private int maxRowOffset() {
         int rowCount = (menu.photoIds.size() + GRID_COLUMNS - 1) / GRID_COLUMNS;
         return Math.max(0, rowCount - VISIBLE_ROWS);
     }
 
-    private void renderThumbnails(GuiGraphics guiGraphics) {
+    private void renderThumbnails(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics) {
         int firstIndex = scrollRowOffset * GRID_COLUMNS;
         for (int visible = 0; visible < GRID_COLUMNS * VISIBLE_ROWS; visible++) {
             int index = firstIndex + visible;
@@ -116,7 +134,7 @@ public class CrazyPhoneMyPhotosScreenScreen extends CrazyPhoneDefaultScreenScree
     /** "Cover" crop: always fills the full width x height target - the source UV rect is shrunk to the
      * target's aspect ratio and centered, so the longer source dimension gets cropped rather than
      * letterboxed. */
-    private static void drawCroppedThumbnail(GuiGraphics guiGraphics, int x, int y, int width, int height, FabricPictureCache.CachedTexture texture) {
+    private static void drawCroppedThumbnail(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int x, int y, int width, int height, FabricPictureCache.CachedTexture texture) {
         GuiCompat.pushPose(guiGraphics);
         GuiCompat.translate(guiGraphics, x, y);
 

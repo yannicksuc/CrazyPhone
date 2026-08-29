@@ -9,7 +9,10 @@ package fr.lordfinn.crazyphone.client.gui;
  * player already owns this exact item, so "save to inventory" would just make a redundant copy).
  */
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui./*$ gui_graphics_type {*/GuiGraphics/*$}*/;
+//? if >=26 {
+/*import net.minecraft.client.gui.GuiGraphicsExtractor;
+*///?}
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -79,30 +82,42 @@ public class CrazyPhonePhotoViewerScreen extends Screen implements PhoneScreen {
         ownButtons.add(saveButton);
     }
 
+    // Deliberately NOT calling super.render()/super.extractRenderState() here - Screen's own default render body
+    // calls renderBackground()/extractBackground(), a completely different method from renderTransparentBackground()
+    // below: it triggers the REAL blur post-process (renderBlurredBackground -> GameRenderer#processBlurEffect)
+    // plus a tiled gray menu-background texture (renderMenuBackground), both drawn over the WHOLE screen
+    // - which, called after our photo above, painted over it every frame regardless of how the photo
+    // itself was drawn (found live: this reproduced identically across three completely different photo
+    // draw techniques, which only made sense once traced back to this second, redundant background pass
+    // rather than anything about the photo's own draw call). Replicate just the part of Screen#render
+    // this screen actually needs - rendering its own widgets - without that redundant background call
+    // (see ownButtons's own doc comment for why this iterates that instead of Screen's own renderables).
+    //? if >=26 {
+    /*@Override
+    public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
+        this.renderTransparentBackground(guiGraphics);
+        FabricPictureCache.CachedTexture texture = FabricPictureCache.getOrRequest(photoId, PhotoResolution.FULL);
+        if (texture != null)
+            drawFitted(guiGraphics, texture);
+        for (Button button : ownButtons)
+            button.extractRenderState(guiGraphics, mouseX, mouseY, partialTick);
+    }
+    *///? } else {
     @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         this.renderTransparentBackground(guiGraphics);
         FabricPictureCache.CachedTexture texture = FabricPictureCache.getOrRequest(photoId, PhotoResolution.FULL);
         if (texture != null)
             drawFitted(guiGraphics, texture);
-        // Deliberately NOT calling super.render() here - Screen's own default render() body calls
-        // renderBackground(), a completely different method from renderTransparentBackground() above: it
-        // triggers the REAL blur post-process (renderBlurredBackground -> GameRenderer#processBlurEffect)
-        // plus a tiled gray menu-background texture (renderMenuBackground), both drawn over the WHOLE screen
-        // - which, called after our photo above, painted over it every frame regardless of how the photo
-        // itself was drawn (found live: this reproduced identically across three completely different photo
-        // draw techniques, which only made sense once traced back to this second, redundant background pass
-        // rather than anything about the photo's own draw call). Replicate just the part of Screen#render
-        // this screen actually needs - rendering its own widgets - without that redundant background call
-        // (see ownButtons's own doc comment for why this iterates that instead of Screen's own renderables).
         for (Button button : ownButtons)
             button.render(guiGraphics, mouseX, mouseY, partialTick);
     }
+    //?}
 
     // Fits the image within an 80%-of-window box, preserving aspect ratio and centering it - same box
     // proportions the old CrazyPhoneImageScreen used, just computed from the real cached dimensions now
     // (that screen's Camera-mod-derived image data didn't reliably expose real width/height either).
-    private void drawFitted(GuiGraphics guiGraphics, FabricPictureCache.CachedTexture texture) {
+    private void drawFitted(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, FabricPictureCache.CachedTexture texture) {
         int boxWidth = (int) (width * 0.8f);
         int boxHeight = (int) (height * 0.8f);
         double scale = Math.min((double) boxWidth / texture.width(), (double) boxHeight / texture.height());

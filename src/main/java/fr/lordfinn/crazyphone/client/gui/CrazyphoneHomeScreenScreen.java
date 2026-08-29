@@ -8,7 +8,10 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import fr.lordfinn.crazyphone.utils.NetworkAccess;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui./*$ gui_graphics_type {*/GuiGraphics/*$}*/;
+//? if >=26 {
+/*import net.minecraft.client.gui.GuiGraphicsExtractor;
+*///?}
 import net.minecraft.client.gui.components.ImageButton;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/;
@@ -31,10 +34,17 @@ public class CrazyphoneHomeScreenScreen extends CrazyPhoneDefaultScreenScreen<Cr
         return new HashMap<>();
     }
 
+    //? if >=26 {
+    /*@Override
+    protected void extractLabels(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
+        // Optional: add static labels if necessary
+    }
+    *///? } else {
     @Override
     protected void renderLabels(GuiGraphics guiGraphics, int mouseX, int mouseY) {
         // Optional: add static labels if necessary
     }
+    //?}
 
     @Override
     public void init() {
@@ -62,10 +72,17 @@ public class CrazyphoneHomeScreenScreen extends CrazyPhoneDefaultScreenScreen<Cr
                         Crazyphone.parseId("crazyphone:textures/screens/crazyphone-photo-icon.png"),
                         Crazyphone.parseId("crazyphone:textures/screens/crazyphone-photo-icon-hover.png")),
                 e -> fr.lordfinn.crazyphone.client.CrazyPhoneCaptureMode.enter("")) {
+            //? if >=26 {
+            /*@Override
+            public void extractContents(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTicks) {
+                fr.lordfinn.crazyphone.utils.GuiCompat.blit(guiGraphics, sprites.get(isActive(), isHoveredOrFocused()), getX(), getY(), 0, width, height);
+            }
+            *///? } else {
             @Override
             public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
                 fr.lordfinn.crazyphone.utils.GuiCompat.blit(guiGraphics, sprites.get(isActive(), isHoveredOrFocused()), getX(), getY(), 0, width, height);
             }
+            //?}
         };
         guistate.put("button:imagebutton_photo", photoButton);
         this.addRenderableWidget(photoButton);
@@ -88,10 +105,17 @@ public class CrazyphoneHomeScreenScreen extends CrazyPhoneDefaultScreenScreen<Cr
             //?}
             CrazyphoneHomeScreenButtonMessage.handleButtonAction(this.entity, buttonId, this.x, this.y, this.z, values);
         }) {
+            //? if >=26 {
+            /*@Override
+            public void extractContents(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTicks) {
+                fr.lordfinn.crazyphone.utils.GuiCompat.blit(guiGraphics, sprites.get(isActive(), isHoveredOrFocused()), getX(), getY(), 0, width, height);
+            }
+            *///? } else {
             @Override
             public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
                 fr.lordfinn.crazyphone.utils.GuiCompat.blit(guiGraphics, sprites.get(isActive(), isHoveredOrFocused()), getX(), getY(), 0, width, height);
             }
+            //?}
         };
 
         guistate.put("button:" + key, button);

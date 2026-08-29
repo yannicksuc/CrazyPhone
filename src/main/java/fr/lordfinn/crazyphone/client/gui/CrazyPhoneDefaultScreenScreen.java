@@ -56,15 +56,23 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 	protected boolean isHomeButtonActive = true;
 	protected boolean isLockButtonActive = true;
 
+	public CrazyPhoneDefaultScreenScreen(T container, Inventory inventory, Component text) {
+		this(container, inventory, text, 122, 195);
+	}
+
 	// 26.x made imageWidth/imageHeight constructor-only final fields (were freely settable after the fact
 	// pre-26 - see AbstractContainerScreen's own doc comment on drawScreenBackground's sibling methods for
 	// the broader pattern of "what used to be a late-bound hook is now fixed earlier"). The 3-arg super
 	// constructor (defaulting to AbstractContainerScreen's own DEFAULT_IMAGE_WIDTH/HEIGHT) still exists on
-	// every version, but this screen always wants its own fixed 122x195 phone size, so it goes through the
-	// 5-arg overload directly on >=26 instead of assigning the fields afterward.
+	// every version, but every screen in this mod needs its own size (either the standard 122x195 phone,
+	// via the constructor above, or a custom one - e.g. CrazyPhoneGroupSettingsScreenScreen's wider
+	// layout) - this protected overload is this project's OWN stable constructor shape for that, going
+	// through AbstractContainerScreen's 5-arg overload directly on >=26 instead of assigning the fields
+	// afterward (a subclass can no longer do that itself post-construction either, once this constructor
+	// has already finally-assigned them).
 	//? if >=26 {
-	/*public CrazyPhoneDefaultScreenScreen(T container, Inventory inventory, Component text) {
-		super(container, inventory, text, 122, 195);
+	/*protected CrazyPhoneDefaultScreenScreen(T container, Inventory inventory, Component text, int imageWidth, int imageHeight) {
+		super(container, inventory, text, imageWidth, imageHeight);
 		this.world = container.world;
 		this.x = container.x;
 		this.y = container.y;
@@ -72,15 +80,15 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 		this.entity = container.entity;
 	}
 	*///? } else {
-	public CrazyPhoneDefaultScreenScreen(T container, Inventory inventory, Component text) {
+	protected CrazyPhoneDefaultScreenScreen(T container, Inventory inventory, Component text, int imageWidth, int imageHeight) {
 		super(container, inventory, text);
 		this.world = container.world;
 		this.x = container.x;
 		this.y = container.y;
 		this.z = container.z;
 		this.entity = container.entity;
-		this.imageWidth = 122;
-		this.imageHeight = 195;
+		this.imageWidth = imageWidth;
+		this.imageHeight = imageHeight;
 	}
 	//?}
 

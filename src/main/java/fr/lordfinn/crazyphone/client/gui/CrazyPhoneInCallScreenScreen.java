@@ -8,7 +8,10 @@ import fr.lordfinn.crazyphone.utils.NetworkAccess;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.network.chat.Component;
 import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui./*$ gui_graphics_type {*/GuiGraphics/*$}*/;
+//? if >=26 {
+/*import net.minecraft.client.gui.GuiGraphicsExtractor;
+*///?}
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.ChatFormatting;
 
@@ -130,6 +133,16 @@ public class CrazyPhoneInCallScreenScreen extends CrazyPhoneDefaultScreenScreen<
             bustPreview.ensure(p.id(), p.name(), p.helmet(), p.chestplate(), p.leggings(), p.boots());
     }
 
+    //? if >=26 {
+    /*@Override
+    public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTicks) {
+        super.extractRenderState(guiGraphics, mouseX, mouseY, partialTicks);
+        renderHeader(guiGraphics, new ItemStack(ModItems.CRAZY_PHONE.get()),
+                Component.translatable("gui.crazyphone.crazy_phone_in_call_screen.title"));
+        renderParticipantGrid(guiGraphics);
+        this.extractTooltip(guiGraphics, mouseX, mouseY);
+    }
+    *///? } else {
     @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
         super.render(guiGraphics, mouseX, mouseY, partialTicks);
@@ -138,15 +151,16 @@ public class CrazyPhoneInCallScreenScreen extends CrazyPhoneDefaultScreenScreen<
         renderParticipantGrid(guiGraphics);
         this.renderTooltip(guiGraphics, mouseX, mouseY);
     }
+    //?}
 
     /** Adaptive grid: columns = ceil(sqrt(n)), rows = ceil(n/columns) - 1 participant fills a single big
      * square, 2 sit side by side, 4 form a 2x2 grid, and so on, always centered in the band between the
      * header and the hangup button. Falls back to the old plain combined-name text if the participant list
      * is momentarily empty (e.g. the brief window before the first sync packet arrives). */
-    private void renderParticipantGrid(GuiGraphics guiGraphics) {
+    private void renderParticipantGrid(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics) {
         int n = participants.size();
         if (n == 0) {
-            guiGraphics.drawCenteredString(this.font, Component.literal(menu.getDisplayTitle())
+            guiGraphics./*$ gui_draw_centered_string {*/drawCenteredString/*$}*/(this.font, Component.literal(menu.getDisplayTitle())
                             .withStyle(style -> style.withColor(ChatFormatting.GRAY)),
                     this.leftPos + 61, this.topPos + 95, 0xFFFFFFFF);
             return;

@@ -2,7 +2,10 @@ package fr.lordfinn.crazyphone.client.gui;
 
 import fr.lordfinn.crazyphone.utils.GuiCompat;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui./*$ gui_graphics_type {*/GuiGraphics/*$}*/;
+//? if >=26 {
+/*import net.minecraft.client.gui.GuiGraphicsExtractor;
+*///?}
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.network.chat.Component;
@@ -77,8 +80,11 @@ public class CrazyPhoneGroupSettingsScreenScreen extends CrazyPhoneDefaultScreen
     private ItemStack cursorCarriedIcon = ItemStack.EMPTY;
 
     public CrazyPhoneGroupSettingsScreenScreen(CrazyPhoneGroupSettingsScreenMenu menu, Inventory inventory, Component title) {
-        super(menu, inventory, title);
-        this.imageWidth = PHONE_WIDTH + INV_GAP + INV_PANEL_WIDTH + RIGHT_MARGIN;
+        // Wider than the standard 122x195 phone (needs room for the member-list inventory panel) - goes
+        // through CrazyPhoneDefaultScreenScreen's own protected 5-arg constructor overload instead of
+        // assigning imageWidth after the fact, which >=26 no longer allows (see that overload's own doc
+        // comment on CrazyPhoneDefaultScreenScreen).
+        super(menu, inventory, title, PHONE_WIDTH + INV_GAP + INV_PANEL_WIDTH + RIGHT_MARGIN, 195);
         this.viewerNumber = GetCrazyPhoneNumberFromMainHandProcedure.execute(this.entity, null);
         this.viewerIsAdmin = !viewerNumber.isEmpty() && viewerNumber.equals(menu.getGroupAdmin());
         this.stagedIcon = menu.getGroupIcon().copy();
@@ -115,8 +121,8 @@ public class CrazyPhoneGroupSettingsScreenScreen extends CrazyPhoneDefaultScreen
     }
 
     @Override
-    protected void renderBg(GuiGraphics guiGraphics, float partialTicks, int mouseX, int mouseY) {
-        super.renderBg(guiGraphics, partialTicks, mouseX, mouseY);
+    protected void drawScreenBackground(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics) {
+        super.drawScreenBackground(guiGraphics);
 
         int invX = this.leftPos + CrazyPhoneGroupSettingsScreenMenu.PLAYER_INV_X;
         int invY = this.topPos + CrazyPhoneGroupSettingsScreenMenu.PLAYER_INV_Y;
@@ -128,6 +134,38 @@ public class CrazyPhoneGroupSettingsScreenScreen extends CrazyPhoneDefaultScreen
         }
     }
 
+    //? if >=26 {
+    /*@Override
+    public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTicks) {
+        super.extractRenderState(guiGraphics, mouseX, mouseY, partialTicks);
+        renderHeader(guiGraphics, headerIcon, Component.translatable("gui.crazyphone.crazy_phone_group_settings.title"));
+        renderIconPreview(guiGraphics, mouseX, mouseY);
+        Component memberTooltip = renderMemberList(guiGraphics, mouseX, mouseY);
+        // Every tooltip below is deliberately rendered LAST, after everything else this frame draws -
+        // rendering one earlier (e.g. inline inside the member-list loop, which still had its scissor
+        // active) either got clipped by that scissor or painted over by later content, which is exactly
+        // what made these look like an empty/cropped box instead of a proper tooltip.
+        if (cursorCarriedIcon.isEmpty() && isHoveringIconPreview(mouseX, mouseY)) {
+            guiGraphics.setComponentTooltipForNextFrame(this.font,
+                    List.of(Component.translatable("gui.crazyphone.crazy_phone_group_settings.tooltip_icon_hint")), mouseX, mouseY);
+        }
+        if (memberTooltip != null) {
+            guiGraphics.setComponentTooltipForNextFrame(this.font, List.of(memberTooltip), mouseX, mouseY);
+        }
+        // Drawn last of all so it always floats on top of everything else, following the cursor exactly
+        // like vanilla's own carried-item rendering. Item icons are depth-tested 3D models, not flat 2D
+        // quads, so draw ORDER alone doesn't guarantee this renders in front - a slot item rendered
+        // earlier can still win the depth test and show through. Pushing the same Z translation (232)
+        // vanilla itself uses for its own cursor-carried-item rendering (AbstractContainerScreen) is what
+        // actually guarantees it wins.
+        if (!cursorCarriedIcon.isEmpty()) {
+            GuiCompat.pushPose(guiGraphics);
+            GuiCompat.translate(guiGraphics, 0, 0);
+            guiGraphics.item(cursorCarriedIcon, mouseX - 8, mouseY - 8);
+            GuiCompat.popPose(guiGraphics);
+        }
+    }
+    *///? } else {
     @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
         super.render(guiGraphics, mouseX, mouseY, partialTicks);
@@ -167,6 +205,7 @@ public class CrazyPhoneGroupSettingsScreenScreen extends CrazyPhoneDefaultScreen
             GuiCompat.popPose(guiGraphics);
         }
     }
+    //?}
 
     private static final long ICON_HEAD_CYCLE_INTERVAL_MS = 1000;
 
@@ -189,13 +228,13 @@ public class CrazyPhoneGroupSettingsScreenScreen extends CrazyPhoneDefaultScreen
         return mouseX >= x - 1 && mouseX < x + 17 && mouseY >= y - 1 && mouseY < y + 17;
     }
 
-    private void renderIconPreview(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+    private void renderIconPreview(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int mouseX, int mouseY) {
         int x = this.leftPos + CONTENT_X;
         int y = this.topPos + ICON_ROW_Y;
         guiGraphics.fill(x - 1, y - 1, x + 17, y + 17, 0x80000000);
         ItemStack icon = resolvePreviewIcon();
         if (!icon.isEmpty())
-            guiGraphics.renderItem(icon, x, y);
+            guiGraphics./*$ gui_render_item {*/renderItem/*$}*/(icon, x, y);
     }
 
     /** Returns the toggle tooltip to show for whichever row is hovered, or null - rendering is deferred
@@ -203,7 +242,7 @@ public class CrazyPhoneGroupSettingsScreenScreen extends CrazyPhoneDefaultScreen
      * it would get clipped to this small viewport instead of drawing at full size over everything else).
      * Members render first (with an exclude/leave toggle), then the viewer's other contacts who aren't
      * in the group yet (with an invite toggle instead) - one continuous scrollable list. */
-    private Component renderMemberList(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+    private Component renderMemberList(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int mouseX, int mouseY) {
         int x = this.leftPos + CONTENT_X;
         int y = this.topPos + MEMBER_LIST_Y;
         guiGraphics.fill(x - 1, y - 1, x + MEMBER_LIST_WIDTH + 1, y + MEMBER_LIST_HEIGHT + 1, 0xA0000000);
@@ -229,13 +268,13 @@ public class CrazyPhoneGroupSettingsScreenScreen extends CrazyPhoneDefaultScreen
 
     /** Head icon, name (and admin marker), all vertically centered on the row's own midpoint so they line
      * up with each other and with the toggle box a caller draws afterward. */
-    private void drawPersonRow(GuiGraphics guiGraphics, int x, int rowY, Contact person, int textColor) {
-        guiGraphics.renderItem(CrazyPhoneHelper.createContactHead(person), x, rowY + (MEMBER_ROW_HEIGHT - 16) / 2);
+    private void drawPersonRow(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int x, int rowY, Contact person, int textColor) {
+        guiGraphics./*$ gui_render_item {*/renderItem/*$}*/(CrazyPhoneHelper.createContactHead(person), x, rowY + (MEMBER_ROW_HEIGHT - 16) / 2);
 
         int maxTextWidth = MEMBER_LIST_WIDTH - 16 - 2 - TOGGLE_SIZE - 2;
         String rawName = person.getNumber().equals(menu.getGroupAdmin()) ? person.getName() + " *" : person.getName();
         String nameLine = this.font.plainSubstrByWidth(rawName, maxTextWidth);
-        guiGraphics.drawString(this.font, nameLine, x + 18, rowY + 5, textColor, false);
+        guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(this.font, nameLine, x + 18, rowY + 5, textColor, false);
     }
 
     private boolean isToggleHovered(int mouseX, int mouseY, int toggleX, int toggleY, int listY) {
@@ -246,7 +285,7 @@ public class CrazyPhoneGroupSettingsScreenScreen extends CrazyPhoneDefaultScreen
 
     /** Flat single-color squares read as boring - a 1px bevel (lighter top+left, darker bottom+right)
      * gives them the classic pixel-art "raised button" look, at the same outer footprint as before. */
-    private void drawBeveledButton(GuiGraphics guiGraphics, int x, int y, int size, int baseColor) {
+    private void drawBeveledButton(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int x, int y, int size, int baseColor) {
         guiGraphics.fill(x, y, x + size, y + size, baseColor);
         int light = adjustBrightness(baseColor, 1.5f);
         int dark = adjustBrightness(baseColor, 0.5f);
@@ -268,22 +307,22 @@ public class CrazyPhoneGroupSettingsScreenScreen extends CrazyPhoneDefaultScreen
         return Math.max(0, Math.min(255, value));
     }
 
-    private void drawToggleSymbol(GuiGraphics guiGraphics, int toggleX, int toggleY, String symbol, int color) {
+    private void drawToggleSymbol(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int toggleX, int toggleY, String symbol, int color) {
         drawToggleSymbol(guiGraphics, toggleX, toggleY, symbol, color, 0f);
     }
 
-    private void drawToggleSymbol(GuiGraphics guiGraphics, int toggleX, int toggleY, String symbol, int color, float extraXOffset) {
+    private void drawToggleSymbol(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int toggleX, int toggleY, String symbol, int color, float extraXOffset) {
         int symbolWidth = this.font.width(symbol);
         GuiCompat.pushPose(guiGraphics);
         GuiCompat.translate(guiGraphics, 0.5f + extraXOffset, 0.5f);
-        guiGraphics.drawString(this.font, symbol, toggleX + (TOGGLE_SIZE - symbolWidth) / 2, toggleY + 2, color, false);
+        guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(this.font, symbol, toggleX + (TOGGLE_SIZE - symbolWidth) / 2, toggleY + 2, color, false);
         GuiCompat.popPose(guiGraphics);
     }
 
     /** The same two icons cover both toggle rows: a cross means clicking will exclude/cancel, an arrow
      * means clicking will add/restore - which one shows just depends on which action clicking would take
      * next, no separate "undo" glyph needed. */
-    private void drawStateToggle(GuiGraphics guiGraphics, int toggleX, int toggleY, boolean showCross) {
+    private void drawStateToggle(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int toggleX, int toggleY, boolean showCross) {
         if (showCross) {
             drawBeveledButton(guiGraphics, toggleX, toggleY, TOGGLE_SIZE, 0xFF884444);
             drawToggleSymbol(guiGraphics, toggleX, toggleY, "âœ•", 0xFFFFFFFF, -0.25f);
@@ -293,7 +332,7 @@ public class CrazyPhoneGroupSettingsScreenScreen extends CrazyPhoneDefaultScreen
         }
     }
 
-    private Component renderMemberRow(GuiGraphics guiGraphics, int mouseX, int mouseY, int x, int listY, int rowY, Contact member) {
+    private Component renderMemberRow(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int mouseX, int mouseY, int x, int listY, int rowY, Contact member) {
         if (rowY + MEMBER_ROW_HEIGHT < listY || rowY > listY + MEMBER_LIST_HEIGHT)
             return null; // scrolled out of view
 
@@ -322,7 +361,7 @@ public class CrazyPhoneGroupSettingsScreenScreen extends CrazyPhoneDefaultScreen
 
     /** A contact not yet in the group - anyone currently viewing the screen (not just the admin) can
      * invite them, so unlike {@link #renderMemberRow} there's no permission gate on showing the toggle. */
-    private Component renderInvitableRow(GuiGraphics guiGraphics, int mouseX, int mouseY, int x, int listY, int rowY, Contact contact) {
+    private Component renderInvitableRow(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int mouseX, int mouseY, int x, int listY, int rowY, Contact contact) {
         if (rowY + MEMBER_ROW_HEIGHT < listY || rowY > listY + MEMBER_LIST_HEIGHT)
             return null;
 

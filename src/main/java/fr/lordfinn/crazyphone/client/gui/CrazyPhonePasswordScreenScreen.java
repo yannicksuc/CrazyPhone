@@ -4,7 +4,10 @@ import fr.lordfinn.crazyphone.Crazyphone;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui./*$ gui_graphics_type {*/GuiGraphics/*$}*/;
+//? if >=26 {
+/*import net.minecraft.client.gui.GuiGraphicsExtractor;
+*///?}
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.ImageButton;
@@ -69,6 +72,24 @@ public class CrazyPhonePasswordScreenScreen extends CrazyPhoneDefaultScreenScree
         return guistate;
     }
 
+    //? if >=26 {
+    /*@Override
+    public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTicks) {
+        extractBackground(guiGraphics, mouseX, mouseY, partialTicks);
+        super.extractRenderState(guiGraphics, mouseX, mouseY, partialTicks);
+        renderHeader(guiGraphics, new ItemStack(fr.lordfinn.crazyphone.init.ModItems.CRAZY_PHONE.get()),
+                Component.translatable(step == STEP_PASSWORD
+                        ? "gui.crazyphone.crazy_phone_password_screen.title_password_step"
+                        : "gui.crazyphone.crazy_phone_password_screen.title"));
+        if (step == STEP_IDENTITY) {
+            number.extractRenderState(guiGraphics, mouseX, mouseY, partialTicks);
+            name.extractRenderState(guiGraphics, mouseX, mouseY, partialTicks);
+        } else {
+            password.extractRenderState(guiGraphics, mouseX, mouseY, partialTicks);
+        }
+        extractTooltip(guiGraphics, mouseX, mouseY);
+    }
+    *///? } else {
     @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
         renderBackground(guiGraphics, mouseX, mouseY, partialTicks);
@@ -85,7 +106,25 @@ public class CrazyPhonePasswordScreenScreen extends CrazyPhoneDefaultScreenScree
         }
         renderTooltip(guiGraphics, mouseX, mouseY);
     }
+    //?}
 
+    //? if >=26 {
+    /*@Override
+    public void resize(int width, int height) {
+        // Only one of (number, name) vs password is ever non-null at a time - init() only builds the
+        // fields for the current step (see STEP_IDENTITY/STEP_PASSWORD branches above).
+        String numberVal = number != null ? number.getValue() : null;
+        String nameVal = name != null ? name.getValue() : null;
+        String passwordVal = password != null ? password.getValue() : null;
+        super.resize(width, height);
+        if (number != null && numberVal != null)
+            number.setValue(numberVal);
+        if (name != null && nameVal != null)
+            name.setValue(nameVal);
+        if (password != null && passwordVal != null)
+            password.setValue(passwordVal);
+    }
+    *///? } else {
     @Override
     public void resize(Minecraft minecraft, int width, int height) {
         // Only one of (number, name) vs password is ever non-null at a time - init() only builds the
@@ -101,26 +140,38 @@ public class CrazyPhonePasswordScreenScreen extends CrazyPhoneDefaultScreenScree
         if (password != null && passwordVal != null)
             password.setValue(passwordVal);
     }
+    //?}
 
+    //? if >=26 {
+    /*@Override
+    protected void extractLabels(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
+        drawLabels(guiGraphics);
+    }
+    *///? } else {
     @Override
     protected void renderLabels(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+        drawLabels(guiGraphics);
+    }
+    //?}
+
+    private void drawLabels(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics) {
         if (step == STEP_IDENTITY) {
-            guiGraphics.drawString(font, Component.translatable("gui.crazyphone.crazy_phone_password_screen.label_numero_associe_au_telephone"), 8, 29, -12829636, false);
-            guiGraphics.drawString(font, GetCrazyPhoneNumberFromMainHandProcedure.execute(entity, guistate), -153, -111, -12829636, false);
-            guiGraphics.drawString(font, Component.translatable("gui.crazyphone.crazy_phone_password_screen.label_nom"), 8, 61, -12829636, false);
+            guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(font, Component.translatable("gui.crazyphone.crazy_phone_password_screen.label_numero_associe_au_telephone"), 8, 29, -12829636, false);
+            guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(font, GetCrazyPhoneNumberFromMainHandProcedure.execute(entity, guistate), -153, -111, -12829636, false);
+            guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(font, Component.translatable("gui.crazyphone.crazy_phone_password_screen.label_nom"), 8, 61, -12829636, false);
             if (!identityStepMessage.isEmpty())
-                guiGraphics.drawString(font, identityStepMessage, 8, 128, -12829636, false);
+                guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(font, identityStepMessage, 8, 128, -12829636, false);
         } else {
             Component warning = Component.translatable("gui.crazyphone.crazy_phone_password_screen.warning_admin_visible")
                     .copy().withStyle(ChatFormatting.BOLD, ChatFormatting.RED);
-            guiGraphics.drawWordWrap(font, warning, 8, 32, 106, 0xFFFF5555);
-            guiGraphics.drawString(font, Component.translatable("gui.crazyphone.crazy_phone_password_screen.label_mot_de_passe"), 8, 96, -12829636, false);
+            guiGraphics./*$ gui_draw_word_wrap {*/drawWordWrap/*$}*/(font, warning, 8, 32, 106, 0xFFFF5555);
+            guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(font, Component.translatable("gui.crazyphone.crazy_phone_password_screen.label_mot_de_passe"), 8, 96, -12829636, false);
             // guistate (CrazyPhonePasswordScreenMenu's static field) only gets "textin:*" entries written by
             // an actual button click - reusing it here would validate against whatever number/name/password
             // were submitted by the LAST click (possibly from an earlier, already-successful registration
             // attempt still lingering in that static field), not what's currently typed. Build a fresh
             // snapshot of the live EditBox values instead, same as the click handlers do.
-            guiGraphics.drawString(font, CrazyPhoneGetInitialFormValidationMessageProcedure.execute(world, entity, getEditBoxAndCheckBoxValues()), 8, 128, -12829636, false);
+            guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(font, CrazyPhoneGetInitialFormValidationMessageProcedure.execute(world, entity, getEditBoxAndCheckBoxValues()), 8, 128, -12829636, false);
         }
     }
 
@@ -151,7 +202,11 @@ public class CrazyPhonePasswordScreenScreen extends CrazyPhoneDefaultScreenScree
     protected void onBackButtonPressed() {
         if (step == STEP_PASSWORD) {
             step = STEP_IDENTITY;
+            //? if >=26 {
+            /*this.init(this.width, this.height);
+            *///? } else {
             this.init(this.minecraft, this.width, this.height);
+            //?}
         }
     }
 
@@ -233,7 +288,11 @@ public class CrazyPhonePasswordScreenScreen extends CrazyPhoneDefaultScreenScree
                     if (validation.equals(CrazyPhoneGetInitialFormValidationMessageProcedure.OK)) {
                         identityStepMessage = "";
                         step = STEP_PASSWORD;
+                        //? if >=26 {
+                        /*this.init(this.width, this.height);
+                        *///? } else {
                         this.init(this.minecraft, this.width, this.height);
+                        //?}
                     } else {
                         identityStepMessage = validation;
                     }
@@ -273,10 +332,17 @@ public class CrazyPhonePasswordScreenScreen extends CrazyPhoneDefaultScreenScree
             {
                 setTooltip(Tooltip.create(Component.translatable("gui.crazyphone.crazy_phone_password_screen.tooltip_reset")));
             }
+            //? if >=26 {
+            /*@Override
+            public void extractContents(GuiGraphicsExtractor guiGraphics, int x, int y, float partialTicks) {
+                fr.lordfinn.crazyphone.utils.GuiCompat.blit(guiGraphics, sprites.get(isActive(), isHoveredOrFocused()), getX(), getY(), 0, width, height);
+            }
+            *///? } else {
             @Override
             public void renderWidget(GuiGraphics guiGraphics, int x, int y, float partialTicks) {
                 fr.lordfinn.crazyphone.utils.GuiCompat.blit(guiGraphics, sprites.get(isActive(), isHoveredOrFocused()), getX(), getY(), 0, width, height);
             }
+            //?}
         };
         guistate.put("button:imagebutton_reset", buttonReset);
         addRenderableWidget(buttonReset);
