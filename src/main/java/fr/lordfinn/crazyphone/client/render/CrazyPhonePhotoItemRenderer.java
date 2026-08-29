@@ -673,14 +673,15 @@ public final class CrazyPhonePhotoItemRenderer {
                 if (isFirstPersonHand) {
                     boolean presentingFirstPerson = CrazyPhonePresentPose.isPresenting(net.minecraft.client.Minecraft.getInstance().player);
                     if (presentingFirstPerson) {
+                        // No camera-yaw/pitch reapplication here (unlike the <26 branch above, which needs
+                        // it) - confirmed live via a 10-candidate colored fan test that >=26's FIRST_PERSON_
+                        // HAND base frame is ALREADY camera-aligned on its own (candidate 0, "no extra
+                        // rotation at all", is the one that stayed locked to the camera while turning the
+                        // mouse - every dynamic yaw/pitch reapplication candidate instead fought against an
+                        // already-correct base, same conclusion the third-person fan reached for ITS own
+                        // context). Only resetting to origin remains necessary, same as the fan does.
                         org.joml.Vector3f handPos = poseStack.last().pose().getTranslation(new org.joml.Vector3f());
-                        poseStack.mulPose(poseStack.last().pose().getNormalizedRotation(new Quaternionf()).conjugate());
                         poseStack.translate(-handPos.x, -handPos.y, -handPos.z);
-                        net.minecraft.client.Camera camera = net.minecraft.client.Minecraft.getInstance().gameRenderer./^$ gr_main_camera {^/getMainCamera/^$}^/();
-                        float debugYaw = camera./^$ cam_yaw {^/getYRot/^$}^/() * CrazyPhonePresentDebug.yawSign + CrazyPhonePresentDebug.yawOffset;
-                        float debugPitch = camera./^$ cam_pitch {^/getXRot/^$}^/() * CrazyPhonePresentDebug.pitchSign + CrazyPhonePresentDebug.pitchOffset;
-                        poseStack.mulPose(Axis.YP.rotationDegrees(180f - debugYaw));
-                        poseStack.mulPose(Axis.XP.rotationDegrees(debugPitch));
                         poseStack.translate(0, CrazyPhonePresentDebug.y, NORMAL_OFFSET + CrazyPhonePresentDebug.z);
                         poseStack.scale(CrazyPhonePresentDebug.scale, CrazyPhonePresentDebug.scale, CrazyPhonePresentDebug.scale);
                         if (CrazyPhonePresentDebug.flipFrontBack)
@@ -692,12 +693,12 @@ public final class CrazyPhonePhotoItemRenderer {
                     }
                 } else {
                     boolean presenting = CrazyPhonePresentPose.presentingThisRender;
-                    float presentEntityYaw = CrazyPhonePresentPose.presentingEntityYaw;
-                    float presentHeadPitch = CrazyPhonePresentPose.presentingHeadPitch;
                     if (presenting) {
-                        poseStack.mulPose(poseStack.last().pose().getNormalizedRotation(new Quaternionf()).conjugate());
-                        poseStack.mulPose(Axis.YP.rotationDegrees(180f - presentEntityYaw));
-                        poseStack.mulPose(Axis.XP.rotationDegrees(-(float) Math.toDegrees(presentHeadPitch)));
+                        // No cancel/reapply here either (same lesson as the first-person branch above) -
+                        // confirmed live via a 10-candidate colored fan that >=26's THIRD_PERSON_HAND base
+                        // frame is ALREADY correctly aligned on its own; every yaw/pitch reapplication
+                        // candidate fought against it instead (reported live as "upside down, doesn't
+                        // follow the camera at all").
                         float centerX = isLeftHand ? PRESENT_CENTER_X : -PRESENT_CENTER_X;
                         poseStack.translate(centerX, PRESENT_Y_LIFT, NORMAL_OFFSET + PRESENT_Z_FORWARD);
                         poseStack.scale(PRESENT_SCALE, PRESENT_SCALE, PRESENT_SCALE);
@@ -717,6 +718,23 @@ public final class CrazyPhonePhotoItemRenderer {
             fr.lordfinn.crazyphone.utils.PhotoItemData data = fr.lordfinn.crazyphone.utils.PhotoItemData.fromStack(item);
             net.minecraft.client.renderer.item.ItemStackRenderState.LayerRenderState layer = output.newLayer();
             layer.setLocalTransform(poseStack.last().pose());
+            // Extents matter beyond shadow/culling: ItemEntityRenderer computes how far to lift a dropped item
+            // off the ground from getModelBoundingBox().minY, itself built by aggregating every layer's own
+            // reported extents (see ItemStackRenderState#visitExtents/getModelBoundingBox in the real
+            // decompiled source) - a layer that never calls setExtents() defaults to NO_EXTENTS, so the whole
+            // bounding box collapses to a zero-sized point at the origin, and the automatic ground-lift ends
+            // up as a token 0.0625 instead of anything matching this card's real size. Confirmed live: the
+            // dropped item was visibly sinking about half its own height into the ground. These points are in
+            // LOCAL (pre-transform) space - the same space setLocalTransform's own matrix operates in - so
+            // they get the correct per-context scale (GROUND_SCALE, PRESENT_SCALE, etc.) applied automatically
+            // by ItemStackRenderState#visitExtents before the final AABB is built, no per-context math needed
+            // here. Roughly matches each style's own local half-size (isHand ~= HAND_HALF_SIZE, everything
+            // else ~= FRAME_HALF) - doesn't need to be exact, just no longer degenerate.
+            float extentHalf = isHand ? HAND_HALF_SIZE : FRAME_HALF;
+            layer.setExtents(() -> new org.joml.Vector3fc[] {
+                    new org.joml.Vector3f(-extentHalf, -extentHalf, -extentHalf),
+                    new org.joml.Vector3f(extentHalf, extentHalf, extentHalf)
+            });
             layer.setupSpecialModel(SPECIAL_RENDERER, new DrawArgument(data, isHand));
         }
 
@@ -897,5 +915,6 @@ public final class CrazyPhonePhotoItemRenderer {
                         fiw + po, fih + po, pz, 1, 0,
                         0, 0, 1));
     }
+
     *///?}
 }
