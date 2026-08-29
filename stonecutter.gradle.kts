@@ -48,6 +48,15 @@ stonecutter parameters {
     // handled in GuiCompat.java, confirmed against the real 26.1.2 vanilla jar. Every GuiGraphics-typed
     // parameter/field/import across the codebase goes through this one swap.
     swaps.put("gui_graphics_type", if (semantics.eval(current.version, ">=26")) "GuiGraphicsExtractor" else "GuiGraphics")
+    // 26.x renamed several GuiGraphics(Extractor) instance methods (same argument shapes, confirmed against
+    // the real 26.1.2 jar) - each of these is a simple guiGraphics.<name>(...) call-site rename.
+    val is26 = semantics.eval(current.version, ">=26")
+    swaps.put("gui_render_item", if (is26) "item" else "renderItem")
+    swaps.put("gui_draw_string", if (is26) "text" else "drawString")
+    swaps.put("gui_draw_centered_string", if (is26) "centeredText" else "drawCenteredString")
+    swaps.put("gui_draw_word_wrap", if (is26) "textWithWordWrap" else "drawWordWrap")
+    swaps.put("gui_render_tooltip", if (is26) "setTooltipForNextFrame" else "renderTooltip")
+    swaps.put("gui_render_component_tooltip", if (is26) "setComponentTooltipForNextFrame" else "renderComponentTooltip")
     // 26.x moved net.minecraft.Util to net.minecraft.util.Util (backgroundExecutor() etc. unchanged).
     swaps.put("util_pkg", if (semantics.eval(current.version, ">=26")) "net.minecraft.util.Util" else "net.minecraft.Util")
 }

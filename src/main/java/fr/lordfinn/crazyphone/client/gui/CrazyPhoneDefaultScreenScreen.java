@@ -18,7 +18,10 @@ import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.ImageButton;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui./*$ gui_graphics_type {*/GuiGraphics/*$}*/;
+//? if >=26 {
+/*import net.minecraft.client.gui.GuiGraphicsExtractor;
+*///?}
 import net.minecraft.world.item.ItemStack;
 
 import fr.lordfinn.crazyphone.client.gui.components.ScrollingText;
@@ -53,6 +56,22 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 	protected boolean isHomeButtonActive = true;
 	protected boolean isLockButtonActive = true;
 
+	// 26.x made imageWidth/imageHeight constructor-only final fields (were freely settable after the fact
+	// pre-26 - see AbstractContainerScreen's own doc comment on drawScreenBackground's sibling methods for
+	// the broader pattern of "what used to be a late-bound hook is now fixed earlier"). The 3-arg super
+	// constructor (defaulting to AbstractContainerScreen's own DEFAULT_IMAGE_WIDTH/HEIGHT) still exists on
+	// every version, but this screen always wants its own fixed 122x195 phone size, so it goes through the
+	// 5-arg overload directly on >=26 instead of assigning the fields afterward.
+	//? if >=26 {
+	/*public CrazyPhoneDefaultScreenScreen(T container, Inventory inventory, Component text) {
+		super(container, inventory, text, 122, 195);
+		this.world = container.world;
+		this.x = container.x;
+		this.y = container.y;
+		this.z = container.z;
+		this.entity = container.entity;
+	}
+	*///? } else {
 	public CrazyPhoneDefaultScreenScreen(T container, Inventory inventory, Component text) {
 		super(container, inventory, text);
 		this.world = container.world;
@@ -63,6 +82,7 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 		this.imageWidth = 122;
 		this.imageHeight = 195;
 	}
+	//?}
 
 	private static final /*$ res_loc {*/ResourceLocation/*$}*/ HEADER_BANNER_IMAGE = Crazyphone.parseId("crazyphone:textures/screens/crazyphone-header-background.png");
 	/** Height in pixels of the header strip drawn by {@link #renderHeader}, measured from the top of the phone background - every screen that shows one must start its own content at this y offset. */
@@ -107,7 +127,7 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 	 * overflowing/overlapping whatever's to its right when it's too long to fit - e.g. a group's name
 	 * auto-built from every member's name easily exceeds the available width.
 	 */
-	protected void renderHeader(GuiGraphics guiGraphics, ItemStack icon, Component title) {
+	protected void renderHeader(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, ItemStack icon, Component title) {
 		renderHeader(guiGraphics, icon, title, HEADER_BANNER_RIGHT_X);
 	}
 
@@ -116,9 +136,9 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 	 *                     screen's call icon, which itself shifts left of the group-settings cog when both
 	 *                     are shown) so the title scrolls under it, not behind or past it. Defaults to the
 	 *                     header banner's own right edge when a screen has no such icon. */
-	protected void renderHeader(GuiGraphics guiGraphics, ItemStack icon, Component title, int rightBoundX) {
+	protected void renderHeader(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, ItemStack icon, Component title, int rightBoundX) {
 		fr.lordfinn.crazyphone.utils.GuiCompat.blit(guiGraphics, HEADER_BANNER_IMAGE, this.leftPos + 4, this.topPos + 9, 0, 114, 18);
-		guiGraphics.renderItem(icon, this.leftPos + HEADER_ICON_X, this.topPos + 9);
+		guiGraphics./*$ gui_render_item {*/renderItem/*$}*/(icon, this.leftPos + HEADER_ICON_X, this.topPos + 9);
 		int availableWidth = Math.max(0, rightBoundX - HEADER_TITLE_RIGHT_GAP - HEADER_TITLE_X);
 		ScrollingText.render(guiGraphics, this.font, title, this.leftPos + HEADER_TITLE_X, this.topPos + 14, availableWidth, 0xFF404040);
 	}
@@ -127,20 +147,38 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 		return new HashMap<>();
 	}
 
+	//? if >=26 {
+	/*@Override
+	public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTicks) {
+		this.extractBackground(guiGraphics, mouseX, mouseY, partialTicks);
+		super.extractRenderState(guiGraphics, mouseX, mouseY, partialTicks);
+		this.extractTooltip(guiGraphics, mouseX, mouseY);
+	}
+	*///? } else {
 	@Override
 	public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
 		this.renderBackground(guiGraphics, mouseX, mouseY, partialTicks);
 		super.render(guiGraphics, mouseX, mouseY, partialTicks);
 		this.renderTooltip(guiGraphics, mouseX, mouseY);
 	}
+	//?}
 
 	/** A much lighter dim than vanilla's default (AbstractContainerScreen#renderBackground normally fills a
 	 * gradient at roughly 75-82% opacity via renderTransparentBackground - see Screen#renderTransparentBackground)
 	 * - the phone is meant to be checked while still keeping an eye on your surroundings, not a full-screen
-	 * menu that blacks out the world behind it. AbstractContainerScreen's own renderBackground is ALSO
-	 * where {@link #renderBg} normally gets invoked from, so an override that doesn't call it itself
-	 * silently drops the phone's own background image - that's the one call that actually matters here,
-	 * not just the dim color. */
+	 * menu that blacks out the world behind it. Pre-26 this lived in a two-step renderBackground()+renderBg()
+	 * pair (AbstractContainerScreen's own renderBackground is where renderBg normally gets invoked from, so
+	 * an override that doesn't call it itself silently drops the phone's own background image); 26.x merged
+	 * both into this one Screen#extractBackground hook directly (confirmed against vanilla's own
+	 * InventoryScreen#extractBackground, which does the same dim-then-texture sequence in one method now) -
+	 * see drawScreenBackground's own doc comment for how subclasses still layer onto this either way. */
+	//? if >=26 {
+	/*@Override
+	public void extractBackground(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
+		guiGraphics.fill(0, 0, this.width, this.height, 0x50000000);
+		this.drawScreenBackground(guiGraphics);
+	}
+	*///? } else {
 	@Override
 	public void renderBackground(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
 		guiGraphics.fill(0, 0, this.width, this.height, 0x50000000);
@@ -149,6 +187,18 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 
 	@Override
 	protected void renderBg(GuiGraphics guiGraphics, float partialTicks, int gx, int gy) {
+		this.drawScreenBackground(guiGraphics);
+	}
+	//?}
+
+	// Own, version-stable extension point for the phone's own background texture. A real vanilla hook
+	// (renderBg) existed here pre-26 for exactly this, but 26.x folded it directly into
+	// Screen#extractBackground with no separate per-container-screen slot left for subclasses to layer
+	// onto (see this class's own extractBackground/renderBg above for how each version's real entry point
+	// reaches here). The 4 subclasses that used to override renderBg to draw more on top of the phone
+	// background (selection highlights, etc.) now override this instead, regardless of version - keeps
+	// their own logic from needing two versions of itself just because vanilla's hook moved again.
+	protected void drawScreenBackground(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics) {
 		//? if <1.21.10 {
 		RenderSystem.setShaderColor(1, 1, 1, 1);
 		RenderSystem.enableBlend();
@@ -201,9 +251,15 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 	}
 	*///?}
 
+	//? if >=26 {
+	/*@Override
+	protected void extractLabels(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
+	}
+	*///? } else {
 	@Override
 	protected void renderLabels(GuiGraphics guiGraphics, int mouseX, int mouseY) {
 	}
+	//?}
 
 	protected void setBackButtonActive(boolean active) {
 		isBackButtonActive = active;
@@ -250,10 +306,17 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 				new WidgetSprites(Crazyphone.parseId("crazyphone:textures/screens/crazyphone-back.png"),
 						Crazyphone.parseId("crazyphone:textures/screens/crazyphone-back-hover.png")),
 				e -> onBackButtonPressed()) {
+			//? if >=26 {
+			/*@Override
+			public void extractContents(GuiGraphicsExtractor guiGraphics, int x, int y, float partialTicks) {
+				fr.lordfinn.crazyphone.utils.GuiCompat.blit(guiGraphics, sprites.get(isActive(), isHoveredOrFocused()), getX(), getY(), 0, width, height);
+			}
+			*///? } else {
 			@Override
 			public void renderWidget(GuiGraphics guiGraphics, int x, int y, float partialTicks) {
 				fr.lordfinn.crazyphone.utils.GuiCompat.blit(guiGraphics, sprites.get(isActive(), isHoveredOrFocused()), getX(), getY(), 0, width, height);
 			}
+			//?}
 		};
 		imagebutton_crazyphoneback.setTooltip(Tooltip.create(Component.translatable("gui.crazyphone.crazyphone_home_screen.tooltip_back")));
 		guistate.put("button:imagebutton_crazyphoneback", imagebutton_crazyphoneback);
@@ -273,10 +336,17 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 					CrazyPhoneDefaultScreenButtonMessage.handleButtonAction(entity, 1, x, y, z,
 							getEditBoxAndCheckBoxValues());
 				}) {
+			//? if >=26 {
+			/*@Override
+			public void extractContents(GuiGraphicsExtractor guiGraphics, int x, int y, float partialTicks) {
+				fr.lordfinn.crazyphone.utils.GuiCompat.blit(guiGraphics, sprites.get(isActive(), isHoveredOrFocused()), getX(), getY(), 0, width, height);
+			}
+			*///? } else {
 			@Override
 			public void renderWidget(GuiGraphics guiGraphics, int x, int y, float partialTicks) {
 				fr.lordfinn.crazyphone.utils.GuiCompat.blit(guiGraphics, sprites.get(isActive(), isHoveredOrFocused()), getX(), getY(), 0, width, height);
 			}
+			//?}
 		};
 		imagebutton_crazyphonehome.setTooltip(Tooltip.create(Component.translatable("gui.crazyphone.crazyphone_home_screen.tooltip_home")));
 		guistate.put("button:imagebutton_crazyphonehome", imagebutton_crazyphonehome);
@@ -296,10 +366,17 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 					CrazyPhoneDefaultScreenButtonMessage.handleButtonAction(entity, 2, x, y, z,
 							getEditBoxAndCheckBoxValues());
 				}) {
+			//? if >=26 {
+			/*@Override
+			public void extractContents(GuiGraphicsExtractor guiGraphics, int x, int y, float partialTicks) {
+				fr.lordfinn.crazyphone.utils.GuiCompat.blit(guiGraphics, sprites.get(isActive(), isHoveredOrFocused()), getX(), getY(), 0, width, height);
+			}
+			*///? } else {
 			@Override
 			public void renderWidget(GuiGraphics guiGraphics, int x, int y, float partialTicks) {
 				fr.lordfinn.crazyphone.utils.GuiCompat.blit(guiGraphics, sprites.get(isActive(), isHoveredOrFocused()), getX(), getY(), 0, width, height);
 			}
+			//?}
 		};
 		imagebutton_crazyphonelock.setTooltip(Tooltip.create(Component.translatable("gui.crazyphone.crazyphone_home_screen.tooltip_lock")));
 		guistate.put("button:imagebutton_crazyphonelock", imagebutton_crazyphonelock);
