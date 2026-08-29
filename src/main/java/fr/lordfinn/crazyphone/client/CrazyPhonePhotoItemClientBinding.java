@@ -43,4 +43,17 @@ public class CrazyPhonePhotoItemClientBinding {
         });
     }
     //?}
+    //? if neoforge && >=26 {
+    /*// Registers the custom ItemModel type crazy_phone_photo.json's "type" field references - see
+    // CrazyPhonePhotoItemRenderer's own >=26 block for the full explanation/caveats (untested). Scoped to
+    // >=26 only, not the full >=1.21.10 range that block's own doc comment discusses as the real gap -
+    // 1.21.10 itself has a meaningfully different ItemModel.Unbaked/SpecialModelRenderer API shape
+    // (bake()'s parameter list, getExtents()'s callback type) that wasn't worth reconciling in the same
+    // pass; 1.21.10 still has no working custom photo rendering at all, unchanged from before this work.
+    @SubscribeEvent
+    public static void onRegisterItemModels(net.neoforged.neoforge.client.event.RegisterItemModelsEvent event) {
+        event.register(fr.lordfinn.crazyphone.Crazyphone.resource("photo_card_model"),
+                fr.lordfinn.crazyphone.client.render.CrazyPhonePhotoItemRenderer.ModelImpl.Unbaked.MAP_CODEC);
+    }
+    *///?}
 }

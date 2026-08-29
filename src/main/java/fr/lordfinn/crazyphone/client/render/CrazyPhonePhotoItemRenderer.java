@@ -197,7 +197,7 @@ public final class CrazyPhonePhotoItemRenderer {
                     // first place - reapplying it again here on a version where cancel is already
                     // camera-relative double-counts the rotation, so it's skipped below <1.20.5.
                     //? if >=1.20.5 {
-                    /*net.minecraft.client.Camera camera = net.minecraft.client.Minecraft.getInstance().gameRenderer.getMainCamera();
+                    /*net.minecraft.client.Camera camera = net.minecraft.client.Minecraft.getInstance().gameRenderer./^$ gr_main_camera {^/getMainCamera/^$}^/();
                     float debugYaw = camera./^$ cam_yaw {^/getYRot/^$}^/() * CrazyPhonePresentDebug.yawSign + CrazyPhonePresentDebug.yawOffset;
                     float debugPitch = camera./^$ cam_pitch {^/getXRot/^$}^/() * CrazyPhonePresentDebug.pitchSign + CrazyPhonePresentDebug.pitchOffset;
                     poseStack.mulPose(Axis.YP.rotationDegrees(180f - debugYaw));
@@ -331,7 +331,7 @@ public final class CrazyPhonePhotoItemRenderer {
                 }
                 case 6 -> poseStack.mulPose(Axis.XP.rotationDegrees(-(float) Math.toDegrees(presentHeadPitch)));
                 case 8 -> {
-                    net.minecraft.client.Camera camera = net.minecraft.client.Minecraft.getInstance().gameRenderer.getMainCamera();
+                    net.minecraft.client.Camera camera = net.minecraft.client.Minecraft.getInstance().gameRenderer./*$ gr_main_camera {*/getMainCamera/*$}*/();
                     poseStack.mulPose(Axis.YP.rotationDegrees(180f - camera./*$ cam_yaw {*/getYRot/*$}*/()));
                     poseStack.mulPose(Axis.XP.rotationDegrees(camera./*$ cam_pitch {*/getXRot/*$}*/()));
                 }
@@ -619,4 +619,283 @@ public final class CrazyPhonePhotoItemRenderer {
                 .setNormal(pose, nx, ny, nz);
         *///?}
     }
+
+    // 26.x / 1.21.10+ item-rendering model (NeoForge only for now - see PORTING-26x.md for the Fabric
+    // side, which needs its own separate investigation): vanilla removed BlockEntityWithoutLevelRenderer
+    // entirely, replacing custom item rendering with a data-driven ItemModel + SpecialModelRenderer pair.
+    // Scoped to >=26 only (not the wider >=1.21.10 range where this problem actually starts) - 1.21.10
+    // itself has a meaningfully different ItemModel.Unbaked/SpecialModelRenderer API shape (bake()'s
+    // parameter list, getExtents()'s callback type - confirmed by attempting to compile this exact code
+    // against it) that wasn't worth reconciling in the same pass; 1.21.10 still has no working custom
+    // photo rendering at all on NeoForge, unchanged from before this work - a real follow-up, not
+    // forgotten, just deliberately out of scope here.
+    // Vanilla's own ready-made SpecialModelWrapper ItemModel (JSON "type": "minecraft:special") was
+    // checked and ruled out - its update() only pulls a STATIC per-displayContext transform from a base
+    // model's own vanilla display JSON, with no hook for the runtime logic below (live camera-relative
+    // rotation cancellation while presenting, /presentdebug live-tunable values) - hence a fully custom
+    // ItemModel here, registered via RegisterItemModelsEvent (Crazyphone.java), referenced from
+    // crazy_phone_photo.json's "type" field.
+    //
+    // NOT live-tested yet - no way to launch a graphical client from this session. The transform math
+    // below is a direct, unchanged transcription of render()'s own logic above (just building a fresh
+    // PoseStack instead of operating on one handed in by the old BlockEntityWithoutLevelRenderer
+    // callback), so the geometry itself should be correct if this is reached at all - but the
+    // registration wiring (does the model actually get picked up by the item, does update() really run
+    // fresh every frame for a held item the way the old render() was called) is unverified. Live-test
+    // before considering this done.
+    //
+    // The presenting-fan debug feature (renderPresentingCandidates above) is deliberately NOT ported
+    // here - dead debug-only code (CrazyPhonePresentDebug#presentCandidateFan defaults false, already
+    // resolved via live testing pre-1.21.10) not worth the extra complexity of multi-layer submission
+    // for a feature nobody enables; falls back to the normal single-card presenting path if somehow left
+    // on.
+    //? if neoforge && >=26 {
+    /*private record DrawArgument(fr.lordfinn.crazyphone.utils.PhotoItemData data, boolean isHand) {
+    }
+
+    public static final class ModelImpl implements net.minecraft.client.renderer.item.ItemModel {
+        static final ModelImpl INSTANCE = new ModelImpl();
+        private static final SpecialRendererImpl SPECIAL_RENDERER = new SpecialRendererImpl();
+
+        @Override
+        public void update(net.minecraft.client.renderer.item.ItemStackRenderState output, ItemStack item,
+                            net.minecraft.client.renderer.item.ItemModelResolver resolver, ItemDisplayContext displayContext,
+                            @javax.annotation.Nullable net.minecraft.client.multiplayer.ClientLevel level,
+                            @javax.annotation.Nullable net.minecraft.world.entity.ItemOwner owner, int seed) {
+            output.appendModelIdentityElement(this);
+            boolean isLeftHand = displayContext == ItemDisplayContext.FIRST_PERSON_LEFT_HAND || displayContext == ItemDisplayContext.THIRD_PERSON_LEFT_HAND;
+            boolean isHand = isLeftHand || displayContext == ItemDisplayContext.FIRST_PERSON_RIGHT_HAND || displayContext == ItemDisplayContext.THIRD_PERSON_RIGHT_HAND;
+            boolean isFirstPersonHand = displayContext == ItemDisplayContext.FIRST_PERSON_LEFT_HAND || displayContext == ItemDisplayContext.FIRST_PERSON_RIGHT_HAND;
+
+            PoseStack poseStack = new PoseStack();
+            poseStack.translate(0.5, 0.5, 0.5);
+            if (isHand) {
+                if (isFirstPersonHand) {
+                    boolean presentingFirstPerson = CrazyPhonePresentPose.isPresenting(net.minecraft.client.Minecraft.getInstance().player);
+                    if (presentingFirstPerson) {
+                        org.joml.Vector3f handPos = poseStack.last().pose().getTranslation(new org.joml.Vector3f());
+                        poseStack.mulPose(poseStack.last().pose().getNormalizedRotation(new Quaternionf()).conjugate());
+                        poseStack.translate(-handPos.x, -handPos.y, -handPos.z);
+                        net.minecraft.client.Camera camera = net.minecraft.client.Minecraft.getInstance().gameRenderer./^$ gr_main_camera {^/getMainCamera/^$}^/();
+                        float debugYaw = camera./^$ cam_yaw {^/getYRot/^$}^/() * CrazyPhonePresentDebug.yawSign + CrazyPhonePresentDebug.yawOffset;
+                        float debugPitch = camera./^$ cam_pitch {^/getXRot/^$}^/() * CrazyPhonePresentDebug.pitchSign + CrazyPhonePresentDebug.pitchOffset;
+                        poseStack.mulPose(Axis.YP.rotationDegrees(180f - debugYaw));
+                        poseStack.mulPose(Axis.XP.rotationDegrees(debugPitch));
+                        poseStack.translate(0, CrazyPhonePresentDebug.y, NORMAL_OFFSET + CrazyPhonePresentDebug.z);
+                        poseStack.scale(CrazyPhonePresentDebug.scale, CrazyPhonePresentDebug.scale, CrazyPhonePresentDebug.scale);
+                        if (CrazyPhonePresentDebug.flipFrontBack)
+                            poseStack.mulPose(Axis.YP.rotationDegrees(180f));
+                    } else {
+                        poseStack.translate(isLeftHand ? -FIRST_PERSON_X_OFFSET : FIRST_PERSON_X_OFFSET, FIRST_PERSON_Y_LIFT, NORMAL_OFFSET + FIRST_PERSON_Z_FORWARD);
+                        poseStack.mulPose(Axis.YP.rotationDegrees(isLeftHand ? FIRST_PERSON_YAW : -FIRST_PERSON_YAW));
+                        poseStack.mulPose(Axis.ZP.rotationDegrees(isLeftHand ? FIRST_PERSON_ROLL : -FIRST_PERSON_ROLL));
+                    }
+                } else {
+                    boolean presenting = CrazyPhonePresentPose.presentingThisRender;
+                    float presentEntityYaw = CrazyPhonePresentPose.presentingEntityYaw;
+                    float presentHeadPitch = CrazyPhonePresentPose.presentingHeadPitch;
+                    if (presenting) {
+                        poseStack.mulPose(poseStack.last().pose().getNormalizedRotation(new Quaternionf()).conjugate());
+                        poseStack.mulPose(Axis.YP.rotationDegrees(180f - presentEntityYaw));
+                        poseStack.mulPose(Axis.XP.rotationDegrees(-(float) Math.toDegrees(presentHeadPitch)));
+                        float centerX = isLeftHand ? PRESENT_CENTER_X : -PRESENT_CENTER_X;
+                        poseStack.translate(centerX, PRESENT_Y_LIFT, NORMAL_OFFSET + PRESENT_Z_FORWARD);
+                        poseStack.scale(PRESENT_SCALE, PRESENT_SCALE, PRESENT_SCALE);
+                        poseStack.mulPose(Axis.YP.rotationDegrees(180f));
+                    } else {
+                        poseStack.translate(0, THIRD_PERSON_Y_LIFT, NORMAL_OFFSET);
+                    }
+                }
+            } else if (displayContext == ItemDisplayContext.GROUND) {
+                poseStack.scale(GROUND_SCALE, GROUND_SCALE, GROUND_SCALE);
+            } else if (displayContext == ItemDisplayContext.FIXED) {
+                poseStack.translate(0, 0, FIXED_Z_PULL);
+                poseStack.scale(FIXED_SCALE, FIXED_SCALE, FIXED_SCALE * FIXED_DEPTH_SCALE);
+                poseStack.mulPose(Axis.YP.rotationDegrees(180f));
+            }
+
+            fr.lordfinn.crazyphone.utils.PhotoItemData data = fr.lordfinn.crazyphone.utils.PhotoItemData.fromStack(item);
+            net.minecraft.client.renderer.item.ItemStackRenderState.LayerRenderState layer = output.newLayer();
+            layer.setLocalTransform(poseStack.last().pose());
+            layer.setupSpecialModel(SPECIAL_RENDERER, new DrawArgument(data, isHand));
+        }
+
+        public static final class Unbaked implements net.minecraft.client.renderer.item.ItemModel.Unbaked {
+            public static final com.mojang.serialization.MapCodec<Unbaked> MAP_CODEC = com.mojang.serialization.MapCodec.unit(new Unbaked());
+
+            @Override
+            public void resolveDependencies(net.minecraft.client.resources.model.ResolvableModel.Resolver resolver) {
+            }
+
+            @Override
+            public net.minecraft.client.renderer.item.ItemModel bake(net.minecraft.client.renderer.item.ItemModel.BakingContext context, org.joml.Matrix4fc transformation) {
+                return INSTANCE;
+            }
+
+            @Override
+            public com.mojang.serialization.MapCodec<? extends net.minecraft.client.renderer.item.ItemModel.Unbaked> type() {
+                return MAP_CODEC;
+            }
+        }
+    }
+
+    private static final class SpecialRendererImpl implements net.minecraft.client.renderer.special.SpecialModelRenderer<DrawArgument> {
+        @Override
+        public void submit(DrawArgument argument, PoseStack poseStack, net.minecraft.client.renderer.SubmitNodeCollector submitNodeCollector,
+                            int lightCoords, int overlayCoords, boolean hasFoil, int outlineColor) {
+            if (argument == null)
+                return;
+            if (argument.isHand())
+                renderHandFramedCardNew(argument.data(), poseStack, submitNodeCollector, lightCoords, overlayCoords);
+            else
+                renderFramedCardNew(argument.data(), poseStack, submitNodeCollector, lightCoords, overlayCoords);
+        }
+
+        @Override
+        public void getExtents(java.util.function.Consumer<org.joml.Vector3fc> output) {
+            // Generous bound covering both the small framed card and the enlarged presenting card - only
+            // used for shadow/culling extent hints, doesn't need to be tight.
+            float h = FRAME_HALF + PRESENT_SCALE;
+            output.accept(new org.joml.Vector3f(-h, -h, -h));
+            output.accept(new org.joml.Vector3f(h, h, h));
+        }
+
+        @Override
+        public @javax.annotation.Nullable DrawArgument extractArgument(ItemStack stack) {
+            return null; // Unused - ModelImpl#update() sets the argument directly via setupSpecialModel.
+        }
+
+        public static final class Unbaked implements net.minecraft.client.renderer.special.SpecialModelRenderer.Unbaked<DrawArgument> {
+            public static final com.mojang.serialization.MapCodec<Unbaked> MAP_CODEC = com.mojang.serialization.MapCodec.unit(new Unbaked());
+            static final SpecialRendererImpl INSTANCE = new SpecialRendererImpl();
+
+            @Override
+            public @javax.annotation.Nullable net.minecraft.client.renderer.special.SpecialModelRenderer<DrawArgument> bake(net.minecraft.client.renderer.special.SpecialModelRenderer.BakingContext context) {
+                return INSTANCE;
+            }
+
+            @Override
+            public com.mojang.serialization.MapCodec<? extends net.minecraft.client.renderer.special.SpecialModelRenderer.Unbaked<DrawArgument>> type() {
+                return MAP_CODEC;
+            }
+        }
+    }
+
+    // Adapted from renderFramedCard/renderHandFramedCard above: identical geometry/UV math, just wrapped
+    // in submitCustomGeometry(...) per texture instead of pulling a VertexConsumer directly from a
+    // MultiBufferSource - see this block's own doc comment above for why >=1.21.10 needs this split.
+    private static void renderFramedCardNew(fr.lordfinn.crazyphone.utils.PhotoItemData data, PoseStack poseStack,
+                                             net.minecraft.client.renderer.SubmitNodeCollector collector, int packedLight, int packedOverlay) {
+        float t = CARD_THICKNESS_HALF;
+        float h = FRAME_HALF;
+
+        collector.submitCustomGeometry(poseStack, /^$ render_type_import {^/net.minecraft.client.renderer.RenderType/^$}^/.entityCutout(FRAME_TEXTURE), (pose, frameBuffer) -> {
+            quad(frameBuffer, pose, packedLight, packedOverlay,
+                    -h, h, t, 0, 0,
+                    -h, -h, t, 0, 1,
+                    h, -h, t, 1, 1,
+                    h, h, t, 1, 0,
+                    0, 0, 1);
+            quad(frameBuffer, pose, packedLight, packedOverlay,
+                    h, h, -t, 0, 0,
+                    h, -h, -t, 0, 1,
+                    -h, -h, -t, 1, 1,
+                    -h, h, -t, 1, 0,
+                    0, 0, -1);
+            doubleSidedQuad(frameBuffer, pose, packedLight, packedOverlay, -h, h, t, h, h, t, h, h, -t, -h, h, -t, 0, 1, 0);
+            doubleSidedQuad(frameBuffer, pose, packedLight, packedOverlay, -h, -h, -t, h, -h, -t, h, -h, t, -h, -h, t, 0, -1, 0);
+            doubleSidedQuad(frameBuffer, pose, packedLight, packedOverlay, -h, h, -t, -h, h, t, -h, -h, t, -h, -h, -t, -1, 0, 0);
+            doubleSidedQuad(frameBuffer, pose, packedLight, packedOverlay, h, h, t, h, h, -t, h, -h, -t, h, -h, t, 1, 0, 0);
+        });
+
+        net.minecraft.resources./^$ res_loc {^/ResourceLocation/^$}^/ photoTexture = PLACEHOLDER_TEXTURE;
+        float u0 = 0, v0 = 0, u1 = 1, v1 = 1;
+        if (data != null) {
+            PhotoResolution resolution = fr.lordfinn.crazyphone.ClientConfig.itemPreviewPixelated ? PhotoResolution.THUMBNAIL : PhotoResolution.FULL;
+            FabricPictureCache.CachedTexture texture = FabricPictureCache.getOrRequest(data.photoId(), resolution);
+            if (texture != null) {
+                photoTexture = texture.location();
+                float srcWidth = texture.width(), srcHeight = texture.height();
+                if (srcWidth > srcHeight) {
+                    float uSpan = srcHeight / srcWidth;
+                    u0 = (1f - uSpan) / 2f;
+                    u1 = u0 + uSpan;
+                } else if (srcHeight > srcWidth) {
+                    float vSpan = srcWidth / srcHeight;
+                    v0 = (1f - vSpan) / 2f;
+                    v1 = v0 + vSpan;
+                }
+            }
+        }
+        float p = PHOTO_INSET_HALF + PHOTO_EDGE_OVERLAP;
+        float pz = t + PHOTO_Z_EPSILON;
+        net.minecraft.resources./^$ res_loc {^/ResourceLocation/^$}^/ finalPhotoTexture = photoTexture;
+        float fu0 = u0, fv0 = v0, fu1 = u1, fv1 = v1;
+        collector.submitCustomGeometry(poseStack, /^$ render_type_import {^/net.minecraft.client.renderer.RenderType/^$}^/.entityCutout(finalPhotoTexture), (pose, photoBuffer) ->
+                quad(photoBuffer, pose, packedLight, packedOverlay,
+                        -p, p, pz, fu0, fv0,
+                        -p, -p, pz, fu0, fv1,
+                        p, -p, pz, fu1, fv1,
+                        p, p, pz, fu1, fv0,
+                        0, 0, 1));
+    }
+
+    private static void renderHandFramedCardNew(fr.lordfinn.crazyphone.utils.PhotoItemData data, PoseStack poseStack,
+                                                 net.minecraft.client.renderer.SubmitNodeCollector collector, int packedLight, int packedOverlay) {
+        net.minecraft.resources./^$ res_loc {^/ResourceLocation/^$}^/ photoTexture = PLACEHOLDER_TEXTURE;
+        float iw = 0.5f, ih = 0.5f;
+        if (data != null) {
+            FabricPictureCache.CachedTexture texture = FabricPictureCache.getOrRequest(data.photoId(), PhotoResolution.FULL);
+            if (texture != null) {
+                photoTexture = texture.location();
+                float srcWidth = texture.width(), srcHeight = texture.height();
+                iw = HAND_HALF_SIZE;
+                ih = HAND_HALF_SIZE * srcHeight / srcWidth;
+            }
+        }
+
+        float t = HAND_CARD_THICKNESS_HALF;
+        float b = HAND_FRAME_BORDER;
+        float uB = FRAME_UV_BORDER;
+        float ow = iw + b, oh = ih + b;
+        float fiw = iw, fih = ih, fow = ow, foh = oh;
+
+        collector.submitCustomGeometry(poseStack, /^$ render_type_import {^/net.minecraft.client.renderer.RenderType/^$}^/.entityCutout(FRAME_TEXTURE), (pose, frameBuffer) -> {
+            slice(frameBuffer, pose, packedLight, packedOverlay, -fow, -fiw, foh, fih, t, 0, uB, 0, uB);
+            slice(frameBuffer, pose, packedLight, packedOverlay, -fiw, fiw, foh, fih, t, uB, 1 - uB, 0, uB);
+            slice(frameBuffer, pose, packedLight, packedOverlay, fiw, fow, foh, fih, t, 1 - uB, 1, 0, uB);
+            slice(frameBuffer, pose, packedLight, packedOverlay, -fow, -fiw, fih, -fih, t, 0, uB, uB, 1 - uB);
+            slice(frameBuffer, pose, packedLight, packedOverlay, fiw, fow, fih, -fih, t, 1 - uB, 1, uB, 1 - uB);
+            slice(frameBuffer, pose, packedLight, packedOverlay, -fow, -fiw, -fih, -foh, t, 0, uB, 1 - uB, 1);
+            slice(frameBuffer, pose, packedLight, packedOverlay, -fiw, fiw, -fih, -foh, t, uB, 1 - uB, 1 - uB, 1);
+            slice(frameBuffer, pose, packedLight, packedOverlay, fiw, fow, -fih, -foh, t, 1 - uB, 1, 1 - uB, 1);
+
+            sliceBack(frameBuffer, pose, packedLight, packedOverlay, -fow, -fiw, foh, fih, -t, 0, uB, 0, uB);
+            sliceBack(frameBuffer, pose, packedLight, packedOverlay, -fiw, fiw, foh, fih, -t, uB, 1 - uB, 0, uB);
+            sliceBack(frameBuffer, pose, packedLight, packedOverlay, fiw, fow, foh, fih, -t, 1 - uB, 1, 0, uB);
+            sliceBack(frameBuffer, pose, packedLight, packedOverlay, -fow, -fiw, fih, -fih, -t, 0, uB, uB, 1 - uB);
+            sliceBack(frameBuffer, pose, packedLight, packedOverlay, fiw, fow, fih, -fih, -t, 1 - uB, 1, uB, 1 - uB);
+            sliceBack(frameBuffer, pose, packedLight, packedOverlay, -fow, -fiw, -fih, -foh, -t, 0, uB, 1 - uB, 1);
+            sliceBack(frameBuffer, pose, packedLight, packedOverlay, -fiw, fiw, -fih, -foh, -t, uB, 1 - uB, 1 - uB, 1);
+            sliceBack(frameBuffer, pose, packedLight, packedOverlay, fiw, fow, -fih, -foh, -t, 1 - uB, 1, 1 - uB, 1);
+            sliceBack(frameBuffer, pose, packedLight, packedOverlay, -fiw, fiw, fih, -fih, -t, uB, 1 - uB, uB, 1 - uB);
+
+            doubleSidedQuad(frameBuffer, pose, packedLight, packedOverlay, -fow, foh, t, fow, foh, t, fow, foh, -t, -fow, foh, -t, 0, 1, 0);
+            doubleSidedQuad(frameBuffer, pose, packedLight, packedOverlay, -fow, -foh, -t, fow, -foh, -t, fow, -foh, t, -fow, -foh, t, 0, -1, 0);
+            doubleSidedQuad(frameBuffer, pose, packedLight, packedOverlay, -fow, foh, -t, -fow, foh, t, -fow, -foh, t, -fow, -foh, -t, -1, 0, 0);
+            doubleSidedQuad(frameBuffer, pose, packedLight, packedOverlay, fow, foh, t, fow, foh, -t, fow, -foh, -t, fow, -foh, t, 1, 0, 0);
+        });
+
+        float pz = t + PHOTO_Z_EPSILON;
+        float po = PHOTO_EDGE_OVERLAP;
+        net.minecraft.resources./^$ res_loc {^/ResourceLocation/^$}^/ finalPhotoTexture = photoTexture;
+        collector.submitCustomGeometry(poseStack, /^$ render_type_import {^/net.minecraft.client.renderer.RenderType/^$}^/.entityCutout(finalPhotoTexture), (pose, photoBuffer) ->
+                quad(photoBuffer, pose, packedLight, packedOverlay,
+                        -fiw - po, fih + po, pz, 0, 0,
+                        -fiw - po, -fih - po, pz, 0, 1,
+                        fiw + po, -fih - po, pz, 1, 1,
+                        fiw + po, fih + po, pz, 1, 0,
+                        0, 0, 1));
+    }
+    *///?}
 }

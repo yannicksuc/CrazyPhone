@@ -96,4 +96,8 @@ stonecutter parameters {
     val is262 = semantics.eval(current.version, ">=26.2")
     swaps.put("mc_get_screen", if (is262) "gui.screen()" else "screen")
     swaps.put("mc_set_screen", if (is262) "setScreenAndShow" else "setScreen")
+    // 26.2 (not 26.1) also renamed GameRenderer#getMainCamera() -> #mainCamera() (dropped the "get"
+    // prefix, matching the modern accessor convention used elsewhere - confirmed via decompiled source:
+    // 26.1 still has getMainCamera(), 26.2 only has mainCamera()).
+    swaps.put("gr_main_camera", if (is262) "mainCamera" else "getMainCamera")
 }

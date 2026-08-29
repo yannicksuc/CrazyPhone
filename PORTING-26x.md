@@ -5,6 +5,65 @@ task turned out to be much bigger than expected once actually attempted - this f
 that progress isn't lost and the next session (or a live human) can pick it up without
 re-discovering everything from scratch.
 
+## Update: the NeoForge >=26 item-rendering rewrite is WRITTEN and COMPILES, but is NOT YET REACHABLE - one real decision left
+
+Implemented the recipe from the section below: `CrazyPhonePhotoItemRenderer.java` now has a
+`>=26`-gated `ModelImpl`/`SpecialRendererImpl` pair (a real `ItemModel` + `SpecialModelRenderer`,
+NOT `SpecialModelWrapper`) whose transform logic is a direct, unchanged transcription of the
+existing `render()` method (same math, just building a fresh `PoseStack` and finishing with
+`layer.setLocalTransform(...)` instead of drawing immediately), and whose vertex-drawing logic
+reuses the exact same `quad`/`slice`/`sliceBack`/`doubleSidedQuad` helpers via
+`SubmitNodeCollector#submitCustomGeometry(...)`. Registered via a new `onRegisterItemModels`
+handler in `CrazyPhonePhotoItemClientBinding.java` (the existing `Dist.CLIENT`-restricted class -
+**not** `Crazyphone.java`'s common constructor, which would crash a dedicated server the same way
+this exact class's own doc comment already warns about). Two more small, real 26.2-only breaks
+found and fixed along the way: `GameRenderer#getMainCamera()` → `#mainCamera()` (new swap
+`gr_main_camera`) - this one also affects the OLD, still-Fabric-used `render()` method, not just
+the new code.
+
+**Scoped to `neoforge && >=26` only, not `>=1.21.10`** (where this problem actually starts): 1.21.10
+has a meaningfully different `ItemModel.Unbaked`/`SpecialModelRenderer` API shape (`bake()`'s
+parameter list, `getExtents()`'s callback type) - confirmed by literally trying to compile this
+exact code against it and reading the resulting errors, not guessed. Reconciling that would have
+been a second research pass; 1.21.10 NeoForge still has zero custom photo rendering, exactly as
+before this work - a real, tracked follow-up, not forgotten.
+
+**Verified: compiles clean on `:1.20.4`, `:1.21.1`, `:1.21.1-fabric`, `:1.21.10`, `:1.20.1-fabric`,
+`:26.1`. Zero regressions - `:26.2`/`:26.2-fabric`/`:26.1-fabric`'s error counts are UNCHANGED**
+(still isolated to exactly the same already-documented old-code MultiBufferSource/
+BuiltinItemRendererRegistry gap, since Fabric still needs the OLD `render()` method to keep
+compiling on every version until its own separate fix lands - this new code doesn't replace or
+remove that method, only adds a parallel NeoForge-only path).
+
+**NOT live-tested - cannot be, from this session.** The transform/vertex math is an unchanged
+transcription, so the geometry itself should be correct if reached at all, but real unknowns
+remain: does `ItemModel#update()` actually get called fresh every frame for a held item the way
+the old `render()` was (needed for the live camera-tracking presenting logic), does the
+registration actually get picked up correctly, is `setLocalTransform` + a `SpecialModelRenderer`
+with no `base` model genuinely sufficient (no `ModelRenderProperties`/particle material set - may
+be fine, may need a minimal base model reference for GUI-light/particle behavior). All real
+questions a live client would answer in minutes; none answerable by reading code.
+
+**One real, deliberately-not-guessed blocker left: the item model JSON itself.**
+`crazy_phone_photo.json` still says `{"parent": "builtin/entity"}` (the OLD format, needed by
+Fabric on every version and by NeoForge `<26`) for ALL targets - the new `ModelImpl.Unbaked` is
+registered under id `crazyphone:photo_card_model` but **nothing references it yet**, so none of
+the code above is reachable at runtime even where it compiles. This project currently has ZERO
+existing mechanism for a resource file (as opposed to Java source) to differ by version or loader
+- every target shares one `src/main/resources` tree, copied verbatim by Stonecutter (JSON can't
+carry `//?` comments the way `.java` files do, so the usual preprocessing approach doesn't apply).
+Two real options for whoever picks this up, deliberately not decided here since it means changing
+the shared NeoForge `build.gradle.kts` template used by all 5 NeoForge nodes (real regression risk
+to currently-working resource processing that needs live verification, not a blind guess):
+1. A small resource-patching step in `build.gradle.kts`'s `processResources`/`generateModMetadata`
+   handling, conditionally overwriting this one file's content when `semantics.eval(minecraftVersion,
+   ">=26")` - `generateModMetadata`'s own existing `neoforge.mods.toml` → `mods.toml` rename (see
+   that task, ~line 235) for 1.20.x is a working precedent for exactly this kind of per-version
+   file handling, though it renames rather than rewrites content.
+2. A resource-pack "overlay" (`pack.mcmeta`'s `overlays` field, keyed by pack-format range) -
+   vanilla's own mechanism for exactly this kind of cross-version file difference, not yet checked
+   against whether this project's existing `pack.mcmeta` generation supports adding one.
+
 ## Update: `Minecraft#screen`/`#setScreen` fixed (26.2-only) - both 26.2 targets now isolated to the rendering pipeline
 
 Found and fixed one more small, real, 26.2-*specific* break while investigating the rendering
