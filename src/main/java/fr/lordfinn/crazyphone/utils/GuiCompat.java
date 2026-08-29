@@ -1,6 +1,6 @@
 package fr.lordfinn.crazyphone.utils;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui./*$ gui_graphics_type {*/GuiGraphics/*$}*/;
 import net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/;
 import net.minecraft.world.entity.LivingEntity;
 import org.joml.Quaternionf;
@@ -23,13 +23,13 @@ public final class GuiCompat {
      *  (color vs textured), which don't necessarily flush in the order they were called in otherwise, e.g. a
      *  background ending up drawn over content issued after it instead of under it. 1.21.10 submits each
      *  draw immediately (no batching left to force), so this is a no-op there. */
-    public static void flush(GuiGraphics guiGraphics) {
+    public static void flush(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics) {
         //? if <1.21.10 {
         guiGraphics.flush();
         //?}
     }
 
-    public static void pushPose(GuiGraphics guiGraphics) {
+    public static void pushPose(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics) {
         //? if <1.21.10 {
         guiGraphics.pose().pushPose();
         //? } else {
@@ -37,7 +37,7 @@ public final class GuiCompat {
         *///?}
     }
 
-    public static void popPose(GuiGraphics guiGraphics) {
+    public static void popPose(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics) {
         //? if <1.21.10 {
         guiGraphics.pose().popPose();
         //? } else {
@@ -45,7 +45,7 @@ public final class GuiCompat {
         *///?}
     }
 
-    public static void translate(GuiGraphics guiGraphics, float x, float y) {
+    public static void translate(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, float x, float y) {
         //? if <1.21.10 {
         guiGraphics.pose().translate(x, y, 0);
         //? } else {
@@ -53,7 +53,7 @@ public final class GuiCompat {
         *///?}
     }
 
-    public static void scale(GuiGraphics guiGraphics, float x, float y) {
+    public static void scale(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, float x, float y) {
         //? if <1.21.10 {
         guiGraphics.pose().scale(x, y, 1.0f);
         //? } else {
@@ -68,7 +68,7 @@ public final class GuiCompat {
      *  now, not a manual z coordinate) and always draws opaque/untinted. Pass whatever blitOffset the old
      *  call used (0 for most call sites, some use a nonzero value to win against other overlapping content) -
      *  it's simply dropped on the 1.21.10 branch since there's no equivalent. */
-    public static void blit(GuiGraphics guiGraphics, /*$ res_loc {*/ResourceLocation/*$}*/ texture, int x, int y, int blitOffset, int width, int height) {
+    public static void blit(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, /*$ res_loc {*/ResourceLocation/*$}*/ texture, int x, int y, int blitOffset, int width, int height) {
         //? if <1.21.10 {
         guiGraphics.blit(texture, x, y, blitOffset, 0, 0, width, height, width, height);
         //? } else {
@@ -80,7 +80,7 @@ public final class GuiCompat {
      *  disabled/faded icon state). Pre-1.21.10 this is a plain {@code RenderSystem.setShaderColor} bracketing
      *  the same call as above; 1.21.10 has no shader-color state to set, so the alpha is folded into the
      *  packed ARGB color blit's new trailing color argument instead. */
-    public static void blit(GuiGraphics guiGraphics, /*$ res_loc {*/ResourceLocation/*$}*/ texture, int x, int y, int blitOffset, int width, int height, float alpha) {
+    public static void blit(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, /*$ res_loc {*/ResourceLocation/*$}*/ texture, int x, int y, int blitOffset, int width, int height, float alpha) {
         //? if <1.21.10 {
         com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1, 1, 1, alpha);
         guiGraphics.blit(texture, x, y, blitOffset, 0, 0, width, height, width, height);
@@ -100,7 +100,7 @@ public final class GuiCompat {
      *  (immediate-mode rendering, matching whichever <1.21.10 vertex API sub-version is active); 1.21.10 has
      *  no immediate-mode draw path left at all - GuiGraphics's own {@code blit(ResourceLocation, x0,y0,x1,y1,
      *  u0,v0,u1,v1)} overload (corners + normalized UV, always opaque/untinted) replaces the whole thing. */
-    public static void drawTexturedQuad(GuiGraphics guiGraphics, /*$ res_loc {*/ResourceLocation/*$}*/ texture, float x0, float y0, float x1, float y1, float u0, float v0, float u1, float v1) {
+    public static void drawTexturedQuad(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, /*$ res_loc {*/ResourceLocation/*$}*/ texture, float x0, float y0, float x1, float y1, float u0, float v0, float u1, float v1) {
         //? if <1.21.10 {
         com.mojang.blaze3d.systems.RenderSystem.setShader(net.minecraft.client.renderer.GameRenderer::getPositionTexShader);
         com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
@@ -137,7 +137,7 @@ public final class GuiCompat {
      *  isn't clipped inside its own offscreen texture before any outer scissor - e.g. CallBustPreview's own
      *  enableScissor - gets a chance to crop the final result down to the intended area, exactly like it did
      *  pre-1.21.10). */
-    public static void renderEntityInInventory(GuiGraphics guiGraphics, int x, int y, int scale, Vector3f translation, Quaternionf rotation, @Nullable Quaternionf cameraOrientation, LivingEntity entity) {
+    public static void renderEntityInInventory(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int x, int y, int scale, Vector3f translation, Quaternionf rotation, @Nullable Quaternionf cameraOrientation, LivingEntity entity) {
         //? if <1.21.10 {
         net.minecraft.client.gui.screens.inventory.InventoryScreen.renderEntityInInventory(guiGraphics, x, y, scale, translation, rotation, cameraOrientation, entity);
         //? } else {

@@ -43,4 +43,9 @@ stonecutter parameters {
     // 26.x made Inventory#selected private, with a setSelectedSlot(int) setter replacing direct field
     // writes (confirmed via decompiled vanilla source) - every use in this codebase always sets it to 0.
     swaps.put("set_selected_slot_0", if (semantics.eval(current.version, ">=26")) ".setSelectedSlot(0)" else ".selected = 0")
+    // 26.x renamed GuiGraphics to GuiGraphicsExtractor (same package) - the actual draw-primitive method
+    // shapes (fill/blit/text/matrix-stack ops) are otherwise unchanged from the 1.21.10 rework already
+    // handled in GuiCompat.java, confirmed against the real 26.1.2 vanilla jar. Every GuiGraphics-typed
+    // parameter/field/import across the codebase goes through this one swap.
+    swaps.put("gui_graphics_type", if (semantics.eval(current.version, ">=26")) "GuiGraphicsExtractor" else "GuiGraphics")
 }
