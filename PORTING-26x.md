@@ -39,6 +39,17 @@ decompiled `net.minecraft.client.renderer.rendertype` package and `CrazyPhonePho
 together and work out the new vertex-submission model from scratch - treat it as its own project,
 not a quick follow-up to the GUI work above.
 
+**GameTest finding**: vanilla's `net.minecraft.gametest.framework.GameTest` annotation is genuinely
+gone from the decompiled tree, but NeoForge's OWN gametest package
+(`net.neoforged.neoforge.gametest`) still exists on 26.1.2, now centered on `RegisterGameTestsEvent`
+(confirmed present in the real NeoForge 26.1.2.100 sources) instead of an `@GameTest`-annotated
+method scan. This looks like the same "annotation -> event registration" shift already seen for
+`ItemProperties`/`RegisterConditionalItemModelPropertyEvent` - i.e. `CrazyPhoneGameTests.java`
+likely needs restructuring from a class of `@GameTest`-annotated methods into an event handler that
+registers each test with `RegisterGameTestsEvent` instead. Not yet attempted - real design/structure
+work, not a rename, and test-only code (doesn't block the shipped mod jar's actual functionality),
+so lower priority than the two items above.
+
 ## Update: Java 25 installed, Fabric 26.x infrastructure unblocked
 
 A Java 25 JDK is now installed on this machine (`C:\Users\yanni\.jdks\ms-25.0.4.1`, Microsoft
