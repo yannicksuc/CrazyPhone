@@ -271,6 +271,33 @@ tasks.named<ProcessResources>("processResources") {
             photoModelFile.writeText("""{"type": "crazyphone:photo_card_model"}""" + "\n")
         }
     }
+
+    // NeoForge >=26 removed the old "neoforge:global_loot_modifiers.json" index/layering file entirely -
+    // LootModifierManager now scans every file directly under loot_modifiers/ as its own standalone modifier
+    // via a type-keyed dispatch codec (confirmed against LootModifierManager.java in both the 21.1.248 and
+    // 26.1.2.100 NeoForge sources jars: 1.21.1 requires the index to opt files in via "entries", 26.1 has no
+    // such indirection at all). soulbound_ancient_city.json/soulbound_ancient_city_ice_box.json already carry
+    // their own "type" key and load fine standalone on >=26 - the index file itself is what breaks there, since
+    // it has no "type" key and gets scanned like any other file in the folder. Same "patch the build output,
+    // not the tracked shared resource" approach as crazy_phone_photo.json above.
+    if (minecraftVersion.startsWith("26.")) {
+        doLast {
+            destinationDir.resolve("data/neoforge/loot_modifiers/global_loot_modifiers.json").delete()
+        }
+    }
+
+    // The duplicate-photo crafting recipe's serializer isn't registered on >=1.21.10 for either loader (see
+    // ModRecipes.java/CrazyPhoneDuplicatePhotoRecipe.java's own <1.21.10 guards - the Recipe API rework there
+    // isn't backported yet). The recipe JSON itself has no such per-version gate (shared resource, no
+    // Stonecutter preprocessing on JSON), so it ships everywhere and fails to load with "Unknown registry key"
+    // once the serializer stops existing. Delete both the "recipe/" and "recipes/" copies (folder was
+    // singularized at some point during this version range) from the build output on those versions.
+    if (minecraftVersion == "1.21.10" || minecraftVersion.startsWith("26.")) {
+        doLast {
+            destinationDir.resolve("data/crazyphone/recipe/duplicate_photo.json").delete()
+            destinationDir.resolve("data/crazyphone/recipes/duplicate_photo.json").delete()
+        }
+    }
 }
 // To avoid having to run "generateModMetadata" manually, make it run on every project reload
 neoForge.ideSyncTask(generateModMetadata)
