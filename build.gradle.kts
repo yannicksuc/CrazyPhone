@@ -262,13 +262,30 @@ sourceSets.main {
 // per-version resource override mechanism at all - so this task exists purely to patch this one file's
 // content in the build output, the same "generate per-version file content in Kotlin, not in the tracked
 // resource itself" idea generateModMetadata already uses above for neoforge.mods.toml, just a content
-// rewrite instead of a rename. NOT live-tested - see PORTING-26x.md's own caveats on the >=26 renderer
-// this unblocks.
+// rewrite instead of a rename.
+//
+// Live-tested and this was NOT enough on its own: the tracked items/crazy_phone_photo.json wraps the model
+// reference in {"type": "minecraft:model", "model": "crazyphone:item/crazy_phone_photo"} - correct for every
+// other version (that "minecraft:model" type is CuboidItemModelWrapper, which bakes the referenced file as a
+// classic parent/textures/elements block-model and is what correctly honors an old "builtin/entity" parent),
+// but "minecraft:model" NEVER consults the dispatch codec our custom "crazyphone:photo_card_model" type is
+// registered against (confirmed against the real CuboidItemModelWrapper.Unbaked#bake() source: it calls
+// context.blockModelBaker().getModel(...)/bakeTopGeometry(...) directly, nothing dispatch-aware at all) - so
+// on >=26 the custom type just sat there unused, baked as an empty classic model (no parent, no elements, no
+// exception, no warning beyond the same benign "missing particle texture" every phone item model already
+// gets) - completely invisible in every context, confirmed live by debug logging showing our
+// ModelImpl/SpecialRendererImpl bake()/update()/submit() never once got called. Fixed by ALSO patching
+// items/crazy_phone_photo.json's build output on >=26 to reference the custom type directly (no
+// "minecraft:model" indirection, no models/item/ file needed at all there) - crazy_phone.json's own
+// condition-tree wrapper already proves items/*.json's "model" field is parsed through the full dispatch
+// codec directly, same one RegisterItemModelsEvent registers into.
 tasks.named<ProcessResources>("processResources") {
     if (minecraftVersion.startsWith("26.")) {
         doLast {
             val photoModelFile = destinationDir.resolve("assets/crazyphone/models/item/crazy_phone_photo.json")
             photoModelFile.writeText("""{"type": "crazyphone:photo_card_model"}""" + "\n")
+            val photoItemFile = destinationDir.resolve("assets/crazyphone/items/crazy_phone_photo.json")
+            photoItemFile.writeText("""{"model": {"type": "crazyphone:photo_card_model"}}""" + "\n")
         }
     }
 
