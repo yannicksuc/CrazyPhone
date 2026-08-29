@@ -124,7 +124,11 @@ public final class GuiCompat {
         com.mojang.blaze3d.vertex.Tesselator.getInstance().end();
         //?}
         //? } else {
-        /*guiGraphics.blit(texture, Math.round(x0), Math.round(y0), Math.round(x1), Math.round(y1), u0, v0, u1, v1);
+        /*// GuiGraphicsExtractor#blit(Identifier, x0, y0, x1, y1, u0, u1, v0, v1) takes the full U range
+        // before the full V range, not interleaved (u0, v0, u1, v1) like the pre-1.21.10 vertex convention
+        // this method's other branch follows - confirmed against the real 26.1.2.100 decompiled source,
+        // where this overload forwards straight into innerBlit(..., u0, u1, v0, v1, ...) in that exact order.
+        guiGraphics.blit(texture, Math.round(x0), Math.round(y0), Math.round(x1), Math.round(y1), u0, u1, v0, v1);
         *///?}
     }
 
