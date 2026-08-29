@@ -5,6 +5,40 @@ task turned out to be much bigger than expected once actually attempted - this f
 that progress isn't lost and the next session (or a live human) can pick it up without
 re-discovering everything from scratch.
 
+## Update: 26.1 is essentially done - 26.2 needs its own separate investigation
+
+**`:26.1:compileJava` is down to 26 errors, all in two already-scoped files** (see their own
+sections below): `CrazyPhoneGameTests.java` (a `net.minecraft.gametest.framework.GameTest`
+class-not-found - the whole GameTest annotation/framework isn't present anywhere in the decompiled
+26.1.2 tree, not yet investigated) and `CrazyPhoneMayorCandidateScreenScreen.java` (the
+already-documented dynamic-imageWidth design question). Every other file in the entire GUI
+rendering rework - the full `GuiGraphics` -> `GuiGraphicsExtractor` migration across ~26 screen/
+widget files, `GuiCompat.java`'s own signature breaks (including a proper fix for
+`renderEntityInInventory`, not just a flag) - is done and compiles clean. This was genuinely the
+bulk of the whole port; 26.1 is close to a real, shippable state pending live testing.
+
+**`:26.2:compileJava` has 25 MORE errors on top of those same two files - a real, separate
+rendering change that only shows up on 26.2, not 26.1.** `net.minecraft.client.renderer.MultiBufferSource`
+- the class this mod's whole custom item-rendering pipeline is built on (`CrazyPhonePhotoItemRenderer.java`
+obtains a `VertexConsumer` from it via `bufferSource.getBuffer(RenderType...)` to draw the photo's
+raw quads) - does not exist anywhere in the decompiled 26.2.0.71 tree. Neither does
+`net.minecraft.client.renderer.entity.ItemRenderer` itself, nor any other `*BufferSource` class.
+What IS present instead, under a reorganized `net.minecraft.client.renderer.rendertype` package: new
+classes named `PreparedRenderType`, `RenderSetup`, `OutputTarget`, `LayeringTransform` - names that
+suggest a genuinely different, more declarative vertex-submission model, not a renamed version of
+the old "get a mutable VertexConsumer and push vertices into it yourself" pattern. **This has not
+been investigated beyond confirming the old classes are gone** - it's a separate rendering-pipeline
+change from the `GuiGraphics` rework (that one *is* present and already fixed on 26.2, inherited
+from the 26.1 work), roughly comparable in likely scope to redoing that whole investigation again,
+just for item/entity rendering instead of GUI rendering. Given how much ground the GUI rework alone
+took, this deserves its own dedicated pass rather than guessing at 25 errors blind.
+
+**Practical implication**: 26.1 can realistically be finished (GameTest investigation + the
+Mayor-candidate design decision) and live-tested soon. 26.2 needs someone to sit down with the
+decompiled `net.minecraft.client.renderer.rendertype` package and `CrazyPhonePhotoItemRenderer.java`
+together and work out the new vertex-submission model from scratch - treat it as its own project,
+not a quick follow-up to the GUI work above.
+
 ## Update: Java 25 installed, Fabric 26.x infrastructure unblocked
 
 A Java 25 JDK is now installed on this machine (`C:\Users\yanni\.jdks\ms-25.0.4.1`, Microsoft
