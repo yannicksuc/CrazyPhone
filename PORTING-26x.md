@@ -5,6 +5,76 @@ task turned out to be much bigger than expected once actually attempted - this f
 that progress isn't lost and the next session (or a live human) can pick it up without
 re-discovering everything from scratch.
 
+## Update: Java 25 installed, Fabric 26.x infrastructure unblocked
+
+A Java 25 JDK is now installed on this machine (`C:\Users\yanni\.jdks\ms-25.0.4.1`, Microsoft
+Build of OpenJDK 25.0.4.1) - live testing of 26.1/26.2 is possible again once compilation
+succeeds. Set `JAVA_HOME` to this path before running `./gradlew` against any 26.x target.
+
+While getting `:26.1-fabric`/`:26.2-fabric` to even *configure* (previously blocked outright,
+"Minecraft 26.1.2 requires Java 25 but Gradle is using 21"), a much bigger discovery surfaced:
+
+**Minecraft 26.x ships fully unobfuscated.** The official Mojang version manifest for 26.1/26.1.2
+has no `client_mappings`/`server_mappings` download entries at all (confirmed directly against the
+raw JSON - grepping for "mappings" in either the base `26.1.json` or the patch `26.1.2.json` finds
+nothing). Fabric Loom's usual `mappings(loom.officialMojangMappings())` mechanism has nothing to
+resolve and fails with "Failed to find official mojang mappings for 26.1.2" - true even on the
+newest Loom releases (tried 1.17.20 and the 1.18.0-alpha.19 prerelease, same error both times).
+This is a known, already-fixed situation upstream: Fabric Loom's GitHub issue #1541 ("Loom still
+asks mappings after upgrading from 1.21.11 to 26.1") confirms the fix is a **separate Gradle
+plugin id** for this unobfuscated mode: `net.fabricmc.fabric-loom` instead of the regular
+`fabric-loom` - same Loom version line (`1.17-SNAPSHOT` per Fabric's own updated
+`fabric-example-mod` 26.1 branch), no `mappings(...)` dependency at all, and plain
+`implementation(...)` instead of `modImplementation(...)` for mod dependencies (no remapping step
+left to need it).
+
+**Concrete changes made:**
+- New `build.fabric26.gradle.kts` - a near-copy of `build.fabric.gradle.kts` (same walking-skeleton
+  source-set scope, same resource/testing/publishing setup) but using the new plugin id and no
+  mappings call. Only `26.1-fabric`/`26.2-fabric` use it (wired in `settings.gradle.kts`);
+  `1.20.1-fabric`/`1.21.1-fabric` are untouched and still use the original `build.fabric.gradle.kts`
+  with the original `fabric-loom` (Loom `1.10-SNAPSHOT`) - they're genuinely obfuscated versions
+  and still need real remapping.
+- Gradle wrapper bumped `9.4.0` -> `9.7.1` (the new Loom plugin line needs a newer Gradle plugin API
+  than 9.4.0 exposes - confirmed via a "no matching variant... required org.gradle.plugin.api-version
+  9.5.0" error). Re-verified all 5 pre-existing targets still compile clean under the new Gradle
+  version + Java 25 daemon.
+- `versions/26.1-fabric/gradle.properties`'s `fabric_api_version` corrected from `0.158.3+26.1.2`
+  (does not exist - a bad transcription from an earlier lookup, never actually exercised until
+  dependency resolution was attempted) to `0.155.2+26.1.2` (verified against the real maven
+  metadata). `26.2-fabric`'s `0.158.0+26.2` was already correct.
+
+**Result:** `:26.1-fabric:compileJava` now genuinely resolves every dependency and reaches real
+compilation - 188 errors, a mix of the already-documented `GuiGraphics` rework (shared source tree,
+same findings as the NeoForge side below) **and** a new, Fabric-API-specific layer: Fabric API
+0.155.2+26.1.2 dropped several v1 modules entirely and replaced them with renamed ones, matching
+vanilla's own 26.x terminology shift:
+
+| Old | New | Confirmed via |
+|---|---|---|
+| `net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerType` | `net.fabricmc.fabric.api.menu.v1.ExtendedMenuType` (module `fabric-menu-api-v1`) | Listing classes inside the real 0.155.2+26.1.2 jar - `fabric-screen-handler-api-v1` isn't bundled at all anymore. |
+| `net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory` | Likely `net.fabricmc.fabric.api.menu.v1.FabricMenuProvider` (same module) | Same jar listing - not yet cross-checked method-for-method against our actual usage in `ScreenMenuUtils.java`. |
+| `net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup` | `net.fabricmc.fabric.api.creativetab.v1.FabricCreativeModeTab` (module `fabric-creative-tab-api-v1`) | Same jar listing - `fabric-item-group-api-v1` isn't bundled anymore either. |
+| `PayloadTypeRegistry.playS2C()` / `.playC2S()` | `PayloadTypeRegistry.clientboundPlay()` / `.serverboundPlay()` | `javap` on the real class in `fabric-networking-api-v1-6.3.1`. |
+| `ScreenEvents.afterRender(Screen)` | `ScreenEvents.AfterExtract` (an inner interface/event, not a static method - shape likely changed too, not just the name) | Class listing in `fabric-screen-api-v1-5.1.0` - matches the same render->extract rename already seen on the vanilla side. |
+| `net.fabricmc.fabric.api.client.rendering.v1.BuiltinItemRendererRegistry` | **Not yet found** - not present under that package in the 26.1.2 jar. May be tied to the same item-render architecture rework already flagged as an open TODO for NeoForge >=1.21.10 (`CrazyPhonePhotoItem.java`'s own comment: "1.21.10 removed BlockEntityWithoutLevelRenderer... item rendering reworked into a data-driven special model system"). Needs its own investigation - don't assume it's a simple rename like the others. |
+
+Files hit by this Fabric-specific layer (on top of whatever `GuiGraphics` files they already share):
+`init/ModMenus.java`, `init/ModTabs.java`, `init/ModRecipes.java` (a `fr.lordfinn.crazyphone.recipe`
+package-not-found error - likely just a stale/incomplete source-set include list in
+`build.fabric26.gradle.kts`, check that first before assuming it's a real break),
+`utils/ScreenMenuUtils.java`, `client/PhoneClickableCursorHandler.java`,
+`fabric/FabricNetworking.java`, `fabric/CrazyphoneFabricClient.java` (calls
+`CrazyPhoneItemProperties.register()`, which doesn't exist - check whether that method only exists
+behind a NeoForge-only stonecutter branch and Fabric needs its own equivalent),
+`item/CrazyPhonePhotoItem.java`, `item/CrazyPhoneItemProperties.java` (this one's error was a
+NeoForge-only import - `net.neoforged.neoforge.client.event.RegisterConditionalItemModelPropertyEvent`
+- resolving while compiling a *Fabric* target, which smells like a real stonecutter
+loader-condition bug worth checking first rather than a genuine new API break).
+
+None of this Fabric-API-specific layer has been fixed yet - found via one compile attempt, not
+methodically worked through file-by-file the way the NeoForge/vanilla API changes were.
+
 ## What's done
 
 - **New Stonecutter targets registered**: `versions/26.1` (NeoForge, `neo_version=26.1.2.100`),
