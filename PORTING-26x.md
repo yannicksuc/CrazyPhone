@@ -44,25 +44,21 @@ with no `base` model genuinely sufficient (no `ModelRenderProperties`/particle m
 be fine, may need a minimal base model reference for GUI-light/particle behavior). All real
 questions a live client would answer in minutes; none answerable by reading code.
 
-**One real, deliberately-not-guessed blocker left: the item model JSON itself.**
-`crazy_phone_photo.json` still says `{"parent": "builtin/entity"}` (the OLD format, needed by
-Fabric on every version and by NeoForge `<26`) for ALL targets - the new `ModelImpl.Unbaked` is
-registered under id `crazyphone:photo_card_model` but **nothing references it yet**, so none of
-the code above is reachable at runtime even where it compiles. This project currently has ZERO
-existing mechanism for a resource file (as opposed to Java source) to differ by version or loader
-- every target shares one `src/main/resources` tree, copied verbatim by Stonecutter (JSON can't
-carry `//?` comments the way `.java` files do, so the usual preprocessing approach doesn't apply).
-Two real options for whoever picks this up, deliberately not decided here since it means changing
-the shared NeoForge `build.gradle.kts` template used by all 5 NeoForge nodes (real regression risk
-to currently-working resource processing that needs live verification, not a blind guess):
-1. A small resource-patching step in `build.gradle.kts`'s `processResources`/`generateModMetadata`
-   handling, conditionally overwriting this one file's content when `semantics.eval(minecraftVersion,
-   ">=26")` - `generateModMetadata`'s own existing `neoforge.mods.toml` → `mods.toml` rename (see
-   that task, ~line 235) for 1.20.x is a working precedent for exactly this kind of per-version
-   file handling, though it renames rather than rewrites content.
-2. A resource-pack "overlay" (`pack.mcmeta`'s `overlays` field, keyed by pack-format range) -
-   vanilla's own mechanism for exactly this kind of cross-version file difference, not yet checked
-   against whether this project's existing `pack.mcmeta` generation supports adding one.
+**Update: the item model JSON gap is now closed too.** `build.gradle.kts` gained a small
+`processResources`-level `doLast` step (right after `generateModMetadata`'s own existing
+`neoforge.mods.toml` → `mods.toml` rename for 1.20.x, same "generate per-version file content in
+Kotlin, not the tracked resource itself" idea, just a content overwrite instead of a rename):
+when `minecraftVersion.startsWith("26.")`, it overwrites the BUILT
+`assets/crazyphone/models/item/crazy_phone_photo.json` with `{"type":
+"crazyphone:photo_card_model"}`; every other version's build output is untouched. Verified directly
+by running `processResources` for both `:26.1`/`:26.2` (correctly rewritten) and `:1.20.4`/
+`:1.21.1`/`:1.21.10` (correctly left as `{"parent": "builtin/entity"}`), plus a full
+`compileJava` regression pass afterward (unchanged - this only touches resource output, not
+compilation). **This means NeoForge `>=26`'s new `ModelImpl`/`SpecialRendererImpl` pair (see below)
+is now actually wired end-to-end and should be reachable at runtime on `:26.1` - still not
+live-tested (see this file's own caveats on that below), but no longer blocked by a missing
+decision.** 26.2 itself still won't compile until its separate old-code `MultiBufferSource` gap is
+fixed, but its resource output is already correct and waiting.
 
 ## Update: `Minecraft#screen`/`#setScreen` fixed (26.2-only) - both 26.2 targets now isolated to the rendering pipeline
 

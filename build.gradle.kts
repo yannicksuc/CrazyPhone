@@ -253,6 +253,25 @@ val generateModMetadata = tasks.register<ProcessResources>("generateModMetadata"
 sourceSets.main {
     resources.srcDir(generateModMetadata)
 }
+
+// crazy_phone_photo.json needs different content on >=26 (a custom "type" referencing the new
+// ItemModel/SpecialModelRenderer pair in CrazyPhonePhotoItemRenderer.java - see PORTING-26x.md) vs every
+// other version (the old "builtin/entity" parent Fabric and <26 NeoForge still use). Stonecutter's own
+// //? preprocessing only applies to .java sources, not resources (JSON can't carry those comments without
+// becoming invalid JSON), and this project otherwise has a single shared src/main/resources tree with no
+// per-version resource override mechanism at all - so this task exists purely to patch this one file's
+// content in the build output, the same "generate per-version file content in Kotlin, not in the tracked
+// resource itself" idea generateModMetadata already uses above for neoforge.mods.toml, just a content
+// rewrite instead of a rename. NOT live-tested - see PORTING-26x.md's own caveats on the >=26 renderer
+// this unblocks.
+tasks.named<ProcessResources>("processResources") {
+    if (minecraftVersion.startsWith("26.")) {
+        doLast {
+            val photoModelFile = destinationDir.resolve("assets/crazyphone/models/item/crazy_phone_photo.json")
+            photoModelFile.writeText("""{"type": "crazyphone:photo_card_model"}""" + "\n")
+        }
+    }
+}
 // To avoid having to run "generateModMetadata" manually, make it run on every project reload
 neoForge.ideSyncTask(generateModMetadata)
 
