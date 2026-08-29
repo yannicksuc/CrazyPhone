@@ -133,11 +133,44 @@ public final class FabricPictureCapture {
         }
     }
     //? } else {
-    /*// TODO: 1.21.10 reworked both Screenshot.takeScreenshot (now callback-based) and NativeImage (no more
-    // asByteArray()) - not backported yet, tracked alongside CrazyPhonePhotoItem's own 1.21.10 renderer TODO
-    // (see the implementation plan's rollout order). Fails closed exactly like a real IOException would.
+    /*// 1.21.10 reworked Screenshot.takeScreenshot into a callback-based API (still fires synchronously off
+    // the GPU buffer-copy call, same as the old direct-return version) and dropped NativeImage#asByteArray()
+    // entirely - the only remaining way to get PNG bytes out of a NativeImage is writeToFile(Path), so
+    // toPngBytes() round-trips through a throwaway temp file instead. Same "fail closed to (null, null)" shape
+    // as the <1.21.10 branch on any error.
     private static void captureBothResolutions(BiConsumer<byte[], byte[]> callback) {
-        callback.accept(null, null);
+        Minecraft mc = Minecraft.getInstance();
+        try {
+            Screenshot.takeScreenshot(mc.getMainRenderTarget(), full -> {
+                try (NativeImage fullImg = full; NativeImage fullScaled = downscale(fullImg, FULL_MAX_DIMENSION)) {
+                    byte[] fullBytes = toPngBytes(fullScaled);
+                    int targetHeight = Config.photoThumbnailPixelHeight;
+                    if (targetHeight <= 0 || targetHeight >= fullScaled.getHeight()) {
+                        callback.accept(fullBytes, fullBytes);
+                    } else {
+                        try (NativeImage thumbnail = downscaleToHeight(fullScaled, targetHeight)) {
+                            callback.accept(toPngBytes(thumbnail), fullBytes);
+                        }
+                    }
+                } catch (IOException e) {
+                    org.slf4j.LoggerFactory.getLogger("crazyphone-capture-debug").warn("Screenshot capture failed", e);
+                    callback.accept(null, null);
+                }
+            });
+        } catch (RuntimeException e) {
+            org.slf4j.LoggerFactory.getLogger("crazyphone-capture-debug").warn("Screenshot capture failed", e);
+            callback.accept(null, null);
+        }
+    }
+
+    private static byte[] toPngBytes(NativeImage image) throws IOException {
+        java.nio.file.Path tmp = java.nio.file.Files.createTempFile("crazyphone-capture-", ".png");
+        try {
+            image.writeToFile(tmp);
+            return java.nio.file.Files.readAllBytes(tmp);
+        } finally {
+            java.nio.file.Files.deleteIfExists(tmp);
+        }
     }
     *///?}
 
