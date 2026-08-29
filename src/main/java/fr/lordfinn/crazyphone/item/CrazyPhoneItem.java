@@ -16,7 +16,12 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.component.TooltipDisplay;
 *///?}
 
+//? if neoforge {
 import fr.lordfinn.crazyphone.procedures.CrazyPhoneOnUseProcedure;
+//?}
+//? if fabric && >=1.20.5 {
+/*import fr.lordfinn.crazyphone.procedures.CrazyPhoneOnUseProcedure;
+*///?}
 
 public class CrazyPhoneItem extends Item {
     public CrazyPhoneItem(Item.Properties properties) {
@@ -28,25 +33,43 @@ public class CrazyPhoneItem extends Item {
         //?}
     }
 
+    //? if neoforge {
+    // NeoForge-added IItemExtension hook, not real vanilla Item API - no Fabric equivalent wired up yet
+    // (Fabric API's ItemStack merge/reequip suppression works differently; low-priority cosmetic nicety).
     @Override
     public boolean shouldCauseReequipAnimation(ItemStack oldStack, ItemStack newStack, boolean slotChanged) {
         return false;
     }
+    //?}
 
     //? if <1.21.10 {
     @Override
     public InteractionResultHolder<ItemStack> use(Level world, Player entity, InteractionHand hand) {
         InteractionResultHolder<ItemStack> ar = super.use(world, entity, hand);
-        if (hand == InteractionHand.MAIN_HAND)
+        if (hand == InteractionHand.MAIN_HAND) {
+            //? if neoforge {
             CrazyPhoneOnUseProcedure.execute(world, entity.getX(), entity.getY(), entity.getZ(), entity);
+            //?}
+            //? if fabric && >=1.20.5 {
+            /*CrazyPhoneOnUseProcedure.execute(world, entity.getX(), entity.getY(), entity.getZ(), entity);
+            *///?}
+            // No call on fabric && <1.20.5 (1.20.1-fabric): CrazyPhoneOnUseProcedure's dependency graph
+            // (ScreenMenuUtils, PhoneAttachmentTypes, ...) is >=1.20.5-only there - see build.fabric.gradle.kts.
+        }
         return ar;
     }
     //? } else {
     /*@Override
     public InteractionResult use(Level world, Player entity, InteractionHand hand) {
         InteractionResult ar = super.use(world, entity, hand);
-        if (hand == InteractionHand.MAIN_HAND)
-            CrazyPhoneOnUseProcedure.execute(world, entity.getX(), entity.getY(), entity.getZ(), entity);
+        if (hand == InteractionHand.MAIN_HAND) {
+            //? if neoforge {
+            /^CrazyPhoneOnUseProcedure.execute(world, entity.getX(), entity.getY(), entity.getZ(), entity);
+            ^///?}
+            //? if fabric && >=1.20.5 {
+            /^CrazyPhoneOnUseProcedure.execute(world, entity.getX(), entity.getY(), entity.getZ(), entity);
+            ^///?}
+        }
         return ar;
     }
     *///?}

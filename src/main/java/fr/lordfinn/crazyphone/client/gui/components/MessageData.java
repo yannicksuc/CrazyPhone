@@ -9,7 +9,6 @@ public class MessageData {
     private final int timecode;
     private final String message;
     private final String sender;
-    private final ItemStack image;
     private final boolean system;
     private final Component systemText;
     private final ItemStack systemIcon;
@@ -19,12 +18,12 @@ public class MessageData {
     private final UUID callId;
     private final long callStartMillis;
     private final long callDurationMillis;
+    private final UUID imageId;
 
     public MessageData(int timecode, String message, String sender) {
         this.timecode = timecode;
         this.message = message;
         this.sender = sender;
-        this.image = ItemStack.EMPTY;
         this.system = false;
         this.systemText = null;
         this.systemIcon = ItemStack.EMPTY;
@@ -34,29 +33,13 @@ public class MessageData {
         this.callId = null;
         this.callStartMillis = 0;
         this.callDurationMillis = -1;
-    }
-
-    public MessageData(int timecode, String message, String sender, ItemStack stack) {
-        this.timecode = timecode;
-        this.message = message;
-        this.sender = sender;
-        this.image = stack;
-        this.system = false;
-        this.systemText = null;
-        this.systemIcon = ItemStack.EMPTY;
-        this.voiceId = null;
-        this.voiceDurationTicks = 0;
-        this.voiceEnvelope = new byte[0];
-        this.callId = null;
-        this.callStartMillis = 0;
-        this.callDurationMillis = -1;
+        this.imageId = null;
     }
 
     private MessageData(int timecode, Component systemText, ItemStack systemIcon) {
         this.timecode = timecode;
         this.message = "";
         this.sender = "";
-        this.image = ItemStack.EMPTY;
         this.system = true;
         this.systemText = systemText;
         this.systemIcon = systemIcon;
@@ -66,13 +49,13 @@ public class MessageData {
         this.callId = null;
         this.callStartMillis = 0;
         this.callDurationMillis = -1;
+        this.imageId = null;
     }
 
     private MessageData(int timecode, String sender, UUID voiceId, int voiceDurationTicks, byte[] voiceEnvelope) {
         this.timecode = timecode;
         this.message = "";
         this.sender = sender;
-        this.image = ItemStack.EMPTY;
         this.system = false;
         this.systemText = null;
         this.systemIcon = ItemStack.EMPTY;
@@ -82,13 +65,13 @@ public class MessageData {
         this.callId = null;
         this.callStartMillis = 0;
         this.callDurationMillis = -1;
+        this.imageId = null;
     }
 
     private MessageData(int timecode, UUID callId, long callStartMillis, long callDurationMillis) {
         this.timecode = timecode;
         this.message = "";
         this.sender = "";
-        this.image = ItemStack.EMPTY;
         this.system = false;
         this.systemText = null;
         this.systemIcon = ItemStack.EMPTY;
@@ -98,6 +81,30 @@ public class MessageData {
         this.callId = callId;
         this.callStartMillis = callStartMillis;
         this.callDurationMillis = callDurationMillis;
+        this.imageId = null;
+    }
+
+    /** A photo message - the actual PNG bytes are fetched from the server on demand, only when this
+     * message's bubble is actually rendered (see FabricPictureCache), same lazy shape as the voice-message
+     * audio fetch. */
+    private MessageData(int timecode, String sender, UUID imageId) {
+        this.timecode = timecode;
+        this.message = "";
+        this.sender = sender;
+        this.system = false;
+        this.systemText = null;
+        this.systemIcon = ItemStack.EMPTY;
+        this.voiceId = null;
+        this.voiceDurationTicks = 0;
+        this.voiceEnvelope = new byte[0];
+        this.callId = null;
+        this.callStartMillis = 0;
+        this.callDurationMillis = -1;
+        this.imageId = imageId;
+    }
+
+    public static MessageData image(int timecode, String sender, UUID imageId) {
+        return new MessageData(timecode, sender, imageId);
     }
 
     /** A system event (rename / icon change / member excluded / admin reassigned) - not sent by anyone,
@@ -119,6 +126,14 @@ public class MessageData {
      * live-ticking elapsed time from {@code callStartMillis} in that case (see MessageWidget). */
     public static MessageData call(int timecode, UUID callId, long callStartMillis, long callDurationMillis) {
         return new MessageData(timecode, callId, callStartMillis, callDurationMillis);
+    }
+
+    public boolean isImage() {
+        return imageId != null;
+    }
+
+    public UUID getImageId() {
+        return imageId;
     }
 
     public boolean isVoice() {
@@ -163,10 +178,6 @@ public class MessageData {
 
     public String getSender() {
         return sender;
-    }
-
-    public ItemStack getImage() {
-        return image;
     }
 
     public boolean isSystem() {

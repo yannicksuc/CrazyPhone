@@ -3,18 +3,13 @@
   "minVersion": "0.8",
   "package": "fr.lordfinn.crazyphone.mixin",
   "compatibilityLevel": "${mixin_compatibility_level}",
-  "mixins": [
-    "CameraModServerEventsMixin",
-    "CameraModMessageDisableCameraModeMixin",
-    "CameraModMessageSetShaderMixin",
-    "MessageSetShaderAccessor",
-    "CameraModPacketManagerMixin"
-  ],
+  "mixins": [],
   "client": [
-    "CameraModClientEventsMixin",
-    "CameraModImageTakerMixin",
-    "ImageTakerAccessor",
-    "MouseHandlerCursorMixin"
+    "MouseHandlerCursorMixin",
+    "PlayerPresentPoseMixin",
+    "CrazyPhonePresentHandGripMixin",
+    "CrazyPhonePresentHandGripInvokerMixin",
+    "CrazyPhonePhotoItemRenderMixin"
   ],
   "injectors": {
     "defaultRequire": 1

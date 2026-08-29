@@ -4,10 +4,12 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.network.chat.Component;
+//? if neoforge && <1.21.10 {
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
+//?}
 
-//? if <1.21.10 {
+//? if neoforge && <1.21.10 {
 @OnlyIn(Dist.CLIENT)
 //?}
 public class PasswordEditBox extends EditBox {

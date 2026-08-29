@@ -1,10 +1,12 @@
 
 package fr.lordfinn.crazyphone.world.inventory;
 
+//? if neoforge {
 import net.neoforged.neoforge.items.ItemStackHandler;
 import net.neoforged.neoforge.items.IItemHandlerModifiable;
 import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.capabilities.Capabilities;
+//?}
 
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.Level;
@@ -46,7 +48,15 @@ abstract public class CrazyPhoneDefaultScreenMenu extends AbstractContainerMenu 
 	public final Player entity;
 	public int x, y, z;
 	protected ContainerLevelAccess access = ContainerLevelAccess.NULL;
+	//? if neoforge {
 	public IItemHandler internal;
+	//?}
+	//? if fabric {
+	/*// TODO(#163): real Fabric ItemApiLookup-backed item capability - deferred until the two menus that
+	// actually use this (CrazyPhonePicturesScreenMenu/CrazyPhonePictureFoldersScreenMenu, both still
+	// Camera-mod-coupled - see task #165) are ported. Every other menu subclass never touches this field.
+	public Object internal;
+	*///?}
 	protected final Map<Integer, Slot> customSlots = new HashMap<>();
 	protected boolean bound = false;
 	protected Supplier<Boolean> boundItemMatcher = null;
@@ -62,7 +72,12 @@ abstract public class CrazyPhoneDefaultScreenMenu extends AbstractContainerMenu 
 		super(type, id);
 		this.entity = inv.player;
 		this.world = inv.player.level();
+		//? if neoforge {
 		this.internal = new ItemStackHandler(0);
+		//?}
+		//? if fabric {
+		/*this.internal = null;
+		*///?}
 		setCurrentPageHistory();
 		if (this.entity instanceof ServerPlayer serverPlayer) {
 			ItemStack held = CrazyPhoneHelper.getMainHandItemOrEmpty(this.entity);
@@ -92,19 +107,23 @@ abstract public class CrazyPhoneDefaultScreenMenu extends AbstractContainerMenu 
 				byte hand = extraData.readByte();
 				ItemStack itemstack = hand == 0 ? this.entity.getMainHandItem() : this.entity.getOffhandItem();
 				this.boundItemMatcher = () -> itemstack == (hand == 0 ? this.entity.getMainHandItem() : this.entity.getOffhandItem());
-				//? if >=1.21.10 {
+				//? if neoforge && >=1.21.10 {
 				/*Object cap = itemstack.getCapability(Capabilities.Item.ITEM, null);
 				if (cap instanceof IItemHandler h) {
 					this.internal = h;
 					this.bound = true;
 				}
-				*///? } else {
+				*///?}
+				//? if neoforge && <1.21.10 {
 				IItemHandler cap = itemstack.getCapability(Capabilities.ItemHandler.ITEM);
 				if (cap != null) {
 					this.internal = cap;
 					this.bound = true;
 				}
 				//?}
+				//? if fabric {
+				/*// TODO(#163): real Fabric ItemApiLookup binding - see the internal field's own comment above.
+				*///?}
 			}
 		}
 	}
@@ -245,6 +264,7 @@ abstract public class CrazyPhoneDefaultScreenMenu extends AbstractContainerMenu 
 			if (playerIn instanceof ServerPlayer serverPlayer)
 				serverPlayer.inventoryMenu.broadcastChanges();
 		}
+		//? if neoforge {
 		if (!bound && playerIn instanceof ServerPlayer serverPlayer) {
 			if (!serverPlayer.isAlive() || serverPlayer.hasDisconnected()) {
 				for (int j = 0; j < internal.getSlots(); ++j) {
@@ -260,6 +280,7 @@ abstract public class CrazyPhoneDefaultScreenMenu extends AbstractContainerMenu 
 				}
 			}
 		}
+		//?}
 	}
 
 	public Map<Integer, Slot> get() {

@@ -1,6 +1,7 @@
 
 package fr.lordfinn.crazyphone.network;
 
+//? if neoforge {
 //? if >=1.20.5 {
 /*import net.neoforged.neoforge.network.handling.IPayloadContext;
 *///? } else {
@@ -13,6 +14,7 @@ import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.fml.common.Mod.EventBusSubscriber;
 //?}
 import net.neoforged.bus.api.SubscribeEvent;
+//?}
 
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Player;
@@ -48,11 +50,13 @@ import java.util.Map;
  * someone other than themselves) is re-verified here against server-side state before anything is applied,
  * same discipline as every other write path in this mod.
  */
+//? if neoforge {
 //? if <1.20.5 {
 @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
 //?} else {
 /*@EventBusSubscriber
 *///?}
+//?}
 public record CrazyPhoneGroupSettingsButtonMessage(int buttonID, int x, int y, int z, HashMap<String, String> textstate) implements CustomPacketPayload {
 
 	//? if >=1.20.5 {
@@ -90,6 +94,7 @@ public record CrazyPhoneGroupSettingsButtonMessage(int buttonID, int x, int y, i
 	}
 	//?}
 
+	//? if neoforge {
 	//? if >=1.20.5 {
 	/*public static void handleData(final CrazyPhoneGroupSettingsButtonMessage message, final IPayloadContext context) {
 		if (context.flow() == PacketFlow.SERVERBOUND) {
@@ -111,6 +116,12 @@ public record CrazyPhoneGroupSettingsButtonMessage(int buttonID, int x, int y, i
 		}
 	}
 	//?}
+	//?}
+	//? if fabric && >=1.20.5 {
+	/*public static void handleDataFabric(CrazyPhoneGroupSettingsButtonMessage message, net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.Context context) {
+		handleButtonAction(context.player(), message.buttonID, message.x, message.y, message.z, message.textstate);
+	}
+	*///?}
 
 	public static void handleButtonAction(Player entity, int buttonID, int x, int y, int z, HashMap<String, String> textstate) {
 		if (buttonID != 0 || entity == null || entity.level().isClientSide())
@@ -290,6 +301,7 @@ public record CrazyPhoneGroupSettingsButtonMessage(int buttonID, int x, int y, i
 		return map;
 	}
 
+	//? if neoforge {
 	@SubscribeEvent
 	public static void registerMessage(FMLCommonSetupEvent event) {
 		//? if >=1.20.5 {
@@ -298,4 +310,14 @@ public record CrazyPhoneGroupSettingsButtonMessage(int buttonID, int x, int y, i
 		Crazyphone.addNetworkMessage(CrazyPhoneGroupSettingsButtonMessage.ID, CrazyPhoneGroupSettingsButtonMessage::new, CrazyPhoneGroupSettingsButtonMessage::handleData);
 		//?}
 	}
+	//?}
+	//? if fabric && >=1.20.5 {
+	/*public static void registerFabricType() {
+		fr.lordfinn.crazyphone.fabric.FabricNetworking.registerC2SType(TYPE, STREAM_CODEC);
+	}
+
+	public static void registerFabricServerReceiver() {
+		fr.lordfinn.crazyphone.fabric.FabricNetworking.registerServerReceiver(TYPE, CrazyPhoneGroupSettingsButtonMessage::handleDataFabric);
+	}
+	*///?}
 }

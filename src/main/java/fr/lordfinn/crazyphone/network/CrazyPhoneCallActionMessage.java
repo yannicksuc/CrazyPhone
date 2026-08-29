@@ -1,5 +1,6 @@
 package fr.lordfinn.crazyphone.network;
 
+//? if neoforge {
 //? if >=1.20.5 {
 /*import net.neoforged.neoforge.network.handling.IPayloadContext;
 *///? } else {
@@ -12,6 +13,7 @@ import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.fml.common.Mod.EventBusSubscriber;
 //?}
 import net.neoforged.bus.api.SubscribeEvent;
+//?}
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -26,12 +28,14 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
 
 import fr.lordfinn.crazyphone.Crazyphone;
+//? if neoforge {
 import fr.lordfinn.crazyphone.FeatureFlag;
 import fr.lordfinn.crazyphone.procedures.GetCrazyPhoneNumberFromMainHandProcedure;
 import fr.lordfinn.crazyphone.utils.Contact;
 import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
 import fr.lordfinn.crazyphone.utils.ScreenMenuUtils;
 import fr.lordfinn.crazyphone.voicechat.CallRegistry;
+//?}
 import fr.lordfinn.crazyphone.voicechat.VoicechatIntegration;
 
 import java.util.ArrayList;
@@ -86,6 +90,7 @@ public record CrazyPhoneCallActionMessage(int action, String conversationId) imp
     }
     //?}
 
+    //? if neoforge {
     //? if >=1.20.5 {
     /*public static void handleData(final CrazyPhoneCallActionMessage message, final IPayloadContext context) {
         if (context.flow() != PacketFlow.SERVERBOUND)
@@ -163,7 +168,29 @@ public record CrazyPhoneCallActionMessage(int action, String conversationId) imp
         if (session != null)
             ScreenMenuUtils.openCallScreenForPlayer(player);
     }
+    //?}
+    //? if fabric {
+    /*// Calls aren't routed on Fabric yet (voicechat.CallRegistry/SvcCallBridge not ported this pass - see
+    // build.fabric.gradle.kts's note) - VoicechatIntegration.isAvailable() may still report true if SVC-Fabric
+    // is installed, but every action here is a deliberate no-op rather than a half-wired call.
+    public static void handleAction(ServerPlayer player, int action, String conversationId) {
+    }
+    *///?}
+    //? if fabric && >=1.20.5 {
+    /*public static void handleDataFabric(CrazyPhoneCallActionMessage message, net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.Context context) {
+        handleAction(context.player(), message.action, message.conversationId);
+    }
 
+    public static void registerFabricType() {
+        fr.lordfinn.crazyphone.fabric.FabricNetworking.registerC2SType(TYPE, STREAM_CODEC);
+    }
+
+    public static void registerFabricServerReceiver() {
+        fr.lordfinn.crazyphone.fabric.FabricNetworking.registerServerReceiver(TYPE, CrazyPhoneCallActionMessage::handleDataFabric);
+    }
+    *///?}
+
+    //? if neoforge {
     //? if <1.20.5 {
     @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
     //?} else {
@@ -179,4 +206,5 @@ public record CrazyPhoneCallActionMessage(int action, String conversationId) imp
             //?}
         }
     }
+    //?}
 }

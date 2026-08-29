@@ -6,17 +6,22 @@
   "item_group.crazyphone.crazy_phone_tab": "CrazyPhone",
 
   "item.crazyphone.crazy_phone": "Crazy Phone",
+  "item.crazyphone.crazy_phone_photo": "Photo",
+  "gui.crazyphone.capture_overlay.title": "Camera",
+  "gui.crazyphone.photo_viewer.title": "Photo",
+  "gui.crazyphone.photo_viewer.back": "Back",
+  "gui.crazyphone.photo_viewer.save": "Save to Inventory",
   "item.crazyphone.custom_name": "CrazyPhone of %s",
   "item.crazyphone.lore_number": "Number: %s",
   "item.crazyphone.lore_owner": "Owner: %s",
+  "item.crazyphone.crazy_phone_photo.lore_author": "Taken by: %s",
+  "item.crazyphone.crazy_phone_photo.lore_date": "Taken on: %s",
 
+  "message.crazyphone.phone_locked_no_photo": "Unlock this phone before taking a photo.",
   "message.crazyphone.unknown_contact": "Unknown",
   "message.crazyphone.unknown_number": "Unknown number: %s",
   "message.crazyphone.unknown_voter": "Unknown: %s",
 
-  "message.crazyphone.image_upload_success": "✅ The image was successfully uploaded to the CrazyPhone.",
-  "message.crazyphone.image_upload_failed": "❌ Failed to upload the image to the CrazyPhone.",
-  "message.crazyphone.camera_feature_disabled": "❌ Camera photo insertion is disabled on this server.",
 
   "message.crazyphone.call_in_progress": "📞 Call in progress - %s · %s",
   "message.crazyphone.call_summary": "📞 Call - %s · %s",
@@ -29,6 +34,7 @@
 
   "message.crazyphone.candidate_not_found": "Candidate not found",
   "message.crazyphone.candidate_poster_added": "Poster successfully added to candidate!",
+  "message.crazyphone.candidate_poster_needs_photo": "Hold a CrazyPhone photo in your main hand to use it as a poster",
   "message.crazyphone.candidate_not_exist": "Candidate doesn't exist",
   "message.crazyphone.candidate_added": "New candidate added!",
   "message.crazyphone.candidate_already_registered": "Candidate already registered",
@@ -129,11 +135,22 @@
 
   "gui.crazyphone.crazy_phone_mayors_candidates_list.title": "Mayor candidates",
 
+  "gui.crazyphone.crazy_phone_my_photos_screen.title": "My Photos",
+  "gui.crazyphone.crazy_phone_my_photos_screen.button_delete": "Delete",
+  "gui.crazyphone.crazy_phone_my_photos_screen.button_take": "Take",
+  "gui.crazyphone.crazy_phone_my_photos_screen.button_send": "Send",
+  "gui.crazyphone.crazy_phone_my_photos_screen.tooltip_select_photo": "Select a photo first",
+  "gui.crazyphone.crazy_phone_my_photos_screen.tooltip_delete_selected": "Delete the selected photos",
+  "gui.crazyphone.crazy_phone_my_photos_screen.tooltip_take_selected": "Get the selected photos as items",
+  "gui.crazyphone.crazy_phone_my_photos_screen.tooltip_send_selected": "Send the selected photos to this conversation",
+
   "gui.crazyphone.crazy_phone_conversation.message": "Write a message...",
   "gui.crazyphone.crazy_phone_conversation.button_envoyer": ">",
   "gui.crazyphone.crazy_phone_conversation.click_to_zoom": "Click to zoom on the image",
-  "gui.crazyphone.crazy_phone_conversation.tooltip_send_image": "Send an image",
+  "gui.crazyphone.crazy_phone_conversation.tooltip_send_image": "Send an image from My Photos",
   "gui.crazyphone.crazy_phone_conversation.tooltip_send_image_disabled": "Sending images is disabled on this server",
+  "gui.crazyphone.crazy_phone_conversation.tooltip_take_and_send_image": "Take and send a photo",
+  "gui.crazyphone.crazy_phone_conversation.tooltip_take_and_send_image_disabled": "Sending images is disabled on this server",
   "gui.crazyphone.crazy_phone_conversation.tooltip_send_message": "Send the message",
   "gui.crazyphone.crazy_phone_conversation.tooltip_group_settings": "Group settings",
   "gui.crazyphone.crazy_phone_conversation.tooltip_call": "Call",

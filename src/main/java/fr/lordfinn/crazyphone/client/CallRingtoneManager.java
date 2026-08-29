@@ -1,5 +1,6 @@
 package fr.lordfinn.crazyphone.client;
 
+//? if neoforge {
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 //? if >=1.20.5 {
@@ -12,6 +13,10 @@ import net.neoforged.fml.common.Mod.EventBusSubscriber;
 *///? } else {
 import net.neoforged.neoforge.event.TickEvent;
 //?}
+//?}
+//? if fabric && >=1.20.5 {
+/*import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+*///?}
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
@@ -27,9 +32,6 @@ import fr.lordfinn.crazyphone.init.ModSounds;
 import fr.lordfinn.crazyphone.network.CrazyPhoneCallStateSyncPacket.State;
 import fr.lordfinn.crazyphone.procedures.GetCrazyPhoneNumberProcedure;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 /**
  * Drives the two call ringtones off the player's actual possession of the ringing/calling phone, not off
  * any screen being open - a real phone rings whether or not you've pulled it out of your pocket to look at
@@ -38,22 +40,34 @@ import org.slf4j.LoggerFactory;
  * retriggers a short buzz every pulse cycle (see CallVibrationTiming), layered on top of the ringtone melody
  * and synced to CrazyPhoneVibrationRenderer's visual hand-shake pulses.
  */
+//? if neoforge {
 @EventBusSubscriber(value = Dist.CLIENT)
+//?}
 public class CallRingtoneManager {
-    private static final Logger LOGGER = LoggerFactory.getLogger("crazyphone");
     private static SoundInstance currentSound;
     private static State currentSoundFor;
     private static long lastBuzzCycle = -1;
-    // TEMP diagnostic (see chat report of "no vibration/sound/ringtone at all") - remove once confirmed.
-    private static long ringingStartedGameTime = -1;
 
+    //? if neoforge {
     @SubscribeEvent
     //? if >=1.20.5 {
     /*public static void onClientTick(ClientTickEvent.Post event) {
+        tick();
+    }
     *///? } else {
     public static void onClientTick(TickEvent.ClientTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
+        tick();
+    }
     //?}
+    //?}
+    //? if fabric && >=1.20.5 {
+    /*public static void register() {
+        ClientTickEvents.END_CLIENT_TICK.register(client -> tick());
+    }
+    *///?}
+
+    private static void tick() {
         Minecraft mc = Minecraft.getInstance();
         LocalPlayer player = mc.player;
         if (player == null) {
@@ -67,16 +81,7 @@ public class CallRingtoneManager {
                 ? state
                 : null;
 
-        if (state == State.RINGING && !hasMatchingPhone)
-            LOGGER.info("[callring-diag] ClientCallState is RINGING but no held/carried phone matched callNumbers");
-
         if (wanted != currentSoundFor) {
-            if (wanted == State.RINGING && mc.level != null) {
-                ringingStartedGameTime = mc.level.getGameTime();
-                LOGGER.info("[callring-diag] RINGING started at gameTime={}", ringingStartedGameTime);
-            } else if (currentSoundFor == State.RINGING && mc.level != null) {
-                LOGGER.info("[callring-diag] RINGING ended at gameTime={} (lasted {} ticks)", mc.level.getGameTime(), mc.level.getGameTime() - ringingStartedGameTime);
-            }
             stopCurrent();
             if (wanted != null) {
                 SoundEvent sound = wanted == State.CALLING ? ModSounds.RINGBACK_TONE.get() : ModSounds.RINGTONE.get();

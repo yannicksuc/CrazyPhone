@@ -33,6 +33,9 @@ import fr.lordfinn.crazyphone.client.gui.components.MessageDisplayManager.Messag
 import fr.lordfinn.crazyphone.client.gui.components.SmallTextEditBox;
 import fr.lordfinn.crazyphone.network.ConversationRequestPacket;
 import fr.lordfinn.crazyphone.network.CrazyPhoneConversationButtonMessage;
+//? if fabric && >=1.20.5 {
+/*import fr.lordfinn.crazyphone.network.CrazyPhoneUploadPicturePacket;
+*///?}
 import fr.lordfinn.crazyphone.procedures.GetCrazyPhoneNumberFromMainHandProcedure;
 import fr.lordfinn.crazyphone.utils.Contact;
 import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
@@ -50,7 +53,9 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
+//? if neoforge {
 import net.neoforged.neoforge.network.PacketDistributor;
+//?}
 import fr.lordfinn.crazyphone.utils.NetworkAccess;
 import org.lwjgl.glfw.GLFW;
 
@@ -91,7 +96,15 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
     }
     private EditBox message;
     private Button button_envoyer;
+    /** "Take and send image" - opens the capture overlay, then uploads and posts the shot into this
+     * conversation directly (also lands in the phone's own My Photos list, same as any other capture). */
     private ImageButton imagebutton_crazyphoneaddimage;
+    /** "Send image" - browses the My Photos gallery in send mode instead of taking a fresh shot, one or
+     * several at once. Same hover-reveal column as imagebutton_crazyphoneaddimage/imagebutton_crazyphonevoicemessage
+     * (see updateButtonVisibility) - closest to the send button, matching how often it's reached for. */
+    private ImageButton imagebutton_attachphoto;
+    private static final int SEND_GALLERY_IMAGE_ICON_Y = 143;
+    private static final int TAKE_AND_SEND_IMAGE_ICON_Y = 128;
 
     /** Voice message recording, replaces the text input row while active. NONE = normal text input;
      * RECORDING = mic capture in progress, [trash][waveform][pause] shown; REVIEWING = paused, waiting for
@@ -99,10 +112,10 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
     private enum VoiceRecordingState { NONE, RECORDING, REVIEWING }
     private VoiceRecordingState voiceRecordingState = VoiceRecordingState.NONE;
     private byte[] recordedAudio = new byte[0];
-    /** Directly above the send-image icon, same 14x15 slot convention - only constructed/shown when SVC
-     * is available (see VoicechatIntegration), guarded with a null check everywhere it's touched. */
+    /** Topmost of the three hover-reveal icons (furthest from the send button) - only constructed/shown
+     * when SVC is available (see VoicechatIntegration), guarded with a null check everywhere it's touched. */
     private ImageButton imagebutton_crazyphonevoicemessage;
-    private static final int MIC_ICON_Y = 128;
+    private static final int SEND_VOICE_ICON_Y = 112;
     private static final int RECORDING_ROW_Y = 158;
     private static final int TRASH_X = 8;
     private static final int WAVEFORM_X = 23;
@@ -151,6 +164,12 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
 
     @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
+        //? if fabric && >=1.20.5 {
+        /*// Skipped for the handful of frames a Fabric-native photo capture is pending, so the screenshot
+        // shows the world instead of this screen itself - see FabricPictureCapture's own doc comment.
+        if (fr.lordfinn.crazyphone.client.picture.FabricPictureCapture.suppressPhoneRendering)
+            return;
+        *///?}
         message.visible = voiceRecordingState == VoiceRecordingState.NONE;
         // button_envoyer sits at the exact same coordinates/size as button_voicepause/button_voicesend
         // (leftPos+100, topPos+158, 14x14) - without this it stayed clickable (its own .visible was never
@@ -203,6 +222,7 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
         if (voiceRecordingState == VoiceRecordingState.NONE) {
             button_envoyer.render(guiGraphics, mouseX, mouseY, partialTicks);
             imagebutton_crazyphoneaddimage.render(guiGraphics, mouseX, mouseY, partialTicks);
+            imagebutton_attachphoto.render(guiGraphics, mouseX, mouseY, partialTicks);
             if (imagebutton_crazyphonevoicemessage != null)
                 imagebutton_crazyphonevoicemessage.render(guiGraphics, mouseX, mouseY, partialTicks);
         } else {
@@ -226,6 +246,7 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
      */
     private boolean isWithinMessageCropZone(int mouseX, int mouseY) {
         if (button_envoyer.isMouseOver(mouseX, mouseY) || imagebutton_crazyphoneaddimage.isMouseOver(mouseX, mouseY)
+                || imagebutton_attachphoto.isMouseOver(mouseX, mouseY)
                 || (imagebutton_crazyphonevoicemessage != null && imagebutton_crazyphonevoicemessage.isMouseOver(mouseX, mouseY)))
             return false;
         return mouseX >= this.leftPos && mouseX < this.leftPos + 200
@@ -352,7 +373,7 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
             color = CrazyPhoneColors.ACCENT_YELLOW; // same "you could join/rejoin this" color as the contacts-list badge
         else
             color = 0xFFFFFFFF;
-        guiGraphics.drawString(this.font, "ðŸ“ž", iconX + 4, iconY + 4, color, true);
+        guiGraphics.drawString(this.font, "📞", iconX + 4, iconY + 4, color, true);
     }
 
     private boolean isHoveringCallIcon(double mouseX, double mouseY) {
@@ -391,6 +412,16 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
             return;
         voiceRecordingState = VoiceRecordingState.RECORDING;
         VoiceMessageRecorder.startRecording();
+    }
+
+    private void onAttachExistingPhotoClicked() {
+        HashMap<String, String> values = getEditBoxAndCheckBoxValues();
+        //? if >=1.20.5 {
+        /*NetworkAccess.sendToServer(new CrazyPhoneConversationButtonMessage(1, x, y, z, values));
+        *///? } else {
+        PacketDistributor.SERVER.noArg().send(new CrazyPhoneConversationButtonMessage(1, x, y, z, values));
+        //?}
+        CrazyPhoneConversationButtonMessage.handleButtonAction(entity, 1, x, y, z, values);
     }
 
     /** [trash][waveform][pause-or-send] - replaces the normal text input row while recording/reviewing a
@@ -485,22 +516,34 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
         }
     }
 
-    /** The image and voice-message icons share one "column": both stay hidden until the send button (or
-     * either icon itself) is hovered, and both stay visible together as long as the cursor is anywhere in
-     * that column - hovering one doesn't hide the other. */
+    /** The gallery-send, take-and-send, and voice-message icons share one "column": all three stay hidden
+     * until the send button (or the column itself) is hovered, and all three stay visible together as long
+     * as the cursor is anywhere in that column - hovering one doesn't hide the others. Checked against one
+     * contiguous rectangle spanning the whole column (send button's bottom edge up to the topmost icon's
+     * top edge) rather than each button's own small isMouseOver individually - the small gaps a cursor
+     * drifts through moving from one 14px-tall icon to the next (normal mouse movement is rarely perfectly
+     * vertical) otherwise flickered the column closed before it ever reached the topmost icon. */
     private void updateButtonVisibility(int mouseX, int mouseY) {
-        boolean hoveringColumn = button_envoyer.isMouseOver(mouseX, mouseY)
-                || imagebutton_crazyphoneaddimage.isMouseOver(mouseX, mouseY)
-                || (imagebutton_crazyphonevoicemessage != null && imagebutton_crazyphonevoicemessage.isMouseOver(mouseX, mouseY));
+        int columnLeft = this.leftPos + 100;
+        int columnRight = columnLeft + 14;
+        int columnTop = this.topPos + SEND_VOICE_ICON_Y;
+        int columnBottom = button_envoyer.getY() + button_envoyer.getHeight();
+        boolean hoveringColumn = mouseX >= columnLeft && mouseX < columnRight
+                && mouseY >= columnTop && mouseY < columnBottom;
+        imagebutton_attachphoto.visible = hoveringColumn;
         imagebutton_crazyphoneaddimage.visible = hoveringColumn;
         if (imagebutton_crazyphonevoicemessage != null)
             imagebutton_crazyphonevoicemessage.visible = hoveringColumn;
 
         boolean imagesEnabled = ClientFeatureFlagState.isEnabled(FeatureFlag.IMAGES);
-        imagebutton_crazyphoneaddimage.active = imagesEnabled;
-        imagebutton_crazyphoneaddimage.setTooltip(Tooltip.create(Component.translatable(imagesEnabled
+        imagebutton_attachphoto.active = imagesEnabled;
+        imagebutton_attachphoto.setTooltip(Tooltip.create(Component.translatable(imagesEnabled
                 ? "gui.crazyphone.crazy_phone_conversation.tooltip_send_image"
                 : "gui.crazyphone.crazy_phone_conversation.tooltip_send_image_disabled")));
+        imagebutton_crazyphoneaddimage.active = imagesEnabled;
+        imagebutton_crazyphoneaddimage.setTooltip(Tooltip.create(Component.translatable(imagesEnabled
+                ? "gui.crazyphone.crazy_phone_conversation.tooltip_take_and_send_image"
+                : "gui.crazyphone.crazy_phone_conversation.tooltip_take_and_send_image_disabled")));
 
         if (imagebutton_crazyphonevoicemessage != null) {
             boolean voiceEnabled = ClientFeatureFlagState.isEnabled(FeatureFlag.VOICE_MESSAGES);
@@ -709,6 +752,7 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
     private void initializeButtons() {
         button_envoyer = createSendMessageButton();
         imagebutton_crazyphoneaddimage = createImageButton();
+        imagebutton_attachphoto = createGallerySendButton();
         if (VoicechatIntegration.isAvailable()) {
             imagebutton_crazyphonevoicemessage = createVoiceMessageButton();
             button_voicetrash = createSquareIconButton(this.leftPos + TRASH_X, this.topPos + RECORDING_ROW_Y,
@@ -806,7 +850,7 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
 
         String ownerNumber = GetCrazyPhoneNumberFromMainHandProcedure.execute(this.menu.entity, null);
         int timestampInMinutes = (int) (Instant.now().getEpochSecond() / 60);
-        MessageData optimistic = new MessageData(timestampInMinutes, text, ownerNumber, ItemStack.EMPTY);
+        MessageData optimistic = new MessageData(timestampInMinutes, text, ownerNumber);
         receivedMessages.add(optimistic);
         // Not addRenderableWidget'd - see the comment in onConversationPageReceived for why that caused
         // the message feed to render unclipped, overflowing the crop area.
@@ -816,17 +860,13 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
     }
 
     private ImageButton createImageButton() {
-        ImageButton button = new ImageButton(this.leftPos + 100, this.topPos + 143, 14, 15,
-                new WidgetSprites(Crazyphone.parseId("crazyphone:textures/screens/crazyphone-add-image.png"),
-                        Crazyphone.parseId("crazyphone:textures/screens/crazyphone-add-hover.png")),
-                e -> {
-                    //? if >=1.20.5 {
-                    /*NetworkAccess.sendToServer(new CrazyPhoneConversationButtonMessage(1, x, y, z, getEditBoxAndCheckBoxValues()));
-                    *///? } else {
-                    PacketDistributor.SERVER.noArg().send(new CrazyPhoneConversationButtonMessage(1, x, y, z, getEditBoxAndCheckBoxValues()));
-                    //?}
-                    CrazyPhoneConversationButtonMessage.handleButtonAction(entity, 1, x, y, z, getEditBoxAndCheckBoxValues());
-                }) {
+        ImageButton button = new ImageButton(this.leftPos + 100, this.topPos + TAKE_AND_SEND_IMAGE_ICON_Y, 14, 15,
+                new WidgetSprites(Crazyphone.parseId("crazyphone:textures/screens/crazyphone-send-gallery.png"),
+                        Crazyphone.parseId("crazyphone:textures/screens/crazyphone-send-gallery-hover.png")),
+                // "Take and send image" - opens the full-screen capture overlay (zoom, then click to shoot);
+                // the shot lands in this conversation AND the phone's own My Photos list, same as any other
+                // capture. Purely client-side (no server round trip needed to start framing a shot).
+                e -> fr.lordfinn.crazyphone.client.CrazyPhoneCaptureMode.enter(this.menu.getConversationId())) {
             @Override
             public void renderWidget(GuiGraphics guiGraphics, int x, int y, float partialTicks) {
                 // No separate disabled sprite was provided to WidgetSprites (2-arg ctor), so sprites.get()
@@ -838,15 +878,35 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
                     GuiCompat.blit(guiGraphics, sprites.get(isActive(), isHoveredOrFocused()), getX(), getY(), 300, width, height);
             }
         };
+        button.setTooltip(Tooltip.create(Component.translatable("gui.crazyphone.crazy_phone_conversation.tooltip_take_and_send_image")));
+        button.visible = false;
+        return button;
+    }
+
+    /** "Send image" - picks one or more existing photos from the My Photos gallery to send, closest to the
+     * send button in the hover column (see updateButtonVisibility) since it's reached for most often. */
+    private ImageButton createGallerySendButton() {
+        ImageButton button = new ImageButton(this.leftPos + 100, this.topPos + SEND_GALLERY_IMAGE_ICON_Y, 14, 15,
+                new WidgetSprites(Crazyphone.parseId("crazyphone:textures/screens/crazyphone-add-image.png"),
+                        Crazyphone.parseId("crazyphone:textures/screens/crazyphone-add-hover.png")),
+                e -> onAttachExistingPhotoClicked()) {
+            @Override
+            public void renderWidget(GuiGraphics guiGraphics, int x, int y, float partialTicks) {
+                if (!isActive())
+                    GuiCompat.blit(guiGraphics, sprites.get(isActive(), isHoveredOrFocused()), getX(), getY(), 300, width, height, 0.35f);
+                else
+                    GuiCompat.blit(guiGraphics, sprites.get(isActive(), isHoveredOrFocused()), getX(), getY(), 300, width, height);
+            }
+        };
         button.setTooltip(Tooltip.create(Component.translatable("gui.crazyphone.crazy_phone_conversation.tooltip_send_image")));
         button.visible = false;
         return button;
     }
 
-    /** Sits directly above the send-image icon, same column - shown/hidden together with it (see
+    /** Topmost of the three hover-reveal icons - shown/hidden together with the others (see
      * updateButtonVisibility). Only ever constructed when SVC is available. */
     private ImageButton createVoiceMessageButton() {
-        ImageButton button = new ImageButton(this.leftPos + 100, this.topPos + MIC_ICON_Y, 14, 15,
+        ImageButton button = new ImageButton(this.leftPos + 100, this.topPos + SEND_VOICE_ICON_Y, 14, 15,
                 new WidgetSprites(Crazyphone.parseId("crazyphone:textures/screens/crazyphone-send-voice.png"),
                         Crazyphone.parseId("crazyphone:textures/screens/crazyphone-send-voice-hover.png")),
                 e -> onMicIconClicked()) {
@@ -878,24 +938,45 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
     }
     *///?}
 
+    /** Version-gated Button#onPress call, shared by every manually-dispatched click in mouseClickedImpl
+     * (button_envoyer, and the voice-recording row's trash/pause/send, none of which vanilla's own click
+     * routing reaches while this screen intercepts mouseClicked). */
+    private static void pressButton(Button btn, double mouseX, double mouseY, int button) {
+        //? if <1.21.10 {
+        btn.onPress();
+        //?}
+        //? if >=1.21.10 {
+        /*btn.onPress(new net.minecraft.client.input.MouseButtonEvent(mouseX, mouseY,
+                new net.minecraft.client.input.MouseButtonInfo(button, 0)));
+        *///?}
+    }
+
     private boolean mouseClickedImpl(double mouseX, double mouseY, int button) {
         // While recording/reviewing a voice message, the trash and pause/send controls are the only
         // interaction available - everything else (including the message feed behind the waveform row) is
-        // deliberately unreachable until it's sent or deleted. They're real registered widgets now (see
-        // createSquareIconButton), so super.mouseClicked() already dispatches to whichever of them is
-        // visible/hovered - this just swallows every other click while that's the only thing reachable.
+        // deliberately unreachable until it's sent or deleted. This method's own wrapper never calls
+        // super.mouseClicked() when this returns true, so returning true unconditionally here (as an
+        // earlier version of this method did) silently ate the trash/pause/send buttons' own clicks too,
+        // not just the ones meant to be swallowed - dispatch to whichever of them is actually visible and
+        // hovered explicitly, then swallow everything else.
         if (voiceRecordingState != VoiceRecordingState.NONE) {
+            if (button == 0 && button_voicetrash.isMouseOver(mouseX, mouseY)) {
+                pressButton(button_voicetrash, mouseX, mouseY, button);
+                return true;
+            }
+            if (button == 0 && button_voicepause.visible && button_voicepause.isMouseOver(mouseX, mouseY)) {
+                pressButton(button_voicepause, mouseX, mouseY, button);
+                return true;
+            }
+            if (button == 0 && button_voicesend.visible && button_voicesend.isMouseOver(mouseX, mouseY)) {
+                pressButton(button_voicesend, mouseX, mouseY, button);
+                return true;
+            }
             return true;
         }
 
         if (button == 0 && button_envoyer.isMouseOver(mouseX, mouseY)) {
-            //? if <1.21.10 {
-            button_envoyer.onPress();
-            //?}
-            //? if >=1.21.10 {
-            /*button_envoyer.onPress(new net.minecraft.client.input.MouseButtonEvent(mouseX, mouseY,
-                    new net.minecraft.client.input.MouseButtonInfo(button, 0)));
-            *///?}
+            pressButton(button_envoyer, mouseX, mouseY, button);
             return true;
         }
 
@@ -953,6 +1034,7 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
         // they always paint on top of it (see the comment there) - addWidget still registers them for
         // click handling, keyboard navigation and tooltips without adding a second automatic render pass.
         this.addWidget(imagebutton_crazyphoneaddimage);
+        this.addWidget(imagebutton_attachphoto);
         this.addWidget(button_envoyer);
         if (imagebutton_crazyphonevoicemessage != null)
             this.addWidget(imagebutton_crazyphonevoicemessage);

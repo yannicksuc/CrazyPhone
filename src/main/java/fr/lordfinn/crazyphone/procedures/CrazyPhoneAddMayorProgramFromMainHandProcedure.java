@@ -9,11 +9,9 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.commands.CommandSourceStack;
 
 import fr.lordfinn.crazyphone.data.PhoneRegistrySavedData;
-import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
+import fr.lordfinn.crazyphone.utils.PhotoItemData;
 
 import com.mojang.brigadier.context.CommandContext;
-
-import de.maxhenkel.camera.ImageData;
 
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 
@@ -25,13 +23,18 @@ public class CrazyPhoneAddMayorProgramFromMainHandProcedure {
 		if ((PhoneRegistrySavedData.get(world).mayorsCandidates.get(numberStr)) == null) {
 			if (entity instanceof Player _player && !_player.level().isClientSide())
 				_player.displayClientMessage(Component.translatable("message.crazyphone.candidate_not_found"), false);
-		} else {
-			ImageData data = ImageData.fromStack(player.getMainHandItem());
-			CompoundTag tag = CrazyPhoneHelper.imageDataToCompoundTag(data);
-			PhoneRegistrySavedData.get(world).mayorsCandidates.put(numberStr, tag);
-			if (entity instanceof Player _player && !_player.level().isClientSide())
-				_player.displayClientMessage(Component.translatable("message.crazyphone.candidate_poster_added"), false);
-			PhoneRegistrySavedData.get(world).syncToAll(world);
+			return;
 		}
+		PhotoItemData data = PhotoItemData.fromStack(player.getMainHandItem());
+		if (data == null) {
+			player.displayClientMessage(Component.translatable("message.crazyphone.candidate_poster_needs_photo"), false);
+			return;
+		}
+		CompoundTag tag = new CompoundTag();
+		tag.putLong("photo_id_most", data.photoId().getMostSignificantBits());
+		tag.putLong("photo_id_least", data.photoId().getLeastSignificantBits());
+		PhoneRegistrySavedData.get(world).mayorsCandidates.put(numberStr, tag);
+		player.displayClientMessage(Component.translatable("message.crazyphone.candidate_poster_added"), false);
+		PhoneRegistrySavedData.get(world).syncToAll(world);
 	}
 }

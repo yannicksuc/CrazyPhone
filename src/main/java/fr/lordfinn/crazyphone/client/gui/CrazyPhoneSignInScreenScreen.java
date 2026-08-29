@@ -1,6 +1,8 @@
 package fr.lordfinn.crazyphone.client.gui;
 
+//? if neoforge {
 import net.neoforged.neoforge.network.PacketDistributor;
+//?}
 import fr.lordfinn.crazyphone.utils.NetworkAccess;
 
 import net.minecraft.world.entity.player.Inventory;

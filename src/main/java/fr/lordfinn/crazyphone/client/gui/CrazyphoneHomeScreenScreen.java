@@ -2,9 +2,12 @@ package fr.lordfinn.crazyphone.client.gui;
 
 import fr.lordfinn.crazyphone.Crazyphone;
 
+//? if neoforge {
 import net.neoforged.neoforge.network.PacketDistributor;
+//?}
 import fr.lordfinn.crazyphone.utils.NetworkAccess;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.ImageButton;
 import net.minecraft.network.chat.Component;
@@ -50,7 +53,23 @@ public class CrazyphoneHomeScreenScreen extends CrazyPhoneDefaultScreenScreen<Cr
             contactsX -= 26;
         }
 
-        addImageButton("imagebutton_photo", 0, "crazyphone-photo-icon", photoX, this.topPos + 28, 46, 62);
+        // Photo: purely client-side, opens the same capture overlay the conversation camera icon and
+        // punch-to-shoot use - bypasses addImageButton's generic send-packet-then-handleButtonAction
+        // machinery entirely since there's nothing server-authoritative about framing a shot.
+        net.minecraft.client.gui.components.ImageButton photoButton = new net.minecraft.client.gui.components.ImageButton(
+                photoX, this.topPos + 28, 46, 62,
+                new net.minecraft.client.gui.components.WidgetSprites(
+                        Crazyphone.parseId("crazyphone:textures/screens/crazyphone-photo-icon.png"),
+                        Crazyphone.parseId("crazyphone:textures/screens/crazyphone-photo-icon-hover.png")),
+                e -> fr.lordfinn.crazyphone.client.CrazyPhoneCaptureMode.enter("")) {
+            @Override
+            public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
+                fr.lordfinn.crazyphone.utils.GuiCompat.blit(guiGraphics, sprites.get(isActive(), isHoveredOrFocused()), getX(), getY(), 0, width, height);
+            }
+        };
+        guistate.put("button:imagebutton_photo", photoButton);
+        this.addRenderableWidget(photoButton);
+
         addImageButton("imagebutton_albums", 1, "crazyphone-album-icon", albumsX, this.topPos + 28, 52, 62);
         addImageButton("imagebutton_contacts", 2, "crazyphone-contacts-icon", contactsX, this.topPos + 92, 53, 66);
     }

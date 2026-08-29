@@ -1,6 +1,5 @@
 package fr.lordfinn.crazyphone.utils;
 
-import de.maxhenkel.camera.ImageData;
 import fr.lordfinn.crazyphone.client.gui.components.MessageData;
 import fr.lordfinn.crazyphone.data.PhoneRegistrySavedData;
 import net.minecraft.nbt.CompoundTag;
@@ -61,23 +60,12 @@ class CrazyPhoneHelperTest {
         assertEquals("111", message.getSender());
         assertEquals("hello there", message.getMessage());
         assertEquals(42, message.getTimecode());
-        assertTrue(message.getImage().isEmpty());
+        assertFalse(message.isImage());
     }
 
     @Test
     void getMessageFromTag_nullTag_returnsNull() {
         assertNull(CrazyPhoneHelper.getMessageFromTag(null));
-    }
-
-    @Test
-    void imageDataToCompoundTag_encodesIdAndTimeAndOwner() {
-        ImageData dummy = ImageData.dummy();
-        CompoundTag tag = CrazyPhoneHelper.imageDataToCompoundTag(dummy);
-
-        assertEquals(dummy.getId().getMostSignificantBits(), fr.lordfinn.crazyphone.utils.NbtCompat.getLong(tag, "image_id_most"));
-        assertEquals(dummy.getId().getLeastSignificantBits(), fr.lordfinn.crazyphone.utils.NbtCompat.getLong(tag, "image_id_least"));
-        assertEquals(dummy.getTime(), fr.lordfinn.crazyphone.utils.NbtCompat.getLong(tag, "image_time"));
-        assertEquals(dummy.getOwner(), fr.lordfinn.crazyphone.utils.NbtCompat.getString(tag, "owner"));
     }
 
     // --- getGroupMembers ---

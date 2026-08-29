@@ -11,6 +11,7 @@ import java.util.Set;
 import io.netty.buffer.Unpooled;
 import fr.lordfinn.crazyphone.data.PhoneAttachmentTypes;
 import fr.lordfinn.crazyphone.data.PhoneRegistrySavedData;
+import fr.lordfinn.crazyphone.data.PhotoSavedData;
 import fr.lordfinn.crazyphone.data.PlayerPhoneState;
 import fr.lordfinn.crazyphone.procedures.CrazyPhoneGetContactsProcedure;
 import fr.lordfinn.crazyphone.procedures.CrazyPhoneGetGroupsProcedure;
@@ -21,13 +22,16 @@ import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneGroupSettingsScreenMenu;
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneCallingScreenMenu;
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneIncomingCallScreenMenu;
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneInCallScreenMenu;
+//? if neoforge {
 import fr.lordfinn.crazyphone.voicechat.CallRegistry;
+//?}
 import java.util.UUID;
+//? if neoforge {
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneMayorCandidateScreenMenu;
+//?}
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneMayorsCandidatesListMenu;
+import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneMyPhotosScreenMenu;
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhonePasswordScreenMenu;
-import fr.lordfinn.crazyphone.world.inventory.CrazyPhonePictureFoldersScreenMenu;
-import fr.lordfinn.crazyphone.world.inventory.CrazyPhonePicturesScreenMenu;
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneSignInScreenMenu;
 import fr.lordfinn.crazyphone.world.inventory.CrazyphoneHomeScreenMenu;
 import net.minecraft.core.RegistryAccess;
@@ -47,8 +51,9 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.items.IItemHandlerModifiable;
-import net.neoforged.neoforge.network.connection.ConnectionType;
+//? if neoforge && >=1.20.5 {
+/*import net.neoforged.neoforge.network.connection.ConnectionType;
+*///?}
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.MinecraftServer;
@@ -60,6 +65,27 @@ import org.slf4j.LoggerFactory;
 
 public class ScreenMenuUtils {
 
+    // NeoForge's Player#getData/#setData don't exist on plain Fabric - Fabric's data-attachment-api-v1
+    // reaches the same attachment via a cast to AttachmentTarget instead (see PhoneAttachmentTypes.java's
+    // own doc comment for why the cast is the API's own intended usage, not a workaround).
+    private static PlayerPhoneState getPhoneState(Player player) {
+        //? if neoforge {
+        return player.getData(PhoneAttachmentTypes.PLAYER_PHONE_STATE);
+        //? } else {
+        /*return ((net.fabricmc.fabric.api.attachment.v1.AttachmentTarget) player)
+                .getAttachedOrCreate(PhoneAttachmentTypes.PLAYER_PHONE_STATE, PlayerPhoneState::new);
+        *///?}
+    }
+
+    private static void setPhoneState(Player player, PlayerPhoneState playerData) {
+        //? if neoforge {
+        player.setData(PhoneAttachmentTypes.PLAYER_PHONE_STATE, playerData);
+        //? } else {
+        /*((net.fabricmc.fabric.api.attachment.v1.AttachmentTarget) player)
+                .setAttached(PhoneAttachmentTypes.PLAYER_PHONE_STATE, playerData);
+        *///?}
+    }
+
     public static void openLastCrazyPhoneMenu(Player player, InteractionHand hand) {
 
         popScreen(player);
@@ -67,7 +93,7 @@ public class ScreenMenuUtils {
     }
 
     public static void openCurrentCrazyPhoneMenu(Player player, InteractionHand hand) {
-        PlayerPhoneState _vars = player.getData(PhoneAttachmentTypes.PLAYER_PHONE_STATE);
+        PlayerPhoneState _vars = getPhoneState(player);
         String tag = _vars.currentCrazyPhoneScreenOpened;
 
         if (tag == null || tag.isEmpty())
@@ -89,6 +115,7 @@ public class ScreenMenuUtils {
         return (dotIndex != -1 && dotIndex + 1 < tag.length()) ? tag.substring(dotIndex + 1) : null;
     }
 
+    //? if neoforge {
     public static void openCrazyPhoneMenuByTag(Player player, InteractionHand hand, String screenId,
             String screenData) {
         if (screenId == null || screenId.isEmpty())
@@ -100,10 +127,6 @@ public class ScreenMenuUtils {
                 openPhoneCustomMenu(player, hand, CrazyPhoneSignInScreenMenu.class);
             case "crazyphone:crazy_phone_password_screen" ->
                 openPhoneCustomMenu(player, hand, CrazyPhonePasswordScreenMenu.class);
-            case "crazyphone:crazy_phone_picture_folders_screen" ->
-                openPhoneCustomMenu(player, hand, CrazyPhonePictureFoldersScreenMenu.class);
-            case "crazyphone:crazy_phone_pictures_screen" ->
-                openPhoneAlbumMenuWithData(player, hand, screenData);
             case "crazyphone:crazy_phone_contacts_screen" ->
                 openPhoneContactsMenu(player, hand);
             case "crazyphone:crazy_phone_conversation" ->
@@ -121,9 +144,38 @@ public class ScreenMenuUtils {
             	LoggerFactory.getLogger("crazyphone").warn("Unknown screen ID: " + screenId);
         }
     }
+    //?}
+    //? if fabric {
+    /*// Camerapture (album/picture-folders/mayor-candidate screens, task #165) and the Simple Voice Chat
+    // call screens (task #161/#162 follow-up - voicechat/ package not ported) aren't wired yet - those
+    // screen IDs fall through to the same "unknown" warning as a genuinely unrecognized tag for now.
+    public static void openCrazyPhoneMenuByTag(Player player, InteractionHand hand, String screenId,
+            String screenData) {
+        if (screenId == null || screenId.isEmpty())
+            return;
+        switch (screenId) {
+            case "crazyphone:crazyphone_home_screen" ->
+                openPhoneCustomMenu(player, hand, CrazyphoneHomeScreenMenu.class);
+            case "crazyphone:crazy_phone_sign_in_screen" ->
+                openPhoneCustomMenu(player, hand, CrazyPhoneSignInScreenMenu.class);
+            case "crazyphone:crazy_phone_password_screen" ->
+                openPhoneCustomMenu(player, hand, CrazyPhonePasswordScreenMenu.class);
+            case "crazyphone:crazy_phone_contacts_screen" ->
+                openPhoneContactsMenu(player, hand);
+            case "crazyphone:crazy_phone_conversation" ->
+                openPhoneConversationMenu(player, hand, screenData);
+            case "crazyphone:crazy_phone_group_settings_screen" ->
+                openGroupSettingsMenu(player, hand, screenData);
+            case "crazyphone:crazy_phone_mayors_candidates_list" ->
+                openPhoneCustomMenu(player, hand, CrazyPhoneMayorsCandidatesListMenu.class);
+            default ->
+            	LoggerFactory.getLogger("crazyphone").warn("Unknown or not-yet-ported-to-Fabric screen ID: " + screenId);
+        }
+    }
+    *///?}
 
     public static void popScreen(Player player) {
-        PlayerPhoneState playerData = player.getData(PhoneAttachmentTypes.PLAYER_PHONE_STATE);
+        PlayerPhoneState playerData = getPhoneState(player);
         List<String> history = getScreenHistory(playerData.crazyPhoneScreenHistory);
 
         if (history.size() <= 1)
@@ -136,11 +188,11 @@ public class ScreenMenuUtils {
         playerData.currentCrazyPhoneScreenOpened = newCurrent;
         playerData.crazyPhoneScreenHistory = serializeScreenHistory(history);
 
-        player.setData(PhoneAttachmentTypes.PLAYER_PHONE_STATE, playerData);
+        setPhoneState(player, playerData);
     }
 
     public static void pushScreen(Player player, String screenId, String screenData) {
-        PlayerPhoneState playerData = player.getData(PhoneAttachmentTypes.PLAYER_PHONE_STATE);
+        PlayerPhoneState playerData = getPhoneState(player);
 
         String screenTag = (screenData == null || screenData.isEmpty()) ? screenId : screenId + ";" + screenData;
         List<String> history = getScreenHistory(playerData.crazyPhoneScreenHistory);
@@ -155,7 +207,7 @@ public class ScreenMenuUtils {
                 history.set(history.size() - 1, screenTag); // mise à jour de l'élément courant
                 playerData.crazyPhoneScreenHistory = serializeScreenHistory(history);
                 playerData.currentCrazyPhoneScreenOpened = screenTag;
-                player.setData(PhoneAttachmentTypes.PLAYER_PHONE_STATE, playerData);
+                setPhoneState(player, playerData);
                 return;
             }
 
@@ -169,11 +221,11 @@ public class ScreenMenuUtils {
         playerData.crazyPhoneScreenHistory = serializeScreenHistory(history);
         playerData.currentCrazyPhoneScreenOpened = screenTag;
 
-        player.setData(PhoneAttachmentTypes.PLAYER_PHONE_STATE, playerData);
+        setPhoneState(player, playerData);
     }
 
     public static void addDataToCurrentPage(Player player, String newScreenData) {
-        PlayerPhoneState playerData = player.getData(PhoneAttachmentTypes.PLAYER_PHONE_STATE);
+        PlayerPhoneState playerData = getPhoneState(player);
 
         List<String> history = getScreenHistory(playerData.crazyPhoneScreenHistory);
         if (history.isEmpty())
@@ -191,17 +243,17 @@ public class ScreenMenuUtils {
         playerData.crazyPhoneScreenHistory = serializeScreenHistory(history);
         playerData.currentCrazyPhoneScreenOpened = newTag;
 
-        player.setData(PhoneAttachmentTypes.PLAYER_PHONE_STATE, playerData);
+        setPhoneState(player, playerData);
     }
 
     public static void resetToHomeScreen(Player player) {
-        PlayerPhoneState playerData = player.getData(PhoneAttachmentTypes.PLAYER_PHONE_STATE);
+        PlayerPhoneState playerData = getPhoneState(player);
 
         String homeScreen = "crazyphone:crazyphone_home_screen"; // ou un autre identifiant de page d'accueil
         playerData.crazyPhoneScreenHistory = homeScreen;
         playerData.currentCrazyPhoneScreenOpened = homeScreen;
 
-        player.setData(PhoneAttachmentTypes.PLAYER_PHONE_STATE, playerData);
+        setPhoneState(player, playerData);
     }
 
     public static List<String> getScreenHistory(String historyString) {
@@ -214,20 +266,7 @@ public class ScreenMenuUtils {
         return String.join("|", history);
     }
 
-    private static void openPhoneAlbumMenuWithData(Player player, InteractionHand hand, String screenData) {
-        if (screenData == null || screenData.isEmpty()) {
-            System.err.println("Missing data for screen 'album'");
-            return;
-        }
-
-        try {
-            int data = Integer.parseInt(screenData);
-            openPhoneAlbumMenu(player, hand, data);
-        } catch (NumberFormatException e) {
-            System.err.println("Invalid number for screen 'album': " + screenData);
-        }
-    }
-
+    //? if neoforge {
     public static void openPhoneCustomMenu(Player player, InteractionHand hand,
             Class<? extends AbstractContainerMenu> menuClass) {
         if (player instanceof ServerPlayer) {
@@ -257,7 +296,43 @@ public class ScreenMenuUtils {
             });
         }
     }
+    //?}
+    //? if fabric && >=1.20.5 {
+    /*public static void openPhoneCustomMenu(Player player, InteractionHand hand,
+            Class<? extends AbstractContainerMenu> menuClass) {
+        if (player instanceof ServerPlayer serverPlayer) {
+            player.openMenu(new net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory<RegistryFriendlyByteBuf>() {
+                @Override
+                public Component getDisplayName() {
+                    return Component.translatable("item.crazyphone.crazy_phone");
+                }
 
+                @Override
+                public AbstractContainerMenu createMenu(int id, Inventory inventory, Player player) {
+                    RegistryFriendlyByteBuf packetBuffer = new RegistryFriendlyByteBuf(Unpooled.buffer(), player.registryAccess());
+                    packetBuffer.writeBlockPos(player.blockPosition());
+                    packetBuffer.writeByte(hand == InteractionHand.MAIN_HAND ? 0 : 1);
+                    try {
+                        return menuClass.getConstructor(int.class, Inventory.class, FriendlyByteBuf.class)
+                                .newInstance(id, inventory, packetBuffer);
+                    } catch (Exception e) {
+                        throw new RuntimeException("Failed to create menu instance", e);
+                    }
+                }
+
+                @Override
+                public RegistryFriendlyByteBuf getScreenOpeningData(ServerPlayer player) {
+                    RegistryFriendlyByteBuf packetBuffer = new RegistryFriendlyByteBuf(Unpooled.buffer(), player.registryAccess());
+                    packetBuffer.writeBlockPos(player.blockPosition());
+                    packetBuffer.writeByte(0); // Always Main Hand
+                    return packetBuffer;
+                }
+            });
+        }
+    }
+    *///?}
+
+    //? if neoforge {
     public static void openPhoneMayorCandidateMenu(Player player, String candidateNumber) {
         if (player instanceof ServerPlayer) {
             player.openMenu(new MenuProvider() {
@@ -284,6 +359,86 @@ public class ScreenMenuUtils {
                     buf.writeUtf(candidateNumber);
             });
         }
+    }
+    //?}
+
+    /** Opens the flat "My Photos" gallery - every photo {@code player}'s phone owns, resolved server-side
+     * right now (never trust a client-cached list). {@code conversationId} empty means Delete/Take mode
+     * (opened from the home screen); non-empty means Send mode targeting that conversation (opened from
+     * inside it via the conversation screen's "attach existing photo" button) - simpler and less fragile
+     * than the old Camera-mod-era screen-history-introspection heuristic this replaces, same end result. */
+    public static void openPhoneMyPhotosMenu(Player player, InteractionHand hand, String conversationId) {
+        if (player instanceof ServerPlayer) {
+            String ownerNumber = GetCrazyPhoneNumberFromMainHandProcedure.execute(player, null);
+            List<UUID> photoIds = PhotoSavedData.get(player.level()).getPhotoIdsForOwner(ownerNumber);
+
+            //? if >=1.20.5 {
+            /*RegistryAccess registryAccess = player.registryAccess();
+            *///? }
+            //? if neoforge {
+            player.openMenu(new MenuProvider() {
+                @Override
+                public Component getDisplayName() {
+                    return Component.translatable("item.crazyphone.crazy_phone");
+                }
+
+                @Override
+                public AbstractContainerMenu createMenu(int id, Inventory inventory, Player player) {
+                    //? if >=1.20.5 {
+                    /*RegistryFriendlyByteBuf packetBuffer = new RegistryFriendlyByteBuf(Unpooled.buffer(), registryAccess);
+                    *///? } else {
+                    FriendlyByteBuf packetBuffer = new FriendlyByteBuf(Unpooled.buffer());
+                    //?}
+                    populateBufferWithMyPhotosData(packetBuffer, player, hand, conversationId, photoIds);
+                    try {
+                        return new CrazyPhoneMyPhotosScreenMenu(id, inventory, packetBuffer);
+                    } catch (Exception e) {
+                        throw new RuntimeException("Failed to create menu instance", e);
+                    }
+                }
+            }, buf -> populateBufferWithMyPhotosData(buf, player, hand, conversationId, photoIds));
+            //?}
+            //? if fabric && >=1.20.5 {
+            /*player.openMenu(new net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory<RegistryFriendlyByteBuf>() {
+                @Override
+                public Component getDisplayName() {
+                    return Component.translatable("item.crazyphone.crazy_phone");
+                }
+
+                @Override
+                public AbstractContainerMenu createMenu(int id, Inventory inventory, Player player) {
+                    RegistryFriendlyByteBuf packetBuffer = new RegistryFriendlyByteBuf(Unpooled.buffer(), registryAccess);
+                    populateBufferWithMyPhotosData(packetBuffer, player, hand, conversationId, photoIds);
+                    try {
+                        return new CrazyPhoneMyPhotosScreenMenu(id, inventory, packetBuffer);
+                    } catch (Exception e) {
+                        throw new RuntimeException("Failed to create menu instance", e);
+                    }
+                }
+
+                @Override
+                public RegistryFriendlyByteBuf getScreenOpeningData(ServerPlayer serverPlayer) {
+                    RegistryFriendlyByteBuf packetBuffer = new RegistryFriendlyByteBuf(Unpooled.buffer(), registryAccess);
+                    populateBufferWithMyPhotosData(packetBuffer, player, hand, conversationId, photoIds);
+                    return packetBuffer;
+                }
+            });
+            *///?}
+        }
+    }
+
+    //? if >=1.20.5 {
+    /*private static void populateBufferWithMyPhotosData(RegistryFriendlyByteBuf packetBuffer, Player player,
+    *///? } else {
+    private static void populateBufferWithMyPhotosData(FriendlyByteBuf packetBuffer, Player player,
+    //?}
+            InteractionHand hand, String conversationId, List<UUID> photoIds) {
+        packetBuffer.writeBlockPos(player.blockPosition());
+        packetBuffer.writeByte(hand == InteractionHand.MAIN_HAND ? 0 : 1);
+        packetBuffer.writeUtf(conversationId);
+        packetBuffer.writeVarInt(photoIds.size());
+        for (UUID id : photoIds)
+            packetBuffer.writeUUID(id);
     }
 
     public static void openPhoneContactsMenu(Player player, InteractionHand hand) {
@@ -314,6 +469,7 @@ public class ScreenMenuUtils {
             sortByRecency(contacts, world, ownerNumber, false);
             sortByRecency(groups, world, ownerNumber, true);
 
+            //? if neoforge {
             player.openMenu(new MenuProvider() {
                 @Override
                 public Component getDisplayName() {
@@ -332,6 +488,33 @@ public class ScreenMenuUtils {
                     }
                 }
             }, buf -> populateBufferWithMenuData(buf, player, hand, favorites, contacts, groups));
+            //?}
+            //? if fabric && >=1.20.5 {
+            /*player.openMenu(new net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory<RegistryFriendlyByteBuf>() {
+                @Override
+                public Component getDisplayName() {
+                    return Component.translatable("item.crazyphone.crazy_phone");
+                }
+
+                @Override
+                public AbstractContainerMenu createMenu(int id, Inventory inventory, Player player) {
+                    RegistryFriendlyByteBuf packetBuffer = new RegistryFriendlyByteBuf(Unpooled.buffer(), player.registryAccess());
+                    populateBufferWithMenuData(packetBuffer, player, hand, favorites, contacts, groups);
+                    try {
+                        return new CrazyPhoneContactsScreenMenu(id, inventory, packetBuffer);
+                    } catch (Exception e) {
+                        throw new RuntimeException("Failed to create menu instance", e);
+                    }
+                }
+
+                @Override
+                public RegistryFriendlyByteBuf getScreenOpeningData(ServerPlayer serverPlayer) {
+                    RegistryFriendlyByteBuf packetBuffer = new RegistryFriendlyByteBuf(Unpooled.buffer(), serverPlayer.registryAccess());
+                    populateBufferWithMenuData(packetBuffer, player, hand, favorites, contacts, groups);
+                    return packetBuffer;
+                }
+            });
+            *///?}
         }
     }
 
@@ -392,6 +575,7 @@ public class ScreenMenuUtils {
      * current member (including the viewer, so the screen can tell who they are relative to the admin). */
     public static void openGroupSettingsMenu(Player player, InteractionHand hand, String conversationId) {
         if (player instanceof ServerPlayer) {
+            //? if neoforge {
             player.openMenu(new MenuProvider() {
                 @Override
                 public Component getDisplayName() {
@@ -410,6 +594,33 @@ public class ScreenMenuUtils {
                     }
                 }
             }, buf -> populateBufferWithGroupSettingsData(buf, player, conversationId));
+            //?}
+            //? if fabric && >=1.20.5 {
+            /*player.openMenu(new net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory<RegistryFriendlyByteBuf>() {
+                @Override
+                public Component getDisplayName() {
+                    return Component.translatable("item.crazyphone.crazy_phone");
+                }
+
+                @Override
+                public AbstractContainerMenu createMenu(int id, Inventory inventory, Player player) {
+                    RegistryFriendlyByteBuf packetBuffer = new RegistryFriendlyByteBuf(Unpooled.buffer(), player.registryAccess());
+                    populateBufferWithGroupSettingsData(packetBuffer, player, conversationId);
+                    try {
+                        return new CrazyPhoneGroupSettingsScreenMenu(id, inventory, packetBuffer);
+                    } catch (Exception e) {
+                        throw new RuntimeException("Failed to create menu instance", e);
+                    }
+                }
+
+                @Override
+                public RegistryFriendlyByteBuf getScreenOpeningData(ServerPlayer serverPlayer) {
+                    RegistryFriendlyByteBuf packetBuffer = new RegistryFriendlyByteBuf(Unpooled.buffer(), serverPlayer.registryAccess());
+                    populateBufferWithGroupSettingsData(packetBuffer, player, conversationId);
+                    return packetBuffer;
+                }
+            });
+            *///?}
         }
     }
 
@@ -454,51 +665,6 @@ public class ScreenMenuUtils {
         }
     }
 
-    public static void openPhoneAlbumMenu(Player player, InteractionHand hand, int albumId) {
-        if (player instanceof ServerPlayer serverPlayer) {
-
-            SoundEvent sound = RegistryCompat.get(BuiltInRegistries.SOUND_EVENT, Crazyphone.parseId("minecraft:item.book.page_turn"));
-            if (sound != null) {
-                serverPlayer.playNotifySound(sound, SoundSource.PLAYERS, 0.7f, 1.2f);
-            }
-
-            // Resolved fresh from the server's own copy of the held phone right now, then transmitted whole
-            // (see CrazyPhonePicturesScreenMenu) - the client's own local copy of that item can still be a
-            // tick or two behind a photo that was just taken, which used to make it invisible until the
-            // album was reopened a second time.
-            IItemHandlerModifiable handler = CrazyPhoneHelper.getPhoneItemHandler(player);
-            ItemStack album = CrazyPhoneHelper.getAlbumFromPhoneHandler(handler, albumId);
-            CompoundTag albumTag = CrazyPhoneHelper.encodeItemStack(player.level(), album);
-
-            player.openMenu(new MenuProvider() {
-                @Override
-                public Component getDisplayName() {
-                    return Component.translatable("item.crazyphone.crazy_phone");
-                }
-
-                @Override
-                public AbstractContainerMenu createMenu(int id, Inventory inventory, Player player) {
-                    FriendlyByteBuf packetBuffer = new FriendlyByteBuf(Unpooled.buffer());
-                    packetBuffer.writeBlockPos(player.blockPosition());
-                    packetBuffer.writeByte(hand == InteractionHand.MAIN_HAND ? 0 : 1);
-                    packetBuffer.writeInt(albumId);
-                    packetBuffer.writeNbt(albumTag);
-
-                    try {
-                        return new CrazyPhonePicturesScreenMenu(id, inventory, packetBuffer);
-                    } catch (Exception e) {
-                        throw new RuntimeException("Failed to create menu instance", e);
-                    }
-                }
-            }, buf -> {
-                buf.writeBlockPos(player.blockPosition());
-                buf.writeByte(0); // Always Main Hand
-                buf.writeInt(albumId);
-                buf.writeNbt(albumTag);
-            });
-        }
-    }
-
     /**
      * Opens the conversation menu for {@code conversationId}. Unlike the old code, this does NOT embed the
      * conversation's message history in the menu-open buffer (that used to be done via a
@@ -538,8 +704,11 @@ public class ScreenMenuUtils {
 
                 //? if >=1.20.5 {
                 /*RegistryAccess registryAccess = player.registryAccess();
-                ConnectionType connectionType = ConnectionType.NEOFORGE;
                 *///? }
+                //? if neoforge && >=1.20.5 {
+                /*ConnectionType connectionType = ConnectionType.NEOFORGE;
+                *///?}
+                //? if neoforge {
                 player.openMenu(new MenuProvider() {
                     @Override
                     public Component getDisplayName() {
@@ -562,6 +731,40 @@ public class ScreenMenuUtils {
                         }
                     }
                 }, buf -> populateBufferWithConversationData(buf, player, hand, conversationId));
+                //?}
+                //? if fabric && >=1.20.5 {
+                /*// Real vanilla RegistryFriendlyByteBuf only ever takes (ByteBuf, RegistryAccess) - the
+                // 3-arg overload above (with a ConnectionType) is a NeoForge-only addition, javap-confirmed
+                // against the Loom-remapped vanilla jar the same way ConversationSavedData's SavedData.
+                // Factory mismatch was. Also, unlike every other menu here, this one can't use the plain
+                // 2-arg player.openMenu(MenuProvider, writer) overload at all on Fabric: that path routes
+                // through MenuType.create(id, inventory) on the client, which ExtendedScreenHandlerType
+                // overrides to throw - it MUST go through ExtendedScreenHandlerFactory instead.
+                player.openMenu(new net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory<RegistryFriendlyByteBuf>() {
+                    @Override
+                    public Component getDisplayName() {
+                        return Component.translatable("item.crazyphone.crazy_phone");
+                    }
+
+                    @Override
+                    public AbstractContainerMenu createMenu(int id, Inventory inventory, Player player) {
+                        RegistryFriendlyByteBuf packetBuffer = new RegistryFriendlyByteBuf(Unpooled.buffer(), registryAccess);
+                        populateBufferWithConversationData(packetBuffer, player, hand, conversationId);
+                        try {
+                            return new CrazyPhoneConversationMenu(id, inventory, packetBuffer);
+                        } catch (Exception e) {
+                            throw new RuntimeException("Failed to create menu instance", e);
+                        }
+                    }
+
+                    @Override
+                    public RegistryFriendlyByteBuf getScreenOpeningData(ServerPlayer serverPlayer) {
+                        RegistryFriendlyByteBuf packetBuffer = new RegistryFriendlyByteBuf(Unpooled.buffer(), registryAccess);
+                        populateBufferWithConversationData(packetBuffer, player, hand, conversationId);
+                        return packetBuffer;
+                    }
+                });
+                *///?}
             }
     }
 
@@ -641,6 +844,7 @@ public class ScreenMenuUtils {
      * reopening an active call, the Calling screen asking to be swapped for the InCall screen once answered,
      * and the Incoming Call screen's own Accept button.
      */
+    //? if neoforge {
     public static void openCallScreenForPlayer(ServerPlayer player) {
         CallRegistry.CallSession session = CallRegistry.getSessionFor(player.getUUID()).orElse(null);
         if (session == null)
@@ -775,4 +979,5 @@ public class ScreenMenuUtils {
             }
         }
     }
+    //?}
 }

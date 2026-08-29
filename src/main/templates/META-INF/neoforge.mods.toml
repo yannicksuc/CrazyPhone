@@ -72,18 +72,11 @@ versionRange = "${minecraft_version_range}"
 ordering = "NONE"
 side = "BOTH"
 
-[[dependencies."${mod_id}"]]
-modId = "camera"
-type = "required"
-versionRange = "[1.0.19,)"
-ordering = "AFTER"
-side = "BOTH"
-
 # Optional: powers the phone's voice-call and voice-message features when installed. The mod loads and
 # works fully without it - see fr.lordfinn.crazyphone.voicechat.VoicechatIntegration.
 # NOTE: SVC reports its own mod version as "<mc_version>-<mod_version>" (e.g. "1.21.1-2.6.21"), not a bare
-# semver - mirror the Camera dependency's low, permissive floor below rather than pinning a high major like
-# "[2.0.0,)", which reads that string as major version 1 and always fails the range check.
+# semver - mirror a low, permissive floor below rather than pinning a high major like "[2.0.0,)", which
+# reads that string as major version 1 and always fails the range check.
 [[dependencies."${mod_id}"]]
 modId = "voicechat"
 type = "optional"

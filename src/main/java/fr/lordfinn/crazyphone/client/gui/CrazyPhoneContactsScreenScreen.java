@@ -8,7 +8,9 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+//? if neoforge {
 import net.neoforged.neoforge.network.PacketDistributor;
+//?}
 import fr.lordfinn.crazyphone.utils.NetworkAccess;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;

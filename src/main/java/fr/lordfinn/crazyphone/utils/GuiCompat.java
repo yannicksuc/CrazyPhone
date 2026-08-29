@@ -18,6 +18,17 @@ public final class GuiCompat {
     private GuiCompat() {
     }
 
+    /** Forces GuiGraphics's batched draw calls to actually submit in call order - a translucent fillGradient
+     *  background and a textured blit drawn after it go through different {@code RenderType} pipelines
+     *  (color vs textured), which don't necessarily flush in the order they were called in otherwise, e.g. a
+     *  background ending up drawn over content issued after it instead of under it. 1.21.10 submits each
+     *  draw immediately (no batching left to force), so this is a no-op there. */
+    public static void flush(GuiGraphics guiGraphics) {
+        //? if <1.21.10 {
+        guiGraphics.flush();
+        //?}
+    }
+
     public static void pushPose(GuiGraphics guiGraphics) {
         //? if <1.21.10 {
         guiGraphics.pose().pushPose();

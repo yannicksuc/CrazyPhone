@@ -1,5 +1,6 @@
 package fr.lordfinn.crazyphone.data;
 
+//? if neoforge {
 import net.neoforged.neoforge.attachment.AttachmentType;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.registries.NeoForgeRegistries;
@@ -10,17 +11,27 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 import net.neoforged.fml.common.Mod.EventBusSubscriber;
 //?}
 import net.neoforged.bus.api.SubscribeEvent;
+//?}
+//? if fabric && >=1.20.5 {
+/*import net.fabricmc.fabric.api.attachment.v1.AttachmentRegistry;
+import net.fabricmc.fabric.api.attachment.v1.AttachmentTarget;
+import net.fabricmc.fabric.api.attachment.v1.AttachmentType;
+import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
+*///?}
 
 import net.minecraft.server.level.ServerPlayer;
 
 import fr.lordfinn.crazyphone.Crazyphone;
 import fr.lordfinn.crazyphone.network.FeatureFlagSyncPacket;
+//? if neoforge {
 import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
 import fr.lordfinn.crazyphone.voicechat.SvcCallBridge;
 import fr.lordfinn.crazyphone.voicechat.VoicechatIntegration;
+//?}
 
 import java.util.function.Supplier;
 
+//? if neoforge {
 @EventBusSubscriber
 public class PhoneAttachmentTypes {
     public static final DeferredRegister<AttachmentType<?>> ATTACHMENT_TYPES = DeferredRegister.create(NeoForgeRegistries.Keys.ATTACHMENT_TYPES, Crazyphone.MODID);
@@ -75,3 +86,48 @@ public class PhoneAttachmentTypes {
         event.getEntity().setData(PLAYER_PHONE_STATE, clone);
     }
 }
+//?}
+//? if fabric && >=1.20.5 {
+/*// Fabric's data-attachment-api-v1 (net.fabricmc.fabric.api.attachment.v1) is the equivalent of NeoForge's
+// AttachmentType: AttachmentRegistry.createPersistent takes a Codec instead of an INBTSerializable-style
+// interface (see PlayerPhoneState.java), and every Entity implements AttachmentTarget via mixin, so a plain
+// cast - not a capability lookup - is how getAttached/setAttached are reached (this is the API's own
+// documented usage pattern, not a workaround).
+public class PhoneAttachmentTypes {
+    public static final AttachmentType<PlayerPhoneState> PLAYER_PHONE_STATE = AttachmentRegistry.createPersistent(
+            Crazyphone.resource("player_phone_state"), PlayerPhoneState.CODEC);
+
+    // See SoulboundStash's own javadoc - only ever non-empty for the brief window between a death that
+    // pulled soulbound items out of the inventory and the respawn that reinserts them (see
+    // SoulboundHandler.java's Fabric branch).
+    public static final AttachmentType<SoulboundStash> SOULBOUND_STASH = AttachmentRegistry.createPersistent(
+            Crazyphone.resource("soulbound_stash"), SoulboundStash.CODEC);
+
+    public static void register() {
+        ServerPlayerEvents.JOIN.register(player -> {
+            // TODO(#161/#164 follow-up): CrazyPhoneHelper.reconcilePhoneStateOnJoin and the SVC leaveGroup
+            // call aren't wired here yet - CrazyPhoneHelper.java isn't in the Fabric build's include list
+            // (it still needs several unported packets/procedures, see build.fabric.gradle.kts), and the
+            // voicechat package hasn't been audited for Fabric yet either.
+            ((AttachmentTarget) player).getAttachedOrCreate(PLAYER_PHONE_STATE, PlayerPhoneState::new).syncTo(player);
+            PhoneRegistrySavedData.get(player.level()).syncTo(player);
+            FeatureFlagSyncPacket.syncTo(player);
+        });
+
+        ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) ->
+                ((AttachmentTarget) newPlayer).getAttachedOrCreate(PLAYER_PHONE_STATE, PlayerPhoneState::new).syncTo(newPlayer));
+
+        ServerPlayerEvents.COPY_FROM.register((oldPlayer, newPlayer, alive) -> {
+            PlayerPhoneState clone = new PlayerPhoneState();
+            if (alive) {
+                PlayerPhoneState original = ((AttachmentTarget) oldPlayer).getAttached(PLAYER_PHONE_STATE);
+                if (original != null) {
+                    clone.currentCrazyPhoneScreenOpened = original.currentCrazyPhoneScreenOpened;
+                    clone.crazyPhoneScreenHistory = original.crazyPhoneScreenHistory;
+                }
+            }
+            ((AttachmentTarget) newPlayer).setAttached(PLAYER_PHONE_STATE, clone);
+        });
+    }
+}
+*///?}

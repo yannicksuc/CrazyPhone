@@ -1,5 +1,6 @@
 package fr.lordfinn.crazyphone.network;
 
+//? if neoforge {
 //? if >=1.20.5 {
 /*import net.neoforged.neoforge.network.handling.IPayloadContext;
 *///? } else {
@@ -12,6 +13,7 @@ import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.fml.common.Mod.EventBusSubscriber;
 //?}
 import net.neoforged.bus.api.SubscribeEvent;
+//?}
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -26,11 +28,13 @@ import net.minecraft.client.Minecraft;
 import fr.lordfinn.crazyphone.Crazyphone;
 import fr.lordfinn.crazyphone.client.gui.CrazyPhoneContactInfoScreenScreen;
 
+//? if neoforge {
 //? if <1.20.5 {
 @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
 //?} else {
 /*@EventBusSubscriber
 *///?}
+//?}
 public record UpdateContactInfoMessage(String name, String uuid, String number) implements CustomPacketPayload {
 
     //? if >=1.20.5 {
@@ -75,6 +79,7 @@ public record UpdateContactInfoMessage(String name, String uuid, String number) 
     }
     //?}
 
+    //? if neoforge {
     //? if >=1.20.5 {
     /*public static void handleData(final UpdateContactInfoMessage message, final IPayloadContext context) {
         if (context.flow() == PacketFlow.CLIENTBOUND) {
@@ -98,7 +103,25 @@ public record UpdateContactInfoMessage(String name, String uuid, String number) 
         }
     }
     //?}
+    //?}
+    //? if fabric && >=1.20.5 {
+    /*public static void handleDataFabric(UpdateContactInfoMessage message, net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.Context context) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.screen instanceof CrazyPhoneContactInfoScreenScreen screen) {
+            screen.updateContactInfo(message.name, message.uuid, message.number);
+        }
+    }
 
+    public static void registerFabricType() {
+        fr.lordfinn.crazyphone.fabric.FabricNetworking.registerS2CType(TYPE, STREAM_CODEC);
+    }
+
+    public static void registerFabricClientReceiver() {
+        fr.lordfinn.crazyphone.fabric.FabricNetworking.registerClientReceiver(TYPE, UpdateContactInfoMessage::handleDataFabric);
+    }
+    *///?}
+
+    //? if neoforge {
     @SubscribeEvent
     public static void registerMessage(FMLCommonSetupEvent event) {
         //? if >=1.20.5 {
@@ -107,4 +130,5 @@ public record UpdateContactInfoMessage(String name, String uuid, String number) 
         Crazyphone.addNetworkMessage(UpdateContactInfoMessage.ID, UpdateContactInfoMessage::new, UpdateContactInfoMessage::handleData);
         //?}
     }
+    //?}
 }

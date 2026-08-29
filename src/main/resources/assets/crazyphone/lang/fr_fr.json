@@ -6,17 +6,22 @@
   "item_group.crazyphone.crazy_phone_tab": "CrazyPhone",
 
   "item.crazyphone.crazy_phone": "Crazy Phone",
+  "item.crazyphone.crazy_phone_photo": "Photo",
+  "gui.crazyphone.capture_overlay.title": "Appareil photo",
+  "gui.crazyphone.photo_viewer.title": "Photo",
+  "gui.crazyphone.photo_viewer.back": "Retour",
+  "gui.crazyphone.photo_viewer.save": "Sauvegarder dans l'inventaire",
   "item.crazyphone.custom_name": "CrazyPhone de %s",
   "item.crazyphone.lore_number": "Numéro : %s",
   "item.crazyphone.lore_owner": "Proprio : %s",
+  "item.crazyphone.crazy_phone_photo.lore_author": "Prise par : %s",
+  "item.crazyphone.crazy_phone_photo.lore_date": "Prise le : %s",
 
+  "message.crazyphone.phone_locked_no_photo": "Déverrouille ce téléphone avant de prendre une photo.",
   "message.crazyphone.unknown_contact": "Inconnu",
   "message.crazyphone.unknown_number": "Numéro inconnu : %s",
   "message.crazyphone.unknown_voter": "Inconnu : %s",
 
-  "message.crazyphone.image_upload_success": "✅ L'image a bien été uploadée dans le CrazyPhone.",
-  "message.crazyphone.image_upload_failed": "❌ Échec de l'upload de l'image dans le CrazyPhone.",
-  "message.crazyphone.camera_feature_disabled": "❌ L'insertion de photos appareil photo est désactivée sur ce serveur.",
 
   "message.crazyphone.call_in_progress": "📞 Appel en cours - %s · %s",
   "message.crazyphone.call_summary": "📞 Appel - %s · %s",
@@ -29,6 +34,7 @@
 
   "message.crazyphone.candidate_not_found": "Candidat introuvable",
   "message.crazyphone.candidate_poster_added": "Affiche ajoutée au candidat avec succès !",
+  "message.crazyphone.candidate_poster_needs_photo": "Tenez une photo CrazyPhone en main principale pour l'utiliser comme affiche",
   "message.crazyphone.candidate_not_exist": "Le candidat n'existe pas",
   "message.crazyphone.candidate_added": "Nouveau candidat ajouté !",
   "message.crazyphone.candidate_already_registered": "Candidat déjà enregistré",
@@ -129,11 +135,22 @@
 
   "gui.crazyphone.crazy_phone_mayors_candidates_list.title": "Candidats à la mairie",
 
+  "gui.crazyphone.crazy_phone_my_photos_screen.title": "Mes photos",
+  "gui.crazyphone.crazy_phone_my_photos_screen.button_delete": "Supprimer",
+  "gui.crazyphone.crazy_phone_my_photos_screen.button_take": "Récupérer",
+  "gui.crazyphone.crazy_phone_my_photos_screen.button_send": "Envoyer",
+  "gui.crazyphone.crazy_phone_my_photos_screen.tooltip_select_photo": "Sélectionne d'abord une photo",
+  "gui.crazyphone.crazy_phone_my_photos_screen.tooltip_delete_selected": "Supprimer les photos sélectionnées",
+  "gui.crazyphone.crazy_phone_my_photos_screen.tooltip_take_selected": "Récupérer les photos sélectionnées sous forme d'objets",
+  "gui.crazyphone.crazy_phone_my_photos_screen.tooltip_send_selected": "Envoyer les photos sélectionnées dans cette conversation",
+
   "gui.crazyphone.crazy_phone_conversation.message": "Ecrire un message...",
   "gui.crazyphone.crazy_phone_conversation.button_envoyer": ">",
   "gui.crazyphone.crazy_phone_conversation.click_to_zoom": "Clique pour zoomer sur l'image",
-  "gui.crazyphone.crazy_phone_conversation.tooltip_send_image": "Envoyer une image",
+  "gui.crazyphone.crazy_phone_conversation.tooltip_send_image": "Envoyer une image depuis Mes Photos",
   "gui.crazyphone.crazy_phone_conversation.tooltip_send_image_disabled": "L'envoi d'images est désactivé sur ce serveur",
+  "gui.crazyphone.crazy_phone_conversation.tooltip_take_and_send_image": "Prendre et envoyer une photo",
+  "gui.crazyphone.crazy_phone_conversation.tooltip_take_and_send_image_disabled": "L'envoi d'images est désactivé sur ce serveur",
   "gui.crazyphone.crazy_phone_conversation.tooltip_send_message": "Envoyer le message",
   "gui.crazyphone.crazy_phone_conversation.tooltip_group_settings": "Paramètres du groupe",
   "gui.crazyphone.crazy_phone_conversation.tooltip_call": "Appeler",

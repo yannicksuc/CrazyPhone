@@ -1,0 +1,24 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "fr.lordfinn.crazyphone.mixin",
+  "compatibilityLevel": "${mixin_compatibility_level}",
+  "mixins": [],
+  "client": [
+    "CrazyPhoneCaptureFovMixin",
+    "CrazyPhoneCaptureHandMixin",
+    "CrazyPhoneCaptureGuiMixin",
+    "CrazyPhoneCaptureScrollMixin",
+    "CrazyPhoneCapturePressMixin",
+    "CrazyPhoneCaptureEscapeMixin",
+    "PlayerPresentPoseMixin",
+    "CrazyPhonePresentHandGripMixin",
+    "CrazyPhonePresentHandGripInvokerMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "overwrites": {
+    "requireAnnotations": true
+  }
+}

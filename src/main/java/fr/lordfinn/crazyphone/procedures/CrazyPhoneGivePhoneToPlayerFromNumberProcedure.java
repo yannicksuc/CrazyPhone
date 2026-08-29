@@ -1,7 +1,5 @@
 package fr.lordfinn.crazyphone.procedures;
 
-import net.neoforged.neoforge.items.ItemHandlerHelper;
-
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.entity.player.Player;
@@ -21,10 +19,11 @@ public class CrazyPhoneGivePhoneToPlayerFromNumberProcedure {
 		ItemStack phone = ItemStack.EMPTY;
 		number = StringArgumentType.getString(arguments, "number");
 		phone = new ItemStack(ModItems.CRAZY_PHONE.get());
-		if (entity instanceof Player _player) {
-			phone.setCount(1);
-			ItemHandlerHelper.giveItemToPlayer(_player, phone);
-		}
+		phone.setCount(1);
 		LoadPhoneDataIntoItemstackProcedure.execute(world, entity, phone, number);
+		if (entity instanceof Player _player) {
+			if (!_player.getInventory().add(phone))
+				_player.drop(phone, false);
+		}
 	}
 }

@@ -47,6 +47,11 @@ import javax.annotation.Nonnull;
 public class CrazyPhoneInventoryCapability extends ItemStackHandler {
     private final ItemStack phoneStack;
 //?}
+    // NeoForge-only: forces an immediate screen close the instant the phone is dropped, rather than waiting
+    // for the next container tick. No Fabric port needed - every phone menu (CrazyPhoneDefaultScreenMenu and
+    // its subclasses) already binds stillValid() to a boundItemMatcher checking the held item is still the
+    // same instance, so dropping the phone makes stillValid() return false on the very next tick regardless
+    // of loader; this override only trims that one-tick delay.
     @SubscribeEvent
     //? if <1.21.10 {
     @OnlyIn(Dist.CLIENT)

@@ -9,13 +9,11 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
 import fr.lordfinn.crazyphone.world.inventory.CrazyphoneHomeScreenMenu;
 import fr.lordfinn.crazyphone.init.ModItems;
-import fr.lordfinn.crazyphone.utils.CameraModHelper;
 import fr.lordfinn.crazyphone.utils.ScreenMenuUtils;
 
 public class CrazyPhoneRightclickedProcedure {
@@ -26,21 +24,16 @@ public class CrazyPhoneRightclickedProcedure {
 		// Check if the item in the player's main hand is the Crazy Phone
 		ItemStack stack = playerIn.getItemInHand(InteractionHand.MAIN_HAND);
 		if (stack.getItem() == ModItems.CRAZY_PHONE.get() && entity instanceof ServerPlayer _ent) {
-			// Check if the camera is not active before opening the screen
-			if (!CameraModHelper.isActive(stack)) {
-				ScreenMenuUtils.resetToHomeScreen(_ent);
-				ScreenMenuUtils.openPhoneCustomMenu(_ent, InteractionHand.MAIN_HAND, CrazyphoneHomeScreenMenu.class);
-				if (world instanceof Level _level) {
-					if (playerIn instanceof ServerPlayer serverPlayer) {
-						SoundEvent sound = fr.lordfinn.crazyphone.utils.RegistryCompat.get(BuiltInRegistries.SOUND_EVENT,
-								Crazyphone.parseId("crazyphone:pokedex"));
-						if (sound != null) {
-							serverPlayer.playNotifySound(sound, SoundSource.PLAYERS, 0.2f, 1f);
-						}
+			ScreenMenuUtils.resetToHomeScreen(_ent);
+			ScreenMenuUtils.openPhoneCustomMenu(_ent, InteractionHand.MAIN_HAND, CrazyphoneHomeScreenMenu.class);
+			if (world instanceof Level _level) {
+				if (playerIn instanceof ServerPlayer serverPlayer) {
+					SoundEvent sound = fr.lordfinn.crazyphone.utils.RegistryCompat.get(BuiltInRegistries.SOUND_EVENT,
+							Crazyphone.parseId("crazyphone:pokedex"));
+					if (sound != null) {
+						serverPlayer.playNotifySound(sound, SoundSource.PLAYERS, 0.2f, 1f);
 					}
 				}
-			} else {
-				CrazyPhoneTakePhotoProcedure.execute(world, entity);
 			}
 		}
 	}

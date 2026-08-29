@@ -98,7 +98,9 @@ public final class CallBustPreview {
             /*mc.getSkinManager().get(profile).thenAccept(skin -> {
             *///?}
                 RemotePlayer fake = new RemotePlayer(level, profile);
+                //? if neoforge {
                 fake.refreshDisplayName();
+                //?}
                 FakePlayerPreview.showAllSkinLayers(fake);
                 fake.setItemSlot(EquipmentSlot.HEAD, helmet);
                 fake.setItemSlot(EquipmentSlot.CHEST, chestplate);

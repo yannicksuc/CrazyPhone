@@ -19,9 +19,6 @@ import fr.lordfinn.crazyphone.init.ModItems;
 import fr.lordfinn.crazyphone.network.CrazyPhoneCallStateSyncPacket.State;
 import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 /**
  * Makes a ringing CrazyPhone buzz in the holder's hand: short bursts of jitter separated by pauses, like a
  * real phone vibrating on a table, rather than one continuous shake. Reads {@link CrazyPhoneHelper#getPhoneCallState}
@@ -31,20 +28,11 @@ import org.slf4j.LoggerFactory;
  */
 @EventBusSubscriber(value = Dist.CLIENT)
 public class CrazyPhoneVibrationRenderer {
-    private static final Logger LOGGER = LoggerFactory.getLogger("crazyphone");
-    // TEMP diagnostic (see chat report of "still no vibration") - remove once confirmed.
-    private static Boolean lastRingingSeen = null;
-
     @SubscribeEvent
     public static void onRenderHand(RenderHandEvent event) {
         boolean isPhone = event.getItemStack().getItem() == ModItems.CRAZY_PHONE.get();
         String callState = isPhone ? CrazyPhoneHelper.getPhoneCallState(event.getItemStack()) : null;
-        boolean ringing = isPhone && State.RINGING.name().equals(callState);
-        if (lastRingingSeen == null || lastRingingSeen != ringing) {
-            lastRingingSeen = ringing;
-            LOGGER.info("[vibration-diag] hand={} isPhone={} callState='{}' ringing={}", event.getHand(), isPhone, callState, ringing);
-        }
-        if (!ringing)
+        if (!(isPhone && State.RINGING.name().equals(callState)))
             return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null)
@@ -58,12 +46,10 @@ public class CrazyPhoneVibrationRenderer {
         if (envelope <= 0f)
             return;
 
-        // TEMP diagnostic amplitude (way past anything reasonable) - proves whether this transform reaches
-        // the render at all before tuning it back down to something that actually looks like a phone buzz.
         PoseStack poseStack = event.getPoseStack();
-        float shakeX = Mth.sin(time * 3.5f) * 0.4f * envelope;
-        float shakeY = Mth.cos(time * 5.3f) * 0.3f * envelope;
-        float shakeRot = Mth.sin(time * 4.1f) * 45.0f * envelope;
+        float shakeX = Mth.sin(time * 3.5f) * 0.02f * envelope;
+        float shakeY = Mth.cos(time * 5.3f) * 0.015f * envelope;
+        float shakeRot = Mth.sin(time * 4.1f) * 4.0f * envelope;
         poseStack.translate(shakeX, shakeY, 0);
         poseStack.mulPose(Axis.ZP.rotationDegrees(shakeRot));
     }

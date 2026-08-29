@@ -14,6 +14,7 @@ import net.minecraft.client.renderer.item.ItemProperties;
 //?}
 import net.minecraft.resources.ResourceLocation;
 
+//? if neoforge {
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 //? if >=1.20.5 {
@@ -22,6 +23,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.Mod.EventBusSubscriber;
 //?}
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
+//?}
 
 import fr.lordfinn.crazyphone.Crazyphone;
 import fr.lordfinn.crazyphone.init.ModItems;
@@ -44,11 +46,13 @@ import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
  * CrazyPhoneDefaultScreenMenu and CallRegistry) makes it visible to bystanders for free, with zero new
  * packets.
  */
+//? if neoforge {
 //? if <1.20.5 {
 @EventBusSubscriber(value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)
 //?} else {
 /*@EventBusSubscriber(value = Dist.CLIENT)
 *///?}
+//?}
 public class CrazyPhoneItemProperties {
     //? if >=1.21.10 {
     /*@SubscribeEvent
@@ -97,18 +101,29 @@ public class CrazyPhoneItemProperties {
         }
     }
     *///? } else {
+    //? if neoforge {
     @SubscribeEvent
     public static void onClientSetup(FMLClientSetupEvent event) {
-        event.enqueueWork(() -> {
-            ItemProperties.register(
-                    ModItems.CRAZY_PHONE.get(),
-                    Crazyphone.resource("screen_on"),
-                    (stack, level, entity, seed) -> CrazyPhoneHelper.isPhoneScreenOpen(stack) ? 1.0f : 0.0f
-            );
-            registerCallState("calling", State.CALLING);
-            registerCallState("called_in", State.RINGING);
-            registerCallState("in_call", State.ACTIVE);
-        });
+        event.enqueueWork(CrazyPhoneItemProperties::registerAll);
+    }
+    //?}
+    //? if fabric {
+    /*// Called from CrazyphoneFabricClient#onInitializeClient - vanilla's ItemProperties.register needs no
+    // event wrapper on Fabric, items are already registered by the time a ClientModInitializer runs.
+    public static void register() {
+        registerAll();
+    }
+    *///?}
+
+    private static void registerAll() {
+        ItemProperties.register(
+                ModItems.CRAZY_PHONE.get(),
+                Crazyphone.resource("screen_on"),
+                (stack, level, entity, seed) -> CrazyPhoneHelper.isPhoneScreenOpen(stack) ? 1.0f : 0.0f
+        );
+        registerCallState("calling", State.CALLING);
+        registerCallState("called_in", State.RINGING);
+        registerCallState("in_call", State.ACTIVE);
     }
 
     private static void registerCallState(String propertyName, State targetState) {

@@ -1,5 +1,6 @@
 package fr.lordfinn.crazyphone;
 
+//? if neoforge {
 import net.neoforged.bus.api.SubscribeEvent;
 //? if >=1.20.5 {
 /*import net.neoforged.fml.common.EventBusSubscriber;
@@ -8,12 +9,16 @@ import net.neoforged.fml.common.Mod.EventBusSubscriber;
 //?}
 import net.neoforged.fml.event.config.ModConfigEvent;
 import net.neoforged.neoforge.common.ModConfigSpec;
+//?}
 
+//? if neoforge {
 //? if <1.20.5 {
 @EventBusSubscriber(modid = Crazyphone.MODID, bus = EventBusSubscriber.Bus.MOD)
 //?} else {
 /*@EventBusSubscriber(modid = Crazyphone.MODID)
 *///?}
+//?}
+//? if neoforge {
 public class Config {
     private static final ModConfigSpec.Builder BUILDER = new ModConfigSpec.Builder();
 
@@ -33,9 +38,13 @@ public class Config {
             .comment("Maximum number of image messages kept on disk per conversation (images are the heaviest payload, capped separately from text messages).")
             .defineInRange("maxImagesStoredPerConversation", 50, 5, 2000);
 
-    private static final ModConfigSpec.IntValue MAX_ALBUM_SLOTS_PER_PHONE = BUILDER
-            .comment("Number of album/photo storage slots available in a phone's internal inventory.")
-            .defineInRange("maxAlbumSlotsPerPhone", 27, 1, 97);
+    private static final ModConfigSpec.IntValue MAX_PHOTOS_STORED_PER_OWNER = BUILDER
+            .comment("Maximum number of photos (both resolutions) kept on disk per owning phone number - the oldest is discarded once a new one exceeds this, independent of conversation history trimming.")
+            .defineInRange("maxPhotosStoredPerOwner", 300, 10, 5000);
+
+    private static final ModConfigSpec.IntValue PHOTO_THUMBNAIL_PIXEL_HEIGHT = BUILDER
+            .comment("Target height in pixels for a photo's low-quality preview (thumbnails, chat bubbles) - lower looks more like pixel art, higher looks closer to the full photo. 0 disables the separate preview entirely (the full photo is reused as-is, so nothing extra is stored). If the photo's own height is already shorter than this, no resize happens either - a photo is never upscaled for its preview.")
+            .defineInRange("photoThumbnailPixelHeight", 16, 0, 256);
 
     private static final ModConfigSpec.BooleanValue MAYOR_ELECTION_FEATURE_ENABLED = BUILDER
             .comment("Whether the mayor election/voting feature (accessible from the phone) is enabled.")
@@ -56,10 +65,6 @@ public class Config {
     private static final ModConfigSpec.BooleanValue IMAGES_FEATURE_ENABLED = BUILDER
             .comment("Whether sending images from the phone's album into a conversation is enabled.")
             .define("imagesFeatureEnabled", true);
-
-    private static final ModConfigSpec.BooleanValue CAMERA_FEATURE_ENABLED = BUILDER
-            .comment("Whether inserting a photo taken with the Camera mod into the phone's album is enabled.")
-            .define("cameraFeatureEnabled", true);
 
     // Optional Simple Voice Chat integration (calls + voice messages) - see fr.lordfinn.crazyphone.voicechat.
 
@@ -101,12 +106,12 @@ public class Config {
     public static int maxStoredMessagesPerConversation;
     public static int maxMessagesSentPerRequest;
     public static int maxImagesStoredPerConversation;
-    public static int maxAlbumSlotsPerPhone;
+    public static int maxPhotosStoredPerOwner;
+    public static int photoThumbnailPixelHeight;
     public static boolean mayorElectionFeatureEnabled;
     public static boolean callsFeatureEnabled;
     public static boolean voiceMessagesFeatureEnabled;
     public static boolean imagesFeatureEnabled;
-    public static boolean cameraFeatureEnabled;
     public static boolean voicechatIntegrationEnabled;
     public static int callRingTimeoutSeconds;
     public static int aloneInCallKickSeconds;
@@ -120,12 +125,12 @@ public class Config {
         maxStoredMessagesPerConversation = MAX_STORED_MESSAGES_PER_CONVERSATION.get();
         maxMessagesSentPerRequest = MAX_MESSAGES_SENT_PER_REQUEST.get();
         maxImagesStoredPerConversation = MAX_IMAGES_STORED_PER_CONVERSATION.get();
-        maxAlbumSlotsPerPhone = MAX_ALBUM_SLOTS_PER_PHONE.get();
+        maxPhotosStoredPerOwner = MAX_PHOTOS_STORED_PER_OWNER.get();
+        photoThumbnailPixelHeight = PHOTO_THUMBNAIL_PIXEL_HEIGHT.get();
         mayorElectionFeatureEnabled = MAYOR_ELECTION_FEATURE_ENABLED.get();
         callsFeatureEnabled = CALLS_FEATURE_ENABLED.get();
         voiceMessagesFeatureEnabled = VOICE_MESSAGES_FEATURE_ENABLED.get();
         imagesFeatureEnabled = IMAGES_FEATURE_ENABLED.get();
-        cameraFeatureEnabled = CAMERA_FEATURE_ENABLED.get();
         voicechatIntegrationEnabled = VOICECHAT_INTEGRATION_ENABLED.get();
         callRingTimeoutSeconds = CALL_RING_TIMEOUT_SECONDS.get();
         aloneInCallKickSeconds = ALONE_IN_CALL_KICK_SECONDS.get();
@@ -162,9 +167,46 @@ public class Config {
         SPEC.save();
     }
 
-    public static void setCameraFeatureEnabled(boolean enabled) {
-        CAMERA_FEATURE_ENABLED.set(enabled);
-        SPEC.save();
+}
+//?}
+//? if fabric {
+/*// TODO(#164 follow-up): no real Fabric config file yet - NeoForge's ModConfigSpec (TOML, per-value
+// comments/ranges, live reload) has no Fabric equivalent in this codebase yet. Values below are the
+// same hardcoded defaults as the NeoForge TOML's defaults, just not server-operator-configurable on
+// Fabric yet. Setters only flip the in-memory value (no persistence to disk), matching FeatureFlag's
+// Fabric placeholder for the same reason.
+public class Config {
+    public static int maxStoredMessagesPerConversation = 300;
+    public static int maxMessagesSentPerRequest = 100;
+    public static int maxImagesStoredPerConversation = 50;
+    public static int maxPhotosStoredPerOwner = 300;
+    public static int photoThumbnailPixelHeight = 16;
+    public static boolean mayorElectionFeatureEnabled = true;
+    public static boolean callsFeatureEnabled = true;
+    public static boolean voiceMessagesFeatureEnabled = true;
+    public static boolean imagesFeatureEnabled = true;
+    public static boolean voicechatIntegrationEnabled = true;
+    public static int callRingTimeoutSeconds = 30;
+    public static int aloneInCallKickSeconds = 5;
+    public static int phoneDropGraceSeconds = 5;
+    public static int maxVoiceMessagesStoredPerConversation = 30;
+    public static int maxVoiceMessageRecordingSeconds = 60;
+    public static boolean soulboundEnchantmentEnabled = true;
+
+    public static void setMayorElectionFeatureEnabled(boolean enabled) {
+        mayorElectionFeatureEnabled = enabled;
     }
 
+    public static void setCallsFeatureEnabled(boolean enabled) {
+        callsFeatureEnabled = enabled;
+    }
+
+    public static void setVoiceMessagesFeatureEnabled(boolean enabled) {
+        voiceMessagesFeatureEnabled = enabled;
+    }
+
+    public static void setImagesFeatureEnabled(boolean enabled) {
+        imagesFeatureEnabled = enabled;
+    }
 }
+*///?}

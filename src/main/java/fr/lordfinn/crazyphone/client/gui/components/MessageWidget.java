@@ -6,36 +6,19 @@ import java.util.UUID;
 
 import javax.annotation.Nullable;
 
-import org.joml.Matrix4f;
-
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.BufferBuilder;
-//? if <1.21.10 {
-import com.mojang.blaze3d.vertex.BufferUploader;
+//? if neoforge {
+import net.neoforged.neoforge.network.PacketDistributor;
 //?}
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
-import com.mojang.blaze3d.vertex.Tesselator;
-import com.mojang.blaze3d.vertex.VertexFormat.Mode;
-
-import com.mojang.blaze3d.platform.NativeImage;
-
-import de.maxhenkel.camera.ImageData;
-import de.maxhenkel.camera.TextureCache;
-import de.maxhenkel.camera.gui.ImageScreen;
 import fr.lordfinn.crazyphone.client.ClientCallState;
 import fr.lordfinn.crazyphone.client.CursorEffects;
 import fr.lordfinn.crazyphone.network.VoiceMessageAudioRequestPacket;
 import fr.lordfinn.crazyphone.network.VoiceMessageStopPacket;
-import fr.lordfinn.crazyphone.utils.CameraModHelper;
-import net.neoforged.neoforge.network.PacketDistributor;
 import fr.lordfinn.crazyphone.utils.NetworkAccess;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
-import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 
 import java.time.Instant;
@@ -54,7 +37,9 @@ public class MessageWidget extends AbstractWidget {
     private int scrollPosition;
     private int adjustedY;
     boolean showIcon = true;
-    private ItemStack image = ItemStack.EMPTY;
+    /** Non-null for a photo message - the actual bytes are fetched lazily from the server on demand (see
+     * FabricPictureCache), keyed by this photo id. */
+    private java.util.UUID fabricImageId;
     private int imageWidth = 0;
     private int imageHeight = 0;
     MessageDisplayManager manager;
@@ -105,28 +90,24 @@ public class MessageWidget extends AbstractWidget {
         this.callDurationMillis = durationMillis;
     }
 
-    public MessageWidget(WrappedTextWidget wrappedText, boolean isSender, ItemStack icon, int scrollPosition, @Nullable ItemStack image, MessageDisplayManager messageDisplayManager) {
-        this(wrappedText, isSender, icon, scrollPosition, image, messageDisplayManager, false, null, 0, null, null, 0, -1);
+    public MessageWidget(WrappedTextWidget wrappedText, boolean isSender, ItemStack icon, int scrollPosition, MessageDisplayManager messageDisplayManager, boolean isSystem) {
+        this(wrappedText, isSender, icon, scrollPosition, messageDisplayManager, isSystem, null, 0, null, null, 0, -1, null);
     }
 
-    public MessageWidget(WrappedTextWidget wrappedText, boolean isSender, ItemStack icon, int scrollPosition, @Nullable ItemStack image, MessageDisplayManager messageDisplayManager, boolean isSystem) {
-        this(wrappedText, isSender, icon, scrollPosition, image, messageDisplayManager, isSystem, null, 0, null, null, 0, -1);
-    }
-
-    public MessageWidget(WrappedTextWidget wrappedText, boolean isSender, ItemStack icon, int scrollPosition, @Nullable ItemStack image, MessageDisplayManager messageDisplayManager, boolean isSystem,
-                          @Nullable java.util.UUID voiceId, int voiceDurationTicks, @Nullable byte[] voiceEnvelope) {
-        this(wrappedText, isSender, icon, scrollPosition, image, messageDisplayManager, isSystem, voiceId, voiceDurationTicks, voiceEnvelope, null, 0, -1);
+    public MessageWidget(WrappedTextWidget wrappedText, boolean isSender, ItemStack icon, int scrollPosition, MessageDisplayManager messageDisplayManager, boolean isSystem,
+                          @Nullable java.util.UUID voiceId, int voiceDurationTicks, @Nullable byte[] voiceEnvelope, @Nullable java.util.UUID fabricImageId) {
+        this(wrappedText, isSender, icon, scrollPosition, messageDisplayManager, isSystem, voiceId, voiceDurationTicks, voiceEnvelope, null, 0, -1, fabricImageId);
     }
 
     /** Call log entry - see the callId/callStartMillis/callDurationMillis field javadocs. */
     public MessageWidget(WrappedTextWidget wrappedText, MessageDisplayManager messageDisplayManager,
                           java.util.UUID callId, long callStartMillis, long callDurationMillis) {
-        this(wrappedText, false, ItemStack.EMPTY, 0, null, messageDisplayManager, true, null, 0, null, callId, callStartMillis, callDurationMillis);
+        this(wrappedText, false, ItemStack.EMPTY, 0, messageDisplayManager, true, null, 0, null, callId, callStartMillis, callDurationMillis, null);
     }
 
-    private MessageWidget(WrappedTextWidget wrappedText, boolean isSender, ItemStack icon, int scrollPosition, @Nullable ItemStack image, MessageDisplayManager messageDisplayManager, boolean isSystem,
+    private MessageWidget(WrappedTextWidget wrappedText, boolean isSender, ItemStack icon, int scrollPosition, MessageDisplayManager messageDisplayManager, boolean isSystem,
                           @Nullable java.util.UUID voiceId, int voiceDurationTicks, @Nullable byte[] voiceEnvelope,
-                          @Nullable java.util.UUID callId, long callStartMillis, long callDurationMillis) {
+                          @Nullable java.util.UUID callId, long callStartMillis, long callDurationMillis, @Nullable java.util.UUID fabricImageId) {
         super(wrappedText.getX(), wrappedText.getY(), wrappedText.getWidth(), wrappedText.getHeight(), wrappedText.getMessage());
         this.wrappedText = wrappedText;
         this.isSender = isSender;
@@ -140,8 +121,8 @@ public class MessageWidget extends AbstractWidget {
         this.callId = callId;
         this.callStartMillis = callStartMillis;
         this.callDurationMillis = callDurationMillis;
-        if (image != null && !image.isEmpty()) {
-            this.image = image;
+        this.fabricImageId = fabricImageId;
+        if (fabricImageId != null) {
             initImageScaling();
         }
         adjustPosition(this.getX() + (isSystem || isSender ? 0 : 15));
@@ -367,7 +348,7 @@ public class MessageWidget extends AbstractWidget {
                 ? wrappedText.getX() + wrappedText.getWidth()
                 : wrappedText.getX() - 16;
                 int itemY = wrappedText.getY() + wrappedText.getHeight() - 16;
-        if (!image.isEmpty())
+        if (fabricImageId != null)
             renderImage(guiGraphics, mouseX, mouseY);
         if (showIcon && !isSystem)
             guiGraphics.renderItem(icon, itemX, itemY);
@@ -472,9 +453,9 @@ public class MessageWidget extends AbstractWidget {
     }
 
     private void onImageClick(int button) {
-        if (button == 0) {
-            CameraModHelper.openImage(image);
-        }
+        if (button != 0 || fabricImageId == null) return;
+        net.minecraft.client.Minecraft.getInstance().setScreen(
+                new fr.lordfinn.crazyphone.client.gui.CrazyPhonePhotoViewerScreen(fabricImageId));
     }
 
     @Override
@@ -488,138 +469,75 @@ public class MessageWidget extends AbstractWidget {
 
     /** Public so {@link MessageDisplayManager} can defer this widget to a second render pass when its image is hovered, so the grown/shadowed image always paints on top of neighboring messages instead of being covered by whichever one renders later in normal order. */
     public boolean isImageHovered(int mouseX, int mouseY) {
-        if (image.isEmpty())
+        if (fabricImageId == null)
             return false;
         int x = wrappedText.getX();
         int y = wrappedText.getY();
         return mouseX >= x && mouseX < x + imageWidth && mouseY >= y && mouseY < y + imageHeight;
     }
 
+    // Resolves the texture through FabricPictureCache (lazy server fetch keyed by photoId).
     private void renderImage(GuiGraphics guiGraphics, int mouseX, int mouseY) {
-        if (image.isEmpty()) return;
+        if (fabricImageId == null) return;
 
-        if (imageWidth <= 0 || imageHeight <= 0) {
+        if (imageWidth <= 0 || imageHeight <= 0 || !imageAspectResolved) {
             initImageScaling();
             adjustPosition();
             manager.resetPositions();
         }
 
-        ImageData imageData = ImageData.fromStack(image);
-        if (imageData == null) return;
-
-        UUID imageID = imageData.getId();
-        if (imageID == null) return;
+        fr.lordfinn.crazyphone.client.picture.FabricPictureCache.CachedTexture texture =
+                fr.lordfinn.crazyphone.client.picture.FabricPictureCache.getOrRequest(fabricImageId,
+                        fr.lordfinn.crazyphone.ClientConfig.phonePhotoListPixelated ? fr.lordfinn.crazyphone.utils.PhotoResolution.THUMBNAIL : fr.lordfinn.crazyphone.utils.PhotoResolution.FULL);
+        if (texture == null) return;
 
         int x = wrappedText.getX();
         int y = wrappedText.getY();
-        int baseWidth = imageWidth;
-        // Must match the aspect ratio initImageScaling() computed (imageWidth/imageHeight, fit to the
-        // message bubble's full width) - previously this passed imageHeight-2 into drawImage() below,
-        // which doesn't match that ratio and made drawImage()'s own aspect-fit-and-center logic think the
-        // box was slightly too wide, letterboxing the image ~2px narrower on each side than the bubble.
-        // That gap was also why the shadow (sized to the full box) looked asymmetric/oversized on one
-        // side: it was drawn relative to the box, not the narrower letterboxed image content.
-        int baseHeight = imageHeight;
-
-        // drawY must be exactly y (not y+1) now that baseHeight is the FULL imageHeight: wrappedText's
-        // own layout height (set via setMinHeight(imageHeight) in initImageScaling) is what both the
-        // head icon position (renderItemHead) and the next message's position (resetPositions) are
-        // computed from - any extra offset here makes the actually-rendered image bottom edge land past
-        // that logical boundary, misaligning the head and overlapping whatever renders below it.
         int drawX = x;
         int drawY = y;
-        int drawWidth = baseWidth;
-        int drawHeight = baseHeight;
+        int drawWidth = imageWidth;
+        int drawHeight = imageHeight;
 
         if (isImageHovered(mouseX, mouseY)) {
             CursorEffects.requestZoomCursor();
-
-            // Grow around the center. MessageDisplayManager defers rendering of a hovered-image widget to
-            // a second pass, after every other message, so the grown/shadowed image always paints on top
-            // regardless of neighboring messages - no need to constrain growth direction here anymore.
-            drawWidth = Math.round(baseWidth * HOVER_GROW_SCALE);
-            drawHeight = Math.round(baseHeight * HOVER_GROW_SCALE);
-            drawX = x - (drawWidth - baseWidth) / 2;
-            drawY = y - (drawHeight - baseHeight) / 2;
-
-            // Soft drop shadow behind the (grown) image - 1px right, 1px down.
+            drawWidth = Math.round(imageWidth * HOVER_GROW_SCALE);
+            drawHeight = Math.round(imageHeight * HOVER_GROW_SCALE);
+            drawX = x - (drawWidth - imageWidth) / 2;
+            drawY = y - (drawHeight - imageHeight) / 2;
             guiGraphics.fill(drawX + 1, drawY + 1, drawX + drawWidth + 1, drawY + drawHeight + 1, 0x66000000);
         }
 
-        drawImage(guiGraphics, Minecraft.getInstance(), drawX, drawY, drawWidth, drawHeight, 0f, imageID);
+        GuiCompat.blit(guiGraphics, texture.location(), drawX, drawY, 300, drawWidth, drawHeight);
     }
+
+    // Set once the real aspect ratio (not the placeholder guess below) has actually been applied - the
+    // fetch is async, so the FIRST render() can easily land before FabricPictureCache has the texture yet.
+    // Without tracking this separately from imageWidth/imageHeight being merely non-zero, that render locked
+    // in the square placeholder permanently (the "imageWidth <= 0" re-run guard was already satisfied by the
+    // placeholder's own non-zero values), which is why only images fetched in time to have already resolved
+    // the real ratio came out looking correct and every other one stayed stuck square.
+    private boolean imageAspectResolved = false;
 
     public void initImageScaling() {
-        ImageData imageData = ImageData.fromStack(image);
-        if (imageData != null) {
-            UUID imageID = imageData.getId();
-            NativeImage nativeImage = TextureCache.instance().getNativeImage(imageID);
-            if (nativeImage != null) {
-                float imgWidth = nativeImage.getWidth();
-                float imgHeight = nativeImage.getHeight();
-                int maxWidth = wrappedText.getWidth();
-
-                this.imageWidth = maxWidth;
-                this.imageHeight = (int) (maxWidth * imgHeight / imgWidth);
-
-                // Ajuste la hauteur minimale du texte pour contenir l'image
-                wrappedText.setMinHeight(Math.max(18, this.imageHeight));
-                this.setHeight(wrappedText.getHeight());
-            }
+        if (fabricImageId == null) return;
+        int maxWidth = wrappedText.getWidth();
+        fr.lordfinn.crazyphone.client.picture.FabricPictureCache.CachedTexture texture =
+                fr.lordfinn.crazyphone.client.picture.FabricPictureCache.getOrRequest(fabricImageId,
+                        fr.lordfinn.crazyphone.ClientConfig.phonePhotoListPixelated ? fr.lordfinn.crazyphone.utils.PhotoResolution.THUMBNAIL : fr.lordfinn.crazyphone.utils.PhotoResolution.FULL);
+        if (texture != null) {
+            // Real aspect ratio once the texture has actually arrived (server fetch is async).
+            this.imageWidth = maxWidth;
+            this.imageHeight = Math.max(1, Math.round(maxWidth * ((float) texture.height() / texture.width())));
+            this.imageAspectResolved = true;
+        } else {
+            // Rectangular (not square) placeholder until the fetch resolves - re-run every call until it
+            // does (see imageAspectResolved), matching every real photo's own landscape-ish aspect ratio
+            // closely enough that the placeholder-to-real swap isn't visually jarring either.
+            this.imageWidth = maxWidth;
+            this.imageHeight = Math.max(1, Math.round(maxWidth * 0.75f));
         }
+        wrappedText.setMinHeight(Math.max(18, this.imageHeight));
+        this.setHeight(wrappedText.getHeight());
     }
-
-    public static void drawImage(GuiGraphics guiGraphics, Minecraft minecraft, int x, int y, int width, int height, float zLevel, UUID uuid) {
-    GuiCompat.pushPose(guiGraphics);
-    GuiCompat.translate(guiGraphics, x, y);
-
-    ResourceLocation location = TextureCache.instance().getImage(uuid);
-    ResourceLocation texture = location == null ? ImageScreen.DEFAULT_IMAGE : location;
-
-    float imageWidth = 12.0F;
-    float imageHeight = 8.0F;
-
-    if (location != null) {
-        NativeImage image = TextureCache.instance().getNativeImage(uuid);
-        if (image != null) {
-            imageWidth = (float) image.getWidth();
-            imageHeight = (float) image.getHeight();
-        }
-    }
-
-    // Always fit to the full requested width rather than picking width-fit vs height-fit based on
-    // comparing aspect ratios: the caller (MessageWidget.renderImage) already sizes the box to match the
-    // message bubble's width exactly and derives height from the native aspect ratio via
-    // initImageScaling() - but that height gets rounded to an int, so re-deriving "which dimension to fit"
-    // from the (now slightly off) box aspect ratio could still pick the height-fit branch and letterbox
-    // the image a fraction of a pixel narrower than the bubble on each side. Always fitting to width
-    // guarantees the image visually fills exactly the same width as a text message, at the cost of a
-    // sub-pixel (imperceptible) vertical over/undershoot when the rounding doesn't line up perfectly.
-    float ws = (float) width;
-    float hs = (float) height;
-    float wnew = ws;
-    float hnew = imageHeight * ws / imageWidth;
-
-    // Centrage dans la zone width x height
-    float left = 0.0F;
-    float top = (hs - hnew) / 2.0F;
-
-    // This bypasses GuiGraphics's own Z-tracking (used by blit()/fill()/renderTooltip() etc. to guarantee
-    // later-drawn elements like tooltips appear on top). Pre-1.21.10, without disabling depth testing here,
-    // this quad can write a depth value that makes a legitimately later-drawn, higher-Z tooltip fail the
-    // depth test and render as hidden behind message images - exactly the bug this fixes (tooltips
-    // appearing under the send/add-image buttons). 1.21.10's GuiGraphics.blit goes through the same
-    // stratum-ordered GuiRenderState every other GUI element does, so it no longer needs (or has) a manual
-    // depth-test toggle to get the same guarantee.
-    //? if <1.21.10 {
-    RenderSystem.disableDepthTest();
-    //?}
-    GuiCompat.drawTexturedQuad(guiGraphics, texture, left, top, left + wnew, top + hnew, 0.0F, 0.0F, 1.0F, 1.0F);
-    //? if <1.21.10 {
-    RenderSystem.enableDepthTest();
-    //?}
-
-    GuiCompat.popPose(guiGraphics);
-}
 
 }

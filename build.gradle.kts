@@ -51,7 +51,6 @@ java.toolchain.languageVersion = JavaLanguageVersion.of(if (minecraftVersionForT
 
 val modId = property("mod_id") as String
 val minecraftVersion = property("minecraft_version") as String
-val cameraJarVersion = property("camera_jar_version") as String
 
 neoForge {
     // Specify the version of NeoForge to use.
@@ -193,9 +192,6 @@ if (minecraftVersion == "1.21.10") {
 }
 
 dependencies {
-    // Shared libs/ folder at the repo root (not per-version) - one Camera jar per target Minecraft
-    // version, all gitignored and dropped in manually by whoever builds this, see README.
-    implementation(files(rootProject.file("libs/camera-neoforge-${minecraftVersion}-${cameraJarVersion}.jar")))
     // Optional Simple Voice Chat addon API - compileOnly so the mod doesn't require SVC to be present at
     // runtime; availability is checked via ModList at runtime (see VoicechatIntegration.isAvailable()).
     compileOnly("de.maxhenkel.voicechat:voicechat-api:${property("voicechat_api_version")}")

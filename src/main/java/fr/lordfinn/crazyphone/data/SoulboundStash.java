@@ -5,6 +5,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.world.item.ItemStack;
+//? if neoforge {
 //? if <1.21.10 {
 import net.neoforged.neoforge.common.util.INBTSerializable;
 //? } else {
@@ -12,10 +13,14 @@ import net.neoforged.neoforge.common.util.INBTSerializable;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 *///?}
-//? if >=1.20.5 {
+//?}
+//? if neoforge && >=1.20.5 {
 /*import net.minecraft.core.RegistryAccess;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.resources.RegistryOps;
+*///?}
+//? if fabric && >=1.20.5 {
+/*import com.mojang.serialization.Codec;
 *///?}
 
 import org.jetbrains.annotations.NotNull;
@@ -26,13 +31,28 @@ import java.util.List;
 /** Items carrying the Soulbound enchantment, pulled off a dying player's death drops (see SoulboundHandler)
  * and held here only for the brief window between death and respawn, where they're reinserted into the
  * player's inventory and this is cleared. Empty the rest of the time. */
-//? if <1.21.10 {
+//? if neoforge && <1.21.10 {
 public class SoulboundStash implements INBTSerializable<CompoundTag> {
-//? } else {
+//?}
+//? if neoforge && >=1.21.10 {
 /*public class SoulboundStash implements ValueIOSerializable {
+*///?}
+//? if fabric && >=1.20.5 {
+/*// Fabric's AttachmentRegistry.createPersistent wants a Codec, not an INBTSerializable/ValueIOSerializable
+// interface (those are NeoForge-only) - see PhoneAttachmentTypes.java for where CODEC is actually used.
+public class SoulboundStash {
+    public static final Codec<SoulboundStash> CODEC =
+            ItemStack.CODEC.listOf().xmap(SoulboundStash::fromItems, stash -> stash.items);
+
+    private static SoulboundStash fromItems(List<ItemStack> items) {
+        SoulboundStash stash = new SoulboundStash();
+        stash.items = new ArrayList<>(items);
+        return stash;
+    }
 *///?}
     public List<ItemStack> items = new ArrayList<>();
 
+    //? if neoforge {
     //? if >=1.21.10 {
     /*@Override
     public void serialize(ValueOutput output) {
@@ -87,6 +107,7 @@ public class SoulboundStash implements INBTSerializable<CompoundTag> {
                 items.add(ItemStack.of(compound));
         }
     }
+    //?}
     //?}
     //?}
 }

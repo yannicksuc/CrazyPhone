@@ -1,6 +1,7 @@
 
 package fr.lordfinn.crazyphone.network;
 
+//? if neoforge {
 //? if >=1.20.5 {
 /*import net.neoforged.neoforge.network.handling.IPayloadContext;
 *///? } else {
@@ -13,6 +14,7 @@ import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.fml.common.Mod.EventBusSubscriber;
 //?}
 import net.neoforged.bus.api.SubscribeEvent;
+//?}
 
 import net.minecraft.world.level.Level;
 import net.minecraft.world.InteractionHand;
@@ -44,11 +46,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 
+//? if neoforge {
 //? if <1.20.5 {
 @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
 //?} else {
 /*@EventBusSubscriber
 *///?}
+//?}
 public record CrazyPhoneContactsScreenButtonMessage(int buttonID, int x, int y, int z, HashMap<String, String> textstate) implements CustomPacketPayload {
 
 	//? if >=1.20.5 {
@@ -85,6 +89,7 @@ public record CrazyPhoneContactsScreenButtonMessage(int buttonID, int x, int y, 
 	}
 	//?}
 
+	//? if neoforge {
 	//? if >=1.20.5 {
 	/*public static void handleData(final CrazyPhoneContactsScreenButtonMessage message, final IPayloadContext context) {
 		if (context.flow() == PacketFlow.SERVERBOUND) {
@@ -120,6 +125,12 @@ public record CrazyPhoneContactsScreenButtonMessage(int buttonID, int x, int y, 
 		}
 	}
 	//?}
+	//?}
+	//? if fabric && >=1.20.5 {
+	/*public static void handleDataFabric(CrazyPhoneContactsScreenButtonMessage message, net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.Context context) {
+		handleButtonAction(context.player(), message.buttonID, message.x, message.y, message.z, message.textstate);
+	}
+	*///?}
 
 	public static void handleButtonAction(Player entity, int buttonID, int x, int y, int z, HashMap<String, String> textstate) {
 		Level world = entity.level();
@@ -265,6 +276,7 @@ public record CrazyPhoneContactsScreenButtonMessage(int buttonID, int x, int y, 
 		return map;
 	}
 
+	//? if neoforge {
 	@SubscribeEvent
 	public static void registerMessage(FMLCommonSetupEvent event) {
 		//? if >=1.20.5 {
@@ -273,4 +285,14 @@ public record CrazyPhoneContactsScreenButtonMessage(int buttonID, int x, int y, 
 		Crazyphone.addNetworkMessage(CrazyPhoneContactsScreenButtonMessage.ID, CrazyPhoneContactsScreenButtonMessage::new, CrazyPhoneContactsScreenButtonMessage::handleData);
 		//?}
 	}
+	//?}
+	//? if fabric && >=1.20.5 {
+	/*public static void registerFabricType() {
+		fr.lordfinn.crazyphone.fabric.FabricNetworking.registerC2SType(TYPE, STREAM_CODEC);
+	}
+
+	public static void registerFabricServerReceiver() {
+		fr.lordfinn.crazyphone.fabric.FabricNetworking.registerServerReceiver(TYPE, CrazyPhoneContactsScreenButtonMessage::handleDataFabric);
+	}
+	*///?}
 }

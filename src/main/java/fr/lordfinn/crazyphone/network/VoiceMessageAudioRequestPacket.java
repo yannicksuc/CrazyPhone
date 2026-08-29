@@ -1,5 +1,6 @@
 package fr.lordfinn.crazyphone.network;
 
+//? if neoforge {
 //? if >=1.20.5 {
 /*import net.neoforged.neoforge.network.handling.IPayloadContext;
 *///? } else {
@@ -12,6 +13,7 @@ import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.fml.common.Mod.EventBusSubscriber;
 //?}
 import net.neoforged.bus.api.SubscribeEvent;
+//?}
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -29,7 +31,9 @@ import fr.lordfinn.crazyphone.Crazyphone;
 import fr.lordfinn.crazyphone.data.ConversationSavedData;
 import fr.lordfinn.crazyphone.procedures.GetCrazyPhoneNumberFromMainHandProcedure;
 import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
+//? if neoforge {
 import fr.lordfinn.crazyphone.voicechat.SvcCallBridge;
+//?}
 import fr.lordfinn.crazyphone.voicechat.VoicechatIntegration;
 
 import java.util.UUID;
@@ -82,6 +86,7 @@ public record VoiceMessageAudioRequestPacket(UUID voiceMessageId, float speed, i
     }
     //?}
 
+    //? if neoforge {
     private static void handle(ServerPlayer player, UUID voiceMessageId, float speedIn, int startTick) {
         if (!VoicechatIntegration.isAvailable())
             return;
@@ -109,7 +114,15 @@ public record VoiceMessageAudioRequestPacket(UUID voiceMessageId, float speed, i
         SvcCallBridge.stopVoiceMessagePlayback(player);
         SvcCallBridge.playAudioToPlayer(player, padToFrameBoundary(toPlay));
     }
+    //?}
+    //? if fabric {
+    /*// SvcCallBridge (server-side audio playback via SVC) isn't ported on Fabric this pass - see
+    // build.fabric.gradle.kts's note - so a play request is a deliberate no-op rather than a half-wired call.
+    private static void handle(ServerPlayer player, UUID voiceMessageId, float speedIn, int startTick) {
+    }
+    *///?}
 
+    //? if neoforge {
     //? if >=1.20.5 {
     /*public static void handleData(final VoiceMessageAudioRequestPacket message, final IPayloadContext context) {
         if (context.flow() != PacketFlow.SERVERBOUND)
@@ -137,6 +150,20 @@ public record VoiceMessageAudioRequestPacket(UUID voiceMessageId, float speed, i
         });
     }
     //?}
+    //?}
+    //? if fabric && >=1.20.5 {
+    /*public static void handleDataFabric(VoiceMessageAudioRequestPacket message, net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.Context context) {
+        handle(context.player(), message.voiceMessageId, message.speed, message.startTick);
+    }
+
+    public static void registerFabricType() {
+        fr.lordfinn.crazyphone.fabric.FabricNetworking.registerC2SType(TYPE, STREAM_CODEC);
+    }
+
+    public static void registerFabricServerReceiver() {
+        fr.lordfinn.crazyphone.fabric.FabricNetworking.registerServerReceiver(TYPE, VoiceMessageAudioRequestPacket::handleDataFabric);
+    }
+    *///?}
 
     /** Matches VoiceMessageRecorder's own capture rate. */
     private static final int SAMPLE_RATE = 48000;
@@ -180,6 +207,7 @@ public record VoiceMessageAudioRequestPacket(UUID voiceMessageId, float speed, i
         return output;
     }
 
+    //? if neoforge {
     //? if <1.20.5 {
     @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
     //?} else {
@@ -195,4 +223,5 @@ public record VoiceMessageAudioRequestPacket(UUID voiceMessageId, float speed, i
             //?}
         }
     }
+    //?}
 }

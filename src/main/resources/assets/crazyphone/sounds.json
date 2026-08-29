@@ -16,5 +16,11 @@
     "sounds": [
       "crazyphone:phone-vibrating"
     ]
+  },
+  "take_picture": {
+    "category": "player",
+    "sounds": [
+      "crazyphone:take-picture"
+    ]
   }
 }

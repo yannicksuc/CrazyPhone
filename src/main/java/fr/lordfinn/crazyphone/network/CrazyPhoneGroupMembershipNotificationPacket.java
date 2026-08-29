@@ -1,5 +1,6 @@
 package fr.lordfinn.crazyphone.network;
 
+//? if neoforge {
 //? if >=1.20.5 {
 /*import net.neoforged.neoforge.network.handling.IPayloadContext;
 *///? } else {
@@ -12,6 +13,7 @@ import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.fml.common.Mod.EventBusSubscriber;
 //?}
 import net.neoforged.bus.api.SubscribeEvent;
+//?}
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -36,11 +38,13 @@ import fr.lordfinn.crazyphone.Crazyphone;
  * {@link CrazyPhoneNewMessageNotificationPacket}'s toast/sound so it reads as the same kind of phone
  * notification - always sent via a targeted {@code PacketDistributor.sendToPlayer} call, never broadcast.
  */
+//? if neoforge {
 //? if <1.20.5 {
 @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
 //?} else {
 /*@EventBusSubscriber
 *///?}
+//?}
 public record CrazyPhoneGroupMembershipNotificationPacket(String groupLabel, String actorName, boolean added) implements CustomPacketPayload {
 
     //? if >=1.20.5 {
@@ -112,13 +116,14 @@ public record CrazyPhoneGroupMembershipNotificationPacket(String groupLabel, Str
         }
     }
 
-    //? if >=1.20.5 {
+    //? if neoforge && >=1.20.5 {
     /*public static void handleData(final CrazyPhoneGroupMembershipNotificationPacket messagePacket, final IPayloadContext context) {
         if (context.flow() == PacketFlow.CLIENTBOUND) {
             context.enqueueWork(() -> showToast(messagePacket));
         }
     }
-    *///? } else {
+    *///?}
+    //? if neoforge && <1.20.5 {
     public static void handleData(final CrazyPhoneGroupMembershipNotificationPacket messagePacket, final PlayPayloadContext context) {
         if (context.flow() == PacketFlow.CLIENTBOUND) {
             context.workHandler().submitAsync(() -> showToast(messagePacket));
@@ -126,6 +131,7 @@ public record CrazyPhoneGroupMembershipNotificationPacket(String groupLabel, Str
     }
     //?}
 
+    //? if neoforge {
     @SubscribeEvent
     public static void registerMessage(FMLCommonSetupEvent event) {
         //? if >=1.20.5 {
@@ -134,4 +140,18 @@ public record CrazyPhoneGroupMembershipNotificationPacket(String groupLabel, Str
         Crazyphone.addNetworkMessage(ID, CrazyPhoneGroupMembershipNotificationPacket::new, CrazyPhoneGroupMembershipNotificationPacket::handleData);
         //?}
     }
+    //?}
+    //? if fabric && >=1.20.5 {
+    /*public static void handleDataFabric(CrazyPhoneGroupMembershipNotificationPacket messagePacket, net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.Context context) {
+        showToast(messagePacket);
+    }
+
+    public static void registerFabricType() {
+        fr.lordfinn.crazyphone.fabric.FabricNetworking.registerS2CType(TYPE, STREAM_CODEC);
+    }
+
+    public static void registerFabricClientReceiver() {
+        fr.lordfinn.crazyphone.fabric.FabricNetworking.registerClientReceiver(TYPE, CrazyPhoneGroupMembershipNotificationPacket::handleDataFabric);
+    }
+    *///?}
 }

@@ -1,5 +1,6 @@
 package fr.lordfinn.crazyphone.network;
 
+//? if neoforge {
 //? if >=1.20.5 {
 /*import net.neoforged.neoforge.network.handling.IPayloadContext;
 *///? } else {
@@ -12,6 +13,7 @@ import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.fml.common.Mod.EventBusSubscriber;
 //?}
 import net.neoforged.bus.api.SubscribeEvent;
+//?}
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -28,7 +30,7 @@ import fr.lordfinn.crazyphone.Crazyphone;
 import fr.lordfinn.crazyphone.data.PlayerPhoneState;
 
 public record PlayerPhoneStateSyncPacket(PlayerPhoneState data) implements CustomPacketPayload {
-    //? if >=1.20.5 <1.21.10 {
+    //? if neoforge && >=1.20.5 <1.21.10 {
     /*public static final Type<PlayerPhoneStateSyncPacket> TYPE = new Type<>(Crazyphone.resource("player_phone_state_sync"));
 
     public static final StreamCodec<RegistryFriendlyByteBuf, PlayerPhoneStateSyncPacket> STREAM_CODEC = StreamCodec.of(
@@ -44,7 +46,7 @@ public record PlayerPhoneStateSyncPacket(PlayerPhoneState data) implements Custo
         return TYPE;
     }
     *///?}
-    //? if >=1.21.10 {
+    //? if neoforge && >=1.21.10 {
     /*// PlayerPhoneState implements ValueIOSerializable here (serialize/deserialize), not INBTSerializable -
     // TagValueOutput/TagValueInput are vanilla's own bridge between that and a plain CompoundTag for wire
     // transmission, same round trip the old serializeNBT/deserializeNBT calls did.
@@ -68,7 +70,7 @@ public record PlayerPhoneStateSyncPacket(PlayerPhoneState data) implements Custo
         return TYPE;
     }
     *///?}
-    //? if <1.20.5 {
+    //? if neoforge && <1.20.5 {
     public static final ResourceLocation ID = Crazyphone.resource("player_phone_state_sync");
 
     public PlayerPhoneStateSyncPacket(FriendlyByteBuf buffer) {
@@ -90,8 +92,28 @@ public record PlayerPhoneStateSyncPacket(PlayerPhoneState data) implements Custo
         return ID;
     }
     //?}
+    //? if fabric && >=1.20.5 {
+    /*// Fabric's PlayerPhoneState has no serializeNBT/serialize method (see PlayerPhoneState.java) - its
+    // CODEC round-trips through NbtOps instead, same shape as ConversationSavedData's Fabric branches.
+    public static final Type<PlayerPhoneStateSyncPacket> TYPE = new Type<>(Crazyphone.resource("player_phone_state_sync"));
 
-    //? if >=1.20.5 <1.21.10 {
+    public static final StreamCodec<RegistryFriendlyByteBuf, PlayerPhoneStateSyncPacket> STREAM_CODEC = StreamCodec.of(
+            (RegistryFriendlyByteBuf buffer, PlayerPhoneStateSyncPacket message) -> buffer.writeNbt(
+                    (net.minecraft.nbt.CompoundTag) PlayerPhoneState.CODEC.encodeStart(net.minecraft.nbt.NbtOps.INSTANCE, message.data()).result().orElse(new net.minecraft.nbt.CompoundTag())),
+            (RegistryFriendlyByteBuf buffer) -> {
+                net.minecraft.nbt.CompoundTag nbt = buffer.readNbt();
+                PlayerPhoneState state = nbt == null ? new PlayerPhoneState()
+                        : PlayerPhoneState.CODEC.parse(net.minecraft.nbt.NbtOps.INSTANCE, nbt).result().orElseGet(PlayerPhoneState::new);
+                return new PlayerPhoneStateSyncPacket(state);
+            });
+
+    @Override
+    public Type<PlayerPhoneStateSyncPacket> type() {
+        return TYPE;
+    }
+    *///?}
+
+    //? if neoforge && >=1.20.5 <1.21.10 {
     /*public static void handleData(final PlayerPhoneStateSyncPacket message, final IPayloadContext context) {
         if (context.flow() == PacketFlow.CLIENTBOUND) {
             context.enqueueWork(() -> context.player().getData(fr.lordfinn.crazyphone.data.PhoneAttachmentTypes.PLAYER_PHONE_STATE)
@@ -102,7 +124,7 @@ public record PlayerPhoneStateSyncPacket(PlayerPhoneState data) implements Custo
         }
     }
     *///?}
-    //? if >=1.21.10 {
+    //? if neoforge && >=1.21.10 {
     /*public static void handleData(final PlayerPhoneStateSyncPacket message, final IPayloadContext context) {
         if (context.flow() == PacketFlow.CLIENTBOUND) {
             context.enqueueWork(() -> {
@@ -117,7 +139,7 @@ public record PlayerPhoneStateSyncPacket(PlayerPhoneState data) implements Custo
         }
     }
     *///?}
-    //? if <1.20.5 {
+    //? if neoforge && <1.20.5 {
     public static void handleData(final PlayerPhoneStateSyncPacket message, final PlayPayloadContext context) {
         if (context.flow() == PacketFlow.CLIENTBOUND) {
             context.workHandler().submitAsync(() -> Minecraft.getInstance().player.getData(fr.lordfinn.crazyphone.data.PhoneAttachmentTypes.PLAYER_PHONE_STATE)
@@ -129,6 +151,7 @@ public record PlayerPhoneStateSyncPacket(PlayerPhoneState data) implements Custo
     }
     //?}
 
+    //? if neoforge {
     //? if <1.20.5 {
     @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
     //?} else {
@@ -144,4 +167,19 @@ public record PlayerPhoneStateSyncPacket(PlayerPhoneState data) implements Custo
             //?}
         }
     }
+    //?}
+    //? if fabric && >=1.20.5 {
+    /*public static void handleDataFabric(PlayerPhoneStateSyncPacket message, net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.Context context) {
+        net.minecraft.client.player.LocalPlayer player = net.minecraft.client.Minecraft.getInstance().player;
+        ((net.fabricmc.fabric.api.attachment.v1.AttachmentTarget) player).setAttached(fr.lordfinn.crazyphone.data.PhoneAttachmentTypes.PLAYER_PHONE_STATE, message.data());
+    }
+
+    public static void registerFabricType() {
+        fr.lordfinn.crazyphone.fabric.FabricNetworking.registerS2CType(TYPE, STREAM_CODEC);
+    }
+
+    public static void registerFabricClientReceiver() {
+        fr.lordfinn.crazyphone.fabric.FabricNetworking.registerClientReceiver(TYPE, PlayerPhoneStateSyncPacket::handleDataFabric);
+    }
+    *///?}
 }
