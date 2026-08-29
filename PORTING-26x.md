@@ -547,27 +547,38 @@ question comes up in the still-open 26.2 investigation.
 ## Remaining work (as of this update)
 
 Current compile status, freshly verified in one pass: `:26.1:compileJava` (NeoForge) - **0
-errors**. `:26.1-fabric:compileJava` - **1 error** (`BuiltinItemRendererRegistry`, see above).
-`:26.2:compileJava` - **7 errors**, `:26.2-fabric:compileJava` - **10 errors** - both now isolated
-entirely to the item-rendering pipeline rework below (confirmed - every other error on both is
-gone as of the `Minecraft#screen` fix above). All 5 pre-existing targets (`1.20.4`, `1.21.1`,
-`1.21.1-fabric`, `1.21.10`, `1.20.1-fabric`) regression-checked clean in the same pass.
+errors**, and its new item renderer is now wired end-to-end (registered, and
+`crazy_phone_photo.json` actually references it - see above). `:26.1-fabric:compileJava` - **1
+error** (`BuiltinItemRendererRegistry`, unaffected by the NeoForge-only rewrite above). `:26.2` /
+`:26.2-fabric:compileJava` - isolated to the OLD `render()` method's own `MultiBufferSource`/
+`RenderType` breakage (still needed there since Fabric hasn't been ported to the new architecture
+yet) plus 1.21.10's own not-yet-reconciled API shape difference. All 5 pre-existing targets
+(`1.20.4`, `1.21.1`, `1.21.1-fabric`, `1.21.10`, `1.20.1-fabric`) regression-checked clean
+throughout this whole rendering-pipeline pass.
 
-1. **The unified custom-item-rendering pipeline rework** - the one real remaining piece of design
-   work, and now understood to be a SINGLE task rather than two separate ones, with a concrete
-   recipe written up above (`ItemModel`/`ItemStackRenderState`/`SpecialModelRenderer`/
-   `SubmitNodeCollector`, `RegisterItemModelsEvent`/`RegisterSpecialModelRendererEvent` on NeoForge,
-   a confirmed Fabric registration gap needing a Mixin). Also touches `CrazyPhoneCaptureMode.java`,
-   `CrazyPhoneCaptureHandMixin.java`, and several screen/message files that reference `RenderType`/
-   `MultiBufferSource` for text/item rendering on 26.2 specifically (per the `:26.2`/`:26.2-fabric`
-   error lists - now down to 7/10 respectively, all attributable to this one item). Not started
-   beyond the investigation above - budget this as
-   comparable in scope to the whole GuiGraphics rework already done, not a quick follow-up.
-2. **The Fabric `ConditionalItemModelProperty` gap** (phone icon states not updating on Fabric
-   >=1.21.10) - needs a Mixin into vanilla's `ConditionalItemModelProperties.bootstrap()`, see above.
-   Lower priority than #1 (cosmetic - a static "dark" phone icon, no functional breakage) but a real,
-   documented gap, not silently left broken.
-3. **Live-test `:26.1:runClient`** - compiles clean now but has not actually been launched and
-   clicked through yet. Do this once #1 is resolved enough to get a client actually rendering (a
-   broken item renderer might crash on first render of the item, not just look wrong).
-4. This file should be deleted once the port is actually complete and merged.
+1. **Live-test `:26.1:runClient`** - now the single highest-value next step. Compiles and is wired
+   end-to-end, but has never actually been launched - this is the first real chance to find out
+   whether the whole `ModelImpl`/`SpecialRendererImpl` approach (transform math, registration
+   timing, per-frame `update()` calls) actually works, or whether it's subtly wrong in a way no
+   amount of reading the API source would have caught. Do this before anything else below - it'll
+   likely reshape what "port the same approach to 1.21.10/Fabric" even means.
+2. **Port the same `ModelImpl`/`SpecialRendererImpl` approach to NeoForge 1.21.10** - blocked on
+   step 1 actually working first. Needs reconciling the different `ItemModel.Unbaked.bake()`/
+   `SpecialModelRenderer.getExtents()` API shape there (see above - not investigated beyond
+   confirming it differs). Also needs its own `crazy_phone_photo.json` handling in `build.gradle.kts`
+   (currently the resource-patching step only fires for `minecraftVersion.startsWith("26.")` -
+   1.21.10 would need its own condition, probably `>=1.21.10 <26` once its JSON format is confirmed
+   to be the same shape as 26.x's).
+3. **Port the whole approach to Fabric** (all versions `>=1.21.10`, once proven on NeoForge) - the
+   registration mechanism is the real open question: `ItemModels.bootstrap()`/
+   `SpecialModelRenderers.bootstrap()` have the same "NeoForge patches an event-post call into
+   vanilla's own bootstrap method, no Fabric equivalent" shape as `ConditionalItemModelProperties`
+   (see the shared-Mixin-utility idea above) - solving that one Mixin pattern unblocks this AND item
+   #4 below at once.
+4. **The Fabric `ConditionalItemModelProperty` gap** (phone icon states not updating on Fabric
+   `>=1.21.10`) - needs the same Mixin pattern as #3. Lower priority on its own (cosmetic - a static
+   "dark" phone icon, no functional breakage) but likely worth doing alongside #3 given the shared
+   infrastructure.
+5. Once 26.2's Fabric-still-needed `render()` method is also ported (or the whole old method is
+   finally retired once Fabric no longer needs it), re-verify `:26.2`/`:26.2-fabric:compileJava`.
+6. This file should be deleted once the port is actually complete and merged.
