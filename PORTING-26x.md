@@ -75,6 +75,21 @@ loader-condition bug worth checking first rather than a genuine new API break).
 None of this Fabric-API-specific layer has been fixed yet - found via one compile attempt, not
 methodically worked through file-by-file the way the NeoForge/vanilla API changes were.
 
+**A real pre-existing gap, not a new 26.x break**: `item/CrazyPhoneItemProperties.java`'s top-level
+`//? if >=1.21.10 { ... } else { ... }` block is gated on Minecraft version only, **not loader** -
+the `>=1.21.10` branch is 100% NeoForge-specific (imports
+`net.neoforged.neoforge.client.event.RegisterConditionalItemModelPropertyEvent`, no Fabric
+equivalent inside that branch at all). This has silently never mattered before because this
+project never had a Fabric node at `>=1.21.10` until `26.1-fabric`/`26.2-fabric` were added tonight
+- it's not something 26.x itself broke, it's untested Fabric-side work that predates this session's
+26.x effort entirely. Confirmed vanilla's own `ItemProperties` class (the pre-1.21.10 registration
+API, still used in the `else` branch) is **completely gone** on 26.1 (`find` across the full
+decompiled source tree turns up nothing) - so Fabric genuinely needs its own `>=1.21.10` path here,
+most likely through Fabric API's `fabric-model-loading-api-v1` module (bundled in
+0.155.2+26.1.2 - not yet opened/inspected) rather than reusing the NeoForge event. This needs the
+same "add a loader gate inside the existing version gate" treatment as everything else, but with a
+real Fabric-side implementation to write, not just a rename.
+
 ## What's done
 
 - **New Stonecutter targets registered**: `versions/26.1` (NeoForge, `neo_version=26.1.2.100`),
