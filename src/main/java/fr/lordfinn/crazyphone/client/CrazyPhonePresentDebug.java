@@ -27,7 +27,10 @@ public final class CrazyPhonePresentDebug {
     // Multiplies camera.getYRot()/getXRot() before reapplying them as the card's own yaw/pitch - flip
     // between 1 and -1 to test which direction is correct without editing code.
     public static float yawSign = 1f;
-    public static float pitchSign = 1f;
+    // Live-reported on 1.21.1-fabric: up/down camera movement reversed the card's own pitch - Camera.java's
+    // own verified rotation formula (rotationYXZ(pi - yRot, -xRot, -roll)) negates xRot before applying it,
+    // which this reapply wasn't doing. -1 here matches that formula exactly.
+    public static float pitchSign = -1f;
     // Flat degree offsets added on top of the camera's own (signed) yaw/pitch, for fine adjustment once the
     // sign itself is right. Neutral (0) by default now that CrazyPhonePresentHandGripMixin's own camera
     // formula is verified exact against Camera.java's own rotation math - these are live-tunable nudges on
@@ -55,6 +58,15 @@ public final class CrazyPhonePresentDebug {
     public static float dualX = 2.200f;
     public static float dualY = -0.400f;
     public static float dualScale = 5.000f;
+    // <1.21.10 only (CrazyPhonePresentHandGripMixin's own dual-card branch, drawn on the arm's own shared
+    // frame - see that mixin's own doc comment) - unlike >=26's dualX above, live testing with BOTH hands
+    // holding a photo at once showed this frame's own left/right magnitude genuinely isn't symmetric (2.1 vs
+    // 1.1), not just a sign-mirror issue - so each hand gets its own independent tuned magnitude here instead
+    // of one shared value mirrored by sign.
+    // Live-reported: 2.1 (found testing the new arm-anchored frame directly) actually moved the left hand
+    // from where it sat before this frame change - 1.1 is the value that puts it back.
+    public static float dualXLeft = 1.200f;
+    public static float dualXRight = 1.200f;
     // Live-reported: dualX's mirror isn't quite symmetric between hands (same underlying asymmetry the
     // single-photo case needed its own extra x correction for, on top of the invert*0.56 hand compensation) -
     // this is added to the LEFT hand's X only, on top of everything else, to close that remaining gap.
@@ -81,7 +93,7 @@ public final class CrazyPhonePresentDebug {
 
     public static String describe() {
         return String.format(java.util.Locale.ROOT,
-                "x=%.3f y=%.3f z=%.3f scale=%.3f yawSign=%.0f pitchSign=%.0f yawOffset=%.1f pitchOffset=%.1f flip=%s handX=%.3f handY=%.3f handZ=%.3f dualX=%.3f dualY=%.3f dualScale=%.3f dualLeftExtra=%.3f dualThirdX=%.3f dualThirdY=%.3f dualThirdScale=%.3f",
-                x, y, z, scale, yawSign, pitchSign, yawOffset, pitchOffset, flipFrontBack, handX, handY, handZ, dualX, dualY, dualScale, dualLeftExtra, dualThirdX, dualThirdY, dualThirdScale);
+                "x=%.3f y=%.3f z=%.3f scale=%.3f yawSign=%.0f pitchSign=%.0f yawOffset=%.1f pitchOffset=%.1f flip=%s handX=%.3f handY=%.3f handZ=%.3f dualX=%.3f dualXLeft=%.3f dualXRight=%.3f dualY=%.3f dualScale=%.3f dualLeftExtra=%.3f dualThirdX=%.3f dualThirdY=%.3f dualThirdScale=%.3f",
+                x, y, z, scale, yawSign, pitchSign, yawOffset, pitchOffset, flipFrontBack, handX, handY, handZ, dualX, dualXLeft, dualXRight, dualY, dualScale, dualLeftExtra, dualThirdX, dualThirdY, dualThirdScale);
     }
 }

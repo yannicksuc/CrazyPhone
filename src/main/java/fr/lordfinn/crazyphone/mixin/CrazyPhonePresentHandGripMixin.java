@@ -21,99 +21,122 @@ package fr.lordfinn.crazyphone.mixin;
  */
 //? if <1.21.10 {
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.math.Axis;
-import net.minecraft.client.Camera;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.ItemInHandRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
+import net.minecraft.client.renderer.entity.player.PlayerRenderer;
+import net.minecraft.client.player.AbstractClientPlayer;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.HumanoidArm;
-import org.joml.Quaternionf;
-import org.joml.Vector3f;
+import net.minecraft.world.item.ItemStack;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import fr.lordfinn.crazyphone.client.CrazyPhonePresentDebug;
 import fr.lordfinn.crazyphone.client.CrazyPhonePresentPose;
+import fr.lordfinn.crazyphone.item.CrazyPhonePhotoItem;
 
+// Same architecture as the >=26 branch below (see its own doc comment for the full reasoning) - confirmed
+// via decompiled source that renderArmWithItem/renderPlayerArm keep the exact same shape here, just with
+// MultiBufferSource where >=26 has SubmitNodeCollector, and the old PlayerRenderer (not yet renamed
+// AvatarRenderer) exposing the same renderRightHand/renderLeftHand split, minus the sleeve-visibility/skin-
+// texture params >=26 added. The old "cancel then reapply the real camera angle" technique this branch used
+// before is what the user's own live testing on 1.21.1-fabric just confirmed broken here too (no bob, arms
+// not drawn, up/down inverted) - exactly the >=26 symptom before that same fix, root-caused the same way:
+// injecting at renderHandsWithItems' own endBatch fires long after the card's own per-hand render already
+// ran, so the two were never guaranteed to share a starting poseStack no matter how the rotation math was
+// tuned. Injecting renderArmWithItem's own HEAD instead gives the arm the exact same frame-consistent
+// poseStack the card render a few lines later will also use - no camera math needed at all.
 @Mixin(ItemInHandRenderer.class)
 public abstract class CrazyPhonePresentHandGripMixin {
-    // Fires for every call to renderPlayerArm regardless of who triggers it - vanilla's own natural call
-    // (an empty main hand) and this mixin's own manual invokes below both land here identically, so both
-    // end up positioned the same way.
-    @Inject(method = "renderPlayerArm", at = @At("HEAD"))
-    private void crazyphone$gripPresentedCard(PoseStack poseStack, MultiBufferSource bufferSource, int light, float equipProgress, float swingProgress, HumanoidArm arm, CallbackInfo ci) {
-        if (!CrazyPhonePresentPose.isPresenting(Minecraft.getInstance().player))
-            return;
-        crazyphone$applyGripTransform(poseStack, arm);
-    }
+    @Shadow
+    @Final
+    private EntityRenderDispatcher entityRenderDispatcher;
 
-    // Injected right before MultiBufferSource.BufferSource#endBatch, not at TAIL (after it) - TAIL would add
-    // these arms' vertices after the batch has already been flushed, risking them not drawing at all (or
-    // drawing on a later, unrelated flush) instead of as part of this same frame's hand render.
-    @Inject(method = "renderHandsWithItems", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/MultiBufferSource$BufferSource;endBatch()V"))
-    private void crazyphone$renderBothGripHands(float partialTicks, PoseStack poseStack, MultiBufferSource.BufferSource bufferSource, LocalPlayer player, int light, CallbackInfo ci) {
+    @Inject(method = "renderArmWithItem", at = @At("HEAD"), cancellable = true, require = 0)
+    private void crazyphone$gripPresentedCard(AbstractClientPlayer player, float frameInterp, float xRot,
+            InteractionHand hand, float attack, ItemStack itemStack, float inverseArmHeight,
+            PoseStack poseStack, MultiBufferSource bufferSource, int lightCoords, CallbackInfo ci) {
         if (!CrazyPhonePresentPose.isPresenting(player))
             return;
-        CrazyPhonePresentHandGripInvokerMixin self = (CrazyPhonePresentHandGripInvokerMixin) this;
-        for (HumanoidArm arm : HumanoidArm.values()) {
+        boolean isMainHand = hand == InteractionHand.MAIN_HAND;
+        HumanoidArm arm = isMainHand ? player.getMainArm() : player.getMainArm().getOpposite();
+        boolean isLeftHand = arm == HumanoidArm.LEFT;
+        poseStack.pushPose();
+        crazyphone$applyGripTransform(poseStack, arm);
+        PlayerRenderer playerRenderer = (PlayerRenderer) this.entityRenderDispatcher.<AbstractClientPlayer>getRenderer(player);
+        if (!isLeftHand) {
+            playerRenderer.renderRightHand(poseStack, bufferSource, lightCoords, player);
+        } else {
+            playerRenderer.renderLeftHand(poseStack, bufferSource, lightCoords, player);
+        }
+        poseStack.popPose();
+
+        // Live-reported: the arm (drawn above, from this exact same raw poseStack) bobbed naturally, but the
+        // card - drawn separately by render()'s own presenting branch, reached later through vanilla's own
+        // per-item dispatch on a DIFFERENT, further-transformed poseStack - didn't, and the two visibly
+        // weren't moving together. Rather than keep chasing the item-dispatch poseStack's own bob/camera
+        // behavior (already tried and reverted twice above), draw the card here too, directly, on this same
+        // raw base the arm just used - guarantees the two can never drift apart again since there's only one
+        // transform now, not two independently-computed ones. This also means the card needs no camera math
+        // of its own either, for the exact same reason the arm doesn't.
+        if (itemStack.getItem() instanceof CrazyPhonePhotoItem) {
             poseStack.pushPose();
-            self.crazyphone$renderPlayerArm(poseStack, bufferSource, light, 0f, 0f, arm);
+            crazyphone$applyCardGripTransform(poseStack, player, isLeftHand);
+            fr.lordfinn.crazyphone.utils.PhotoItemData data = fr.lordfinn.crazyphone.utils.PhotoItemData.fromStack(itemStack);
+            fr.lordfinn.crazyphone.client.render.CrazyPhonePhotoItemRenderer.renderHandFramedCard(data, poseStack,
+                    bufferSource, lightCoords, net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY);
             poseStack.popPose();
         }
+        // Always cancel now, not just for non-phone hands: the phone-holding hand's own card is drawn above
+        // instead of through vanilla's normal per-item dispatch, so letting that dispatch still run would
+        // draw a second, independently-computed (and now provably drift-prone) copy on top of it.
+        ci.cancel();
     }
 
-    // Same "cancel then reapply the real camera angle" technique as CrazyPhonePhotoItemRenderer's own first-
-    // person presenting branch (see that method's own doc comment) - duplicated here rather than shared
-    // because this runs on a different class entirely with no common call site to factor it into.
-    //
-    // 1.20.4-only: live testing showed the grip was only correctly oriented while facing due north (yaw
-    // 180, pitch ~0) - exactly the one case where 180f-yaw/pitch below happen to compute to zero extra
-    // rotation. That means the CANCEL step alone (before any reapply) already lands camera-relative on
-    // this version, unlike >=1.20.5 where cancel-alone was proven (through the same kind of live testing)
-    // to land at world-space identity, which is what made reapplying the real camera angle necessary there
-    // in the first place. Reapplying it AGAIN here on a version where cancel is already camera-relative
-    // double-counts the rotation - skip the reapply entirely below <1.20.5.
-    //
-    // No cancel-to-identity here anymore either way: this injection was never cancellable on this branch
-    // (vanilla's own renderPlayerArm body always ran afterward, composing our small offset with its own
-    // full chain - which is exactly why this branch never needed >=26's own distance anchor, vanilla's
-    // uncancelled body already provides it). Resetting rotation to identity first was ALSO quietly
-    // discarding renderHandsWithItems' own small natural view/walk bob every time, on every version this
-    // branch covers - live-reported (>=26 first, but the same reset exists here) as the card visibly having
-    // a subtle "follows the camera a beat late" motion the arms lacked entirely. Building straight on top of
-    // whatever's already there (identity + that small bob) restores it without otherwise changing behavior,
-    // since it's a tiny rotation and vanilla's own subsequent chain doesn't care what rotation preceded it.
+    // Position/rotation values ported verbatim from the >=26 branch's own already-live-tuned constants
+    // (same CrazyPhonePresentDebug fields) - the underlying mechanism is now identical on both branches, so
+    // there's no reason to expect these to need separate tuning.
     private static void crazyphone$applyGripTransform(PoseStack poseStack, HumanoidArm arm) {
-        Vector3f pos = poseStack.last().pose().getTranslation(new Vector3f());
-        poseStack.mulPose(poseStack.last().pose().getNormalizedRotation(new Quaternionf()).conjugate());
-        poseStack.translate(-pos.x, -pos.y, -pos.z);
-        // Live-confirmed: dropping this cancel to keep the natural bob (tried first, see git history) broke
-        // camera-tracking outright - more than just the small bob was baked into that incoming rotation, so
-        // "build on top of whatever's there" isn't safe. Keeping the reliable cancel-to-identity baseline
-        // and instead recomputing renderHandsWithItems' own specific small "hand sway" formula ourselves
-        // (Axis.XP/YP.rotationDegrees((viewRot - bob) * 0.1F)) gets the same subtle motion without that risk.
-        // Gated >=1.20.5 (not attempted below that) because a fixed 1.0F partial tick here (tried first, on
-        // >=26) reproduced a visible stutter - snapping between whole-tick values instead of interpolating
-        // smoothly like the rest of the frame - and the fix (the game's own actual interpolated partial
-        // tick, DeltaTracker#getGameTimeDeltaPartialTick(false)) doesn't exist before 1.20.5.
-        //? if >=1.20.5 {
-        /*LocalPlayer bobPlayer = Minecraft.getInstance().player;
-        if (bobPlayer != null) {
-            float partialTick = Minecraft.getInstance()./^$ mc_delta_tracker {^/getTimer/^$}^/().getGameTimeDeltaPartialTick(false);
-            poseStack.mulPose(Axis.XP.rotationDegrees((bobPlayer.getViewXRot(partialTick) - bobPlayer.xBob) * 0.1F));
-            poseStack.mulPose(Axis.YP.rotationDegrees((bobPlayer.getViewYRot(partialTick) - bobPlayer.yBob) * 0.1F));
-        }
-        Camera camera = Minecraft.getInstance().gameRenderer.getMainCamera();
-        float yaw = camera.getYRot() * CrazyPhonePresentDebug.yawSign + CrazyPhonePresentDebug.yawOffset;
-        float pitch = camera.getXRot() * CrazyPhonePresentDebug.pitchSign + CrazyPhonePresentDebug.pitchOffset;
-        poseStack.mulPose(Axis.YP.rotationDegrees(180f - yaw));
-        poseStack.mulPose(Axis.XP.rotationDegrees(pitch));
-        *///?}
         float side = arm == HumanoidArm.RIGHT ? 1f : -1f;
-        poseStack.translate(side * CrazyPhonePresentDebug.handX, CrazyPhonePresentDebug.y + CrazyPhonePresentDebug.handY, 1f / 16f + CrazyPhonePresentDebug.z + CrazyPhonePresentDebug.handZ);
+        poseStack.translate(side * CrazyPhonePresentDebug.handX, CrazyPhonePresentDebug.handY, CrazyPhonePresentDebug.handZ);
+        poseStack.mulPose(com.mojang.math.Axis.YP.rotationDegrees(side * 45.0F));
+        poseStack.mulPose(com.mojang.math.Axis.ZP.rotationDegrees(side * 120.0F));
+        poseStack.mulPose(com.mojang.math.Axis.XP.rotationDegrees(200.0F));
+        poseStack.mulPose(com.mojang.math.Axis.YP.rotationDegrees(side * -135.0F));
+    }
+
+    // Shares handX/handY/handZ's own anchor with the arm above (same raw base, same per-hand mirror sign) so
+    // the card starts from the exact spot the hand already sits at, then nudges/scales from there via the
+    // same CrazyPhonePresentDebug x/y/z/scale fields render()'s own (now-bypassed) presenting branch used -
+    // these were tuned against a different, cancelled-then-reapplied frame, so live-retuning via
+    // /presentdebug is expected here, just like every other 3D offset in this project.
+    private static void crazyphone$applyCardGripTransform(PoseStack poseStack, AbstractClientPlayer player, boolean isLeftHand) {
+        float side = isLeftHand ? -1f : 1f;
+        poseStack.translate(side * CrazyPhonePresentDebug.handX, CrazyPhonePresentDebug.handY, CrazyPhonePresentDebug.handZ);
+        if (CrazyPhonePresentPose.isDualPresenting(player)) {
+            // Live-reported (with both hands actually holding a photo at once, not tested one at a time):
+            // this frame's own left/right magnitude genuinely isn't symmetric (2.1 left, 1.1 right) - not
+            // just a sign-mirror issue, so a single shared dualX mirrored by sign (>=26's own approach,
+            // CrazyPhonePresentDebug#dualX) can't represent it. Each hand gets its own independent magnitude
+            // instead (dualXLeft/dualXRight), sign still applied by hand so the live-tunable values
+            // themselves stay positive/intuitive.
+            float dualXMagnitude = isLeftHand ? CrazyPhonePresentDebug.dualXLeft : CrazyPhonePresentDebug.dualXRight;
+            poseStack.translate(side * dualXMagnitude, CrazyPhonePresentDebug.dualY, CrazyPhonePresentDebug.z);
+            poseStack.scale(CrazyPhonePresentDebug.dualScale, CrazyPhonePresentDebug.dualScale, CrazyPhonePresentDebug.dualScale);
+        } else {
+            // Live-reported: x was only correct for the left hand, and mirroring it with the same sign as
+            // handX (tried first) came out backwards - opposite hands need opposite-signed x here from what
+            // handX itself uses, not the same sign.
+            poseStack.translate(-side * CrazyPhonePresentDebug.x, CrazyPhonePresentDebug.y, CrazyPhonePresentDebug.z);
+            poseStack.scale(CrazyPhonePresentDebug.scale, CrazyPhonePresentDebug.scale, CrazyPhonePresentDebug.scale);
+        }
+        if (CrazyPhonePresentDebug.flipFrontBack)
+            poseStack.mulPose(com.mojang.math.Axis.YP.rotationDegrees(180f));
     }
 }
 //?}

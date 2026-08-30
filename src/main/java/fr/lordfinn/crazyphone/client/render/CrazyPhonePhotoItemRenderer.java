@@ -157,29 +157,28 @@ public final class CrazyPhonePhotoItemRenderer {
         if (isHand) {
             if (isFirstPersonHand) {
                 boolean presentingFirstPerson = CrazyPhonePresentPose.isPresenting(net.minecraft.client.Minecraft.getInstance().player);
+                // <1.21.10 only: dead code below as of tonight's CrazyPhonePresentHandGripMixin rework - that
+                // mixin's own renderArmWithItem HEAD injection now cancels vanilla's per-hand item dispatch
+                // unconditionally while presenting (drawing the card itself, on the arm's own shared
+                // poseStack, instead of leaving it to reach here) - so render() is never actually called with
+                // a FIRST_PERSON_*_HAND context while presentingFirstPerson would be true. Left in rather than
+                // deleted in case >=1.21.10/Fabric ever needs this path reinstated for some reason - not
+                // currently the case.
                 if (presentingFirstPerson) {
                     // Replaces the old flat GUI overlay (a standalone 2D draw with no world lighting at all,
                     // which read as visibly wrong next to the properly-lit 3D card everywhere else) - reuses
                     // this exact same 3D geometry/lighting path instead, just repositioned/enlarged.
                     //
-                    // A full rotation+position reset (tried first) was meant to only cancel vanilla's own
-                    // per-frame "hand sway" (ItemInHandRenderer#renderHandsWithItems's own
-                    // Axis.XP/YP.rotationDegrees((viewRot - bobRot) * 0.1F), applied before this method is
-                    // ever reached) and the per-hand mirror offset underneath it - but the resulting card
-                    // stayed fixed facing one world direction while only its position tracked the player,
-                    // and was enormous. Both point to the same conclusion: the camera's own view rotation is
-                    // ALSO baked into this poseStack chain (not applied separately, as vanilla's decompiled
-                    // source alone suggested), so cancelling all inherited rotation removed that too,
-                    // landing at world-space identity instead of camera-relative identity - explains the
-                    // world-locked facing directly, and very likely the scale too (a fixed local offset from
-                    // a "reset origin" that isn't actually near the camera can put the card at a wildly
-                    // different apparent distance than intended).
-                    //
-                    // Rather than keep guessing what's left in that chain, this reapplies the game's own
-                    // ACTUAL current camera yaw/pitch directly after the reset - authoritative data instead
-                    // of an inferred cancellation - the same "cancel then reapply a known-good real angle"
-                    // pattern already proven for the third-person presenting branch below (reapplying
-                    // presentEntityYaw there for the same reason).
+                    // Tried dropping this cancel+reapply entirely (reasoning it should match >=26's own
+                    // ModelImpl#update(), which needs neither) - live-reported as still rotating around a
+                    // pivot while turning the camera, so reverted. The analogy was wrong: >=26's update()
+                    // builds a brand-new, empty PoseStack (nothing inherited to cancel in the first place),
+                    // while this render() method receives the REAL poseStack straight from vanilla's own
+                    // item-render dispatch - CrazyPhonePresentHandGripMixin's own <1.21.10 arm fix instead
+                    // captures its snapshot much earlier, at renderArmWithItem's own HEAD, before vanilla's
+                    // item-specific transform chain (applyItemArmTransform, equip/swing bobbing) has run -
+                    // that earlier snapshot is what's reliably camera-rigid, not this later one. Restoring
+                    // the cancel-then-reapply-the-real-camera-angle approach this branch used before tonight.
                     //
                     // Every number from here down reads from CrazyPhonePresentDebug instead of a compile-time
                     // constant - live-tunable via the /presentdebug client command (Fabric-only for now) so
@@ -188,33 +187,21 @@ public final class CrazyPhonePhotoItemRenderer {
                     org.joml.Vector3f handPos = poseStack.last().pose().getTranslation(new org.joml.Vector3f());
                     poseStack.mulPose(poseStack.last().pose().getNormalizedRotation(new Quaternionf()).conjugate());
                     poseStack.translate(-handPos.x, -handPos.y, -handPos.z);
-                    // Live-confirmed (via CrazyPhonePresentHandGripMixin's own identical grip transform):
-                    // dropping this cancel to keep renderHandsWithItems' own small natural view/walk bob
-                    // (tried first) broke camera-tracking outright - more than just that bob was baked into
-                    // the incoming rotation, so "build on top of whatever's there" isn't a safe way to get
-                    // it back. Keeping the reliable cancel-to-identity baseline and instead recomputing that
-                    // one specific small "hand sway" formula ourselves (Axis.XP/YP.rotationDegrees((viewRot -
-                    // bob) * 0.1F)) gets the same subtle motion without that risk. Gated >=1.20.5 (same as
-                    // the reapply below) because a fixed 1.0F partial tick here (tried first, on the arm grip
-                    // mixin) reproduced a visible stutter instead of interpolating smoothly like the rest of
-                    // the frame, and the fix (the game's own actual interpolated partial tick,
-                    // DeltaTracker#getGameTimeDeltaPartialTick(false)) doesn't exist before 1.20.5.
-                    // 1.20.4-only: live testing showed this card (and CrazyPhonePresentHandGripMixin's own
-                    // grip, same root cause) was only correctly oriented while facing due north - exactly
-                    // the case where the reapply below computes to zero extra rotation. The cancel step
-                    // above already lands camera-relative on this version, unlike >=1.20.5 where cancel
-                    // alone was proven (through this same kind of live testing) to land at world-space
+                    // Live-reported: composing this reapply with a separately-recomputed small "hand sway"
+                    // delta (tried first, based on (viewRot - bob) * 0.1F) produced a visible throttling/
+                    // stutter effect - applying view-rotation input twice at two different scales (10% via
+                    // the sway delta, 100% via the reapply right below) rather than a single clean motion.
+                    // Dropped the sway recompute entirely; the full reapply alone already tracks the camera
+                    // every frame, so there's nothing left for a supplementary delta to usefully add.
+                    // 1.20.4-only: live testing showed this card was only correctly oriented while facing due
+                    // north - exactly the case where the reapply below computes to zero extra rotation. The
+                    // cancel step above already lands camera-relative on this version, unlike >=1.20.5 where
+                    // cancel alone was proven (through this same kind of live testing) to land at world-space
                     // identity, which is what made reapplying the real camera angle necessary there in the
-                    // first place - reapplying it again here on a version where cancel is already
-                    // camera-relative double-counts the rotation, so it's skipped below <1.20.5.
+                    // first place - reapplying it again here on a version where cancel is already camera-
+                    // relative double-counts the rotation, so it's skipped below <1.20.5.
                     //? if >=1.20.5 {
-                    /*net.minecraft.client.player.LocalPlayer bobPlayer = net.minecraft.client.Minecraft.getInstance().player;
-                    if (bobPlayer != null) {
-                        float bobPartialTick = net.minecraft.client.Minecraft.getInstance()./^$ mc_delta_tracker {^/getDeltaTracker/^$}^/().getGameTimeDeltaPartialTick(false);
-                        poseStack.mulPose(Axis.XP.rotationDegrees((bobPlayer.getViewXRot(bobPartialTick) - bobPlayer.xBob) * 0.1F));
-                        poseStack.mulPose(Axis.YP.rotationDegrees((bobPlayer.getViewYRot(bobPartialTick) - bobPlayer.yBob) * 0.1F));
-                    }
-                    net.minecraft.client.Camera camera = net.minecraft.client.Minecraft.getInstance().gameRenderer./^$ gr_main_camera {^/getMainCamera/^$}^/();
+                    /*net.minecraft.client.Camera camera = net.minecraft.client.Minecraft.getInstance().gameRenderer./^$ gr_main_camera {^/getMainCamera/^$}^/();
                     float debugYaw = camera./^$ cam_yaw {^/getYRot/^$}^/() * CrazyPhonePresentDebug.yawSign + CrazyPhonePresentDebug.yawOffset;
                     float debugPitch = camera./^$ cam_pitch {^/getXRot/^$}^/() * CrazyPhonePresentDebug.pitchSign + CrazyPhonePresentDebug.pitchOffset;
                     poseStack.mulPose(Axis.YP.rotationDegrees(180f - debugYaw));
@@ -451,7 +438,11 @@ public final class CrazyPhonePhotoItemRenderer {
     // nine-sliced around the real (uncropped) photo aspect ratio instead of a fixed 14x14 square opening -
     // the four 1x1 corner tiles and four edge strips of the frame texture stay a constant physical width,
     // only the edge strips' long axis stretches to fit whatever size the photo itself came out to.
-    private static void renderHandFramedCard(PhotoItemData data, PoseStack poseStack, MultiBufferSource bufferSource, int packedLight, int packedOverlay) {
+    // Public (not private) so CrazyPhonePresentHandGripMixin's own <1.21.10 branch (a different package) can
+    // draw the presented card directly on the arm's own poseStack instead of going through render()'s own
+    // dispatch - see that mixin's own doc comment for why (the arm and the card need to share one transform,
+    // not two independently-computed ones that can drift apart).
+    public static void renderHandFramedCard(PhotoItemData data, PoseStack poseStack, MultiBufferSource bufferSource, int packedLight, int packedOverlay) {
         /*$ res_loc {*/ResourceLocation/*$}*/ photoTexture = PLACEHOLDER_TEXTURE;
         float iw = 0.5f, ih = 0.5f;
         if (data != null) {
