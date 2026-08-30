@@ -58,10 +58,22 @@ public class CrazyPhonePasswordScreenScreen extends CrazyPhoneDefaultScreenScree
     public static HashMap<String, String> getEditBoxAndCheckBoxValues() {
         HashMap<String, String> textstate = new HashMap<>();
         if (Minecraft.getInstance()./*$ mc_get_screen {*/screen/*$}*/ instanceof CrazyPhonePasswordScreenScreen sc) {
+            // sc.number/sc.name are only non-null on STEP_IDENTITY - init() rebuilds the screen for
+            // STEP_PASSWORD without them (only the password field exists there), so by the time "Valider"
+            // is clicked and this runs, both are null and the auto-generated number and typed name never
+            // made it into that final packet at all - the server never learned either value, no matter what
+            // was typed on step one. guistate (unlike sc.number/sc.name) is never rebuilt by init() and
+            // still holds STEP_IDENTITY's own EditBox widget references (put there by initNumberField/
+            // initNameField, keyed "text:number"/"text:name") with their last-typed values intact - falling
+            // back to those here is what actually gets step one's data into the submission.
             if (sc.number != null)
                 textstate.put("textin:number", sc.number.getValue());
+            else if (guistate.get("text:number") instanceof EditBox stepOneNumber)
+                textstate.put("textin:number", stepOneNumber.getValue());
             if (sc.name != null)
                 textstate.put("textin:name", sc.name.getValue());
+            else if (guistate.get("text:name") instanceof EditBox stepOneName)
+                textstate.put("textin:name", stepOneName.getValue());
             if (sc.password != null)
                 textstate.put("textin:password", sc.password.getValue());
         }
@@ -306,12 +318,24 @@ public class CrazyPhonePasswordScreenScreen extends CrazyPhoneDefaultScreenScree
                 ACTION_BUTTON_X, ACTION_BUTTON_FULL_WIDTH,
                 Tooltip.create(Component.translatable("gui.crazyphone.crazy_phone_password_screen.tooltip_valider")),
                 e -> {
+                    // NOT also calling handleButtonAction() directly here, unlike this screen's own reset
+                    // button and most other MCreator-generated buttons in this codebase - those extra local
+                    // calls are a harmless "instant feedback" duplicate for idempotent/read-only actions, but
+                    // registration WRITES to the shared world-wide PhoneRegistrySavedData. Live-debug logging
+                    // showed the two independent executions (this local one racing against the real server-
+                    // side packet handler) each pass their own validation, but whichever runs first claims
+                    // the number in the registry and writes number/name onto ITS OWN ItemStack reference -
+                    // the second (usually the authoritative server one, since it's a genuine network hop even
+                    // on an integrated server) then sees the number already taken and silently no-ops,
+                    // leaving the REAL, persisted item stack's own tags blank. Both still play the success
+                    // sound (validation alone already passed for both), so it looked like it worked -
+                    // explains why the very first phone in a session sometimes actually registered (pure
+                    // ordering luck) and every one after kept bouncing back to the registration screen.
                     //? if >=1.20.5 {
                     /*NetworkAccess.sendToServer(new CrazyPhonePasswordScreenButtonMessage(0, x, y, z, getEditBoxAndCheckBoxValues()));
                     *///? } else {
                     PacketDistributor.SERVER.noArg().send(new CrazyPhonePasswordScreenButtonMessage(0, x, y, z, getEditBoxAndCheckBoxValues()));
                     //?}
-                    CrazyPhonePasswordScreenButtonMessage.handleButtonAction(entity, 0, x, y, z, getEditBoxAndCheckBoxValues());
                 });
         guistate.put("button:button_valider", buttonAction);
         addRenderableWidget(buttonAction);

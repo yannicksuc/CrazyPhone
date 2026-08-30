@@ -136,8 +136,13 @@ public record CrazyPhonePasswordScreenButtonMessage(int buttonID, int x, int y, 
 		if (!world.hasChunkAt(new BlockPos(x, y, z)))
 			return;
 		if (buttonID == 0) {
-
-			CrazyPhoneInitialFormValidationButtonClickProcedure.execute(world, x, y, z, entity, textstate);
+			// Was passing textstate (just this one packet's own payload) instead of guistate (the
+			// accumulated form state merged above, matching how CrazyPhoneSignInScreenButtonMessage's
+			// own analogous OK handler does it) - if the OK button's own click packet didn't happen to
+			// also carry every field's current value, this saw an empty/partial map and always failed
+			// validation silently (guistate.isEmpty() returns "" - no error text - before any real
+			// field check even runs), regardless of what was actually typed.
+			CrazyPhoneInitialFormValidationButtonClickProcedure.execute(world, x, y, z, entity, guistate);
 		}
 		if (buttonID == 1) {
 
