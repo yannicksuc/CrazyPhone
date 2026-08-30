@@ -41,7 +41,9 @@ public abstract class AvatarPresentPoseMixin {
             at = @At("TAIL"), require = 0)
     private void crazyphone$extractPresenting(Avatar entity, AvatarRenderState state, float partialTicks, CallbackInfo ci) {
         boolean presenting = entity instanceof Player player && fr.lordfinn.crazyphone.client.CrazyPhonePresentPose.isPresenting(player);
+        boolean dualPresenting = entity instanceof Player player2 && fr.lordfinn.crazyphone.client.CrazyPhonePresentPose.isDualPresenting(player2);
         ((ICrazyPhonePresentingState) state).crazyphone$setPresenting(presenting);
+        ((ICrazyPhonePresentingState) state).crazyphone$setDualPresenting(dualPresenting);
     }
 }
 *///?} else {

@@ -34,6 +34,7 @@ public abstract class PlayerModelPresentPoseMixin {
     private void crazyphone$presentPhoto(AvatarRenderState state, CallbackInfo ci) {
         boolean presenting = ((ICrazyPhonePresentingState) state).crazyphone$isPresenting();
         fr.lordfinn.crazyphone.client.CrazyPhonePresentPose.presentingThisRender = presenting;
+        fr.lordfinn.crazyphone.client.CrazyPhonePresentPose.isDualPresentingThisRender = ((ICrazyPhonePresentingState) state).crazyphone$isDualPresenting();
         fr.lordfinn.crazyphone.client.CrazyPhonePresentPose.presentingEntityYaw = state.bodyRot;
         if (!presenting)
             return;

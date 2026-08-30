@@ -11,4 +11,12 @@ public interface ICrazyPhonePresentingState {
     boolean crazyphone$isPresenting();
 
     void crazyphone$setPresenting(boolean value);
+
+    // Same bridge, for CrazyPhonePresentPose#isDualPresenting (a photo in EACH hand at once) - needed once
+    // the third-person presenting branch had to distinguish "one shared card" from "two separate photos, one
+    // per arm" the same way the first-person branch already does, and CrazyPhonePhotoItemRenderer has no
+    // entity reference of its own to check this directly (see this interface's own doc comment on why).
+    boolean crazyphone$isDualPresenting();
+
+    void crazyphone$setDualPresenting(boolean value);
 }

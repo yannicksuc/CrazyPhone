@@ -36,6 +36,15 @@ public final class CrazyPhonePresentPose {
         return isPhoto(player.getMainHandItem()) || isPhoto(player.getOffhandItem());
     }
 
+    // Two photos at once (one per hand) need to split apart, one under each hand, instead of both converging
+    // on the single shared centered position isPresenting's normal single-photo case uses - otherwise they'd
+    // render on top of each other. CrazyPhonePhotoItemRenderer's presenting branches check this to pick
+    // between CrazyPhonePresentDebug's single-photo x/y/scale and its dualX/dualY/dualScale.
+    public static boolean isDualPresenting(LivingEntity entity) {
+        return entity instanceof Player player && player.isCrouching()
+                && isPhoto(player.getMainHandItem()) && isPhoto(player.getOffhandItem());
+    }
+
     private static boolean isPhoto(ItemStack stack) {
         return stack.getItem() instanceof CrazyPhonePhotoItem;
     }
@@ -86,6 +95,11 @@ public final class CrazyPhonePresentPose {
     // first-person view checks isPresenting(Minecraft.getInstance().player) directly instead, since it
     // always concerns the local player and never needs this cross-render bridge.
     public static boolean presentingThisRender = false;
+    // Same bridge, for isDualPresenting (a photo in EACH hand at once) - the third-person presenting branch
+    // needs to tell "one shared card" from "two separate photos, one per arm" apart the same way the first-
+    // person branch already can (it has a direct Minecraft.getInstance().player reference to check), but
+    // CrazyPhonePhotoItemRenderer has no entity reference here either, hence this bridge too.
+    public static boolean isDualPresentingThisRender = false;
     // The same entityYaw LivingEntityRenderer#render itself uses for its own body-facing rotation
     // (poseStack.mulPose(Axis.YP.rotationDegrees(180 - entityYaw))). CrazyPhonePhotoItemRenderer's presenting
     // branch fully cancels whatever rotation the arm bone baked into its poseStack (rather than guessing a

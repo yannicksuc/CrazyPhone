@@ -51,6 +51,8 @@ public abstract class PlayerPresentPoseMixin<T extends LivingEntity, M extends E
     private void crazyphone$presentPhoto(T entity, float entityYaw, float partialTicks, PoseStack poseStack, MultiBufferSource bufferSource, int packedLight, CallbackInfo ci) {
         boolean presenting = entity instanceof Player player && fr.lordfinn.crazyphone.client.CrazyPhonePresentPose.isPresenting(player);
         fr.lordfinn.crazyphone.client.CrazyPhonePresentPose.presentingThisRender = presenting;
+        fr.lordfinn.crazyphone.client.CrazyPhonePresentPose.isDualPresentingThisRender =
+                entity instanceof Player dualPlayer && fr.lordfinn.crazyphone.client.CrazyPhonePresentPose.isDualPresenting(dualPlayer);
         // NOT this method's own "entityYaw" parameter - that one is barely used inside render() itself (it's
         // only forwarded to super.render() for name-tag/shadow purposes further down) and tracks closer to
         // the player's full look yaw, which is why using it made the card visibly follow head movement

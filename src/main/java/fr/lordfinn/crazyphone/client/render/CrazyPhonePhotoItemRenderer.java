@@ -188,6 +188,17 @@ public final class CrazyPhonePhotoItemRenderer {
                     org.joml.Vector3f handPos = poseStack.last().pose().getTranslation(new org.joml.Vector3f());
                     poseStack.mulPose(poseStack.last().pose().getNormalizedRotation(new Quaternionf()).conjugate());
                     poseStack.translate(-handPos.x, -handPos.y, -handPos.z);
+                    // Live-confirmed (via CrazyPhonePresentHandGripMixin's own identical grip transform):
+                    // dropping this cancel to keep renderHandsWithItems' own small natural view/walk bob
+                    // (tried first) broke camera-tracking outright - more than just that bob was baked into
+                    // the incoming rotation, so "build on top of whatever's there" isn't a safe way to get
+                    // it back. Keeping the reliable cancel-to-identity baseline and instead recomputing that
+                    // one specific small "hand sway" formula ourselves (Axis.XP/YP.rotationDegrees((viewRot -
+                    // bob) * 0.1F)) gets the same subtle motion without that risk. Gated >=1.20.5 (same as
+                    // the reapply below) because a fixed 1.0F partial tick here (tried first, on the arm grip
+                    // mixin) reproduced a visible stutter instead of interpolating smoothly like the rest of
+                    // the frame, and the fix (the game's own actual interpolated partial tick,
+                    // DeltaTracker#getGameTimeDeltaPartialTick(false)) doesn't exist before 1.20.5.
                     // 1.20.4-only: live testing showed this card (and CrazyPhonePresentHandGripMixin's own
                     // grip, same root cause) was only correctly oriented while facing due north - exactly
                     // the case where the reapply below computes to zero extra rotation. The cancel step
@@ -197,14 +208,37 @@ public final class CrazyPhonePhotoItemRenderer {
                     // first place - reapplying it again here on a version where cancel is already
                     // camera-relative double-counts the rotation, so it's skipped below <1.20.5.
                     //? if >=1.20.5 {
-                    /*net.minecraft.client.Camera camera = net.minecraft.client.Minecraft.getInstance().gameRenderer./^$ gr_main_camera {^/getMainCamera/^$}^/();
+                    /*net.minecraft.client.player.LocalPlayer bobPlayer = net.minecraft.client.Minecraft.getInstance().player;
+                    if (bobPlayer != null) {
+                        float bobPartialTick = net.minecraft.client.Minecraft.getInstance()./^$ mc_delta_tracker {^/getDeltaTracker/^$}^/().getGameTimeDeltaPartialTick(false);
+                        poseStack.mulPose(Axis.XP.rotationDegrees((bobPlayer.getViewXRot(bobPartialTick) - bobPlayer.xBob) * 0.1F));
+                        poseStack.mulPose(Axis.YP.rotationDegrees((bobPlayer.getViewYRot(bobPartialTick) - bobPlayer.yBob) * 0.1F));
+                    }
+                    net.minecraft.client.Camera camera = net.minecraft.client.Minecraft.getInstance().gameRenderer./^$ gr_main_camera {^/getMainCamera/^$}^/();
                     float debugYaw = camera./^$ cam_yaw {^/getYRot/^$}^/() * CrazyPhonePresentDebug.yawSign + CrazyPhonePresentDebug.yawOffset;
                     float debugPitch = camera./^$ cam_pitch {^/getXRot/^$}^/() * CrazyPhonePresentDebug.pitchSign + CrazyPhonePresentDebug.pitchOffset;
                     poseStack.mulPose(Axis.YP.rotationDegrees(180f - debugYaw));
                     poseStack.mulPose(Axis.XP.rotationDegrees(debugPitch));
                     *///?}
-                    poseStack.translate(0, CrazyPhonePresentDebug.y, NORMAL_OFFSET + CrazyPhonePresentDebug.z);
-                    poseStack.scale(CrazyPhonePresentDebug.scale, CrazyPhonePresentDebug.scale, CrazyPhonePresentDebug.scale);
+                    // Live-reported (>=26 branch first, same root cause here): the card sat visibly further
+                    // left when the phone was in the LEFT hand than the right - vanilla's own
+                    // ItemInHandRenderer#applyItemArmTransform applies translate(invert*0.56, ...) on the
+                    // real poseStack for any non-special held item, before this method is ever reached -
+                    // invert is +1 right hand / -1 left hand, a genuine hand-dependent constant. Cancelling
+                    // it here (opposite sign) keeps the card centered regardless of which hand holds it.
+                    // Two photos at once (one per hand, see CrazyPhonePresentPose#isDualPresenting) need to
+                    // split apart under each hand instead of both converging here - dualX/dualY/dualScale are
+                    // a separate, live-tuned set just for that case (dualX mirrored outward per hand, not
+                    // just the single-photo case's small hand-centering compensation).
+                    if (CrazyPhonePresentPose.isDualPresenting(net.minecraft.client.Minecraft.getInstance().player)) {
+                        poseStack.translate((isLeftHand ? -CrazyPhonePresentDebug.dualX : CrazyPhonePresentDebug.dualX) + (isLeftHand ? 0.56f : -0.56f)
+                                        + (isLeftHand ? CrazyPhonePresentDebug.dualLeftExtra : 0f),
+                                CrazyPhonePresentDebug.dualY, NORMAL_OFFSET + CrazyPhonePresentDebug.z);
+                        poseStack.scale(CrazyPhonePresentDebug.dualScale, CrazyPhonePresentDebug.dualScale, CrazyPhonePresentDebug.dualScale);
+                    } else {
+                        poseStack.translate(CrazyPhonePresentDebug.x + (isLeftHand ? 0.56f : -0.56f), CrazyPhonePresentDebug.y, NORMAL_OFFSET + CrazyPhonePresentDebug.z);
+                        poseStack.scale(CrazyPhonePresentDebug.scale, CrazyPhonePresentDebug.scale, CrazyPhonePresentDebug.scale);
+                    }
                     // Presenting means showing the photo's front to whoever's in front of you, so from your
                     // own first-person view you'd only ever see its blank back (same reasoning as the old GUI
                     // overlay's own back-face choice) - one flip swaps which face is outward.
@@ -241,9 +275,18 @@ public final class CrazyPhonePhotoItemRenderer {
                     poseStack.mulPose(Axis.YP.rotationDegrees(180f - presentEntityYaw));
                     poseStack.mulPose(Axis.XP.rotationDegrees(-(float) Math.toDegrees(presentHeadPitch)));
                     *///?}
-                    float centerX = isLeftHand ? PRESENT_CENTER_X : -PRESENT_CENTER_X;
-                    poseStack.translate(centerX, PRESENT_Y_LIFT, NORMAL_OFFSET + PRESENT_Z_FORWARD);
-                    poseStack.scale(PRESENT_SCALE, PRESENT_SCALE, PRESENT_SCALE);
+                    // Two photos at once need one under each arm instead of both converging toward the body's
+                    // own center - see CrazyPhonePresentDebug#dualThirdX's own doc comment. Reads the bridge
+                    // flag (this renderer has no entity reference of its own), not a direct player check.
+                    if (CrazyPhonePresentPose.isDualPresentingThisRender) {
+                        float dualCenterX = isLeftHand ? -CrazyPhonePresentDebug.dualThirdX : CrazyPhonePresentDebug.dualThirdX;
+                        poseStack.translate(dualCenterX, CrazyPhonePresentDebug.dualThirdY, NORMAL_OFFSET + PRESENT_Z_FORWARD);
+                        poseStack.scale(CrazyPhonePresentDebug.dualThirdScale, CrazyPhonePresentDebug.dualThirdScale, CrazyPhonePresentDebug.dualThirdScale);
+                    } else {
+                        float centerX = isLeftHand ? PRESENT_CENTER_X : -PRESENT_CENTER_X;
+                        poseStack.translate(centerX, PRESENT_Y_LIFT, NORMAL_OFFSET + PRESENT_Z_FORWARD);
+                        poseStack.scale(PRESENT_SCALE, PRESENT_SCALE, PRESENT_SCALE);
+                    }
                     // The card's own front (+Z) ended up facing the presenter instead of whoever's in front
                     // of them - vanilla's own body-facing formula above doesn't guarantee alignment with
                     // this card's own authored front-facing convention, only with vanilla's own body mesh.
@@ -682,8 +725,28 @@ public final class CrazyPhonePhotoItemRenderer {
                         // context). Only resetting to origin remains necessary, same as the fan does.
                         org.joml.Vector3f handPos = poseStack.last().pose().getTranslation(new org.joml.Vector3f());
                         poseStack.translate(-handPos.x, -handPos.y, -handPos.z);
-                        poseStack.translate(0, CrazyPhonePresentDebug.y, NORMAL_OFFSET + CrazyPhonePresentDebug.z);
-                        poseStack.scale(CrazyPhonePresentDebug.scale, CrazyPhonePresentDebug.scale, CrazyPhonePresentDebug.scale);
+                        // Live-reported: the card sat visibly further left when the phone was in the LEFT
+                        // hand than when it was in the right - vanilla's own ItemInHandRenderer#
+                        // applyItemArmTransform (called on the REAL poseStack before this renderer ever runs,
+                        // for any non-special held item) applies translate(invert*0.56, ...) where invert is
+                        // +1 for the right hand / -1 for the left - a genuine, hand-dependent, camera-
+                        // independent constant baked into the frame this local transform ultimately composes
+                        // with. Cancelling it here (the exact opposite sign) keeps the card centered
+                        // regardless of which hand is actually holding the phone.
+                        // Two photos at once (one per hand) need to split apart under each hand instead of
+                        // both converging on this same centered spot, which would stack them on top of each
+                        // other - dualX/dualY/dualScale are a separate, live-tuned set just for that case,
+                        // with dualX mirrored (right hand out to the right, left hand out to the left) rather
+                        // than the single-photo case's small hand-centering compensation only.
+                        if (CrazyPhonePresentPose.isDualPresenting(net.minecraft.client.Minecraft.getInstance().player)) {
+                            poseStack.translate((isLeftHand ? -CrazyPhonePresentDebug.dualX : CrazyPhonePresentDebug.dualX) + (isLeftHand ? 0.56f : -0.56f)
+                                            + (isLeftHand ? CrazyPhonePresentDebug.dualLeftExtra : 0f),
+                                    CrazyPhonePresentDebug.dualY, NORMAL_OFFSET + CrazyPhonePresentDebug.z);
+                            poseStack.scale(CrazyPhonePresentDebug.dualScale, CrazyPhonePresentDebug.dualScale, CrazyPhonePresentDebug.dualScale);
+                        } else {
+                            poseStack.translate(CrazyPhonePresentDebug.x + (isLeftHand ? 0.56f : -0.56f), CrazyPhonePresentDebug.y, NORMAL_OFFSET + CrazyPhonePresentDebug.z);
+                            poseStack.scale(CrazyPhonePresentDebug.scale, CrazyPhonePresentDebug.scale, CrazyPhonePresentDebug.scale);
+                        }
                         if (CrazyPhonePresentDebug.flipFrontBack)
                             poseStack.mulPose(Axis.YP.rotationDegrees(180f));
                     } else {
@@ -699,9 +762,21 @@ public final class CrazyPhonePhotoItemRenderer {
                         // frame is ALREADY correctly aligned on its own; every yaw/pitch reapplication
                         // candidate fought against it instead (reported live as "upside down, doesn't
                         // follow the camera at all").
-                        float centerX = isLeftHand ? PRESENT_CENTER_X : -PRESENT_CENTER_X;
-                        poseStack.translate(centerX, PRESENT_Y_LIFT, NORMAL_OFFSET + PRESENT_Z_FORWARD);
-                        poseStack.scale(PRESENT_SCALE, PRESENT_SCALE, PRESENT_SCALE);
+                        // Two photos at once need one under each arm instead of both converging toward the
+                        // body's own center (see CrazyPhonePresentDebug#dualThirdX's own doc comment) -
+                        // requested but not yet live-tuned, unlike the confirmed-working first-person values.
+                        // Reads the bridge flag, not Minecraft.getInstance().player directly - this branch
+                        // renders whichever entity is actually being watched (third person), which in F5 is
+                        // yourself but could be any other presenting player, never necessarily the viewer.
+                        if (CrazyPhonePresentPose.isDualPresentingThisRender) {
+                            float dualCenterX = isLeftHand ? -CrazyPhonePresentDebug.dualThirdX : CrazyPhonePresentDebug.dualThirdX;
+                            poseStack.translate(dualCenterX, CrazyPhonePresentDebug.dualThirdY, NORMAL_OFFSET + PRESENT_Z_FORWARD);
+                            poseStack.scale(CrazyPhonePresentDebug.dualThirdScale, CrazyPhonePresentDebug.dualThirdScale, CrazyPhonePresentDebug.dualThirdScale);
+                        } else {
+                            float centerX = isLeftHand ? PRESENT_CENTER_X : -PRESENT_CENTER_X;
+                            poseStack.translate(centerX, PRESENT_Y_LIFT, NORMAL_OFFSET + PRESENT_Z_FORWARD);
+                            poseStack.scale(PRESENT_SCALE, PRESENT_SCALE, PRESENT_SCALE);
+                        }
                         poseStack.mulPose(Axis.YP.rotationDegrees(180f));
                     } else {
                         poseStack.translate(0, THIRD_PERSON_Y_LIFT, NORMAL_OFFSET);

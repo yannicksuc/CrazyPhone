@@ -22,6 +22,13 @@ stonecutter parameters {
     // simple - see its usages: camera./*$ cam_yaw {*/getYRot/*$}*/().
     swaps.put("cam_yaw", if (semantics.eval(current.version, ">=26")) "yRot" else "getYRot")
     swaps.put("cam_pitch", if (semantics.eval(current.version, ">=26")) "xRot" else "getXRot")
+    // Minecraft#getTimer() (returning DeltaTracker) was renamed to getDeltaTracker() at the 1.21.10 boundary
+    // (confirmed via decompiled vanilla source: 1.21.1's Minecraft.java still has getTimer(), 1.21.10's
+    // already has getDeltaTracker() instead, no getTimer() at all - the same "1.21.10 has yet another
+    // incompatible API shape" pattern seen everywhere else in this codebase, not a >=26-only rename).
+    // Only reached from code already nested inside a >=1.20.5 stonecutter block (DeltaTracker itself doesn't
+    // exist before that).
+    swaps.put("mc_delta_tracker", if (semantics.eval(current.version, ">=1.21.10")) "getDeltaTracker" else "getTimer")
     // 26.x moved RenderType#entityCutout(...) (and its sibling static factories) off RenderType itself and
     // onto a new sibling class RenderTypes (plural), in a new subpackage - the RenderType class name itself
     // still exists (as the return type), just no longer carries these factory methods.

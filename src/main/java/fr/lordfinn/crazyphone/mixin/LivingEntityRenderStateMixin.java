@@ -17,6 +17,8 @@ import fr.lordfinn.crazyphone.client.ICrazyPhonePresentingState;
 public abstract class LivingEntityRenderStateMixin implements ICrazyPhonePresentingState {
     @Unique
     private boolean crazyphone$presenting = false;
+    @Unique
+    private boolean crazyphone$dualPresenting = false;
 
     @Override
     public boolean crazyphone$isPresenting() {
@@ -26,6 +28,16 @@ public abstract class LivingEntityRenderStateMixin implements ICrazyPhonePresent
     @Override
     public void crazyphone$setPresenting(boolean value) {
         this.crazyphone$presenting = value;
+    }
+
+    @Override
+    public boolean crazyphone$isDualPresenting() {
+        return this.crazyphone$dualPresenting;
+    }
+
+    @Override
+    public void crazyphone$setDualPresenting(boolean value) {
+        this.crazyphone$dualPresenting = value;
     }
 }
 *///?} else {
