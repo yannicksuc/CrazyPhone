@@ -41,7 +41,7 @@ public abstract class LivingEntityRenderStateMixin implements ICrazyPhonePresent
     }
 }
 *///?} else {
-/*// Inert placeholder for <1.21.10 - crazyphone.mixins.json references this class unconditionally across
+// Inert placeholder for <1.21.10 - crazyphone.mixins.json references this class unconditionally across
 // every NeoForge node (same reasoning as PlayerPresentPoseMixin's own <1.21.10 placeholder), but there's no
 // LivingEntityRenderState to attach anything to on this version at all.
 import org.spongepowered.asm.mixin.Mixin;
@@ -51,4 +51,4 @@ import org.spongepowered.asm.mixin.Pseudo;
 @Mixin(net.minecraft.client.Minecraft.class)
 public abstract class LivingEntityRenderStateMixin {
 }
-*///?}
+//?}

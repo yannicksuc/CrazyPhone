@@ -47,7 +47,7 @@ public abstract class AvatarPresentPoseMixin {
     }
 }
 *///?} else {
-/*// Inert placeholder for every other version - AvatarRenderer/Avatar are >=26-only names (see this file's
+// Inert placeholder for every other version - AvatarRenderer/Avatar are >=26-only names (see this file's
 // own doc comment); older versions are entirely covered by PlayerPresentPoseMixin's own <1.21.10 branch.
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
@@ -56,4 +56,4 @@ import org.spongepowered.asm.mixin.Pseudo;
 @Mixin(net.minecraft.client.Minecraft.class)
 public abstract class AvatarPresentPoseMixin {
 }
-*///?}
+//?}

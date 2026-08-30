@@ -104,9 +104,9 @@ public record CrazyPhoneGroupMembershipNotificationPacket(String groupLabel, Str
     // skips that one. See PORTING-26x.md for the full sweep across every packet class with this shape.
     //? if neoforge {
     //? if <1.20.5 {
-    @EventBusSubscriber(value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)
+    @OnlyIn(Dist.CLIENT)
     //?} else {
-    /*@EventBusSubscriber(value = Dist.CLIENT)
+    /*@OnlyIn(Dist.CLIENT)
     *///?}
     //?}
     static class ClientHandler {

@@ -89,9 +89,9 @@ public record CrazyPhoneIncomingCallNotificationPacket(String conversationId, St
     // Registration alone isn't enough, the risky method itself must live in its own separate class.
     //? if neoforge {
     //? if <1.20.5 {
-    @EventBusSubscriber(value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)
+    @OnlyIn(Dist.CLIENT)
     //?} else {
-    /*@EventBusSubscriber(value = Dist.CLIENT)
+    /*@OnlyIn(Dist.CLIENT)
     *///?}
     //?}
     static class ClientHandler {

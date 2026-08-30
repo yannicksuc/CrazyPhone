@@ -45,7 +45,7 @@ public abstract class PlayerModelPresentPoseMixin {
     }
 }
 *///?} else {
-/*// Inert placeholder for every other version - PlayerModel#setupAnim(AvatarRenderState) is a >=26-only
+// Inert placeholder for every other version - PlayerModel#setupAnim(AvatarRenderState) is a >=26-only
 // signature (see this file's own doc comment); older versions are covered by PlayerPresentPoseMixin's own
 // <1.21.10 branch instead.
 import org.spongepowered.asm.mixin.Mixin;
@@ -55,4 +55,4 @@ import org.spongepowered.asm.mixin.Pseudo;
 @Mixin(net.minecraft.client.Minecraft.class)
 public abstract class PlayerModelPresentPoseMixin {
 }
-*///?}
+//?}

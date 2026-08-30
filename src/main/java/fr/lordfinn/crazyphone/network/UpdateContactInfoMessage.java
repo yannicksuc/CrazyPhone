@@ -87,9 +87,9 @@ public record UpdateContactInfoMessage(String name, String uuid, String number) 
     // ever loading this method's Minecraft.getInstance() reference at all.
     //? if neoforge {
     //? if <1.20.5 {
-    @EventBusSubscriber(value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)
+    @OnlyIn(Dist.CLIENT)
     //?} else {
-    /*@EventBusSubscriber(value = Dist.CLIENT)
+    /*@OnlyIn(Dist.CLIENT)
     *///?}
     //?}
     static class ClientHandler {

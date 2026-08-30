@@ -5,15 +5,7 @@
   "compatibilityLevel": "${mixin_compatibility_level}",
   "mixins": [],
   "client": [
-    "CrazyPhoneCaptureFovMixin",
-    "CrazyPhoneCaptureHandMixin",
-    "CrazyPhoneCaptureGuiMixin",
-    "CrazyPhoneCaptureScrollMixin",
-    "CrazyPhoneCapturePressMixin",
-    "CrazyPhoneCaptureEscapeMixin",
-    "PlayerPresentPoseMixin",
-    "CrazyPhonePresentHandGripMixin",
-    "CrazyPhonePresentHandGripInvokerMixin"
+    ${crazyphone_fabric_client_mixins}
   ],
   "injectors": {
     "defaultRequire": 1

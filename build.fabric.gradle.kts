@@ -358,6 +358,24 @@ sourceSets.main {
 // src/main/templates/ (the NeoForge template), NOT a subfolder of it: that NeoForge-side generateModMetadata
 // task processes the entire src/main/templates tree unconditionally, and blows up trying to expand this
 // file's Fabric-only placeholder tokens (undefined properties on any NeoForge node/gradle.properties).
+// The capture-zoom and sneak-presenting mixins below only exist in the sourceSet's own include list (see
+// its own comment) for minecraftVersion != "1.20.1" - crazyphone.fabric.mixins.json listed them
+// unconditionally regardless, so 1.20.1-fabric crashed on boot trying to load mixin classes that were never
+// actually compiled into its own narrower walking-skeleton scope. Mirrors that exact same version boundary
+// here via token substitution (this file is plain JSON, not a Stonecutter-processed .java source, so the
+// //? if conditionals used everywhere else in this codebase don't apply to it).
+val fabricClientMixins = (if (minecraftVersion != "1.20.1") listOf(
+    "CrazyPhoneCaptureFovMixin",
+    "CrazyPhoneCaptureHandMixin",
+    "CrazyPhoneCaptureGuiMixin",
+    "CrazyPhoneCaptureScrollMixin",
+    "CrazyPhoneCapturePressMixin",
+    "CrazyPhoneCaptureEscapeMixin",
+    "PlayerPresentPoseMixin",
+    "CrazyPhonePresentHandGripMixin",
+    "CrazyPhonePresentHandGripInvokerMixin"
+) else emptyList()).joinToString(",\n    ") { "\"$it\"" }
+
 val modMetadataProperties = mapOf(
     "minecraft_version" to property("minecraft_version"),
     "mod_id" to property("mod_id"),
@@ -367,7 +385,8 @@ val modMetadataProperties = mapOf(
     "mod_authors" to property("mod_authors"),
     "mod_description" to property("mod_description"),
     "fabric_loader_version_range" to property("fabric_loader_version_range"),
-    "mixin_compatibility_level" to mixinCompatibilityLevel
+    "mixin_compatibility_level" to mixinCompatibilityLevel,
+    "crazyphone_fabric_client_mixins" to fabricClientMixins
 )
 val generateModMetadata = tasks.register<ProcessResources>("generateModMetadata") {
     inputs.properties(modMetadataProperties)
