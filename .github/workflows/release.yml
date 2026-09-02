@@ -43,6 +43,8 @@ jobs:
             java: 21
           - node: 26.1
             java: 25
+          - node: 26.1-fabric
+            java: 25
     # Ubuntu, not Windows, despite gradlew.bat being what's used everywhere in local dev docs - the
     # build itself has no Windows-specific paths/tooling (confirmed: every gameDirectory/runDir path
     # in the build scripts is a plain forward-slash-relative project.file(...), nothing OS-specific),

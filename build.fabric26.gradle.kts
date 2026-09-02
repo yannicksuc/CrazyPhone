@@ -361,10 +361,12 @@ publishing {
 }
 
 // --- Modrinth / CurseForge publishing -----------------------------------------------------------
-// See build.gradle.kts's own copy of this comment for the full reasoning. Hard-gated to false for
-// now - neither 26.1-fabric nor 26.2-fabric compiles yet (see PORTING-26x.md) - flip this once one
-// of them is actually ready, following build.fabric.gradle.kts's own project.name-based pattern.
-val fabric26ReadyToPublish = false
+// See build.gradle.kts's own copy of this comment for the full reasoning. Per-node, not a single
+// shared flag for both nodes this script serves - 26.1-fabric now compiles and boots clean
+// (confirmed live, including the dynamic icon states fix), but 26.2-fabric doesn't yet (see
+// PORTING-26x.md) - publishing it would just fail the release. Flip to minecraftVersion-based once
+// 26.2-fabric is actually ready too, following build.fabric.gradle.kts's own project.name pattern.
+val fabric26ReadyToPublish = minecraftVersion == "26.1.2"
 val fabric26ModrinthProjectId = findProperty("modrinth_project_id") as String? ?: "REPLACE_WITH_MODRINTH_PROJECT_ID"
 val fabric26CurseforgeProjectId = findProperty("curseforge_project_id") as String? ?: "REPLACE_WITH_CURSEFORGE_PROJECT_ID"
 val fabric26ReleaseChangelog = System.getenv("RELEASE_CHANGELOG") ?: "See the GitHub release notes for this version."
@@ -380,7 +382,14 @@ if (fabric26ReadyToPublish && System.getenv("MODRINTH_TOKEN") != null) {
         versionNumber.set("${property("mod_version")}+fabric-$minecraftVersion")
         versionName.set("${property("mod_version")} - Fabric $minecraftVersion")
         versionType.set("release")
-        uploadFile.set(tasks.named("remapJar"))
+        // "jar", not "remapJar" like build.fabric.gradle.kts's own working copy of this block - 26.x's
+        // own Loom variant (net.fabricmc.fabric-loom, the unobfuscated-mode plugin id, see this file's
+        // own top-of-file doc comment) has no remapping step at all here (nothing to remap TO, Mojang
+        // stopped publishing mappings for this version line), so it never registers a remapJar task in
+        // the first place - confirmed live ("Task with name 'remapJar' not found in project
+        // ':26.1-fabric'") the first time this gate actually got flipped on and tested for real, rather
+        // than assumed from the sibling script's own (genuinely obfuscated, genuinely remapped) pattern.
+        uploadFile.set(tasks.named("jar"))
         gameVersions.add(minecraftVersion)
         loaders.add("fabric")
         changelog.set(fabric26ReleaseChangelog)
@@ -391,7 +400,7 @@ if (fabric26ReadyToPublish && System.getenv("CURSEFORGE_TOKEN") != null) {
     apply(plugin = "net.darkhax.curseforgegradle")
     tasks.register<net.darkhax.curseforgegradle.TaskPublishCurseForge>("publishCurseForge") {
         apiToken = System.getenv("CURSEFORGE_TOKEN")
-        val mainFile = upload(fabric26CurseforgeProjectId, tasks.named("remapJar"))
+        val mainFile = upload(fabric26CurseforgeProjectId, tasks.named("jar"))
         mainFile.changelog = fabric26ReleaseChangelog
         mainFile.changelogType = "markdown"
         mainFile.releaseType = "release"
