@@ -268,6 +268,7 @@ sourceSets.main {
         "fr/lordfinn/crazyphone/mixin/CrazyPhonePresentHandGripMixin.java",
         "fr/lordfinn/crazyphone/mixin/CrazyPhonePresentHandGripInvokerMixin.java",
         "fr/lordfinn/crazyphone/mixin/CrazyPhoneItemModelRegistrationMixin.java",
+        "fr/lordfinn/crazyphone/mixin/CrazyPhoneConditionalItemModelPropertyMixin.java",
         "fr/lordfinn/crazyphone/client/gui/CrazyPhonePhotoViewerScreen.java",
         "fr/lordfinn/crazyphone/item/CrazyPhoneCaptureShortcut.java",
         "fr/lordfinn/crazyphone/utils/PhotoItemData.java",
@@ -299,7 +300,8 @@ val fabricClientMixins = listOf(
     "PlayerPresentPoseMixin",
     "CrazyPhonePresentHandGripMixin",
     "CrazyPhonePresentHandGripInvokerMixin",
-    "CrazyPhoneItemModelRegistrationMixin"
+    "CrazyPhoneItemModelRegistrationMixin",
+    "CrazyPhoneConditionalItemModelPropertyMixin"
 ).joinToString(",\n    ") { "\"$it\"" }
 
 val modMetadataProperties = mapOf(

@@ -1,14 +1,16 @@
 package fr.lordfinn.crazyphone.item;
 
-//? if neoforge && >=1.21.10 {
+//? if >=1.21.10 {
 /*import com.mojang.serialization.MapCodec;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.item.properties.conditional.ConditionalItemModelProperty;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.client.event.RegisterConditionalItemModelPropertyEvent;
 import javax.annotation.Nullable;
+*///?}
+//? if neoforge && >=1.21.10 {
+/*import net.neoforged.neoforge.client.event.RegisterConditionalItemModelPropertyEvent;
 *///?}
 //? if <1.21.10 {
 import net.minecraft.client.renderer.item.ItemProperties;
@@ -54,16 +56,16 @@ import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
 *///?}
 //?}
 public class CrazyPhoneItemProperties {
-    // The >=1.21.10 branch below registers through NeoForge's RegisterConditionalItemModelPropertyEvent,
-    // which is a NeoForge-only source patch onto vanilla's own ConditionalItemModelProperties.bootstrap()
-    // (confirmed against the real decompiled 26.1.2 source: the event-post call is patched directly into
-    // that vanilla method, not something vanilla itself does) - there is no Fabric equivalent hook anywhere
-    // in Fabric API as of the 26.1.2-resolved fabric-api version (searched every cached fabric-api submodule
-    // jar for "ConditionalItemModelProperty", no matches). A Fabric >=1.21.10 fix would need its own mixin
-    // into that bootstrap method (or reflection onto its private ID_MAPPER field) - not attempted here, real
-    // investigation/design work, not a mechanical port. Until that's written, the phone's lit/calling/
-    // called_in/in_call icon states simply don't update on Fabric >=1.21.10 (26.1-fabric/26.2-fabric) -
-    // a known, deliberate gap, not a guess.
+    // NeoForge's RegisterConditionalItemModelPropertyEvent is a NeoForge-only source patch onto vanilla's own
+    // ConditionalItemModelProperties.bootstrap() (confirmed against the real decompiled 26.1.2 source: the
+    // event-post call is patched directly into that vanilla method, not something vanilla itself does) -
+    // there is no Fabric equivalent event anywhere in Fabric API as of the 26.1.2-resolved fabric-api
+    // version (searched every cached fabric-api submodule jar for "ConditionalItemModelProperty", no
+    // matches). Fabric instead reaches the exact same vanilla ID_MAPPER
+    // ConditionalItemModelProperties.bootstrap() populates via CrazyPhoneConditionalItemModelPropertyMixin,
+    // injecting straight into that method - same mirrored-registration strategy
+    // CrazyPhoneItemModelRegistrationMixin already proved for ItemModels#bootstrap() - so the ScreenOn/
+    // CallState records below are shared between both loaders; only the REGISTRATION call site differs.
     //? if neoforge && >=1.21.10 {
     /*@SubscribeEvent
     public static void onRegisterConditionalItemModelProperty(RegisterConditionalItemModelPropertyEvent event) {
@@ -72,8 +74,9 @@ public class CrazyPhoneItemProperties {
         event.register(Crazyphone.resource("called_in"), CallState.CALLED_IN_CODEC);
         event.register(Crazyphone.resource("in_call"), CallState.IN_CALL_CODEC);
     }
-
-    public record ScreenOn() implements ConditionalItemModelProperty {
+    *///?}
+    //? if >=1.21.10 {
+    /*public record ScreenOn() implements ConditionalItemModelProperty {
         public static final MapCodec<ScreenOn> MAP_CODEC = MapCodec.unit(new ScreenOn());
 
         @Override
@@ -112,9 +115,11 @@ public class CrazyPhoneItemProperties {
     }
     *///?}
     //? if fabric && >=1.21.10 {
-    /*// See this class's own doc comment above: no Fabric equivalent of RegisterConditionalItemModelPropertyEvent
-    // exists yet, so this is a deliberate no-op - just keeps CrazyphoneFabricClient's unconditional
-    // CrazyPhoneItemProperties.register() call compiling on 26.x.
+    /*// No explicit registration needed here - CrazyPhoneConditionalItemModelPropertyMixin injects the
+    // equivalent registration straight into ConditionalItemModelProperties#bootstrap() instead, matching
+    // how NeoForge's own patched build fires RegisterConditionalItemModelPropertyEvent from that exact same
+    // method (see this class's own doc comment above). Still needs a no-op register() so
+    // CrazyphoneFabricClient's unconditional CrazyPhoneItemProperties.register() call keeps compiling.
     public static void register() {
     }
     *///?}
