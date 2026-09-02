@@ -326,6 +326,27 @@ sourceSets.main {
     resources.srcDir(generateModMetadata)
 }
 
+// Ports build.gradle.kts's own >=26 processResources patches (see that file's own doc comment for the full
+// reasoning on each) - this build script has no shared tasks.named<ProcessResources>("processResources")
+// block with the NeoForge side, so each patch needs its own copy here. All three fixed a real, live-confirmed
+// bug: crazy_phone_photo.json's tracked "minecraft:model" content never reaches our custom
+// ModelImpl/SpecialRendererImpl dispatch (baked as an empty classic model instead, invisible everywhere -
+// the missing-texture checkerboard); the loot modifier index file no longer has meaning on >=26 (every file
+// under loot_modifiers/ is scanned directly now); and the duplicate-photo recipe serializer isn't registered
+// on >=1.21.10 at all yet (ModRecipes.java's own <1.21.10 guard), so its untouched recipe JSON fails to load
+// with "Unknown registry key" once shipped unfiltered.
+tasks.named<ProcessResources>("processResources") {
+    doLast {
+        val photoModelFile = destinationDir.resolve("assets/crazyphone/models/item/crazy_phone_photo.json")
+        photoModelFile.writeText("""{"type": "crazyphone:photo_card_model"}""" + "\n")
+        val photoItemFile = destinationDir.resolve("assets/crazyphone/items/crazy_phone_photo.json")
+        photoItemFile.writeText("""{"model": {"type": "crazyphone:photo_card_model"}}""" + "\n")
+        destinationDir.resolve("data/neoforge/loot_modifiers/global_loot_modifiers.json").delete()
+        destinationDir.resolve("data/crazyphone/recipe/duplicate_photo.json").delete()
+        destinationDir.resolve("data/crazyphone/recipes/duplicate_photo.json").delete()
+    }
+}
+
 publishing {
     publications {
         register<MavenPublication>("mavenJava") {
