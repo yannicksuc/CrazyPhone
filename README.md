@@ -182,7 +182,25 @@ gradlew.bat :1.21.1-fabric:runClient
 ./gradlew :1.21.1-fabric:runClient
 ```
 
-Swap `1.21.1` for `1.20.4` or `1.21.10` (NeoForge), or `1.21.1-fabric` for `1.20.1-fabric` (Fabric).
+Swap `1.21.1` for `1.20.4`, `1.21.10`, `26.1` or `26.2` (NeoForge), or `1.21.1-fabric` for
+`1.20.1-fabric`, `26.1-fabric` or `26.2-fabric` (Fabric).
+
+**Testing across several nodes at once** (Windows/PowerShell): `scripts/dev-launch.ps1` wraps the commands
+above with PID/log tracking per (version, kind) and a fixed dedicated-server port per node, so you don't
+have to hand-manage `server.properties` port collisions or hunt `tasklist` for the right `java.exe`:
+
+```powershell
+.\scripts\dev-launch.ps1 list                    # every node, its loader, its assigned server port
+.\scripts\dev-launch.ps1 client 26.1              # launch, tracked by PID + log
+.\scripts\dev-launch.ps1 server 1.21.1-fabric
+.\scripts\dev-launch.ps1 status                  # what's actually running right now
+.\scripts\dev-launch.ps1 tail 26.1 client         # live-follow its log
+.\scripts\dev-launch.ps1 stop 26.1 client         # or "all" for both client+server
+.\scripts\dev-launch.ps1 port 1.20.4              # patch that version's server.properties/eula.txt
+```
+
+Run `Get-Help .\scripts\dev-launch.ps1 -Full` for the complete command reference. Set
+`$env:CRAZYPHONE_JAVA_HOME` if your JDK 21 install isn't at the script's own default path.
 
 Run the test suite (boots a real, headless game instance so tests can use registries/data components) -
 NeoForge only, per version:
