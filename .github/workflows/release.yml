@@ -52,6 +52,11 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
+      # gradlew's executable bit is tracked in git (fixed for real in the same commit that added this
+      # line), but this is cheap insurance against it getting lost again by a future Windows-only git
+      # checkout/commit that doesn't preserve the mode bit.
+      - run: chmod +x gradlew
+
       - name: Build and publish ${{ matrix.node }}
         env:
           MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
