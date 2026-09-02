@@ -58,6 +58,11 @@ java.toolchain.languageVersion = JavaLanguageVersion.of(when {
 val modId = property("mod_id") as String
 val minecraftVersion = property("minecraft_version") as String
 
+// Captured here, not accessed as the bare `project` from inside the runs{} block's own nested lambdas below -
+// that resolves through an implicit outer receiver Gradle's Kotlin DSL flags as deprecated (confirmed by the
+// build's own warning once gameDirectory started using it), where this explicit local val doesn't.
+val thisProject = project
+
 neoForge {
     // Specify the version of NeoForge to use.
     version = property("neo_version") as String
@@ -82,7 +87,10 @@ neoForge {
             // Per-version, not a shared "run" - each Stonecutter version node (1.20.4, 1.21.1, 1.21.10...)
             // gets its own saves/config/mods folder so switching which version you're testing is just
             // running a different Gradle task, never manual mod-shuffling between versions again.
-            gameDirectory = rootProject.file("run-$minecraftVersion")
+            // project.file (this node's own versions/<name>/ directory), not rootProject.file - matches
+            // the Fabric side's own convention (Loom's default versions/<name>/run), keeps the repo root
+            // itself free of 9 nodes' worth of run-* clutter.
+            gameDirectory = thisProject.file("run")
             programArguments.addAll(
                 "--username", "LordFinn", "--uuid", "60b30ab6-a3a3-3980-9bfe-b84bc32ce8d0",
                 "--quickPlayMultiplayer", "localhost:25565"
@@ -92,7 +100,7 @@ neoForge {
         create("client2") {
             client()
             systemProperty("neoforge.enabledGameTestNamespaces", modId)
-            gameDirectory = rootProject.file("run-$minecraftVersion-client2")
+            gameDirectory = thisProject.file("run-client2")
             programArguments.addAll(
                 "--username", "Bouteilles", "--uuid", "94f877fb-ab97-3a21-a67f-715f0a12f124",
                 "--quickPlayMultiplayer", "localhost:25565"
@@ -103,7 +111,7 @@ neoForge {
             server()
             programArgument("--nogui")
             systemProperty("neoforge.enabledGameTestNamespaces", modId)
-            gameDirectory = rootProject.file("run-$minecraftVersion-server")
+            gameDirectory = thisProject.file("run-server")
         }
 
         // This run config launches GameTestServer and runs all registered gametests, then exits.
@@ -117,14 +125,14 @@ neoForge {
         create("gameTestServer") {
             type = "gameTestServer"
             systemProperty("neoforge.enabledGameTestNamespaces", modId)
-            gameDirectory = rootProject.file("run-$minecraftVersion-gametest")
+            gameDirectory = thisProject.file("run-gametest")
         }
 
         create("data") {
             data()
             // Matches the original single-module setup: no dedicated gameDirectory override here, so this
             // shares the "client" run's own per-version folder (see gameDirectory above) rather than a new one.
-            gameDirectory = rootProject.file("run-$minecraftVersion")
+            gameDirectory = thisProject.file("run")
 
             // Specify the modid for data generation, where to output the resulting resource, and where to look for existing resources.
             programArguments.addAll(

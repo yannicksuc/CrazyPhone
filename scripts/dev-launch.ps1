@@ -83,18 +83,17 @@ New-Item -ItemType Directory -Force -Path $LogsDir | Out-Null
 $Gradlew = Join-Path $RepoRoot 'gradlew.bat'
 
 # --- version table -------------------------------------------------------------------------------
-# runDir: where THIS version's own server.properties/eula.txt live, relative to the repo root -
-# NeoForge nodes share root-level run-<minecraftVersion>[-server] dirs (build.gradle.kts's own
-# gameDirectory config); Fabric nodes each get their own versions/<node>/run[-server] (Loom's
-# default, both build.fabric.gradle.kts and build.fabric26.gradle.kts). minecraftVersion is NOT
-# always the node name - 26.1's own gradle.properties pins minecraft_version=26.1.2, so its run
-# dirs are named run-26.1.2[-server], not run-26.1[-server].
+# runDir: where THIS version's own server.properties/eula.txt live, relative to the repo root - every
+# node (NeoForge and Fabric alike) now gets its own versions/<node>/run[-server], since NeoForge's
+# previous root-level run-<minecraftVersion>[-server] layout (build.gradle.kts's own gameDirectory
+# config) was migrated to match Fabric's own long-standing convention (Loom's default), keeping the
+# repo root free of one run-* pair per node.
 $Versions = [ordered]@{
-    '1.20.4'        = @{ Loader = 'neoforge'; Port = 25566; RunDir = 'run-1.20.4-server';   ClientRunDir = 'run-1.20.4' }
-    '1.21.1'        = @{ Loader = 'neoforge'; Port = 25568; RunDir = 'run-1.21.1-server';   ClientRunDir = 'run-1.21.1' }
-    '1.21.10'       = @{ Loader = 'neoforge'; Port = 25569; RunDir = 'run-1.21.10-server';  ClientRunDir = 'run-1.21.10' }
-    '26.1'          = @{ Loader = 'neoforge'; Port = 25565; RunDir = 'run-26.1.2-server';   ClientRunDir = 'run-26.1.2' }
-    '26.2'          = @{ Loader = 'neoforge'; Port = 25570; RunDir = 'run-26.2-server';     ClientRunDir = 'run-26.2' }
+    '1.20.4'        = @{ Loader = 'neoforge'; Port = 25566; RunDir = 'versions/1.20.4/run-server';        ClientRunDir = 'versions/1.20.4/run' }
+    '1.21.1'        = @{ Loader = 'neoforge'; Port = 25568; RunDir = 'versions/1.21.1/run-server';        ClientRunDir = 'versions/1.21.1/run' }
+    '1.21.10'       = @{ Loader = 'neoforge'; Port = 25569; RunDir = 'versions/1.21.10/run-server';       ClientRunDir = 'versions/1.21.10/run' }
+    '26.1'          = @{ Loader = 'neoforge'; Port = 25565; RunDir = 'versions/26.1/run-server';          ClientRunDir = 'versions/26.1/run' }
+    '26.2'          = @{ Loader = 'neoforge'; Port = 25570; RunDir = 'versions/26.2/run-server';          ClientRunDir = 'versions/26.2/run' }
     '1.21.1-fabric' = @{ Loader = 'fabric';   Port = 25567; RunDir = 'versions/1.21.1-fabric/run-server'; ClientRunDir = 'versions/1.21.1-fabric/run' }
     '1.20.1-fabric' = @{ Loader = 'fabric';   Port = 25571; RunDir = 'versions/1.20.1-fabric/run-server'; ClientRunDir = 'versions/1.20.1-fabric/run' }
     '26.1-fabric'   = @{ Loader = 'fabric';   Port = 25572; RunDir = 'versions/26.1-fabric/run-server';   ClientRunDir = 'versions/26.1-fabric/run' }
