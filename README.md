@@ -436,6 +436,7 @@ an abstraction layer - most files are identical on every target; only the files 
 ## 🙏 Credits
 
 - **[Simple Voice Chat](https://modrepo.de/minecraft/voicechat)** by [henkelmax](https://github.com/henkelmax): the voice engine calls and voice messages are built on top of (NeoForge only).
+- **[Pixel Twemoji 9x](https://modrinth.com/resourcepack/pixel-twemoji-9x)** by [AmberW](https://modrinth.com/user/AmberW), based on [Twemoji](https://github.com/twitter/twemoji) (Copyright (c) 2018 Twitter, Inc and other contributors): pixel-art emoji glyphs bundled into the chat font. Both CC-BY-4.0 - see [`THIRD-PARTY-LICENSES.md`](THIRD-PARTY-LICENSES.md).
 - Original `crazythings` project (also mine): source of the feature set and assets this mod ports and rebuilds.
 
 ## 📄 License
