@@ -29,7 +29,12 @@ public class CrazyphoneFabricClient implements ClientModInitializer {
         PhoneClickableCursorHandler.register();
         CrazyPhoneItemInInventoryTickProcedure.register();
         CallRingtoneManager.register();
+        //? if <1.21.10 {
         CrazyPhonePhotoItem.registerFabricRenderer();
+        //?}
+        // >=1.21.10: no explicit registration call needed here - CrazyPhoneItemModelRegistrationMixin
+        // injects the equivalent registration straight into ItemModels#bootstrap() instead, matching how
+        // NeoForge's own patched build fires RegisterItemModelsEvent from that exact same method.
         CrazyPhonePhotoItem.clientViewerOpener = photoId ->
                 net.minecraft.client.Minecraft.getInstance()./^$ mc_set_screen {^/setScreen/^$}^/(new fr.lordfinn.crazyphone.client.gui.CrazyPhonePhotoViewerScreen(photoId, true));
         ClientTickEvents.END_CLIENT_TICK.register(client -> FabricPictureCapture.tickAll());

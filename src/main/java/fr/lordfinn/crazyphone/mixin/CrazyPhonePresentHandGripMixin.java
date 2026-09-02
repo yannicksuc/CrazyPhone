@@ -222,12 +222,26 @@ public abstract class CrazyPhonePresentHandGripMixin {
         net.minecraft.client.renderer.entity.player.AvatarRenderer<net.minecraft.client.player.AbstractClientPlayer> avatarRenderer =
                 this.entityRenderDispatcher.getPlayerRenderer(player);
         net.minecraft.resources.Identifier skinTexture = player.getSkin().body().texturePath();
+        // Fabric's own AvatarRenderer#renderRightHand/renderLeftHand (vanilla-shaped, confirmed via the
+        // real compiler error's own "required:" signature - no NeoForge patch involved) takes 5 args, no
+        // trailing player - NeoForge's patched build adds that 6th AbstractClientPlayer param on top of the
+        // same vanilla base.
         if (arm != HumanoidArm.LEFT) {
+            //? if fabric {
+            /^avatarRenderer.renderRightHand(poseStack, submitNodeCollector, lightCoords, skinTexture,
+                    player.isModelPartShown(net.minecraft.world.entity.player.PlayerModelPart.RIGHT_SLEEVE));
+            ^///? } else {
             avatarRenderer.renderRightHand(poseStack, submitNodeCollector, lightCoords, skinTexture,
                     player.isModelPartShown(net.minecraft.world.entity.player.PlayerModelPart.RIGHT_SLEEVE), player);
+            //?}
         } else {
+            //? if fabric {
+            /^avatarRenderer.renderLeftHand(poseStack, submitNodeCollector, lightCoords, skinTexture,
+                    player.isModelPartShown(net.minecraft.world.entity.player.PlayerModelPart.LEFT_SLEEVE));
+            ^///? } else {
             avatarRenderer.renderLeftHand(poseStack, submitNodeCollector, lightCoords, skinTexture,
                     player.isModelPartShown(net.minecraft.world.entity.player.PlayerModelPart.LEFT_SLEEVE), player);
+            //?}
         }
         poseStack.popPose();
         if (!(itemStack.getItem() instanceof fr.lordfinn.crazyphone.item.CrazyPhonePhotoItem)) {

@@ -151,6 +151,7 @@ sourceSets.main {
         "fr/lordfinn/crazyphone/client/gui/CrazyPhoneDefaultScreenScreen.java",
         "fr/lordfinn/crazyphone/client/gui/CrazyPhoneContactsScreenScreen.java",
         "fr/lordfinn/crazyphone/client/gui/CrazyPhoneConversationScreen.java",
+        "fr/lordfinn/crazyphone/client/EmojiShortcodes.java",
         "fr/lordfinn/crazyphone/client/gui/CrazyPhoneGroupSettingsScreenScreen.java",
         "fr/lordfinn/crazyphone/client/gui/CrazyPhonePasswordScreenScreen.java",
         "fr/lordfinn/crazyphone/client/gui/CrazyPhoneMayorsCandidatesListScreen.java",
@@ -258,11 +259,15 @@ sourceSets.main {
         "fr/lordfinn/crazyphone/mixin/CrazyPhoneCapturePressMixin.java",
         "fr/lordfinn/crazyphone/mixin/CrazyPhoneCaptureEscapeMixin.java",
         "fr/lordfinn/crazyphone/client/CrazyPhonePresentPose.java",
+        "fr/lordfinn/crazyphone/client/ICrazyPhonePresentingState.java",
+        "fr/lordfinn/crazyphone/mixin/LivingEntityRenderStateMixin.java",
+        "fr/lordfinn/crazyphone/mixin/AvatarPresentPoseMixin.java",
         "fr/lordfinn/crazyphone/mixin/PlayerPresentPoseMixin.java",
         "fr/lordfinn/crazyphone/client/CrazyPhonePresentDebug.java",
         "fr/lordfinn/crazyphone/client/CrazyPhonePresentDebugCommand.java",
         "fr/lordfinn/crazyphone/mixin/CrazyPhonePresentHandGripMixin.java",
         "fr/lordfinn/crazyphone/mixin/CrazyPhonePresentHandGripInvokerMixin.java",
+        "fr/lordfinn/crazyphone/mixin/CrazyPhoneItemModelRegistrationMixin.java",
         "fr/lordfinn/crazyphone/client/gui/CrazyPhonePhotoViewerScreen.java",
         "fr/lordfinn/crazyphone/item/CrazyPhoneCaptureShortcut.java",
         "fr/lordfinn/crazyphone/utils/PhotoItemData.java",
@@ -278,6 +283,25 @@ sourceSets.main {
 // fabric.mod.json is expanded from a template the same way neoforge.mods.toml is - see
 // src/main/fabric-templates/fabric.mod.json and generateModMetadata below - see build.fabric.gradle.kts's
 // own doc comment for why this lives in a separate directory from the NeoForge template.
+// Mirrors build.fabric.gradle.kts's own fabricClientMixins - see that file's own doc comment (this is plain
+// JSON, not Stonecutter-processed, so the //? if conditionals used everywhere else don't apply here either).
+// Every mixin file actually included in this build's own compile scope above, in the "client" bucket
+// (server-side mixins would go in mixins.json's own "mixins" array instead - none needed yet on this loader).
+val fabricClientMixins = listOf(
+    "CrazyPhoneCaptureFovMixin",
+    "CrazyPhoneCaptureHandMixin",
+    "CrazyPhoneCaptureGuiMixin",
+    "CrazyPhoneCaptureScrollMixin",
+    "CrazyPhoneCapturePressMixin",
+    "CrazyPhoneCaptureEscapeMixin",
+    "LivingEntityRenderStateMixin",
+    "AvatarPresentPoseMixin",
+    "PlayerPresentPoseMixin",
+    "CrazyPhonePresentHandGripMixin",
+    "CrazyPhonePresentHandGripInvokerMixin",
+    "CrazyPhoneItemModelRegistrationMixin"
+).joinToString(",\n    ") { "\"$it\"" }
+
 val modMetadataProperties = mapOf(
     "minecraft_version" to property("minecraft_version"),
     "mod_id" to property("mod_id"),
@@ -287,7 +311,8 @@ val modMetadataProperties = mapOf(
     "mod_authors" to property("mod_authors"),
     "mod_description" to property("mod_description"),
     "fabric_loader_version_range" to property("fabric_loader_version_range"),
-    "mixin_compatibility_level" to mixinCompatibilityLevel
+    "mixin_compatibility_level" to mixinCompatibilityLevel,
+    "crazyphone_fabric_client_mixins" to fabricClientMixins
 )
 val generateModMetadata = tasks.register<ProcessResources>("generateModMetadata") {
     inputs.properties(modMetadataProperties)

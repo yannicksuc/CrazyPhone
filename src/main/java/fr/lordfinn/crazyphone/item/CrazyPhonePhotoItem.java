@@ -71,9 +71,12 @@ public class CrazyPhonePhotoItem extends Item {
         }
     }
 
-    //? if fabric && >=1.20.5 {
+    //? if fabric && >=1.20.5 <1.21.10 {
     /*// Fabric equivalent of the NeoForge renderer branch below - one BuiltinItemRendererRegistry.register
     // call from CrazyphoneFabricClient#onInitializeClient instead of an overridden initializeClient() method.
+    // >=1.21.10: BuiltinItemRendererRegistry is gone (confirmed - no such class in that version's resolved
+    // fabric-rendering-v1 jar), replaced by vanilla's own ItemModel/SpecialModelRenderer dispatch, reached
+    // via CrazyPhoneItemModelRegistrationMixin instead - see that mixin's own doc comment.
     public static void registerFabricRenderer() {
         net.fabricmc.fabric.api.client.rendering.v1.BuiltinItemRendererRegistry.INSTANCE.register(
                 fr.lordfinn.crazyphone.init.ModItems.CRAZY_PHONE_PHOTO.get(),

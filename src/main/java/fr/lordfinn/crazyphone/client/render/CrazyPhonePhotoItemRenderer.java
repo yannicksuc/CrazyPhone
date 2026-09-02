@@ -683,7 +683,13 @@ public final class CrazyPhonePhotoItemRenderer {
     // resolved via live testing pre-1.21.10) not worth the extra complexity of multi-layer submission
     // for a feature nobody enables; falls back to the normal single-card presenting path if somehow left
     // on.
-    //? if neoforge && >=26 {
+    // Loader-neutral: ItemModel/SpecialModelRenderer/SubmitNodeCollector are all pure vanilla API (confirmed
+    // via decompiled source - NeoForge's own RegisterItemModelsEvent just exposes access to vanilla
+    // ItemModels' private static ID_MAPPER field at the right moment, it doesn't wrap anything NeoForge-
+    // specific). Fabric has no equivalent event yet, so it reaches this same ModelImpl/SpecialRendererImpl
+    // via CrazyPhoneItemModelRegistrationMixin injecting straight into ItemModels#bootstrap() instead - see
+    // that mixin's own doc comment.
+    //? if >=26 {
     /*private record DrawArgument(fr.lordfinn.crazyphone.utils.PhotoItemData data, boolean isHand) {
     }
 
