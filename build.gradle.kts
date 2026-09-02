@@ -4,6 +4,12 @@ plugins {
     idea
     `jvm-test-suite`
     id("net.neoforged.moddev") version "2.0.143"
+    // Not applied unconditionally - see the MODRINTH_TOKEN/CURSEFORGE_TOKEN checks below. `apply false`
+    // here still resolves the plugin coordinate from the Gradle Plugin Portal (settings.gradle.kts's own
+    // pluginManagement block) for every node's local dev build too, a small, accepted overhead for keeping
+    // this one script the single place both loaders' publish config lives.
+    id("com.modrinth.minotaur") version "2.9.0" apply false
+    id("net.darkhax.curseforgegradle") version "1.1.28" apply false
 }
 
 version = property("mod_version") as String
@@ -346,5 +352,48 @@ idea {
     module {
         isDownloadSources = true
         isDownloadJavadoc = true
+    }
+}
+
+// --- Modrinth / CurseForge publishing -----------------------------------------------------------
+// Only active when the corresponding token env var is present (set by .github/workflows/release.yml
+// on a tag push - see that file's own doc comment) - a plain local `./gradlew :<node>:build` never
+// sees these vars, so this adds no behavior change to normal dev builds beyond the two `apply false`
+// plugin declarations above (coordinate resolution only, no plugin logic runs).
+//
+// Deliberately gated to a fixed allowlist, not just "does this node compile" - 1.21.10 compiles but
+// is missing the native camera/sneak-presenting features (see README's own Platforms & versions
+// table), which reads as a worse first impression than not offering it yet at all. Revisit this list
+// once that gap closes or product judgment changes.
+val readyToPublish = minecraftVersion in setOf("1.20.4", "1.21.1", "26.1")
+val modrinthProjectId = findProperty("modrinth_project_id") as String? ?: "REPLACE_WITH_MODRINTH_PROJECT_ID"
+val curseforgeProjectId = findProperty("curseforge_project_id") as String? ?: "REPLACE_WITH_CURSEFORGE_PROJECT_ID"
+val releaseChangelog = System.getenv("RELEASE_CHANGELOG") ?: "See the GitHub release notes for this version."
+
+if (readyToPublish && System.getenv("MODRINTH_TOKEN") != null) {
+    apply(plugin = "com.modrinth.minotaur")
+    configure<com.modrinth.minotaur.ModrinthExtension> {
+        token.set(System.getenv("MODRINTH_TOKEN"))
+        projectId.set(modrinthProjectId)
+        versionNumber.set("${property("mod_version")}+neoforge-$minecraftVersion")
+        versionName.set("${property("mod_version")} - NeoForge $minecraftVersion")
+        versionType.set("release")
+        uploadFile.set(tasks.named("jar"))
+        gameVersions.add(minecraftVersion)
+        loaders.add("neoforge")
+        changelog.set(releaseChangelog)
+    }
+}
+
+if (readyToPublish && System.getenv("CURSEFORGE_TOKEN") != null) {
+    apply(plugin = "net.darkhax.curseforgegradle")
+    tasks.register<net.darkhax.curseforgegradle.TaskPublishCurseForge>("publishCurseForge") {
+        apiToken = System.getenv("CURSEFORGE_TOKEN")
+        val mainFile = upload(curseforgeProjectId, tasks.named("jar"))
+        mainFile.changelog = releaseChangelog
+        mainFile.changelogType = "markdown"
+        mainFile.releaseType = "release"
+        mainFile.addGameVersion(minecraftVersion)
+        mainFile.addModLoader("NeoForge")
     }
 }

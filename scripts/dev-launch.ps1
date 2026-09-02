@@ -83,21 +83,29 @@ New-Item -ItemType Directory -Force -Path $LogsDir | Out-Null
 $Gradlew = Join-Path $RepoRoot 'gradlew.bat'
 
 # --- version table -------------------------------------------------------------------------------
-# runDir: where THIS version's own server.properties/eula.txt live, relative to the repo root - every
-# node (NeoForge and Fabric alike) now gets its own versions/<node>/run[-server], since NeoForge's
-# previous root-level run-<minecraftVersion>[-server] layout (build.gradle.kts's own gameDirectory
-# config) was migrated to match Fabric's own long-standing convention (Loom's default), keeping the
-# repo root free of one run-* pair per node.
-$Versions = [ordered]@{
-    '1.20.4'        = @{ Loader = 'neoforge'; Port = 25566; RunDir = 'versions/1.20.4/run-server';        ClientRunDir = 'versions/1.20.4/run' }
-    '1.21.1'        = @{ Loader = 'neoforge'; Port = 25568; RunDir = 'versions/1.21.1/run-server';        ClientRunDir = 'versions/1.21.1/run' }
-    '1.21.10'       = @{ Loader = 'neoforge'; Port = 25569; RunDir = 'versions/1.21.10/run-server';       ClientRunDir = 'versions/1.21.10/run' }
-    '26.1'          = @{ Loader = 'neoforge'; Port = 25565; RunDir = 'versions/26.1/run-server';          ClientRunDir = 'versions/26.1/run' }
-    '26.2'          = @{ Loader = 'neoforge'; Port = 25570; RunDir = 'versions/26.2/run-server';          ClientRunDir = 'versions/26.2/run' }
-    '1.21.1-fabric' = @{ Loader = 'fabric';   Port = 25567; RunDir = 'versions/1.21.1-fabric/run-server'; ClientRunDir = 'versions/1.21.1-fabric/run' }
-    '1.20.1-fabric' = @{ Loader = 'fabric';   Port = 25571; RunDir = 'versions/1.20.1-fabric/run-server'; ClientRunDir = 'versions/1.20.1-fabric/run' }
-    '26.1-fabric'   = @{ Loader = 'fabric';   Port = 25572; RunDir = 'versions/26.1-fabric/run-server';   ClientRunDir = 'versions/26.1-fabric/run' }
-    '26.2-fabric'   = @{ Loader = 'fabric';   Port = 25573; RunDir = 'versions/26.2-fabric/run-server';   ClientRunDir = 'versions/26.2-fabric/run' }
+# Every node (NeoForge and Fabric alike) now uses the identical versions/<node>/run[-server] layout
+# (see build.gradle.kts/build.fabric*.gradle.kts's own gameDirectory/runDir config), so RunDir/
+# ClientRunDir below are derived from the node name itself rather than repeated per entry - only
+# Loader and the assigned dedicated-server Port actually vary node to node.
+$VersionMeta = [ordered]@{
+    '1.20.4'        = @{ Loader = 'neoforge'; Port = 25566 }
+    '1.21.1'        = @{ Loader = 'neoforge'; Port = 25568 }
+    '1.21.10'       = @{ Loader = 'neoforge'; Port = 25569 }
+    '26.1'          = @{ Loader = 'neoforge'; Port = 25565 }
+    '26.2'          = @{ Loader = 'neoforge'; Port = 25570 }
+    '1.21.1-fabric' = @{ Loader = 'fabric';   Port = 25567 }
+    '1.20.1-fabric' = @{ Loader = 'fabric';   Port = 25571 }
+    '26.1-fabric'   = @{ Loader = 'fabric';   Port = 25572 }
+    '26.2-fabric'   = @{ Loader = 'fabric';   Port = 25573 }
+}
+$Versions = [ordered]@{}
+foreach ($k in $VersionMeta.Keys) {
+    $Versions[$k] = @{
+        Loader       = $VersionMeta[$k].Loader
+        Port         = $VersionMeta[$k].Port
+        RunDir       = "versions/$k/run-server"
+        ClientRunDir = "versions/$k/run"
+    }
 }
 
 function Assert-Version {

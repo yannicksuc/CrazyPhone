@@ -1,0 +1,64 @@
+name: Release
+
+# Publishes to Modrinth and CurseForge whenever a tag matching v* is pushed (e.g. v1.2.1). Only the
+# version nodes actually ready to ship are built here - see each build script's own `readyToPublish`
+# check (build.gradle.kts for NeoForge, build.fabric.gradle.kts for Fabric 1.21.1) for the current
+# list and the reasoning behind it. Nothing in this workflow runs on a normal push/PR - a plain
+# `./gradlew :<node>:build` locally never sets MODRINTH_TOKEN/CURSEFORGE_TOKEN, so those Gradle
+# plugin blocks stay fully inert outside of this workflow too.
+#
+# One-time setup before this can actually publish anything (until then, every run fails fast with a
+# clear error instead of silently doing nothing):
+#   1. Create the mod's listing on https://modrinth.com and https://curseforge.com (if not done yet).
+#   2. Set two repo variables (Settings -> Secrets and variables -> Actions -> Variables):
+#        modrinth_project_id   - the Modrinth project's slug or id
+#        curseforge_project_id - the CurseForge project's numeric id
+#   3. Set two repo secrets (same page, Secrets tab):
+#        MODRINTH_TOKEN   - a Modrinth personal access token with "Create versions" scope
+#        CURSEFORGE_TOKEN - a CurseForge API token (My Profile -> API Tokens on curseforge.com)
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  publish:
+    strategy:
+      # One node's failure (e.g. a rejected upload) shouldn't cancel the others mid-flight - each
+      # node publishes to its own, independent Modrinth/CurseForge file.
+      fail-fast: false
+      matrix:
+        include:
+          - node: 1.20.4
+            java: 17
+          - node: 1.21.1
+            java: 21
+          - node: 1.21.1-fabric
+            java: 21
+          - node: 26.1
+            java: 25
+    # Ubuntu, not Windows, despite gradlew.bat being what's used everywhere in local dev docs - the
+    # build itself has no Windows-specific paths/tooling (confirmed: every gameDirectory/runDir path
+    # in the build scripts is a plain forward-slash-relative project.file(...), nothing OS-specific),
+    # and Ubuntu runners are both faster and cheaper on GitHub Actions minutes.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java }}
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Build and publish ${{ matrix.node }}
+        env:
+          MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
+          CURSEFORGE_TOKEN: ${{ secrets.CURSEFORGE_TOKEN }}
+          RELEASE_CHANGELOG: ${{ github.event.head_commit.message }}
+        run: |
+          ./gradlew ":${{ matrix.node }}:build" ":${{ matrix.node }}:modrinth" ":${{ matrix.node }}:publishCurseForge" \
+            "-Pmodrinth_project_id=${{ vars.modrinth_project_id }}" \
+            "-Pcurseforge_project_id=${{ vars.curseforge_project_id }}" \
+            --console=plain

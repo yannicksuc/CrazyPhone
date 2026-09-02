@@ -4,6 +4,10 @@ plugins {
     idea
     `jvm-test-suite`
     id("fabric-loom") version "1.10-SNAPSHOT"
+    // See this file's own Modrinth/CurseForge publishing block near the end for why these are here -
+    // same reasoning as build.gradle.kts's own (NeoForge) copy of this same comment.
+    id("com.modrinth.minotaur") version "2.9.0" apply false
+    id("net.darkhax.curseforgegradle") version "1.1.28" apply false
 }
 
 version = property("mod_version") as String
@@ -408,6 +412,45 @@ publishing {
         maven {
             url = uri(layout.projectDirectory.dir("repo"))
         }
+    }
+}
+
+// --- Modrinth / CurseForge publishing -----------------------------------------------------------
+// See build.gradle.kts's own copy of this comment for the token/env-var gating reasoning - same
+// pattern here. Gated on project.name (the Stonecutter node name itself), not minecraftVersion alone
+// - 1.21.1-fabric and plain NeoForge 1.21.1 share the same minecraft_version="1.21.1" property, only
+// the node name tells them apart. Only 1.21.1-fabric is ready (1.20.1-fabric is still a walking
+// skeleton - see README's own Platforms & versions table).
+val fabricReadyToPublish = project.name == "1.21.1-fabric"
+val fabricModrinthProjectId = findProperty("modrinth_project_id") as String? ?: "REPLACE_WITH_MODRINTH_PROJECT_ID"
+val fabricCurseforgeProjectId = findProperty("curseforge_project_id") as String? ?: "REPLACE_WITH_CURSEFORGE_PROJECT_ID"
+val fabricReleaseChangelog = System.getenv("RELEASE_CHANGELOG") ?: "See the GitHub release notes for this version."
+
+if (fabricReadyToPublish && System.getenv("MODRINTH_TOKEN") != null) {
+    apply(plugin = "com.modrinth.minotaur")
+    configure<com.modrinth.minotaur.ModrinthExtension> {
+        token.set(System.getenv("MODRINTH_TOKEN"))
+        projectId.set(fabricModrinthProjectId)
+        versionNumber.set("${property("mod_version")}+fabric-$minecraftVersion")
+        versionName.set("${property("mod_version")} - Fabric $minecraftVersion")
+        versionType.set("release")
+        uploadFile.set(tasks.named("remapJar"))
+        gameVersions.add(minecraftVersion)
+        loaders.add("fabric")
+        changelog.set(fabricReleaseChangelog)
+    }
+}
+
+if (fabricReadyToPublish && System.getenv("CURSEFORGE_TOKEN") != null) {
+    apply(plugin = "net.darkhax.curseforgegradle")
+    tasks.register<net.darkhax.curseforgegradle.TaskPublishCurseForge>("publishCurseForge") {
+        apiToken = System.getenv("CURSEFORGE_TOKEN")
+        val mainFile = upload(fabricCurseforgeProjectId, tasks.named("remapJar"))
+        mainFile.changelog = fabricReleaseChangelog
+        mainFile.changelogType = "markdown"
+        mainFile.releaseType = "release"
+        mainFile.addGameVersion(minecraftVersion)
+        mainFile.addModLoader("Fabric")
     }
 }
 

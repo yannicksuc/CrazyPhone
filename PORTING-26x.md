@@ -658,12 +658,49 @@ yet) plus 1.21.10's own not-yet-reconciled API shape difference. All 5 pre-exist
 (`1.20.4`, `1.21.1`, `1.21.1-fabric`, `1.21.10`, `1.20.1-fabric`) regression-checked clean
 throughout this whole rendering-pipeline pass.
 
-1. **Live-test `:26.1:runClient`** - now the single highest-value next step. Compiles and is wired
-   end-to-end, but has never actually been launched - this is the first real chance to find out
-   whether the whole `ModelImpl`/`SpecialRendererImpl` approach (transform math, registration
-   timing, per-frame `update()` calls) actually works, or whether it's subtly wrong in a way no
-   amount of reading the API source would have caught. Do this before anything else below - it'll
-   likely reshape what "port the same approach to 1.21.10/Fabric" even means.
+## Update: `:26.1:runClient` live-tested - the `ModelImpl`/`SpecialRendererImpl` approach works, real bugs found and fixed along the way
+
+Item 1 below is now done. `:26.1:runClient` was launched and put through extensive live testing
+(sneak-presenting a card in one hand, then two at once) alongside a real dedicated server on the
+same build. The `ModelImpl`/`SpecialRendererImpl` approach itself holds up - no rewrite needed -
+but getting first-person presenting fully correct took several real bug fixes, in
+[CrazyPhonePresentHandGripMixin.java](src/main/java/fr/lordfinn/crazyphone/mixin/CrazyPhonePresentHandGripMixin.java)
+(the `>=26` branch):
+
+- The arm's own grip pose and the presented card's own transform used to be computed independently,
+  at two different points in the frame - injecting `renderArmWithItem`'s own `HEAD` (fired once per
+  hand by vanilla itself, right before that hand's own item render) instead of the old
+  `renderPlayerArm`+`renderHandsWithItems` dual-injection is what actually keeps them from drifting
+  apart, since both now start from the exact same poseStack snapshot. No camera-relative rotation
+  math needed once that's true - confirmed live at every camera angle, not just when facing due
+  north the way the old approach only ever gave a correct result.
+- Off-hand handling: the mixin now cancels vanilla's own per-hand item render whenever that
+  particular hand isn't actually holding the phone, so a leftover sword/tool/empty-hand render
+  doesn't fight the shared grip pose for the same space.
+- Dual-photo presenting (a card in each hand at once) needed its own live-tuned, per-hand X offset
+  in `CrazyPhonePresentDebug.java` (`dualX`/`dualLeftExtra`) rather than one shared, sign-mirrored
+  value - the two hands' own frames turned out to be genuinely asymmetric, not just mirror images of
+  each other.
+
+This same architectural fix (`renderArmWithItem`-HEAD injection, no camera-relative rotation, arm
+and card sharing one transform) was then ported to the `<1.21.10` branch of the same mixin - shared
+by 1.20.4, 1.21.1, and both Fabric nodes - which live testing on 1.21.1-fabric found to have the
+exact same underlying bug (no bob, arms not drawn, up/down movement inverted, the card visibly
+drifting from the arm while turning the camera). That branch needed its own extra fix beyond the
+`>=26` one: the arm and card there are drawn as two SEPARATE calls (no shared `AvatarRenderer`-style
+API), so the mixin now draws the card itself, directly, on the arm's own raw poseStack, instead of
+letting vanilla's normal per-item dispatch draw it later on a different, further-transformed one.
+
+Separately (not specific to 26.x, but found and fixed the same night while testing across every
+version): the phone number/name/password registration wizard
+([CrazyPhonePasswordScreenScreen.java](src/main/java/fr/lordfinn/crazyphone/client/gui/CrazyPhonePasswordScreenScreen.java),
+loader-neutral, shared by every node including 26.x) had two compounding bugs that together meant a
+newly registered phone almost never actually persisted server-side (bounced back to the
+registration screen every time, or intermittently, depending on which of two racing writes won) -
+see that file's own doc comments on `getEditBoxAndCheckBoxValues()` and the "Valider" button's
+`onPress` handler for the details. Both are fixed now, on every version.
+
+1. ~~**Live-test `:26.1:runClient`**~~ - done, see above.
 2. **Port the same `ModelImpl`/`SpecialRendererImpl` approach to NeoForge 1.21.10** - blocked on
    step 1 actually working first. Needs reconciling the different `ItemModel.Unbaked.bake()`/
    `SpecialModelRenderer.getExtents()` API shape there (see above - not investigated beyond

@@ -95,22 +95,27 @@ wholesale; see [Why this exists](#-why-this-exists).
 ## 🧩 Platforms & versions
 
 One shared `src/main/java` tree, preprocessed per target by [Stonecutter](https://stonecutter.kikugie.dev/)
-(`//? if fabric` / `//? if neoforge`, plus per-version checks) into 5 build targets. NeoForge 1.21.1 is the
-primary development target; everything else is kept in sync with it.
+(`//? if fabric` / `//? if neoforge`, plus per-version checks) into 9 build targets. NeoForge 1.21.1 is the
+primary development target; everything else is kept in sync with it. The 26.x line is a newer, actively
+ongoing port - see [PORTING-26x.md](PORTING-26x.md) for its detailed status and remaining work.
 
-| | NeoForge 1.20.4 | NeoForge 1.21.1 | NeoForge 1.21.10 | Fabric 1.20.1 | Fabric 1.21.1 |
-|---|:---:|:---:|:---:|:---:|:---:|
-| Phone, messaging, contacts, groups | ✅ | ✅ | ✅ | — | ✅ |
-| Mayor election | ✅ | ✅ | ✅ | — | ✅ |
-| Native camera (capture/viewer/photo item/My Photos) | ✅ | ✅ | — *(pending)* | — | ✅ |
-| Sneak-presenting (hold a photo up, two-hand grip) | ✅ | ✅ | — *(pending)* | — | ✅ |
-| Voice calls & voice messages | ✅ *(SVC)* | ✅ *(SVC)* | ✅ *(SVC)* | — | — |
-| Soulbound enchantment | — | ✅ | ✅ | — | ✅ |
-| Runtime-configurable settings | ✅ | ✅ | ✅ | — | — |
+| | NeoForge 1.20.4 | NeoForge 1.21.1 | NeoForge 1.21.10 | NeoForge 26.1 | NeoForge 26.2 | Fabric 1.20.1 | Fabric 1.21.1 | Fabric 26.1 | Fabric 26.2 |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| Phone, messaging, contacts, groups | ✅ | ✅ | ✅ | ✅ | — *(pending)* | — | ✅ | — *(pending)* | — *(pending)* |
+| Mayor election | ✅ | ✅ | ✅ | ✅ | — *(pending)* | — | ✅ | — *(pending)* | — *(pending)* |
+| Native camera (capture/viewer/photo item/My Photos) | ✅ | ✅ | — *(pending)* | ✅ | — *(pending)* | — | ✅ | — *(pending)* | — *(pending)* |
+| Sneak-presenting (hold a photo up, two-hand grip) | ✅ | ✅ | — *(pending)* | ✅ | — *(pending)* | — | ✅ | — *(pending)* | — *(pending)* |
+| Voice calls & voice messages | ✅ *(SVC)* | ✅ *(SVC)* | ✅ *(SVC)* | ✅ *(SVC)* | — *(pending)* | — | — | — | — |
+| Soulbound enchantment | — | ✅ | ✅ | ✅ | — *(pending)* | — | ✅ | — *(pending)* | — *(pending)* |
+| Runtime-configurable settings | ✅ | ✅ | ✅ | ✅ | — *(pending)* | — | — | — | — |
 
 - **NeoForge 1.21.10**'s camera and sneak-presenting features compile but don't work yet: Mojang reworked
   both item rendering and the screenshot/texture APIs the native pipeline uses on that version, and porting
   to the new APIs is a separate, tracked follow-up.
+- **NeoForge 26.1** compiles clean and has been live-tested (native camera, sneak-presenting including
+  two-hand dual-photo, voice calls) - the newest fully-verified target in the project.
+- **NeoForge 26.2** doesn't compile yet - blocked on the same item-rendering API migration 26.1 needed,
+  not yet finished for this node. See [PORTING-26x.md](PORTING-26x.md).
 - **Fabric 1.20.1** is a walking skeleton for now - the item exists and registers, but the phone's
   networking layer needs an API (`CustomPacketPayload`) that doesn't exist before 1.20.5, so none of the
   screens/messaging/camera work yet on that specific version.
@@ -118,6 +123,9 @@ primary development target; everything else is kept in sync with it.
   standalone capture, and My Photos), sneak-presenting, and the Soulbound enchantment - but no voice
   calls/messages, since [Simple Voice Chat](https://modrepo.de/minecraft/voicechat) integration hasn't been
   ported to Fabric yet.
+- **Fabric 26.1 / 26.2** don't compile yet - blocked on the same NeoForge-only item-rendering rework 26.1/26.2
+  needed, plus their own Fabric-specific registration gap (no `BuiltinItemRendererRegistry`-equivalent wired
+  up for the new API yet). See [PORTING-26x.md](PORTING-26x.md).
 
 ---
 
@@ -208,6 +216,27 @@ NeoForge only, per version:
 ```bash
 gradlew.bat :1.21.1:test
 ```
+
+### Publishing a release
+
+Pushing a tag matching `v*` (e.g. `v1.2.1`) triggers
+[`.github/workflows/release.yml`](.github/workflows/release.yml), which builds and publishes every node
+currently considered ready to ship (see each build script's own `readyToPublish` check) to both
+[Modrinth](https://modrinth.com/) and [CurseForge](https://curseforge.com/), via the
+[Minotaur](https://github.com/modrinth/minotaur) and
+[CurseForgeGradle](https://github.com/Darkhax/CurseForgeGradle) Gradle plugins. It's dormant on every other
+push/PR - a plain local build never sets the tokens below, so nothing publish-related ever runs outside
+this workflow.
+
+One-time setup, before the first tag actually publishes anything:
+
+1. Create the mod's listing on Modrinth and CurseForge, if not done yet.
+2. Set two repository **variables** (`Settings → Secrets and variables → Actions → Variables`):
+   `modrinth_project_id` (the Modrinth project's slug or id) and `curseforge_project_id` (the CurseForge
+   project's numeric id).
+3. Set two repository **secrets** (same page, `Secrets` tab): `MODRINTH_TOKEN` (a Modrinth personal access
+   token with "Create versions" scope) and `CURSEFORGE_TOKEN` (a CurseForge API token, from My Profile → API
+   Tokens on curseforge.com).
 
 ---
 
