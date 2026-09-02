@@ -980,6 +980,12 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
         if (message.getValue().isEmpty())
             return;
 
+        // :shortcode: -> emoji happens here, on the EditBox's own value, before anything else reads it -
+        // both the optimistic local echo below and getEditBoxAndCheckBoxValues() (which re-reads this same
+        // field for the actual network payload) need to agree on the same already-converted text, or the
+        // sender's own local echo would show the emoji while what's actually saved/broadcast to the other
+        // participant still shows the raw shortcode.
+        message.setValue(fr.lordfinn.crazyphone.client.EmojiShortcodes.replace(message.getValue()));
         String text = message.getValue();
         //? if >=1.20.5 {
         /*NetworkAccess.sendToServer(new CrazyPhoneConversationButtonMessage(0, x, y, z, getEditBoxAndCheckBoxValues()));

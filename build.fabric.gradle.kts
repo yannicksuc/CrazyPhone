@@ -177,6 +177,7 @@ sourceSets.main {
             "fr/lordfinn/crazyphone/client/gui/CrazyPhoneDefaultScreenScreen.java",
             "fr/lordfinn/crazyphone/client/gui/CrazyPhoneContactsScreenScreen.java",
             "fr/lordfinn/crazyphone/client/gui/CrazyPhoneConversationScreen.java",
+            "fr/lordfinn/crazyphone/client/EmojiShortcodes.java",
             "fr/lordfinn/crazyphone/client/gui/CrazyPhoneGroupSettingsScreenScreen.java",
             "fr/lordfinn/crazyphone/client/gui/CrazyPhonePasswordScreenScreen.java",
             "fr/lordfinn/crazyphone/client/gui/CrazyPhoneMayorsCandidatesListScreen.java",
