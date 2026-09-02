@@ -24,6 +24,9 @@ run-server
 run-gametest
 run-*
 
+# scripts/dev-launch.ps1's own PID/log tracking state - see its own doc comment
+.dev-launch/
+
 # Third-party jars not owned by this project - fetch/place them locally, see README
 libs/
 
