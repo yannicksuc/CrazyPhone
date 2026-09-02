@@ -815,6 +815,22 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
             @Override
             public void insertText(String text) {
                 super.insertText(text);
+                // Live shortcode/emoticon conversion: a single spacebar press is what "finishes" a token
+                // while typing (paste operations, multi-char text, stay covered by the full-message pass in
+                // sendCurrentMessage() instead - this is specifically the live-typing case) - convert just
+                // the word immediately before the cursor, then re-set the value so the emoji (not the raw
+                // shortcode) is what's actually sitting in the field afterward, cursor landing right after
+                // the space that triggered it.
+                if (" ".equals(text)) {
+                    int cursor = getCursorPosition();
+                    String beforeSpace = getValue().substring(0, cursor - 1);
+                    String converted = fr.lordfinn.crazyphone.client.EmojiShortcodes.tryConvertLastToken(beforeSpace);
+                    if (converted != null) {
+                        String rest = getValue().substring(cursor);
+                        setValue(converted + " " + rest);
+                        moveCursorTo(converted.length() + 1, false);
+                    }
+                }
                 updateSuggestion();
             }
 
