@@ -43,7 +43,11 @@ navigation.
 
 **Messaging** - contacts, favorites, and groups in one scrollable, recency-sorted screen; group
 conversations with their own settings (rename, custom icon, invite/exclude, admin); real-time text;
-sending photos from your album; read-notification badges; hover tooltips for timestamps/senders.
+sending photos from your album; read-notification badges; hover tooltips for timestamps/senders. Pixel-art
+emoji throughout chat, via a bundled [Pixel Twemoji 9x](https://modrinth.com/resourcepack/pixel-twemoji-9x)
+font - paste a real Unicode emoji directly, or type a `:shortcode:` (English or, for a curated common set,
+your own language - see [Localization](#-localization)) or a classic ASCII emoticon (`:)`, `<3`, `xD`, ...);
+typing converts live the moment you hit space, no separate resource pack install needed.
 
 **Camera** - a native, dependency-free photo feature on both loaders, with three ways into the same
 full-screen capture overlay (mouse wheel to zoom, right-click to shoot, left-click/Escape to cancel; the
