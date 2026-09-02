@@ -365,10 +365,23 @@ idea {
 // is missing the native camera/sneak-presenting features (see README's own Platforms & versions
 // table), which reads as a worse first impression than not offering it yet at all. Revisit this list
 // once that gap closes or product judgment changes.
-val readyToPublish = minecraftVersion in setOf("1.20.4", "1.21.1", "26.1")
+// project.name (the Stonecutter NODE name), not minecraftVersion - 26.1's own gradle.properties pins
+// minecraft_version=26.1.2 (its real patch version, needed for the actual game/mappings download),
+// which doesn't match the node name "26.1" this list is written against. Confirmed live: the first
+// real release run silently skipped 26.1 entirely ("task 'modrinth' not found") because this compared
+// against "26.1.2" instead - same class of mismatch build.fabric.gradle.kts's own project.name-based
+// check was already written to avoid.
+val readyToPublish = thisProject.name in setOf("1.20.4", "1.21.1", "26.1")
 val modrinthProjectId = findProperty("modrinth_project_id") as String? ?: "REPLACE_WITH_MODRINTH_PROJECT_ID"
 val curseforgeProjectId = findProperty("curseforge_project_id") as String? ?: "REPLACE_WITH_CURSEFORGE_PROJECT_ID"
 val releaseChangelog = System.getenv("RELEASE_CHANGELOG") ?: "See the GitHub release notes for this version."
+// CurseForge's own API rejected a game-version-only submission outright ("Invalid game version ID...
+// belongs to an invalid dependency") on the first real release run - CurseForgeGradle's own README
+// documents addJavaVersion() as a real, separate metadata method alongside addGameVersion()/
+// addModLoader(), which strongly suggests CurseForge's version-type system expects a companion Java
+// version tag for at least some mod-loader categories. Reuses the same Java version this exact node
+// already targets via java.toolchain.languageVersion above, not a hardcoded guess.
+val curseforgeJavaVersion = "Java ${java.toolchain.languageVersion.get()}"
 
 if (readyToPublish && System.getenv("MODRINTH_TOKEN") != null) {
     apply(plugin = "com.modrinth.minotaur")
@@ -395,5 +408,6 @@ if (readyToPublish && System.getenv("CURSEFORGE_TOKEN") != null) {
         mainFile.releaseType = "release"
         mainFile.addGameVersion(minecraftVersion)
         mainFile.addModLoader("NeoForge")
+        mainFile.addJavaVersion(curseforgeJavaVersion)
     }
 }

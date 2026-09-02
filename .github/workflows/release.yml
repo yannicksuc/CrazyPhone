@@ -29,8 +29,14 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # java here is the DAEMON's own JVM (what runs Gradle/the plugins, incl. the stonecutter
+          # plugin itself, which requires 21+ regardless of any node's own compile target) - not the
+          # node's actual bytecode target, which java.toolchain.languageVersion in each build script
+          # already selects separately via Gradle's own toolchain auto-provisioning. Confirmed live:
+          # 1.20.4 under java:17 failed at plugin resolution ("stonecutter... requires at least JVM
+          # runtime version 21") before ever reaching its own Java-17 compilation step.
           - node: 1.20.4
-            java: 17
+            java: 21
           - node: 1.21.1
             java: 21
           - node: 1.21.1-fabric
@@ -62,8 +68,15 @@ jobs:
           MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
           CURSEFORGE_TOKEN: ${{ secrets.CURSEFORGE_TOKEN }}
           RELEASE_CHANGELOG: ${{ github.event.head_commit.message }}
+        # --no-configuration-cache: the first real release run hit two separate configuration-cache
+        # incompatibilities - Minotaur's modrinth task warned about "Task.project ... unsupported with
+        # the configuration cache" (didn't hard-fail there, but no guarantee it won't on another node),
+        # and Fabric Loom's remapJar HARD-FAILED trying to serialize on 1.21.1-fabric ("error writing
+        # value of type DefaultProperty"). A CI runner gets zero benefit from configuration caching
+        # anyway (every run is a fresh checkout, nothing to reuse a cache entry against), so disabling
+        # it outright here avoids the whole class of problem instead of chasing each one individually.
         run: |
           ./gradlew ":${{ matrix.node }}:build" ":${{ matrix.node }}:modrinth" ":${{ matrix.node }}:publishCurseForge" \
             "-Pmodrinth_project_id=${{ vars.modrinth_project_id }}" \
             "-Pcurseforge_project_id=${{ vars.curseforge_project_id }}" \
-            --console=plain
+            --no-configuration-cache --console=plain

@@ -320,6 +320,9 @@ val fabric26ReadyToPublish = false
 val fabric26ModrinthProjectId = findProperty("modrinth_project_id") as String? ?: "REPLACE_WITH_MODRINTH_PROJECT_ID"
 val fabric26CurseforgeProjectId = findProperty("curseforge_project_id") as String? ?: "REPLACE_WITH_CURSEFORGE_PROJECT_ID"
 val fabric26ReleaseChangelog = System.getenv("RELEASE_CHANGELOG") ?: "See the GitHub release notes for this version."
+// See build.gradle.kts's own copy of this comment - CurseForge's API rejected a game-version-only
+// submission on the first real release run, and addJavaVersion() is the documented companion method.
+val fabric26CurseforgeJavaVersion = "Java ${java.toolchain.languageVersion.get()}"
 
 if (fabric26ReadyToPublish && System.getenv("MODRINTH_TOKEN") != null) {
     apply(plugin = "com.modrinth.minotaur")
@@ -346,6 +349,7 @@ if (fabric26ReadyToPublish && System.getenv("CURSEFORGE_TOKEN") != null) {
         mainFile.releaseType = "release"
         mainFile.addGameVersion(minecraftVersion)
         mainFile.addModLoader("Fabric")
+        mainFile.addJavaVersion(fabric26CurseforgeJavaVersion)
     }
 }
 
