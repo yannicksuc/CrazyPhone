@@ -455,6 +455,11 @@ if (fabricReadyToPublish && System.getenv("CURSEFORGE_TOKEN") != null) {
         mainFile.addGameVersion(minecraftVersion)
         mainFile.addModLoader("Fabric")
         mainFile.addJavaVersion(fabricCurseforgeJavaVersion)
+        // See build.gradle.kts's own copy of this comment - CurseForge's error code 1021 ("You must
+        // select at least one version from the environment group of versions") was the actual missing
+        // piece, confirmed across every node in the same release run.
+        mainFile.addEnvironment("Client")
+        mainFile.addEnvironment("Server")
     }
 }
 

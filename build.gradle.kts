@@ -409,5 +409,10 @@ if (readyToPublish && System.getenv("CURSEFORGE_TOKEN") != null) {
         mainFile.addGameVersion(minecraftVersion)
         mainFile.addModLoader("NeoForge")
         mainFile.addJavaVersion(curseforgeJavaVersion)
+        // The actual missing piece, confirmed via CurseForge's own error code 1021 ("You must select
+        // at least one version from the environment group of versions") - addJavaVersion() alone
+        // wasn't it. The mod works on both dists (see README's own "Supported environments" note).
+        mainFile.addEnvironment("Client")
+        mainFile.addEnvironment("Server")
     }
 }
