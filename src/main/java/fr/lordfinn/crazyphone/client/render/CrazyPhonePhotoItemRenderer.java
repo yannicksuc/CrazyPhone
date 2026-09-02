@@ -696,7 +696,6 @@ public final class CrazyPhonePhotoItemRenderer {
                             net.minecraft.client.renderer.item.ItemModelResolver resolver, ItemDisplayContext displayContext,
                             @javax.annotation.Nullable net.minecraft.client.multiplayer.ClientLevel level,
                             @javax.annotation.Nullable net.minecraft.world.entity.ItemOwner owner, int seed) {
-            output.appendModelIdentityElement(this);
             boolean isLeftHand = displayContext == ItemDisplayContext.FIRST_PERSON_LEFT_HAND || displayContext == ItemDisplayContext.THIRD_PERSON_LEFT_HAND;
             boolean isHand = isLeftHand || displayContext == ItemDisplayContext.FIRST_PERSON_RIGHT_HAND || displayContext == ItemDisplayContext.THIRD_PERSON_RIGHT_HAND;
             boolean isFirstPersonHand = displayContext == ItemDisplayContext.FIRST_PERSON_LEFT_HAND || displayContext == ItemDisplayContext.FIRST_PERSON_RIGHT_HAND;
@@ -782,6 +781,22 @@ public final class CrazyPhonePhotoItemRenderer {
             }
 
             fr.lordfinn.crazyphone.utils.PhotoItemData data = fr.lordfinn.crazyphone.utils.PhotoItemData.fromStack(item);
+            // GUI slots render through a TrackingItemStackRenderState (see its own decompiled source -
+            // appendModelIdentityElement there actually records elements, unlike the plain
+            // ItemStackRenderState hand/ground rendering uses, whose override is a no-op) - live-reported as
+            // "stuck on the placeholder in inventory forever, but correct once dropped": appending only
+            // `this` (a fixed singleton, identical for every CrazyPhone photo, forever) gave the GUI's own
+            // render-state batching nothing to detect a change with once the async texture fetch actually
+            // finished, so it kept reusing whatever got drawn on the very first (pre-load) frame. Appending
+            // the resolved CachedTexture reference too (null while still loading, a real object once
+            // FabricPictureCache's fetch completes) means the identity genuinely changes the one time it
+            // needs to, forcing a fresh render for that transition frame - same resolution rule
+            // renderFramedCardNew/renderHandFramedCardNew below already use, kept in sync deliberately.
+            if (data != null) {
+                PhotoResolution identityResolution = isHand ? PhotoResolution.FULL
+                        : (fr.lordfinn.crazyphone.ClientConfig.itemPreviewPixelated ? PhotoResolution.THUMBNAIL : PhotoResolution.FULL);
+                output.appendModelIdentityElement(FabricPictureCache.getOrRequest(data.photoId(), identityResolution));
+            }
             net.minecraft.client.renderer.item.ItemStackRenderState.LayerRenderState layer = output.newLayer();
             layer.setLocalTransform(poseStack.last().pose());
             // Extents matter beyond shadow/culling: ItemEntityRenderer computes how far to lift a dropped item
