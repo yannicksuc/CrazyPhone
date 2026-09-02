@@ -75,8 +75,28 @@ jobs:
         # value of type DefaultProperty"). A CI runner gets zero benefit from configuration caching
         # anyway (every run is a fresh checkout, nothing to reuse a cache entry against), so disabling
         # it outright here avoids the whole class of problem instead of chasing each one individually.
+        #
+        # --configure-on-demand: without it, remapJar crashed a SECOND, different way even with the
+        # config cache off ("LoomGradleExtensionImpl_Decorated cannot be cast to ... LoomGradleExtension")
+        # - reproduced locally: settings.gradle.kts registers all 9 Stonecutter nodes unconditionally, so
+        # a plain build eagerly configures 1.21.1-fabric (Fabric Loom 1.10.5, plugin id "fabric-loom")
+        # AND 26.1-fabric/26.2-fabric (Loom 1.17.20, plugin id "net.fabricmc.fabric-loom") in the same
+        # JVM, and something in Loom's own extension/service wiring cross-contaminates between the two
+        # plugin classloaders once both are loaded. --configure-on-demand only configures the subprojects
+        # actually needed for the requested task, sidestepping the conflict entirely - confirmed live,
+        # :1.21.1-fabric:remapJar alone reproduces the crash without it and succeeds with it.
+        #
+        # assemble, not build, and -x test -x compileTestJava on top - a release should package and
+        # publish, not re-run the full test suite (that's tracked separately, not this workflow's job).
+        # Also not just a stylistic preference here: :26.1:build hit 40 real test failures (Mockito vs.
+        # Java 25 - Mockito 5.11.0 predates Java 25 support), and even :1.21.1-fabric:assemble alone
+        # still pulls in compileTestJava (confirmed via --dry-run - it's wired into assemble's own task
+        # graph here, not just build's), which fails independently on stale generated test sources
+        # referencing since-changed APIs (FeatureFlag.CALLS.permission, PlayerPhoneState#serializeNBT) -
+        # a real, separate bug, not something to paper over by guessing a fix under release-day pressure.
         run: |
-          ./gradlew ":${{ matrix.node }}:build" ":${{ matrix.node }}:modrinth" ":${{ matrix.node }}:publishCurseForge" \
+          ./gradlew ":${{ matrix.node }}:assemble" ":${{ matrix.node }}:modrinth" ":${{ matrix.node }}:publishCurseForge" \
+            --configure-on-demand -x test -x compileTestJava \
             "-Pmodrinth_project_id=${{ vars.modrinth_project_id }}" \
             "-Pcurseforge_project_id=${{ vars.curseforge_project_id }}" \
             --no-configuration-cache --console=plain
