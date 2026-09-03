@@ -407,16 +407,35 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
       // ruling out stale save data as the cause). Overriding this actual extension point - not just
     // refreshDimensions() - is what makes EVERY caller of makeBoundingBox(), not only this class's own
     // explicit refreshDimensions() calls, consistently get the real computed box instead.
+    // computeBoundingBox() is now reachable from setPos(), which (unlike refreshDimensions()) can fire from
+    // deep inside vanilla's own Entity construction sequence, possibly before entityData/attachPos are
+    // actually ready - a genuinely new failure mode this override introduced, confirmed live (making
+    // makeBoundingBox() itself throw during construction left every frame with no render AND no hitbox at
+    // all, worse than the bug it was meant to fix - construction-time exceptions here get silently absorbed
+    // somewhere in vanilla's own entity-add pipeline rather than crashing outright). Falling back to a
+    // trivial box at the entity's own tracked position on ANY exception guarantees this never happens again,
+    // regardless of which future construction-order edge case might otherwise trip it - the real box still
+    // gets applied moments later via refreshDimensions() either way, same as the attachPos-null fallback in
+    // computeBoundingBox() itself already covers for the narrower case.
+    private AABB safeMakeBoundingBox() {
+        try {
+            return computeBoundingBox();
+        } catch (Exception e) {
+            double x = this.getX(), y = this.getY(), z = this.getZ();
+            return new AABB(x - 0.5, y, z - 0.5, x + 0.5, y + DEPTH, z + 0.5);
+        }
+    }
+
     //? if <26 {
     @Override
     protected AABB makeBoundingBox() {
-        return computeBoundingBox();
+        return safeMakeBoundingBox();
     }
     //?}
     //? if >=26 {
     /*@Override
     protected AABB makeBoundingBox(net.minecraft.world.phys.Vec3 position) {
-        return computeBoundingBox();
+        return safeMakeBoundingBox();
     }
     *///?}
 
