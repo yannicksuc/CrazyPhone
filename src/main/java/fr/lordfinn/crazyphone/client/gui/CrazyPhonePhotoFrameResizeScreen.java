@@ -127,6 +127,16 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
     // A third drag mode: grabbing one of the two corner handles (see this class's own doc comment) resizes
     // at half-block resolution instead of whole-block, moving only the two edges that meet at that corner.
     private int cornerDrag = CORNER_NONE;
+    // A fourth drag mode: grabbing the blue anchor square itself (rather than some other cell inside the
+    // selection) shifts the WHOLE selection exactly like #shifting does, but at half-block resolution
+    // instead of whole-block - "je voudrais que le carré bleu au centre soit aussi déplaçable... comme les
+    // autres handle il faudrait que [ça] puisse se déplacer au milieu des carrés" (live request). The plain
+    // "click anywhere else inside the selection" whole-block shift stays exactly as it was ("tout en gardant
+    // la feature pour déplacer la sélection en cliquant dessus" - live request) - this is a THIRD, more
+    // precise way to do the same kind of move, not a replacement for it. Shares shiftBaseNegCol/etc with
+    // #shifting since both ultimately move the same four numbers, just at a different step size.
+    private boolean shiftingHalf;
+    private int shiftStartHalfCol, shiftStartHalfRow;
 
     private static int computeMaxBlocks(CrazyPhonePhotoFrameResizeMenu menu) {
         return Math.max(1, menu.maxUnits() / UNITS_PER_BLOCK);
@@ -303,11 +313,11 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
         return (int) Math.floor((mouseY - gridTop) / cellPx) - maxBlocks;
     }
 
-    // Half-block equivalents of #colAt/#rowAt - only ever used to drive the two corner handles (see
-    // #updateCornerDrag), since ordinary area-dragging still snaps to whole blocks. signedHalfCol=0/1 are
-    // the anchor cell's own two halves (its left/neg and right/pos half respectively), matching how
-    // previewNegCol/previewPosCol already exclude the anchor's own implicit halves - see this class's own
-    // doc comment.
+    // Half-block equivalents of #colAt/#rowAt - drive the two corner handles (see #updateCornerDrag) and
+    // the blue anchor-square shift handle (see #updateShiftHalf), since plain area-dragging and the
+    // click-anywhere-inside shift both still snap to whole blocks. signedHalfCol=0/1 are the anchor cell's
+    // own two halves (its left/neg and right/pos half respectively), matching how previewNegCol/
+    // previewPosCol already exclude the anchor's own implicit halves - see this class's own doc comment.
     private int halfColAt(double mouseX) {
         return (int) Math.floor((mouseX - gridLeft) / halfCellPx) - maxHalf;
     }
@@ -374,6 +384,26 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
         int clampedRow = Math.max(-maxBlocks, Math.min(maxBlocks, row));
         int dCol = (clampedCol - shiftStartCol) * 2;
         int dRow = (clampedRow - shiftStartRow) * 2;
+        int width = shiftBaseNegCol + shiftBasePosCol;
+        int height = shiftBaseNegRow + shiftBasePosRow;
+        int negCol = Math.max(Math.max(0, width - maxHalf), Math.min(Math.min(width, maxHalf), shiftBaseNegCol - dCol));
+        int negRow = Math.max(Math.max(0, height - maxHalf), Math.min(Math.min(height, maxHalf), shiftBaseNegRow - dRow));
+        previewNegCol = negCol;
+        previewPosCol = width - negCol;
+        previewNegRow = negRow;
+        previewPosRow = height - negRow;
+    }
+
+    // Same move as #updateShift - whole selection, size fixed - but stepped at half-block resolution
+    // instead of whole-block, using raw mouse position (#halfColAt/#halfRowAt) rather than a block index -
+    // this is what grabbing the blue anchor square itself does, distinct from the plain click-anywhere-else
+    // -inside-the-selection shift which stays whole-block (see #beginGesture and this class's own doc
+    // comment).
+    private void updateShiftHalf(double mouseX, double mouseY) {
+        int hc = clampHalf(halfColAt(mouseX));
+        int hr = clampHalf(halfRowAt(mouseY));
+        int dCol = hc - shiftStartHalfCol;
+        int dRow = hr - shiftStartHalfRow;
         int width = shiftBaseNegCol + shiftBasePosCol;
         int height = shiftBaseNegRow + shiftBasePosRow;
         int negCol = Math.max(Math.max(0, width - maxHalf), Math.min(Math.min(width, maxHalf), shiftBaseNegCol - dCol));
@@ -467,9 +497,7 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
         if (button == 0 && insideGrid(mouseX, mouseY)) {
             if (tryBeginCornerDrag(mouseX, mouseY))
                 return true;
-            int col = Math.max(-maxBlocks, Math.min(maxBlocks, colAt(mouseX)));
-            int row = Math.max(-maxBlocks, Math.min(maxBlocks, rowAt(mouseY)));
-            beginGesture(col, row);
+            beginGesture(mouseX, mouseY);
             return true;
         }
         return super.mouseClicked(mouseX, mouseY, button);
@@ -479,6 +507,10 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
     public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
         if (cornerDrag != CORNER_NONE) {
             updateCornerDrag(mouseX, mouseY);
+            return true;
+        }
+        if (shiftingHalf) {
+            updateShiftHalf(mouseX, mouseY);
             return true;
         }
         if (dragging) {
@@ -494,9 +526,10 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
 
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
-        if (dragging || shifting || cornerDrag != CORNER_NONE) {
+        if (dragging || shifting || shiftingHalf || cornerDrag != CORNER_NONE) {
             dragging = false;
             shifting = false;
+            shiftingHalf = false;
             cornerDrag = CORNER_NONE;
             commitSize();
             return true;
@@ -510,9 +543,7 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
         if (event.button() == 0 && insideGrid(event.x(), event.y())) {
             if (tryBeginCornerDrag(event.x(), event.y()))
                 return true;
-            int col = Math.max(-maxBlocks, Math.min(maxBlocks, colAt(event.x())));
-            int row = Math.max(-maxBlocks, Math.min(maxBlocks, rowAt(event.y())));
-            beginGesture(col, row);
+            beginGesture(event.x(), event.y());
             return true;
         }
         return super.mouseClicked(event, doubleClick);
@@ -522,6 +553,10 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
     public boolean mouseDragged(net.minecraft.client.input.MouseButtonEvent event, double dragX, double dragY) {
         if (cornerDrag != CORNER_NONE) {
             updateCornerDrag(event.x(), event.y());
+            return true;
+        }
+        if (shiftingHalf) {
+            updateShiftHalf(event.x(), event.y());
             return true;
         }
         if (dragging) {
@@ -537,9 +572,10 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
 
     @Override
     public boolean mouseReleased(net.minecraft.client.input.MouseButtonEvent event) {
-        if (dragging || shifting || cornerDrag != CORNER_NONE) {
+        if (dragging || shifting || shiftingHalf || cornerDrag != CORNER_NONE) {
             dragging = false;
             shifting = false;
+            shiftingHalf = false;
             cornerDrag = CORNER_NONE;
             commitSize();
             return true;
@@ -548,12 +584,25 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
     }
     *///?}
 
-    // Clicking INSIDE the current selection shifts it (see #updateShift); clicking anywhere else in the
-    // grid starts a fresh resize drag (see #updatePreview) - not version-split itself, called from both
-    // mouseClicked bodies above (after #tryBeginCornerDrag has already had first refusal on the corner
-    // handles).
-    private void beginGesture(int col, int row) {
-        if (insideSelection(col, row)) {
+    // Three ways to click inside the grid, in priority order (after #tryBeginCornerDrag has already had
+    // first refusal on the two corner handles): grabbing the blue ANCHOR square itself starts a half-block
+    // -precision shift (#updateShiftHalf - "je voudrais que le carré bleu au centre soit aussi déplaçable...
+    // comme les autres handle" - live request); clicking anywhere ELSE inside the current selection starts
+    // the ordinary whole-block shift (#updateShift, unchanged - "tout en gardant la feature pour déplacer la
+    // sélection en cliquant dessus" - live request); clicking outside the selection entirely starts a fresh
+    // resize drag (#updatePreview). Not version-split itself, called from both mouseClicked bodies above.
+    private void beginGesture(double mouseX, double mouseY) {
+        int col = Math.max(-maxBlocks, Math.min(maxBlocks, colAt(mouseX)));
+        int row = Math.max(-maxBlocks, Math.min(maxBlocks, rowAt(mouseY)));
+        if (col == 0 && row == 0) {
+            shiftingHalf = true;
+            shiftStartHalfCol = clampHalf(halfColAt(mouseX));
+            shiftStartHalfRow = clampHalf(halfRowAt(mouseY));
+            shiftBaseNegCol = previewNegCol;
+            shiftBasePosCol = previewPosCol;
+            shiftBaseNegRow = previewNegRow;
+            shiftBasePosRow = previewPosRow;
+        } else if (insideSelection(col, row)) {
             shifting = true;
             shiftStartCol = col;
             shiftStartRow = row;
@@ -577,7 +626,7 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
     // rendered after that sync packet lands self-corrects automatically, and also keeps satisfying "Grid
     // should keep in memory the size and display it by default" if the size changes from elsewhere.
     private void syncFromMenuIfIdle() {
-        if (dragging || shifting || cornerDrag != CORNER_NONE)
+        if (dragging || shifting || shiftingHalf || cornerDrag != CORNER_NONE)
             return;
         screenToPreview();
     }
