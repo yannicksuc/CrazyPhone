@@ -472,6 +472,30 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
         this.setBoundingBox(computeBoundingBox());
     }
 
+    // Entity#setPos(x,y,z) independently calls this.setBoundingBox(this.makeBoundingBox()), using
+    // EntityDimensions to rebuild a generic box, undoing whatever refreshDimensions() had just set - fires
+    // routinely whenever a tracked entity's position is (re-)confirmed from the network, not just once at
+    // spawn. Re-attempting the exact fix that matches vanilla's own proven BlockAttachedEntity#setPos
+    // pattern (setPosRaw instead of super.setPos(), confirmed via the real decompiled Entity.java to carry
+    // zero bounding-box logic) - five earlier variants of this all broke rendering entirely, live, for a
+    // reason never pinned down, but EVERY one of those ran against attachPos still holding its unset
+    // BlockPos.ZERO default the whole time (see getAddEntityPacket/recreateFromPacket's own comment - a
+    // separate, real, now-fixed bug: attachPos was never actually transmitted to any client at all). A
+    // setPos-triggered box computed from a permanently-wrong reference point is a plausible explanation for
+    // whatever broke - this is a materially different attempt, not a blind repeat, now that attachPos is
+    // actually correct on the client from the very first frame.
+    @Override
+    public void setPos(double x, double y, double z) {
+        this.setPosRaw(x, y, z);
+        // entityData is only null for the single earliest instant of construction, if Entity's own
+        // constructor calls setPos() before defineSynchedData() has run (a final field, legally
+        // readable-as-null before its own assignment) - skip the box fixup for just that one instant rather
+        // than let attachFace() NPE on it; recreateFromPacket()/onSyncedDataUpdated correct it moments later
+        // regardless.
+        if (this.entityData != null)
+            this.setBoundingBox(computeBoundingBox());
+    }
+
     // Entity#getDimensions(Pose) is what feeds this.dimensions, which is what vanilla's OWN unmodified
     // setPos()/makeBoundingBox() falls back to whenever they run un-intercepted (see this class's own tick()
     // comment for the whole story of why nothing intercepts them anymore) - vanilla's own base implementation
