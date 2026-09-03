@@ -22,7 +22,8 @@ package fr.lordfinn.crazyphone.client.gui;
  * handles (see #tryBeginCornerDrag/#updateCornerDrag) are the one exception: "also want top left and bottom
  * left corners to be dragable also in mid positioning" (live request), each a small square centered exactly
  * on its corner point at half a normal cell's size - "red and yellow corner handle are squares centered on
- * corner with half the size" (live request, red = top-left, yellow = bottom-left) - offering half-block
+ * corner with half the size" (live request, red = top-left, yellow = the diagonally OPPOSITE corner,
+ * bottom-right - "yellow corner should be at the opposite of red", live request) - offering half-block
  * resolution specifically there. Because a selection edge can now land mid-cell, plain whole-cell shading
  * would lie about what's actually selected, so every non-anchor cell renders as two independently-colored
  * halves along whichever axis a handle can move - "the gray square can be divided in quarters for
@@ -89,11 +90,11 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
     // the server. See #commitSize/#axisToHalf for the exact formula this feeds into.
     private static final int HALF_STEP = UNITS_PER_BLOCK / 2;
     private static final int HANDLE_COLOR_TOP_LEFT = 0xFFFF3333;
-    private static final int HANDLE_COLOR_BOTTOM_LEFT = 0xFFFFDD33;
+    private static final int HANDLE_COLOR_BOTTOM_RIGHT = 0xFFFFDD33;
 
     private static final int CORNER_NONE = 0;
     private static final int CORNER_TOP_LEFT = 1;
-    private static final int CORNER_BOTTOM_LEFT = 2;
+    private static final int CORNER_BOTTOM_RIGHT = 2;
 
     private final List<Button> ownButtons = new ArrayList<>();
     private int maxBlocks;
@@ -387,23 +388,25 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
     // (negCol) and top edge (negRow) together, at half-block resolution, leaving the opposite (bottom-right)
     // corner fixed. Both edges are independently clamped to [0, maxHalf] - the anchor's own cell can never
     // be pushed out of the selection since neither edge can go negative.
-    // Drags the bottom-left corner instead - left edge (negCol) and bottom edge (posRow) together.
+    // Drags the bottom-right corner instead - right edge (posCol) and bottom edge (posRow) together, the
+    // corner diagonally OPPOSITE the top-left/red one ("yellow corner should be at the opposite of red" -
+    // live request), leaving the top-left corner fixed.
     private void updateCornerDrag(double mouseX, double mouseY) {
         int hc = clampHalf(halfColAt(mouseX));
         int hr = clampHalf(halfRowAt(mouseY));
         if (cornerDrag == CORNER_TOP_LEFT) {
             previewNegCol = clampHalfExtent(-hc);
             previewNegRow = clampHalfExtent(-hr);
-        } else if (cornerDrag == CORNER_BOTTOM_LEFT) {
-            previewNegCol = clampHalfExtent(-hc);
+        } else if (cornerDrag == CORNER_BOTTOM_RIGHT) {
+            previewPosCol = clampHalfExtent(hc - 2);
             previewPosRow = clampHalfExtent(hr - 2);
         }
     }
 
-    // Pixel box of the top-left/bottom-left corner handles - a square centered exactly on the selection's
+    // Pixel box of the top-left/bottom-right corner handles - a square centered exactly on the selection's
     // own corner point, sized half a normal cell ("red and yellow corner handle are squares centered on
-    // corner with half the size" - live request). Both handles share the same X (both control the left
-    // edge, negCol) and differ only in Y (top edge vs bottom edge).
+    // corner with half the size" - live request). The two handles sit on diagonally opposite corners of the
+    // selection rectangle, each independently draggable, each moving only the two edges that meet there.
     private int[] topLeftHandleBox() {
         int px = gridLeft + (-previewNegCol + maxHalf) * halfCellPx;
         int py = gridTop + (-previewNegRow + maxHalf) * halfCellPx;
@@ -411,8 +414,8 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
         return new int[]{px - r, py - r, px + r, py + r};
     }
 
-    private int[] bottomLeftHandleBox() {
-        int px = gridLeft + (-previewNegCol + maxHalf) * halfCellPx;
+    private int[] bottomRightHandleBox() {
+        int px = gridLeft + (previewPosCol + 2 + maxHalf) * halfCellPx;
         int py = gridTop + (previewPosRow + 2 + maxHalf) * halfCellPx;
         int r = halfCellPx / 2;
         return new int[]{px - r, py - r, px + r, py + r};
@@ -430,8 +433,8 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
             cornerDrag = CORNER_TOP_LEFT;
             return true;
         }
-        if (hitBox(bottomLeftHandleBox(), mouseX, mouseY)) {
-            cornerDrag = CORNER_BOTTOM_LEFT;
+        if (hitBox(bottomRightHandleBox(), mouseX, mouseY)) {
+            cornerDrag = CORNER_BOTTOM_RIGHT;
             return true;
         }
         return false;
@@ -628,9 +631,9 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
             }
         }
         int[] topLeft = topLeftHandleBox();
-        int[] bottomLeft = bottomLeftHandleBox();
+        int[] bottomRight = bottomRightHandleBox();
         guiGraphics.fill(topLeft[0], topLeft[1], topLeft[2], topLeft[3], HANDLE_COLOR_TOP_LEFT);
-        guiGraphics.fill(bottomLeft[0], bottomLeft[1], bottomLeft[2], bottomLeft[3], HANDLE_COLOR_BOTTOM_LEFT);
+        guiGraphics.fill(bottomRight[0], bottomRight[1], bottomRight[2], bottomRight[3], HANDLE_COLOR_BOTTOM_RIGHT);
     }
 
     //? if >=26 {
