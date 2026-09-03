@@ -103,11 +103,12 @@ public class CrazyPhonePhotoFrameRenderer extends EntityRenderer<CrazyPhonePhoto
         // The depth-wise box (side walls) now applies to every opaque placement, not just floor/ceiling -
         // "images on sides still have no profondeur" (live request, reported for wall-mounted frames).
         boolean boxed = !transparent;
+        float depthSign = outwardDepthSign(entity.attachFace());
 
         if (boxed)
-            drawBoxSides(poseStack, buffer, packedLight, drawW, drawH);
+            drawBoxSides(poseStack, buffer, packedLight, drawW, drawH, depthSign);
         if (texture != null) {
-            float z = boxed ? DEPTH : (transparent ? TRANSPARENT_FLOAT_GAP : DEPTH);
+            float z = depthSign * (boxed ? DEPTH : (transparent ? TRANSPARENT_FLOAT_GAP : DEPTH));
             drawImageQuad(poseStack, buffer, packedLight, texture.location(), drawW, drawH, z, rotation);
         }
 
@@ -150,6 +151,19 @@ public class CrazyPhonePhotoFrameRenderer extends EntityRenderer<CrazyPhonePhoto
         }
     }
 
+    // NORTH and SOUTH apply no rotation (NORTH) or a 180-about-Y rotation (SOUTH) in applyFaceTransform,
+    // neither of which flips local Z the way UP/DOWN/WEST/EAST's 90-degree rotations do - the net effect is
+    // that local +Z ends up pointing INTO the block for these two faces instead of outward, so a photo
+    // rendered at the usual +DEPTH local z landed coplanar with (or behind) the block's own face instead of
+    // a pixel in front of it ("the image is on the same z-index as the block... not one pixel in front like
+    // the other faces" - live request, confirmed live: a wall photo rendering visibly recessed into the
+    // block). Flipping the sign of every z used for these two faces corrects it without touching
+    // applyFaceTransform's own rotation (a real axis flip there isn't expressible as a proper rotation
+    // without also mirroring X or Y, which would flip the image itself).
+    private static float outwardDepthSign(Direction face) {
+        return (face == Direction.NORTH || face == Direction.SOUTH) ? -1f : 1f;
+    }
+
     // Fits an image (pixelW x pixelH) into a w x h slot without cropping, accounting for a 90/270 rotation
     // swapping the image's own effective aspect ratio (a rotated portrait photo behaves like a landscape one
     // for fitting purposes) - same "min of the two scale factors" idea as
@@ -170,22 +184,22 @@ public class CrazyPhonePhotoFrameRenderer extends EntityRenderer<CrazyPhonePhoto
     // edge; the brown only shows from an angle, on these 4 side walls. Sized to the photo's own actual
     // footprint plus a 1-pixel margin ("1 pixel margin on the front face" - live request) so the walls read
     // as a thin lip around the photo rather than starting exactly at its edge.
-    private void drawBoxSides(PoseStack poseStack, MultiBufferSource buffer, int light, float w, float h) {
+    private void drawBoxSides(PoseStack poseStack, MultiBufferSource buffer, int light, float w, float h, float depthSign) {
         VertexConsumer consumer = buffer.getBuffer(RenderType.entityCutout(GROUND_BACKING_TEXTURE));
         var pose = poseStack.last();
         float x0 = -w / 2f - BORDER_MARGIN, x1 = w / 2f + BORDER_MARGIN;
         float y0 = -h / 2f - BORDER_MARGIN, y1 = h / 2f + BORDER_MARGIN;
-        sideQuad(consumer, pose, x0, y0, x1, y0, light); // "south" edge of the box footprint
-        sideQuad(consumer, pose, x1, y0, x1, y1, light); // "east"
-        sideQuad(consumer, pose, x1, y1, x0, y1, light); // "north"
-        sideQuad(consumer, pose, x0, y1, x0, y0, light); // "west"
+        sideQuad(consumer, pose, x0, y0, x1, y0, depthSign, light); // "south" edge of the box footprint
+        sideQuad(consumer, pose, x1, y0, x1, y1, depthSign, light); // "east"
+        sideQuad(consumer, pose, x1, y1, x0, y1, depthSign, light); // "north"
+        sideQuad(consumer, pose, x0, y1, x0, y0, depthSign, light); // "west"
     }
 
-    private void sideQuad(VertexConsumer consumer, PoseStack.Pose pose, float xa, float ya, float xb, float yb, int light) {
-        vertex(consumer, pose, xa, ya, DEPTH, 0f, 0f, light);
+    private void sideQuad(VertexConsumer consumer, PoseStack.Pose pose, float xa, float ya, float xb, float yb, float depthSign, int light) {
+        vertex(consumer, pose, xa, ya, depthSign * DEPTH, 0f, 0f, light);
         vertex(consumer, pose, xa, ya, 0f, 0f, 1f, light);
         vertex(consumer, pose, xb, yb, 0f, 1f, 1f, light);
-        vertex(consumer, pose, xb, yb, DEPTH, 1f, 0f, light);
+        vertex(consumer, pose, xb, yb, depthSign * DEPTH, 1f, 0f, light);
     }
 
     private void drawImageQuad(PoseStack poseStack, MultiBufferSource buffer, int light, /*$ res_loc {*/ResourceLocation/*$}*/ texture, float w, float h, float z, int rotation) {
@@ -297,14 +311,15 @@ public class CrazyPhonePhotoFrameRenderer extends EntityRenderer<CrazyPhonePhoto
         // The depth-wise box (side walls) now applies to every opaque placement, not just floor/ceiling -
         // "images on sides still have no profondeur" (live request, reported for wall-mounted frames).
         boolean boxed = !transparent;
+        float depthSign = outwardDepthSign(state.face);
 
         if (boxed) {
             float finalW = drawW, finalH = drawH;
             collector.submitCustomGeometry(poseStack, /^$ render_type_import {^/RenderType/^$}^/.entityCutout(GROUND_BACKING_TEXTURE),
-                    (pose, consumer) -> drawBoxSides(consumer, pose, finalW, finalH, state.lightCoords));
+                    (pose, consumer) -> drawBoxSides(consumer, pose, finalW, finalH, depthSign, state.lightCoords));
         }
         if (texture != null) {
-            float z = boxed ? DEPTH : (transparent ? TRANSPARENT_FLOAT_GAP : DEPTH);
+            float z = depthSign * (boxed ? DEPTH : (transparent ? TRANSPARENT_FLOAT_GAP : DEPTH));
             float finalDrawW = drawW, finalDrawH = drawH;
             int rotation = state.rotation;
             collector.submitCustomGeometry(poseStack, /^$ render_type_import {^/RenderType/^$}^/.entityCutout(texture.location()),
@@ -343,6 +358,13 @@ public class CrazyPhonePhotoFrameRenderer extends EntityRenderer<CrazyPhonePhoto
         }
     }
 
+    // NORTH and SOUTH apply no rotation (NORTH) or a 180-about-Y rotation (SOUTH) in applyFaceTransform,
+    // neither of which flips local Z the way UP/DOWN/WEST/EAST's 90-degree rotations do - see the <26
+    // branch's own comment on this same method for the full explanation.
+    private static float outwardDepthSign(Direction face) {
+        return (face == Direction.NORTH || face == Direction.SOUTH) ? -1f : 1f;
+    }
+
     private static float[] fitRotated(float w, float h, int pixelW, int pixelH, int rotation) {
         boolean swapped = (rotation & 1) != 0;
         float aspect = (swapped ? pixelH : pixelW) / (float) (swapped ? pixelW : pixelH);
@@ -351,20 +373,20 @@ public class CrazyPhonePhotoFrameRenderer extends EntityRenderer<CrazyPhonePhoto
         return new float[]{h * aspect, h};
     }
 
-    private static void drawBoxSides(VertexConsumer consumer, PoseStack.Pose pose, float w, float h, int light) {
+    private static void drawBoxSides(VertexConsumer consumer, PoseStack.Pose pose, float w, float h, float depthSign, int light) {
         float x0 = -w / 2f - BORDER_MARGIN, x1 = w / 2f + BORDER_MARGIN;
         float y0 = -h / 2f - BORDER_MARGIN, y1 = h / 2f + BORDER_MARGIN;
-        sideQuad(consumer, pose, x0, y0, x1, y0, light);
-        sideQuad(consumer, pose, x1, y0, x1, y1, light);
-        sideQuad(consumer, pose, x1, y1, x0, y1, light);
-        sideQuad(consumer, pose, x0, y1, x0, y0, light);
+        sideQuad(consumer, pose, x0, y0, x1, y0, depthSign, light);
+        sideQuad(consumer, pose, x1, y0, x1, y1, depthSign, light);
+        sideQuad(consumer, pose, x1, y1, x0, y1, depthSign, light);
+        sideQuad(consumer, pose, x0, y1, x0, y0, depthSign, light);
     }
 
-    private static void sideQuad(VertexConsumer consumer, PoseStack.Pose pose, float xa, float ya, float xb, float yb, int light) {
-        vertex(consumer, pose, xa, ya, DEPTH, 0f, 0f, light);
+    private static void sideQuad(VertexConsumer consumer, PoseStack.Pose pose, float xa, float ya, float xb, float yb, float depthSign, int light) {
+        vertex(consumer, pose, xa, ya, depthSign * DEPTH, 0f, 0f, light);
         vertex(consumer, pose, xa, ya, 0f, 0f, 1f, light);
         vertex(consumer, pose, xb, yb, 0f, 1f, 1f, light);
-        vertex(consumer, pose, xb, yb, DEPTH, 1f, 0f, light);
+        vertex(consumer, pose, xb, yb, depthSign * DEPTH, 1f, 0f, light);
     }
 
     private static void drawImageQuad(VertexConsumer consumer, PoseStack.Pose pose, float w, float h, float z, int rotation, int light) {

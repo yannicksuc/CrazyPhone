@@ -316,6 +316,24 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
         builder.define(DATA_ROTATION, 0);
     }
 
+    // Vanilla's own Entity#onSyncedDataUpdated(EntityDataAccessor) is how Entity itself keeps its bounding
+    // box in sync with a changed DATA_POSE (confirmed against the real decompiled Entity.java on both <26
+    // and >=26 - same method, same idea) - this mirrors that for every accessor this entity's own bounding
+    // box actually depends on. This is what guarantees the box gets recomputed the MOMENT real values
+    // arrive, on both sides, regardless of exactly when tryPlace()'s own explicit refreshDimensions() call
+    // or the renderer's per-frame one happen to run relative to entityData actually being populated - a
+    // client reconstructing this entity from a spawn packet briefly has only DEFAULT synced values
+    // (including the EntityType's own raw 1x1 dimensions from ModEntities.java's builder) until the
+    // separate entity-data sync packet lands moments later; without this hook the box could stay wrong
+    // until something else happened to call refreshDimensions() again.
+    @Override
+    public void onSyncedDataUpdated(EntityDataAccessor<?> accessor) {
+        super.onSyncedDataUpdated(accessor);
+        if (accessor.equals(DATA_NEG_U) || accessor.equals(DATA_POS_U) || accessor.equals(DATA_NEG_V)
+                || accessor.equals(DATA_POS_V) || accessor.equals(DATA_FACE))
+            this.refreshDimensions();
+    }
+
     @Override
     public void tick() {
         // Wall/ceiling/floor decor, not a physics object - no gravity, no drift, matches HangingEntity's

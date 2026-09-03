@@ -245,6 +245,22 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
     }
     *///?}
 
+    // ContainerData isn't guaranteed populated the instant this screen opens - the real values arrive via a
+    // separate sync packet a moment later, so reading menu.negUUnits() etc only once at init() (or in either
+    // constructor) can catch the client's still-zeroed placeholder ContainerData and show "0x0" until the
+    // screen is closed and reopened ("ça m'affiche 0x0 indépendamment de la taille enregistrée" - live
+    // request). Re-syncing every frame until the user actually starts dragging means the FIRST frame
+    // rendered after that sync packet lands self-corrects automatically, and also keeps satisfying "Grid
+    // should keep in memory the size and display it by default" if the size changes from elsewhere.
+    private void syncFromMenuIfIdle() {
+        if (dragging)
+            return;
+        previewNegU = unitsToBlocks(menu.negUUnits());
+        previewPosU = unitsToBlocks(menu.posUUnits());
+        previewNegV = unitsToBlocks(menu.negVUnits());
+        previewPosV = unitsToBlocks(menu.posVUnits());
+    }
+
     private Component sizeLabel() {
         int widthBlocks = previewNegU + previewPosU, heightBlocks = previewNegV + previewPosV;
         return Component.translatable("gui.crazyphone.photo_frame_resize.size", widthBlocks, heightBlocks);
@@ -253,6 +269,7 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
     //? if >=26 {
     /*@Override
     public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
+        syncFromMenuIfIdle();
         guiGraphics.fill(leftPos, topPos, leftPos + imageWidth, topPos + imageHeight, 0xE0101010);
         guiGraphics.centeredText(this.font, this.title, leftPos + imageWidth / 2, topPos + 8, 0xA0A0A0);
         guiGraphics.centeredText(this.font, sizeLabel(), leftPos + imageWidth / 2, topPos + imageHeight - 16, 0xFFFFFF);
@@ -272,6 +289,7 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
     *///? } else {
     @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+        syncFromMenuIfIdle();
         this./*$ gui_render_transparent_background {*/renderTransparentBackground/*$}*/(guiGraphics);
         guiGraphics.fill(leftPos, topPos, leftPos + imageWidth, topPos + imageHeight, 0xE0101010);
         guiGraphics.drawCenteredString(this.font, this.title, leftPos + imageWidth / 2, topPos + 8, 0xA0A0A0);
