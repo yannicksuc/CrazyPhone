@@ -1,12 +1,36 @@
 package fr.lordfinn.crazyphone.client.render;
 
 /**
- * Draws a {@link CrazyPhonePhotoFrameEntity} - a flat, aspect-fit (letterboxed, never cropped) image quad
- * sitting flush against whichever face it's attached to, plus (floor/ceiling placements only, per the live
- * feature request) a brown border+backing behind it, matching the "rug-like" ground-placed look requested -
- * wall-mounted frames stay borderless. Hand-rolled VertexConsumer quads, same low-level technique
- * CrazyPhonePhotoItemRenderer already uses for its own Polaroid-card frame (see that class's own doc
- * comment) - no baked model, this entity has no block/item model of its own at all.
+ * Draws a {@link CrazyPhonePhotoFrameEntity}. Two looks, chosen per-photo by whether its texture has
+ * meaningful transparency (see {@link FabricPictureCache.CachedTexture#hasTransparency()}):
+ * - Opaque photo on a floor/ceiling placement: the photo itself covers the ENTIRE top face edge to edge (no
+ *   separate top/background quad at all - a straight-down view sees only the photo, "je ne veux pas de
+ *   bordure visible depuis le dessus" - live request), sized to the photo's own actual displayed rectangle
+ *   (aspect-fit within the resize slot), not the full slot - "seulement la taille de l'image réelle compte"
+ *   (live request). Brown only shows on the four SIDE walls (see {@link #drawBoxSides}), DEPTH tall
+ *   ({@link CrazyPhonePhotoFrameEntity#DEPTH}) and sized to the photo's own footprint plus a 1-pixel margin -
+ *   this is the actual depth-wise border on the north/south/east/west sides the live request asked for,
+ *   replacing an earlier flat 2D border AND an earlier version's coplanar top background quad that z-fought
+ *   with the photo.
+ * - Everything else (opaque wall placement, or ANY photo with transparency, on ANY face): a plain thin
+ *   double-sided card, no border/background at all for the transparent case - a transparent photo instead
+ *   floats a small gap off the face ({@link #TRANSPARENT_FLOAT_GAP}) rather than sitting in the box, so its
+ *   see-through parts don't reveal the box's inside.
+ *
+ * Rotation ({@link CrazyPhonePhotoFrameEntity#rotation()}) is a pure visual spin of the photo's pixel
+ * content within its existing slot rectangle - NOT a swap of which world axis width/height bind to (that
+ * would cascade into the bounding box, the resize grid GUI, and the save format for comparatively little
+ * benefit over what "add a rotate button" actually asked for). See {@link #uvForCorner} for how a 90°/270°
+ * rotation both re-maps which texture edge lands on which screen edge AND swaps the effective aspect ratio
+ * used to fit the image into its slot, so a rotated portrait photo still fits without stretching.
+ *
+ * Every frame, once a photo's texture has resolved, this pushes the REAL aspect-fit displayed size back
+ * onto the entity ({@link CrazyPhonePhotoFrameEntity#updateDisplayBounds}) so its hitbox can shrink to match
+ * the visible picture - see that method's own doc comment for why this is safe to do purely client-side.
+ *
+ * Hand-rolled VertexConsumer quads, same low-level technique CrazyPhonePhotoItemRenderer already uses for
+ * its own Polaroid-card frame (see that class's own doc comment) - no baked model, this entity has no
+ * block/item model of its own at all.
  *
  * >=26 branch is unproven against a real decompile the way every other >=26 rendering piece in this codebase
  * was (see PORTING-26x.md's own established practice) - this project has never had a custom entity before
@@ -36,11 +60,13 @@ public class CrazyPhonePhotoFrameRenderer extends EntityRenderer<CrazyPhonePhoto
     private static final /*$ res_loc {*/ResourceLocation/*$}*/ GROUND_BACKING_TEXTURE =
             Crazyphone.parseId("crazyphone:textures/entity/photo_frame_ground_backing.png");
     private static final float DEPTH = (float) CrazyPhonePhotoFrameEntity.DEPTH;
-    // How far the brown ground backing extends past the photo's own edge on every side, in blocks -
-    // "un fond marron" per the live request, sized to read as a rug/mat under the photo rather than a
-    // tight picture-frame border (that treatment is wall-only, per the same request, and this class never
-    // draws it for wall placements at all - see render()'s own isFloorOrCeiling() branch).
-    private static final float GROUND_BACKING_MARGIN = 1f / 16f;
+    // How far the brown border/backing extends past the photo's own actual edge on every side, in blocks -
+    // sized to read as a thin mat around the photo, not a wide picture-frame border.
+    private static final float BORDER_MARGIN = 1f / 16f;
+    // "reculer l'image de 0.75 pixel pour que ça flotte à .25 pixel au dessus de la face visée" - a
+    // transparent photo skips the box entirely and just floats this far off the face instead (out of the
+    // full 1-pixel/DEPTH budget, only a quarter pixel of it is used as a gap).
+    private static final float TRANSPARENT_FLOAT_GAP = DEPTH * 0.25f;
 
     public CrazyPhonePhotoFrameRenderer(EntityRendererProvider.Context context) {
         super(context);
@@ -58,26 +84,25 @@ public class CrazyPhonePhotoFrameRenderer extends EntityRenderer<CrazyPhonePhoto
 
         float w = entity.widthBlocks();
         float h = entity.heightBlocks();
+        int rotation = entity.rotation();
         FabricPictureCache.CachedTexture texture = FabricPictureCache.getOrRequest(entity.photoId(), PhotoResolution.FULL);
         float drawW = w, drawH = h;
         if (texture != null) {
-            float aspect = texture.width() / (float) texture.height();
-            // Fit within w x h without cropping - same "min of the two scale factors" idea as
-            // CrazyPhonePhotoViewerScreen#drawFitted, just against a block-sized box instead of a GUI one.
-            if (w / aspect <= h) {
-                drawW = w;
-                drawH = w / aspect;
-            } else {
-                drawH = h;
-                drawW = h * aspect;
-            }
+            float[] fit = fitRotated(w, h, texture.width(), texture.height(), rotation);
+            drawW = fit[0];
+            drawH = fit[1];
+            entity.updateDisplayBounds(drawW, drawH);
         }
 
-        if (entity.isFloorOrCeiling())
-            drawGroundBacking(poseStack, buffer, packedLight, w, h);
+        boolean transparent = texture != null && texture.hasTransparency();
+        boolean boxed = entity.isFloorOrCeiling() && !transparent;
 
-        if (texture != null)
-            drawQuad(poseStack, buffer, packedLight, texture.location(), drawW, drawH);
+        if (boxed)
+            drawBoxSides(poseStack, buffer, packedLight, drawW, drawH);
+        if (texture != null) {
+            float z = boxed ? DEPTH : (transparent ? TRANSPARENT_FLOAT_GAP : DEPTH);
+            drawImageQuad(poseStack, buffer, packedLight, texture.location(), drawW, drawH, z, rotation);
+        }
 
         poseStack.popPose();
         super.render(entity, entityYaw, partialTicks, poseStack, buffer, packedLight);
@@ -87,7 +112,9 @@ public class CrazyPhonePhotoFrameRenderer extends EntityRenderer<CrazyPhonePhoto
     // see CrazyPhonePhotoFrameEntity's own tryPlace, which sets it there) to the actual face plane, facing
     // outward along that face's normal. Direction has no built-in "orient a flat quad's front face this
     // way" helper (its own toYRot()/toXRot() are for entity look-direction, not this) - explicit per-face
-    // cases instead, same shape HangingEntity's own vanilla renderer uses internally.
+    // cases instead, same shape HangingEntity's own vanilla renderer uses internally. After this, local
+    // z=0 is exactly the block face and local +z points outward (away from the block) - both drawImageQuad
+    // and the box helpers below build everything in that local space.
     private void applyFaceTransform(CrazyPhonePhotoFrameEntity entity, PoseStack poseStack) {
         Direction face = entity.attachFace();
         double faceOffset = entity.computeFaceOffset(entity.level());
@@ -116,34 +143,68 @@ public class CrazyPhonePhotoFrameRenderer extends EntityRenderer<CrazyPhonePhoto
         }
     }
 
-    private void drawQuad(PoseStack poseStack, MultiBufferSource buffer, int light, /*$ res_loc {*/ResourceLocation/*$}*/ texture, float w, float h) {
+    // Fits an image (pixelW x pixelH) into a w x h slot without cropping, accounting for a 90/270 rotation
+    // swapping the image's own effective aspect ratio (a rotated portrait photo behaves like a landscape one
+    // for fitting purposes) - same "min of the two scale factors" idea as
+    // CrazyPhonePhotoViewerScreen#drawFitted, just rotation-aware. Returns {drawW, drawH}.
+    private static float[] fitRotated(float w, float h, int pixelW, int pixelH, int rotation) {
+        boolean swapped = (rotation & 1) != 0;
+        float aspect = (swapped ? pixelH : pixelW) / (float) (swapped ? pixelW : pixelH);
+        if (w / aspect <= h)
+            return new float[]{w, w / aspect};
+        return new float[]{h * aspect, h};
+    }
+
+    // The four side walls of the border box, DEPTH tall, running from the block face (z=0) out to the
+    // photo's own resting surface (z=DEPTH) - this is the ONLY brown geometry drawn for a boxed frame; there
+    // is deliberately no separate top/background quad anymore (an earlier version drew one directly under
+    // the photo quad, both coplanar at z=DEPTH, which z-fought with the photo - "attention... les deux
+    // texture clash" - live request) - looking straight down at the frame you see only the photo, edge to
+    // edge; the brown only shows from an angle, on these 4 side walls. Sized to the photo's own actual
+    // footprint plus a 1-pixel margin ("1 pixel margin on the front face" - live request) so the walls read
+    // as a thin lip around the photo rather than starting exactly at its edge.
+    private void drawBoxSides(PoseStack poseStack, MultiBufferSource buffer, int light, float w, float h) {
+        VertexConsumer consumer = buffer.getBuffer(RenderType.entityCutout(GROUND_BACKING_TEXTURE));
+        var pose = poseStack.last();
+        float x0 = -w / 2f - BORDER_MARGIN, x1 = w / 2f + BORDER_MARGIN;
+        float y0 = -h / 2f - BORDER_MARGIN, y1 = h / 2f + BORDER_MARGIN;
+        sideQuad(consumer, pose, x0, y0, x1, y0, light); // "south" edge of the box footprint
+        sideQuad(consumer, pose, x1, y0, x1, y1, light); // "east"
+        sideQuad(consumer, pose, x1, y1, x0, y1, light); // "north"
+        sideQuad(consumer, pose, x0, y1, x0, y0, light); // "west"
+    }
+
+    private void sideQuad(VertexConsumer consumer, PoseStack.Pose pose, float xa, float ya, float xb, float yb, int light) {
+        vertex(consumer, pose, xa, ya, DEPTH, 0f, 0f, light);
+        vertex(consumer, pose, xa, ya, 0f, 0f, 1f, light);
+        vertex(consumer, pose, xb, yb, 0f, 1f, 1f, light);
+        vertex(consumer, pose, xb, yb, DEPTH, 1f, 0f, light);
+    }
+
+    private void drawImageQuad(PoseStack poseStack, MultiBufferSource buffer, int light, /*$ res_loc {*/ResourceLocation/*$}*/ texture, float w, float h, float z, int rotation) {
         VertexConsumer consumer = buffer.getBuffer(RenderType.entityCutout(texture));
         var pose = poseStack.last();
         float x0 = -w / 2f, x1 = w / 2f, y0 = -h / 2f, y1 = h / 2f;
-        quad(consumer, pose, x0, y1, x1, y1, x1, y0, x0, y0, 0f, 0f, 1f, 1f, DEPTH, light);
+        float[] uv0 = uvForCorner(0, rotation), uv1 = uvForCorner(1, rotation), uv2 = uvForCorner(2, rotation), uv3 = uvForCorner(3, rotation);
+        // Front (outward) face, then back face at the block-flush side so the card reads correctly from
+        // both directions (matches this entity's own DEPTH-thick hitbox: z=0 at the face, z=DEPTH outward).
+        vertex(consumer, pose, x0, y1, z, uv0[0], uv0[1], light);
+        vertex(consumer, pose, x0, y0, z, uv1[0], uv1[1], light);
+        vertex(consumer, pose, x1, y0, z, uv2[0], uv2[1], light);
+        vertex(consumer, pose, x1, y1, z, uv3[0], uv3[1], light);
+        vertex(consumer, pose, x1, y1, 0f, uv3[0], uv3[1], light);
+        vertex(consumer, pose, x1, y0, 0f, uv2[0], uv2[1], light);
+        vertex(consumer, pose, x0, y0, 0f, uv1[0], uv1[1], light);
+        vertex(consumer, pose, x0, y1, 0f, uv0[0], uv0[1], light);
     }
 
-    private void drawGroundBacking(PoseStack poseStack, MultiBufferSource buffer, int light, float w, float h) {
-        VertexConsumer consumer = buffer.getBuffer(RenderType.entityCutout(GROUND_BACKING_TEXTURE));
-        var pose = poseStack.last();
-        float x0 = -w / 2f - GROUND_BACKING_MARGIN, x1 = w / 2f + GROUND_BACKING_MARGIN;
-        float y0 = -h / 2f - GROUND_BACKING_MARGIN, y1 = h / 2f + GROUND_BACKING_MARGIN;
-        quad(consumer, pose, x0, y1, x1, y1, x1, y0, x0, y0, 0f, 0f, 1f, 1f, DEPTH * 0.5f, light);
-    }
-
-    // One double-sided flat quad, both faces at +/-z (a thin "card" rather than a true 1-pixel-thick box -
-    // cheap enough for a decorative entity, and matches how CrazyPhonePhotoItemRenderer's own hand-rolled
-    // quads work for the exact same reason).
-    private void quad(VertexConsumer consumer, PoseStack.Pose pose, float x0, float y0, float x1, float y1,
-                       float x2, float y2, float x3, float y3, float u0, float v0, float u1, float v1, float z, int light) {
-        vertex(consumer, pose, x0, y0, z, u0, v0, light);
-        vertex(consumer, pose, x3, y3, z, u0, v1, light);
-        vertex(consumer, pose, x2, y2, z, u1, v1, light);
-        vertex(consumer, pose, x1, y1, z, u1, v0, light);
-        vertex(consumer, pose, x1, y1, -z, u1, v0, light);
-        vertex(consumer, pose, x2, y2, -z, u1, v1, light);
-        vertex(consumer, pose, x3, y3, -z, u0, v1, light);
-        vertex(consumer, pose, x0, y0, -z, u0, v0, light);
+    // Corner order: 0=top-left, 1=bottom-left, 2=bottom-right, 3=top-right (screen-space, front face).
+    // Cycling which texture corner (same order) lands on which screen corner is what actually rotates the
+    // pixel content by rotation*90° clockwise - the aspect swap in fitRotated() above is what keeps the
+    // overall rectangle the right shape for that rotated content to not look stretched.
+    private static float[] uvForCorner(int corner, int rotation) {
+        float[][] base = {{0f, 0f}, {0f, 1f}, {1f, 1f}, {1f, 0f}};
+        return base[Math.floorMod(corner - rotation, 4)];
     }
 
     private void vertex(VertexConsumer consumer, PoseStack.Pose pose, float x, float y, float z, float u, float v, int light) {
@@ -177,7 +238,8 @@ public class CrazyPhonePhotoFrameRenderer extends EntityRenderer<CrazyPhonePhoto
     private static final Identifier GROUND_BACKING_TEXTURE =
             Crazyphone.parseId("crazyphone:textures/entity/photo_frame_ground_backing.png");
     private static final float DEPTH = (float) CrazyPhonePhotoFrameEntity.DEPTH;
-    private static final float GROUND_BACKING_MARGIN = 1f / 16f;
+    private static final float BORDER_MARGIN = 1f / 16f;
+    private static final float TRANSPARENT_FLOAT_GAP = DEPTH * 0.25f;
 
     public CrazyPhonePhotoFrameRenderer(EntityRendererProvider.Context context) {
         super(context);
@@ -187,8 +249,10 @@ public class CrazyPhonePhotoFrameRenderer extends EntityRenderer<CrazyPhonePhoto
         public Direction face = Direction.NORTH;
         public double faceOffset;
         public float width = 1f, height = 1f;
+        public int rotation;
         public boolean floorOrCeiling;
         public java.util.UUID photoId;
+        public CrazyPhonePhotoFrameEntity entity;
     }
 
     @Override
@@ -203,8 +267,10 @@ public class CrazyPhonePhotoFrameRenderer extends EntityRenderer<CrazyPhonePhoto
         state.faceOffset = entity.computeFaceOffset(entity.level());
         state.width = entity.widthBlocks();
         state.height = entity.heightBlocks();
+        state.rotation = entity.rotation();
         state.floorOrCeiling = entity.isFloorOrCeiling();
         state.photoId = entity.photoId();
+        state.entity = entity;
     }
 
     @Override
@@ -215,23 +281,26 @@ public class CrazyPhonePhotoFrameRenderer extends EntityRenderer<CrazyPhonePhoto
         FabricPictureCache.CachedTexture texture = FabricPictureCache.getOrRequest(state.photoId, PhotoResolution.FULL);
         float drawW = state.width, drawH = state.height;
         if (texture != null) {
-            float aspect = texture.width() / (float) texture.height();
-            if (state.width / aspect <= state.height) {
-                drawW = state.width;
-                drawH = state.width / aspect;
-            } else {
-                drawH = state.height;
-                drawW = state.height * aspect;
-            }
+            float[] fit = fitRotated(state.width, state.height, texture.width(), texture.height(), state.rotation);
+            drawW = fit[0];
+            drawH = fit[1];
+            state.entity.updateDisplayBounds(drawW, drawH);
         }
 
-        if (state.floorOrCeiling)
+        boolean transparent = texture != null && texture.hasTransparency();
+        boolean boxed = state.floorOrCeiling && !transparent;
+
+        if (boxed) {
+            float finalW = drawW, finalH = drawH;
             collector.submitCustomGeometry(poseStack, /^$ render_type_import {^/RenderType/^$}^/.entityCutout(GROUND_BACKING_TEXTURE),
-                    (pose, consumer) -> quad(consumer, pose, state.width, state.height, GROUND_BACKING_MARGIN, DEPTH * 0.5f, state.lightCoords));
+                    (pose, consumer) -> drawBoxSides(consumer, pose, finalW, finalH, state.lightCoords));
+        }
         if (texture != null) {
+            float z = boxed ? DEPTH : (transparent ? TRANSPARENT_FLOAT_GAP : DEPTH);
             float finalDrawW = drawW, finalDrawH = drawH;
+            int rotation = state.rotation;
             collector.submitCustomGeometry(poseStack, /^$ render_type_import {^/RenderType/^$}^/.entityCutout(texture.location()),
-                    (pose, consumer) -> quad(consumer, pose, finalDrawW, finalDrawH, 0f, DEPTH, state.lightCoords));
+                    (pose, consumer) -> drawImageQuad(consumer, pose, finalDrawW, finalDrawH, z, rotation, state.lightCoords));
         }
 
         poseStack.popPose();
@@ -266,19 +335,49 @@ public class CrazyPhonePhotoFrameRenderer extends EntityRenderer<CrazyPhonePhoto
         }
     }
 
-    private void quad(VertexConsumer consumer, PoseStack.Pose pose, float w, float h, float margin, float z, int light) {
-        float x0 = -w / 2f - margin, x1 = w / 2f + margin, y0 = -h / 2f - margin, y1 = h / 2f + margin;
-        vertex(consumer, pose, x0, y1, z, 0f, 0f, light);
-        vertex(consumer, pose, x0, y0, z, 0f, 1f, light);
-        vertex(consumer, pose, x1, y0, z, 1f, 1f, light);
-        vertex(consumer, pose, x1, y1, z, 1f, 0f, light);
-        vertex(consumer, pose, x1, y1, -z, 1f, 0f, light);
-        vertex(consumer, pose, x1, y0, -z, 1f, 1f, light);
-        vertex(consumer, pose, x0, y0, -z, 0f, 1f, light);
-        vertex(consumer, pose, x0, y1, -z, 0f, 0f, light);
+    private static float[] fitRotated(float w, float h, int pixelW, int pixelH, int rotation) {
+        boolean swapped = (rotation & 1) != 0;
+        float aspect = (swapped ? pixelH : pixelW) / (float) (swapped ? pixelW : pixelH);
+        if (w / aspect <= h)
+            return new float[]{w, w / aspect};
+        return new float[]{h * aspect, h};
     }
 
-    private void vertex(VertexConsumer consumer, PoseStack.Pose pose, float x, float y, float z, float u, float v, int light) {
+    private static void drawBoxSides(VertexConsumer consumer, PoseStack.Pose pose, float w, float h, int light) {
+        float x0 = -w / 2f - BORDER_MARGIN, x1 = w / 2f + BORDER_MARGIN;
+        float y0 = -h / 2f - BORDER_MARGIN, y1 = h / 2f + BORDER_MARGIN;
+        sideQuad(consumer, pose, x0, y0, x1, y0, light);
+        sideQuad(consumer, pose, x1, y0, x1, y1, light);
+        sideQuad(consumer, pose, x1, y1, x0, y1, light);
+        sideQuad(consumer, pose, x0, y1, x0, y0, light);
+    }
+
+    private static void sideQuad(VertexConsumer consumer, PoseStack.Pose pose, float xa, float ya, float xb, float yb, int light) {
+        vertex(consumer, pose, xa, ya, DEPTH, 0f, 0f, light);
+        vertex(consumer, pose, xa, ya, 0f, 0f, 1f, light);
+        vertex(consumer, pose, xb, yb, 0f, 1f, 1f, light);
+        vertex(consumer, pose, xb, yb, DEPTH, 1f, 0f, light);
+    }
+
+    private static void drawImageQuad(VertexConsumer consumer, PoseStack.Pose pose, float w, float h, float z, int rotation, int light) {
+        float x0 = -w / 2f, x1 = w / 2f, y0 = -h / 2f, y1 = h / 2f;
+        float[] uv0 = uvForCorner(0, rotation), uv1 = uvForCorner(1, rotation), uv2 = uvForCorner(2, rotation), uv3 = uvForCorner(3, rotation);
+        vertex(consumer, pose, x0, y1, z, uv0[0], uv0[1], light);
+        vertex(consumer, pose, x0, y0, z, uv1[0], uv1[1], light);
+        vertex(consumer, pose, x1, y0, z, uv2[0], uv2[1], light);
+        vertex(consumer, pose, x1, y1, z, uv3[0], uv3[1], light);
+        vertex(consumer, pose, x1, y1, 0f, uv3[0], uv3[1], light);
+        vertex(consumer, pose, x1, y0, 0f, uv2[0], uv2[1], light);
+        vertex(consumer, pose, x0, y0, 0f, uv1[0], uv1[1], light);
+        vertex(consumer, pose, x0, y1, 0f, uv0[0], uv0[1], light);
+    }
+
+    private static float[] uvForCorner(int corner, int rotation) {
+        float[][] base = {{0f, 0f}, {0f, 1f}, {1f, 1f}, {1f, 0f}};
+        return base[Math.floorMod(corner - rotation, 4)];
+    }
+
+    private static void vertex(VertexConsumer consumer, PoseStack.Pose pose, float x, float y, float z, float u, float v, int light) {
         consumer.addVertex(pose, x, y, z)
                 .setColor(255, 255, 255, 255)
                 .setUv(u, v)

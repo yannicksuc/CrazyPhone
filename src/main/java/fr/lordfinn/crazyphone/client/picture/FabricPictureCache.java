@@ -43,7 +43,7 @@ public final class FabricPictureCache {
     // there's no way to tell request-never-sent / no-response / decode-failure apart without this. Remove
     // once the viewer bug is confirmed fixed live.
     private static final Logger LOGGER = LoggerFactory.getLogger("crazyphone-picture-debug");
-    public record CachedTexture(/*$ res_loc {*/ResourceLocation/*$}*/ location, int width, int height) {
+    public record CachedTexture(/*$ res_loc {*/ResourceLocation/*$}*/ location, int width, int height, boolean hasTransparency) {
     }
 
     private record Key(UUID photoId, PhotoResolution resolution) {
@@ -156,7 +156,7 @@ public final class FabricPictureCache {
             DynamicTexture texture = new DynamicTexture(image);
             /*$ res_loc {*/ResourceLocation/*$}*/ id = Minecraft.getInstance().getTextureManager().register(
                     "crazyphone-picture-" + key.resolution().name().toLowerCase(java.util.Locale.ROOT) + "-" + key.photoId(), texture);
-            RESOLVED.put(key, new CachedTexture(id, image.getWidth(), image.getHeight()));
+            RESOLVED.put(key, new CachedTexture(id, image.getWidth(), image.getHeight(), hasTransparency(image)));
             LOGGER.info("Decoded {} photo {} as {}x{}", key.resolution(), key.photoId(), image.getWidth(), image.getHeight());
         } catch (Exception e) {
             LOGGER.warn("Failed to decode {} photo {}", key.resolution(), key.photoId(), e);
@@ -175,7 +175,7 @@ public final class FabricPictureCache {
                     "crazyphone-picture-" + key.resolution().name().toLowerCase(java.util.Locale.ROOT) + "-" + key.photoId());
             DynamicTexture texture = new DynamicTexture(id::toString, image);
             Minecraft.getInstance().getTextureManager().register(id, texture);
-            RESOLVED.put(key, new CachedTexture(id, image.getWidth(), image.getHeight()));
+            RESOLVED.put(key, new CachedTexture(id, image.getWidth(), image.getHeight(), hasTransparency(image)));
             LOGGER.info("Decoded {} photo {} as {}x{}", key.resolution(), key.photoId(), image.getWidth(), image.getHeight());
         } catch (Exception e) {
             LOGGER.warn("Failed to decode {} photo {}", key.resolution(), key.photoId(), e);
@@ -199,6 +199,44 @@ public final class FabricPictureCache {
                 LOGGER.warn("Failed to write {} photo {} to disk cache", key.resolution(), key.photoId(), e);
             }
         }, DISK_IO);
+    }
+
+    // Scanned once at decode time (not per-frame) so the photo frame renderer can cheaply branch on it every
+    // draw call - a fully-opaque photo gets the solid brown border/backing treatment, one with any
+    // transparent pixel skips it and floats just off the surface instead (see
+    // CrazyPhonePhotoFrameRenderer's own doc comment for why).
+    // Deliberately tolerant, not "any single pixel below 255" - a real in-game capture is confirmed always
+    // fully opaque (Screenshot.takeScreenshot reads straight from the render target's color texture, and
+    // vanilla's own blend funcs keep that alpha pinned at 255 for ordinary gameplay - investigated live, not
+    // assumed), but the thumbnail/full downscale step (NativeImage#resizeSubRectTo, a real filtered resize
+    // via STBImageResize, not the nearest-neighbor its own comment claims) can leave a handful of EDGE pixels
+    // a shade under 255 from interpolation rounding alone - an earlier version treated ANY such pixel as
+    // "this photo has transparency" and silently lost the floor/ceiling border on ordinary opaque photos.
+    // Both a lower alpha bound and a minimum affected-pixel count are required before treating a photo as
+    // genuinely transparent, so a few stray rounding pixels can't flip the whole render mode.
+    private static final int TRANSPARENCY_ALPHA_THRESHOLD = 240;
+
+    private static boolean hasTransparency(NativeImage image) {
+        // NativeImage.read(InputStream) (both decode branches above) always forces Format.RGBA - confirmed
+        // against the real decompiled NativeImage.java - so reading a packed pixel is always safe here, no
+        // format check needed first. >=26 renamed getPixelRGBA(x,y) to getPixel(x,y) (still alpha in the top
+        // byte of the packed int, via ARGB.fromABGR internally) - confirmed against the real decompiled
+        // 26.1.2 NativeImage.java, not guessed.
+        int totalPixels = image.getWidth() * image.getHeight();
+        int minAffectedPixels = Math.max(16, totalPixels / 100);
+        int affected = 0;
+        for (int y = 0; y < image.getHeight(); y++) {
+            for (int x = 0; x < image.getWidth(); x++) {
+                //? if <26 {
+                int alpha = image.getPixelRGBA(x, y) >>> 24 & 0xFF;
+                //? } else {
+                /*int alpha = image.getPixel(x, y) >>> 24 & 0xFF;
+                *///?}
+                if (alpha < TRANSPARENCY_ALPHA_THRESHOLD && ++affected >= minAffectedPixels)
+                    return true;
+            }
+        }
+        return false;
     }
 
     private static Path cacheFile(Key key) {

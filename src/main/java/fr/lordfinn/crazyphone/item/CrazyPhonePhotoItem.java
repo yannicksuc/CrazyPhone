@@ -83,7 +83,7 @@ public class CrazyPhonePhotoItem extends Item {
         int widthUnits = frameData != null ? frameData.widthUnits() : fr.lordfinn.crazyphone.entity.CrazyPhonePhotoFrameEntity.DEFAULT_SIZE_UNITS;
         int heightUnits = frameData != null ? frameData.heightUnits() : fr.lordfinn.crazyphone.entity.CrazyPhonePhotoFrameEntity.DEFAULT_SIZE_UNITS;
         fr.lordfinn.crazyphone.entity.CrazyPhonePhotoFrameEntity entity = fr.lordfinn.crazyphone.entity.CrazyPhonePhotoFrameEntity.tryPlace(
-                world, context.getClickedPos(), context.getClickedFace(), photoData, new PhotoFrameData(widthUnits, heightUnits));
+                world, context.getClickedPos(), context.getClickedFace(), context.getHorizontalDirection(), photoData, new PhotoFrameData(widthUnits, heightUnits));
         if (entity == null)
             return net.minecraft.world.InteractionResult.FAIL;
         world.addFreshEntity(entity);

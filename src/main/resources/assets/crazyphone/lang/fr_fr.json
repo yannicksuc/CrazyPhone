@@ -13,6 +13,7 @@
   "gui.crazyphone.photo_viewer.save": "Sauvegarder dans l'inventaire",
   "gui.crazyphone.photo_frame_resize.title": "Redimensionner la photo",
   "gui.crazyphone.photo_frame_resize.size": "%s x %s blocs",
+  "gui.crazyphone.photo_frame_resize.rotate": "Pivoter",
   "item.crazyphone.custom_name": "CrazyPhone de %s",
   "item.crazyphone.lore_number": "Numéro : %s",
   "item.crazyphone.lore_owner": "Proprio : %s",

@@ -424,7 +424,7 @@ public class CrazyPhoneGameTests {
         photoData.writeTo(photo);
 
         fr.lordfinn.crazyphone.entity.CrazyPhonePhotoFrameEntity entity = fr.lordfinn.crazyphone.entity.CrazyPhonePhotoFrameEntity.tryPlace(
-                helper.getLevel(), floorPos, net.minecraft.core.Direction.UP, photoData,
+                helper.getLevel(), floorPos, net.minecraft.core.Direction.UP, net.minecraft.core.Direction.WEST, photoData,
                 new fr.lordfinn.crazyphone.utils.PhotoFrameData(
                         fr.lordfinn.crazyphone.entity.CrazyPhonePhotoFrameEntity.DEFAULT_SIZE_UNITS,
                         fr.lordfinn.crazyphone.entity.CrazyPhonePhotoFrameEntity.DEFAULT_SIZE_UNITS));
@@ -436,6 +436,11 @@ public class CrazyPhoneGameTests {
                         && entity.heightUnits() == fr.lordfinn.crazyphone.entity.CrazyPhonePhotoFrameEntity.DEFAULT_SIZE_UNITS,
                 "a freshly placed frame must start at the default 1x1 size");
         helper.assertTrue(entity.photoId().equals(photoData.photoId()), "the placed frame must point at the same photo the item carried");
+        // UP uses a mirrored correction against the naive Direction#get2DDataValue() ordering, calibrated
+        // from live testing - see tryPlace's own comment for why this isn't a plain rotation offset.
+        int expectedRotation = Math.floorMod(2 - net.minecraft.core.Direction.WEST.get2DDataValue(), 4);
+        helper.assertTrue(entity.rotation() == expectedRotation,
+                "a floor/ceiling frame must seed its initial rotation from the placing player's own facing");
         helper.succeed();
     }
 
@@ -455,7 +460,7 @@ public class CrazyPhoneGameTests {
         int resizedWidth = fr.lordfinn.crazyphone.entity.CrazyPhonePhotoFrameEntity.DEFAULT_SIZE_UNITS * 2;
         int resizedHeight = fr.lordfinn.crazyphone.entity.CrazyPhonePhotoFrameEntity.DEFAULT_SIZE_UNITS * 3;
         fr.lordfinn.crazyphone.entity.CrazyPhonePhotoFrameEntity entity = fr.lordfinn.crazyphone.entity.CrazyPhonePhotoFrameEntity.tryPlace(
-                helper.getLevel(), floorPos, net.minecraft.core.Direction.UP, photoData,
+                helper.getLevel(), floorPos, net.minecraft.core.Direction.UP, net.minecraft.core.Direction.NORTH, photoData,
                 new fr.lordfinn.crazyphone.utils.PhotoFrameData(resizedWidth, resizedHeight));
         helper.assertTrue(entity != null, "sanity: placement must succeed before this test can break it");
         helper.getLevel().addFreshEntity(entity);

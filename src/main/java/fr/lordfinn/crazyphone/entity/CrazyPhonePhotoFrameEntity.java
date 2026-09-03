@@ -56,20 +56,48 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
             SynchedEntityData.defineId(CrazyPhonePhotoFrameEntity.class, EntityDataSerializers.STRING);
     private static final EntityDataAccessor<String> DATA_OWNER =
             SynchedEntityData.defineId(CrazyPhonePhotoFrameEntity.class, EntityDataSerializers.STRING);
-    private static final EntityDataAccessor<Integer> DATA_WIDTH_UNITS =
+    // The slot rectangle is stored as 4 independent extents from attachPos along the face's own two in-plane
+    // axes ("U" = the width-axis, "V" = the height-axis - same axes the old symmetric width/height used),
+    // rather than a single width+height centered on attachPos - "the selection should not always have the
+    // blue square in the middle... I should be able to trace a rectangle with the blue square on the bottom
+    // left corner for example" (live request). All 4 are >=0; e.g. a 3-block-wide slot with the anchor at
+    // its own left edge is negU=0, posU=24.
+    private static final EntityDataAccessor<Integer> DATA_NEG_U =
             SynchedEntityData.defineId(CrazyPhonePhotoFrameEntity.class, EntityDataSerializers.INT);
-    private static final EntityDataAccessor<Integer> DATA_HEIGHT_UNITS =
+    private static final EntityDataAccessor<Integer> DATA_POS_U =
+            SynchedEntityData.defineId(CrazyPhonePhotoFrameEntity.class, EntityDataSerializers.INT);
+    private static final EntityDataAccessor<Integer> DATA_NEG_V =
+            SynchedEntityData.defineId(CrazyPhonePhotoFrameEntity.class, EntityDataSerializers.INT);
+    private static final EntityDataAccessor<Integer> DATA_POS_V =
             SynchedEntityData.defineId(CrazyPhonePhotoFrameEntity.class, EntityDataSerializers.INT);
     // 0-5, Direction#get3DDataValue ordering - which face of attachPos this frame is stuck to. A byte-sized
     // int is plenty; EntityDataSerializers has no dedicated Direction serializer usable pre-1.20.5, so this
     // stays a plain int synced field rather than reusing Direction's own (version-inconsistent) codec.
     private static final EntityDataAccessor<Integer> DATA_FACE =
             SynchedEntityData.defineId(CrazyPhonePhotoFrameEntity.class, EntityDataSerializers.INT);
+    // 0-3 quarter turns, clockwise as viewed from in front of the image - a pure visual spin of the photo
+    // within its existing slot rectangle (rotate() below), NOT a swap of which world axis width/height map
+    // to (that would cascade into the bounding box, the resize grid GUI, and every save format - out of
+    // scope for what "add a rotate button" asked for). For a floor/ceiling frame (no natural "up" the way a
+    // wall has via gravity) this also doubles as the "directional placement" the live request asked for:
+    // tryPlace seeds it from the placing player's own facing instead of always defaulting to 0 - see
+    // tryPlace's own comment.
+    private static final EntityDataAccessor<Integer> DATA_ROTATION =
+            SynchedEntityData.defineId(CrazyPhonePhotoFrameEntity.class, EntityDataSerializers.INT);
 
     // Not synced - every client already has this block loaded locally (see class doc comment). Set once in
     // the placement constructor / re-derived from DATA_FACE + this entity's own blockPosition() elsewhere
     // (the entity's tracked position already sits at the attach block, offset only visually/collision-wise).
     public BlockPos attachPos = BlockPos.ZERO;
+
+    // Client-only, never synced or saved - the renderer pushes the REAL aspect-fit displayed size here once
+    // the photo's texture has actually resolved (see CrazyPhonePhotoFrameRenderer#updateDisplayBounds calls),
+    // so the hitbox can shrink to match the visible picture instead of the full resize-slot rectangle ("seulement
+    // la taille de l'image réelle compte... pas la taille max" - live request). Left at -1 (meaning "unknown,
+    // fall back to the full slot size") until the first successful render, which covers both the server
+    // (never has this - falls back permanently, which is fine: see computeBoundingBox's own comment) and the
+    // brief window before a client's own texture finishes loading.
+    private float displayWidthBlocks = -1f, displayHeightBlocks = -1f;
 
     public CrazyPhonePhotoFrameEntity(EntityType<? extends CrazyPhonePhotoFrameEntity> type, Level level) {
         super(type, level);
@@ -81,7 +109,7 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
      * own role but with the fuller-block requirement deliberately dropped. Returns null if the face can't
      * hold a frame (fully empty shape, e.g. air, or already occupied - see {@link #spaceFree}). */
     public static CrazyPhonePhotoFrameEntity tryPlace(Level level, BlockPos clickedPos, Direction face,
-                                                        PhotoItemData photoData, PhotoFrameData frameData) {
+                                                        Direction placerFacing, PhotoItemData photoData, PhotoFrameData frameData) {
         BlockState state = level.getBlockState(clickedPos);
         // Any non-empty collision shape on the clicked block counts as attachable - deliberately broader
         // than vanilla item frames (Block#isFaceFull, full-cube-only). A photo can hang off a slab's top,
@@ -92,10 +120,29 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
         CrazyPhonePhotoFrameEntity entity = new CrazyPhonePhotoFrameEntity(fr.lordfinn.crazyphone.init.ModEntities.PHOTO_FRAME.get(), level);
         entity.attachPos = clickedPos.immutable();
         entity.entityData.set(DATA_FACE, face.get3DDataValue());
+        // Floor/ceiling faces have no natural "up" the way a wall gets one from gravity - "Image placements
+        // when on floor and ceiling should be directional" (live request). Seed the initial rotation from
+        // the direction the player was actually facing when they placed it, so the image starts oriented
+        // away from them instead of at an arbitrary fixed default; wall placements just start at 0 (rotate()
+        // is still available afterward either way).
+        //
+        // UP and DOWN use DIFFERENT corrections against the naive Direction#get2DDataValue() ordering
+        // (S=0,W=1,N=2,E=3), calibrated directly from live testing rather than derived from the renderer's
+        // own pose-stack math: UP needed only north/south swapped (west/east already correct) - a mirror,
+        // not a rotation, i.e. NOT expressible as a uniform +k offset - while DOWN needed BOTH pairs swapped,
+        // which IS a uniform 180 rotation. This asymmetry matches applyFaceTransform's own UP/DOWN cases
+        // using opposite-signed 90 rotations about the same X axis (Axis.XP.rotationDegrees(-90) vs (90)),
+        // which are mirror images of one another in the resulting local U/V frame, not simple rotations of
+        // each other.
+        if (face.getAxis() == Direction.Axis.Y) {
+            int naive = placerFacing.get2DDataValue();
+            int rotationIndex = face == Direction.UP ? Math.floorMod(2 - naive, 4) : Math.floorMod(naive + 2, 4);
+            entity.entityData.set(DATA_ROTATION, rotationIndex);
+        }
         entity.entityData.set(DATA_PHOTO_ID, photoData.photoId().toString());
         entity.entityData.set(DATA_OWNER, photoData.owner());
-        entity.entityData.set(DATA_WIDTH_UNITS, frameData.widthUnits());
-        entity.entityData.set(DATA_HEIGHT_UNITS, frameData.heightUnits());
+        entity.setExtentsRaw(frameData.widthUnits() / 2, frameData.widthUnits() - frameData.widthUnits() / 2,
+                frameData.heightUnits() / 2, frameData.heightUnits() - frameData.heightUnits() / 2);
         entity.setPos(clickedPos.getX() + 0.5, clickedPos.getY() + 0.5, clickedPos.getZ() + 0.5);
         entity.refreshDimensions();
         if (!spaceFree(level, entity))
@@ -119,25 +166,101 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
         return Direction.from3DDataValue(this.entityData.get(DATA_FACE));
     }
 
+    public int negUUnits() {
+        return this.entityData.get(DATA_NEG_U);
+    }
+
+    public int posUUnits() {
+        return this.entityData.get(DATA_POS_U);
+    }
+
+    public int negVUnits() {
+        return this.entityData.get(DATA_NEG_V);
+    }
+
+    public int posVUnits() {
+        return this.entityData.get(DATA_POS_V);
+    }
+
     public float widthBlocks() {
-        return this.entityData.get(DATA_WIDTH_UNITS) / (float) UNITS_PER_BLOCK;
+        return widthUnits() / (float) UNITS_PER_BLOCK;
     }
 
     public float heightBlocks() {
-        return this.entityData.get(DATA_HEIGHT_UNITS) / (float) UNITS_PER_BLOCK;
+        return heightUnits() / (float) UNITS_PER_BLOCK;
     }
 
     public int widthUnits() {
-        return this.entityData.get(DATA_WIDTH_UNITS);
+        return negUUnits() + posUUnits();
     }
 
     public int heightUnits() {
-        return this.entityData.get(DATA_HEIGHT_UNITS);
+        return negVUnits() + posVUnits();
     }
 
+    /** Sets a SYMMETRIC size centered on attachPos, same meaning the old width/height-only model always had -
+     * used by the Silk Touch / paper-duplication restore path, where {@link PhotoFrameData} only ever carries
+     * a plain width+height (not an off-center anchor position - a re-placed frame reasonably just re-centers,
+     * see that record's own doc comment for why this wasn't extended further). Not used by the resize GUI
+     * itself anymore - see {@link #setExtents}. */
     public void setSizeUnits(int widthUnits, int heightUnits) {
-        this.entityData.set(DATA_WIDTH_UNITS, widthUnits);
-        this.entityData.set(DATA_HEIGHT_UNITS, heightUnits);
+        setExtents(widthUnits / 2, widthUnits - widthUnits / 2, heightUnits / 2, heightUnits - heightUnits / 2);
+    }
+
+    /** The resize grid GUI's own entry point - an arbitrary, possibly off-center rectangle around attachPos.
+     * All 4 values are clamped to [0, configured max] individually, then the U and V pairs are each
+     * independently clamped so their SUM doesn't exceed the configured max (keeping the overall slot no
+     * bigger than {@code maxPhotoFrameSizeBlocks} in either dimension, same ceiling the old symmetric model
+     * enforced - only which SIDE of attachPos that size sits on is now free). */
+    public void setExtents(int negU, int posU, int negV, int posV) {
+        int maxUnits = fr.lordfinn.crazyphone.Config.maxPhotoFrameSizeBlocks * UNITS_PER_BLOCK;
+        negU = Math.clamp(negU, 0, maxUnits);
+        posU = Math.clamp(posU, 0, Math.max(0, maxUnits - negU));
+        negV = Math.clamp(negV, 0, maxUnits);
+        posV = Math.clamp(posV, 0, Math.max(0, maxUnits - negV));
+        if (negU + posU == 0)
+            posU = Math.min(maxUnits, UNITS_PER_BLOCK / 4);
+        if (negV + posV == 0)
+            posV = Math.min(maxUnits, UNITS_PER_BLOCK / 4);
+        setExtentsRaw(negU, posU, negV, posV);
+    }
+
+    // Unclamped - only for tryPlace's own already-validated PhotoFrameData/DEFAULT_SIZE_UNITS values, where
+    // re-clamping against the config max would be redundant work (and, for a Silk-Touch-preserved size from
+    // BEFORE the server's max was ever lowered, would silently shrink it instead of honoring what the player
+    // actually had - a deliberate choice, not an oversight).
+    private void setExtentsRaw(int negU, int posU, int negV, int posV) {
+        this.entityData.set(DATA_NEG_U, negU);
+        this.entityData.set(DATA_POS_U, posU);
+        this.entityData.set(DATA_NEG_V, negV);
+        this.entityData.set(DATA_POS_V, posV);
+        this.refreshDimensions();
+    }
+
+    /** 0-3 quarter turns, clockwise as viewed from in front - see {@link #DATA_ROTATION}'s own field
+     * comment. */
+    public int rotation() {
+        return this.entityData.get(DATA_ROTATION);
+    }
+
+    public void setRotation(int rotation) {
+        this.entityData.set(DATA_ROTATION, Math.floorMod(rotation, 4));
+    }
+
+    public void rotate() {
+        setRotation(rotation() + 1);
+    }
+
+    /** Called client-side only, from the renderer, once a frame's texture has actually resolved - narrows
+     * this entity's own hitbox down to the real, aspect-fit displayed picture (see
+     * {@link #displayWidthBlocks}'s own field comment) instead of the full resize-slot rectangle. A no-op
+     * (skips the box rebuild) when the size hasn't actually changed, since this is called every render
+     * frame. */
+    public void updateDisplayBounds(float displayWidthBlocks, float displayHeightBlocks) {
+        if (this.displayWidthBlocks == displayWidthBlocks && this.displayHeightBlocks == displayHeightBlocks)
+            return;
+        this.displayWidthBlocks = displayWidthBlocks;
+        this.displayHeightBlocks = displayHeightBlocks;
         this.refreshDimensions();
     }
 
@@ -156,11 +279,19 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
     public double computeFaceOffset(Level level) {
         BlockState state = level.getBlockState(attachPos);
         Direction face = attachFace();
+        // getCollisionShape(), not getShape() (the render/pick outline) - an earlier attempt at fixing a
+        // punch-through-to-the-block-behind bug switched this to getShape() on the theory that it'd match
+        // the engine's own block-ray more closely, but live testing showed it made the hitbox land wildly
+        // off-position on ordinary blocks instead (wall AND ceiling placements both "way off", not just the
+        // narrow outline-vs-collision-shape mismatch it was meant to fix) - reverted back to the
+        // known-good collision shape pending a more careful, non-live-blocking investigation of the
+        // original (much narrower) bug. The [0,1] clamp below is a defensive floor/ceiling against any
+        // single block's shape producing a wild bounds() value, regardless of which shape source is used.
         VoxelShape shape = state.getCollisionShape(level, attachPos);
         if (shape.isEmpty())
             return face.getAxisDirection() == Direction.AxisDirection.POSITIVE ? 1.0 : 0.0;
         AABB bounds = shape.bounds();
-        return switch (face) {
+        double raw = switch (face) {
             case DOWN -> bounds.minY;
             case UP -> bounds.maxY;
             case NORTH -> bounds.minZ;
@@ -168,15 +299,19 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
             case WEST -> bounds.minX;
             case EAST -> bounds.maxX;
         };
+        return Math.clamp(raw, 0.0, 1.0);
     }
 
     @Override
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
         builder.define(DATA_PHOTO_ID, "");
         builder.define(DATA_OWNER, "");
-        builder.define(DATA_WIDTH_UNITS, DEFAULT_SIZE_UNITS);
-        builder.define(DATA_HEIGHT_UNITS, DEFAULT_SIZE_UNITS);
+        builder.define(DATA_NEG_U, DEFAULT_SIZE_UNITS / 2);
+        builder.define(DATA_POS_U, DEFAULT_SIZE_UNITS - DEFAULT_SIZE_UNITS / 2);
+        builder.define(DATA_NEG_V, DEFAULT_SIZE_UNITS / 2);
+        builder.define(DATA_POS_V, DEFAULT_SIZE_UNITS - DEFAULT_SIZE_UNITS / 2);
         builder.define(DATA_FACE, Direction.NORTH.get3DDataValue());
+        builder.define(DATA_ROTATION, 0);
     }
 
     @Override
@@ -220,16 +355,30 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
         Level lvl = this.level();
         Direction face = attachFace();
         double faceOffset = lvl != null ? computeFaceOffset(lvl) : (face.getAxisDirection() == Direction.AxisDirection.POSITIVE ? 1.0 : 0.0);
-        double w = widthBlocks() / 2.0;
-        double h = heightBlocks() / 2.0;
+        double negU = negUUnits() / (double) UNITS_PER_BLOCK, posU = posUUnits() / (double) UNITS_PER_BLOCK;
+        double negV = negVUnits() / (double) UNITS_PER_BLOCK, posV = posVUnits() / (double) UNITS_PER_BLOCK;
+        // How far the slot rectangle's own geometric center sits from attachPos along each in-plane axis -
+        // zero for the old-style symmetric size, nonzero once the anchor sits off-center within the
+        // rectangle (see setExtents's own doc comment).
+        double centerU = (posU - negU) / 2.0, centerV = (posV - negV) / 2.0;
+        // displayWidthBlocks/Height are only ever populated client-side once a texture has actually resolved
+        // (see that field's own comment) - the server (and a client before its first render) always falls
+        // back to the full slot size below, which is a strict superset of the real picture, so a break-punch
+        // there still lands (just possibly slightly more forgiving near the letterboxed margin) rather than
+        // ever rejecting a legitimate hit. Aspect-fit letterboxing is always centered WITHIN the slot (never
+        // biased toward one edge), so the refined display size shares the exact same centerU/centerV the
+        // full slot uses - only the half-extent shrinks, the center never moves.
+        double halfU = (displayWidthBlocks >= 0 ? displayWidthBlocks : (negU + posU)) / 2.0;
+        double halfV = (displayHeightBlocks >= 0 ? displayHeightBlocks : (negV + posV)) / 2.0;
         double cx = attachPos.getX() + 0.5, cy = attachPos.getY() + 0.5, cz = attachPos.getZ() + 0.5;
+        double u0 = centerU - halfU, u1 = centerU + halfU, v0 = centerV - halfV, v1 = centerV + halfV;
         return switch (face) {
-            case DOWN -> new AABB(cx - w, attachPos.getY() + faceOffset - DEPTH, cz - w, cx + w, attachPos.getY() + faceOffset, cz + w);
-            case UP -> new AABB(cx - w, attachPos.getY() + faceOffset, cz - w, cx + w, attachPos.getY() + faceOffset + DEPTH, cz + w);
-            case NORTH -> new AABB(cx - w, cy - h, attachPos.getZ() + faceOffset - DEPTH, cx + w, cy + h, attachPos.getZ() + faceOffset);
-            case SOUTH -> new AABB(cx - w, cy - h, attachPos.getZ() + faceOffset, cx + w, cy + h, attachPos.getZ() + faceOffset + DEPTH);
-            case WEST -> new AABB(attachPos.getX() + faceOffset - DEPTH, cy - h, cz - w, attachPos.getX() + faceOffset, cy + h, cz + w);
-            case EAST -> new AABB(attachPos.getX() + faceOffset, cy - h, cz - w, attachPos.getX() + faceOffset + DEPTH, cy + h, cz + w);
+            case DOWN -> new AABB(cx + u0, attachPos.getY() + faceOffset - DEPTH, cz + v0, cx + u1, attachPos.getY() + faceOffset, cz + v1);
+            case UP -> new AABB(cx + u0, attachPos.getY() + faceOffset, cz + v0, cx + u1, attachPos.getY() + faceOffset + DEPTH, cz + v1);
+            case NORTH -> new AABB(cx + u0, cy + v0, attachPos.getZ() + faceOffset - DEPTH, cx + u1, cy + v1, attachPos.getZ() + faceOffset);
+            case SOUTH -> new AABB(cx + u0, cy + v0, attachPos.getZ() + faceOffset, cx + u1, cy + v1, attachPos.getZ() + faceOffset + DEPTH);
+            case WEST -> new AABB(attachPos.getX() + faceOffset - DEPTH, cy + v0, cz + u0, attachPos.getX() + faceOffset, cy + v1, cz + u1);
+            case EAST -> new AABB(attachPos.getX() + faceOffset, cy + v0, cz + u0, attachPos.getX() + faceOffset + DEPTH, cy + v1, cz + u1);
         };
     }
 
@@ -336,8 +485,11 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
         this.entityData.set(DATA_FACE, fr.lordfinn.crazyphone.utils.NbtCompat.getInt(tag, "Face"));
         this.entityData.set(DATA_PHOTO_ID, fr.lordfinn.crazyphone.utils.NbtCompat.getString(tag, "PhotoId"));
         this.entityData.set(DATA_OWNER, fr.lordfinn.crazyphone.utils.NbtCompat.getString(tag, "Owner"));
-        this.entityData.set(DATA_WIDTH_UNITS, fr.lordfinn.crazyphone.utils.NbtCompat.getInt(tag, "WidthUnits", DEFAULT_SIZE_UNITS));
-        this.entityData.set(DATA_HEIGHT_UNITS, fr.lordfinn.crazyphone.utils.NbtCompat.getInt(tag, "HeightUnits", DEFAULT_SIZE_UNITS));
+        this.entityData.set(DATA_NEG_U, fr.lordfinn.crazyphone.utils.NbtCompat.getInt(tag, "NegU", DEFAULT_SIZE_UNITS / 2));
+        this.entityData.set(DATA_POS_U, fr.lordfinn.crazyphone.utils.NbtCompat.getInt(tag, "PosU", DEFAULT_SIZE_UNITS / 2));
+        this.entityData.set(DATA_NEG_V, fr.lordfinn.crazyphone.utils.NbtCompat.getInt(tag, "NegV", DEFAULT_SIZE_UNITS / 2));
+        this.entityData.set(DATA_POS_V, fr.lordfinn.crazyphone.utils.NbtCompat.getInt(tag, "PosV", DEFAULT_SIZE_UNITS / 2));
+        this.entityData.set(DATA_ROTATION, fr.lordfinn.crazyphone.utils.NbtCompat.getInt(tag, "Rotation", 0));
         this.refreshDimensions();
     }
 
@@ -349,8 +501,11 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
         tag.putInt("Face", this.entityData.get(DATA_FACE));
         tag.putString("PhotoId", this.entityData.get(DATA_PHOTO_ID));
         tag.putString("Owner", this.entityData.get(DATA_OWNER));
-        tag.putInt("WidthUnits", this.entityData.get(DATA_WIDTH_UNITS));
-        tag.putInt("HeightUnits", this.entityData.get(DATA_HEIGHT_UNITS));
+        tag.putInt("NegU", this.entityData.get(DATA_NEG_U));
+        tag.putInt("PosU", this.entityData.get(DATA_POS_U));
+        tag.putInt("NegV", this.entityData.get(DATA_NEG_V));
+        tag.putInt("PosV", this.entityData.get(DATA_POS_V));
+        tag.putInt("Rotation", this.entityData.get(DATA_ROTATION));
     }
     //?}
     //? if >=26 {
@@ -360,8 +515,11 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
         this.entityData.set(DATA_FACE, input.getIntOr("Face", Direction.NORTH.get3DDataValue()));
         this.entityData.set(DATA_PHOTO_ID, input.getStringOr("PhotoId", ""));
         this.entityData.set(DATA_OWNER, input.getStringOr("Owner", ""));
-        this.entityData.set(DATA_WIDTH_UNITS, input.getIntOr("WidthUnits", DEFAULT_SIZE_UNITS));
-        this.entityData.set(DATA_HEIGHT_UNITS, input.getIntOr("HeightUnits", DEFAULT_SIZE_UNITS));
+        this.entityData.set(DATA_NEG_U, input.getIntOr("NegU", DEFAULT_SIZE_UNITS / 2));
+        this.entityData.set(DATA_POS_U, input.getIntOr("PosU", DEFAULT_SIZE_UNITS / 2));
+        this.entityData.set(DATA_NEG_V, input.getIntOr("NegV", DEFAULT_SIZE_UNITS / 2));
+        this.entityData.set(DATA_POS_V, input.getIntOr("PosV", DEFAULT_SIZE_UNITS / 2));
+        this.entityData.set(DATA_ROTATION, input.getIntOr("Rotation", 0));
         this.refreshDimensions();
     }
 
@@ -373,8 +531,11 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
         output.putInt("Face", this.entityData.get(DATA_FACE));
         output.putString("PhotoId", this.entityData.get(DATA_PHOTO_ID));
         output.putString("Owner", this.entityData.get(DATA_OWNER));
-        output.putInt("WidthUnits", this.entityData.get(DATA_WIDTH_UNITS));
-        output.putInt("HeightUnits", this.entityData.get(DATA_HEIGHT_UNITS));
+        output.putInt("NegU", this.entityData.get(DATA_NEG_U));
+        output.putInt("PosU", this.entityData.get(DATA_POS_U));
+        output.putInt("NegV", this.entityData.get(DATA_NEG_V));
+        output.putInt("PosV", this.entityData.get(DATA_POS_V));
+        output.putInt("Rotation", this.entityData.get(DATA_ROTATION));
     }
     *///?}
 
