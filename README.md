@@ -117,29 +117,29 @@ still getting updates", separate from the detailed per-feature table below.
 
 | Target | Status |
 |---|---|
+| Fabric 1.20.1 | ⚪ Not functional - phone networking needs an API absent before 1.20.5, no active work planned |
+| NeoForge 1.20.4 | ⚪ Frozen - unmaintained indefinitely (since 2026-09-02), local builds only |
 | NeoForge 1.21.1 | 🟢 Actively maintained - primary NeoForge target |
 | Fabric 1.21.1 | 🟢 Actively maintained - primary Fabric target |
+| NeoForge 1.21.10 | ⚪ Frozen - unmaintained indefinitely (since 2026-09-03) |
 | NeoForge 26.1 | 🟢 Actively maintained |
 | Fabric 26.1 | 🟢 Actively maintained |
-| NeoForge 1.21.10 | ⚪ Frozen - unmaintained indefinitely (since 2026-09-03) |
-| NeoForge 1.20.4 | ⚪ Frozen - unmaintained indefinitely (since 2026-09-02), local builds only |
-| Fabric 1.20.1 | ⚪ Not functional - phone networking needs an API absent before 1.20.5, no active work planned |
 | NeoForge 26.2 | 🟡 Work in progress - doesn't compile yet, see [PORTING-26x.md](PORTING-26x.md) |
 | Fabric 26.2 | 🟡 Work in progress - doesn't compile yet, see [PORTING-26x.md](PORTING-26x.md) |
 
 Only the 🟢 targets get new features and bugfixes going forward. The 26.x line is otherwise a newer,
 ongoing port - see [PORTING-26x.md](PORTING-26x.md) for its detailed status and remaining work.
 
-| | NeoForge 1.20.4 *(unmaintained)* | NeoForge 1.21.1 | NeoForge 1.21.10 *(unmaintained)* | NeoForge 26.1 | NeoForge 26.2 | Fabric 1.20.1 | Fabric 1.21.1 | Fabric 26.1 | Fabric 26.2 |
+| | Fabric 1.20.1 | NeoForge 1.20.4 *(unmaintained)* | NeoForge 1.21.1 | Fabric 1.21.1 | NeoForge 1.21.10 *(unmaintained)* | NeoForge 26.1 | Fabric 26.1 | NeoForge 26.2 | Fabric 26.2 |
 |---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| Phone, messaging, contacts, groups | ✅ | ✅ | ✅ | ✅ | — *(pending)* | — | ✅ | ✅ | — *(pending)* |
-| Mayor election | ✅ | ✅ | ✅ | ✅ | — *(pending)* | — | ✅ | ✅ | — *(pending)* |
-| Native camera (capture/viewer/photo item/My Photos) | ✅ | ✅ | — *(pending)* | ✅ | — *(pending)* | — | ✅ | ✅ | — *(pending)* |
-| Sneak-presenting (hold a photo up, two-hand grip) | ✅ | ✅ | — *(pending)* | ✅ | — *(pending)* | — | ✅ | ✅ | — *(pending)* |
-| Selfie mode (camera/arm/head on a selfie stick) | — | ✅ | — | ✅ | — *(pending)* | — | ✅ | ✅ | — *(pending)* |
-| Voice calls & voice messages | ✅ *(SVC)* | ✅ *(SVC)* | ✅ *(SVC)* | ✅ *(SVC)* | — *(pending)* | — | — | — | — |
-| Soulbound enchantment | — | ✅ | ✅ | ✅ | — *(pending)* | — | ✅ | ✅ | — *(pending)* |
-| Runtime-configurable settings | ✅ | ✅ | ✅ | ✅ | — *(pending)* | — | — | — | — |
+| Phone, messaging, contacts, groups | — | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — *(pending)* | — *(pending)* |
+| Mayor election | — | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — *(pending)* | — *(pending)* |
+| Native camera (capture/viewer/photo item/My Photos) | — | ✅ | ✅ | ✅ | — *(pending)* | ✅ | ✅ | — *(pending)* | — *(pending)* |
+| Sneak-presenting (hold a photo up, two-hand grip) | — | ✅ | ✅ | ✅ | — *(pending)* | ✅ | ✅ | — *(pending)* | — *(pending)* |
+| Selfie mode (camera/arm/head on a selfie stick) | — | — | ✅ | ✅ | — | ✅ | ✅ | — *(pending)* | — *(pending)* |
+| Voice calls & voice messages | — | ✅ *(SVC)* | ✅ *(SVC)* | — | ✅ *(SVC)* | ✅ *(SVC)* | — | — *(pending)* | — |
+| Soulbound enchantment | — | — | ✅ | ✅ | ✅ | ✅ | ✅ | — *(pending)* | — *(pending)* |
+| Runtime-configurable settings | — | ✅ | ✅ | — | ✅ | ✅ | — | — *(pending)* | — |
 
 - **NeoForge 1.21.10**'s camera and sneak-presenting features compile but don't work yet: Mojang reworked
   both item rendering and the screenshot/texture APIs the native pipeline uses on that version, and porting
