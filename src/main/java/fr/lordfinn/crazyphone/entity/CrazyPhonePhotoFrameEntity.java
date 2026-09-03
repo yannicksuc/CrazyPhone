@@ -96,6 +96,69 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
         this.noPhysics = true;
     }
 
+    // Two things this entity never actually transmitted to any client, confirmed by reading vanilla's own
+    // ClientboundAddEntityPacket/Entity#recreateFromPacket:
+    // - attachPos itself: only ever set server-side (tryPlace()) or from disk (readAdditionalSaveData(),
+    //   NBT - never sent over the network for a freshly-spawned entity at all). Every client was silently
+    //   relying on attachPos still holding its unset BlockPos.ZERO default the whole time this feature has
+    //   existed.
+    // - negU/posU/negV/posV/face: DO reach the client, but only via a SEPARATE ClientboundSetEntityDataPacket
+    //   that lands a moment after the spawn packet, not synchronously with it - onSyncedDataUpdated (see that
+    //   override below) corrects the box once it arrives, but the entity briefly exists with default/wrong
+    //   geometry in between, which is exactly the kind of gap vanilla's own Painting/ItemFrame close by
+    //   embedding their own critical data directly in the spawn packet (getAddEntityPacket/
+    //   recreateFromPacket), applied synchronously before the entity is ever added to the world - confirmed
+    //   by reading their real decompiled source, not guessed.
+    //
+    // Packed into the packet's own single "data" int (a VarInt over the wire, but still a real Java int, so
+    // 32 bits total): face (3 bits, 0-5), rotation (2 bits, 0-3), then the 4 extents ROUNDED TO WHOLE BLOCKS
+    // (6 bits each, 0-63 - the configured max is 32 blocks) rather than their full 1/8-block precision - 4 *
+    // 9 bits for full precision wouldn't fit alongside face+rotation in one int. The precise, unrounded
+    // values still arrive moments later via the normal entityData sync and correct this automatically
+    // (onSyncedDataUpdated fires again); this is only ever the entity's very first, synchronous approximation
+    // - and for anything actually placed through the resize grid (whole-block granularity already, see
+    // CrazyPhonePhotoFrameResizeScreen's own doc comment) it's not even an approximation, it's exact.
+    private static int packSpawnData(Direction face, int rotation, int negUBlocks, int posUBlocks, int negVBlocks, int posVBlocks) {
+        return (face.get3DDataValue() & 0b111)
+                | ((rotation & 0b11) << 3)
+                | ((negUBlocks & 0b111111) << 5)
+                | ((posUBlocks & 0b111111) << 11)
+                | ((negVBlocks & 0b111111) << 17)
+                | ((posVBlocks & 0b111111) << 23);
+    }
+
+    private static int roundToBlocks(int units) {
+        return Math.round(units / (float) UNITS_PER_BLOCK);
+    }
+
+    @Override
+    public net.minecraft.network.protocol.Packet<net.minecraft.network.protocol.game.ClientGamePacketListener> getAddEntityPacket(net.minecraft.server.level.ServerEntity serverEntity) {
+        int packed = packSpawnData(attachFace(), rotation(),
+                roundToBlocks(negUUnits()), roundToBlocks(posUUnits()), roundToBlocks(negVUnits()), roundToBlocks(posVUnits()));
+        return new net.minecraft.network.protocol.game.ClientboundAddEntityPacket(this, serverEntity, packed);
+    }
+
+    @Override
+    public void recreateFromPacket(net.minecraft.network.protocol.game.ClientboundAddEntityPacket packet) {
+        // Sets this entity's own tracked position/rotation/id/uuid as normal first (calls the real,
+        // unmodified Entity#setPos() as part of doing so - the same call tryPlace() itself already makes
+        // safely, never implicated in any of the rendering breakage documented on tick()'s own comment).
+        super.recreateFromPacket(packet);
+        // attachPos+0.5 is exactly this entity's own tracked position under the current (still-centered)
+        // placement convention, so flooring it back via blockPosition() recovers attachPos exactly, with no
+        // need to pack a redundant copy of x/y/z into the data int on top of what the packet already
+        // transmits.
+        this.attachPos = this.blockPosition();
+        int packed = packet.getData();
+        this.entityData.set(DATA_FACE, packed & 0b111);
+        this.entityData.set(DATA_ROTATION, (packed >> 3) & 0b11);
+        this.entityData.set(DATA_NEG_U, ((packed >> 5) & 0b111111) * UNITS_PER_BLOCK);
+        this.entityData.set(DATA_POS_U, ((packed >> 11) & 0b111111) * UNITS_PER_BLOCK);
+        this.entityData.set(DATA_NEG_V, ((packed >> 17) & 0b111111) * UNITS_PER_BLOCK);
+        this.entityData.set(DATA_POS_V, ((packed >> 23) & 0b111111) * UNITS_PER_BLOCK);
+        this.refreshDimensions();
+    }
+
     /** Server-side placement factory - validates the target face has SOME collision geometry (not
      * necessarily a full cube) before ever constructing the entity, mirroring HangingEntity#survives()'s
      * own role but with the fuller-block requirement deliberately dropped. Returns null if the face can't
