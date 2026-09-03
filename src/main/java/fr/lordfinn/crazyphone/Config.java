@@ -109,6 +109,17 @@ public class Config {
             .comment("Whether the Soulbound enchantment actually keeps enchanted items on death. Does not affect whether it can still be found or applied.")
             .define("soulboundEnchantmentEnabled", true);
 
+    // Independent of the enchantment above - this makes the Crazy Phone item itself always survive death,
+    // with no Soulbound enchantment needed on it at all. Checked directly in SoulboundHandler alongside the
+    // enchantment check, so it works even with soulboundEnchantmentEnabled set to false.
+    private static final ModConfigSpec.BooleanValue PHONE_SOULBOUND_BY_DEFAULT = BUILDER
+            .comment("Whether the Crazy Phone item survives death on its own, without needing the Soulbound enchantment applied to it.")
+            .define("phoneSoulboundByDefault", false);
+
+    private static final ModConfigSpec.BooleanValue CRAZY_PHONE_CRAFTING_ENABLED = BUILDER
+            .comment("Whether the Crazy Phone item can be crafted. When false, the recipe is disabled - phones can still be given via /crazyphone give.")
+            .define("crazyPhoneCraftingEnabled", true);
+
     static final ModConfigSpec SPEC = BUILDER.build();
 
     public static int maxStoredMessagesPerConversation;
@@ -129,6 +140,8 @@ public class Config {
     public static int maxVoiceMessagesStoredPerConversation;
     public static int maxVoiceMessageRecordingSeconds;
     public static boolean soulboundEnchantmentEnabled;
+    public static boolean phoneSoulboundByDefault;
+    public static boolean crazyPhoneCraftingEnabled;
 
     @SubscribeEvent
     static void onLoad(final ModConfigEvent event) {
@@ -150,6 +163,8 @@ public class Config {
         maxVoiceMessagesStoredPerConversation = MAX_VOICE_MESSAGES_STORED_PER_CONVERSATION.get();
         maxVoiceMessageRecordingSeconds = MAX_VOICE_MESSAGE_RECORDING_SECONDS.get();
         soulboundEnchantmentEnabled = SOULBOUND_ENCHANTMENT_ENABLED.get();
+        phoneSoulboundByDefault = PHONE_SOULBOUND_BY_DEFAULT.get();
+        crazyPhoneCraftingEnabled = CRAZY_PHONE_CRAFTING_ENABLED.get();
     }
 
     /** Setters for the toggleable features below, used by /crazyphone feature to change them at runtime
@@ -206,6 +221,8 @@ public class Config {
     public static int maxVoiceMessagesStoredPerConversation = 30;
     public static int maxVoiceMessageRecordingSeconds = 60;
     public static boolean soulboundEnchantmentEnabled = true;
+    public static boolean phoneSoulboundByDefault = false;
+    public static boolean crazyPhoneCraftingEnabled = true;
 
     public static void setMayorElectionFeatureEnabled(boolean enabled) {
         mayorElectionFeatureEnabled = enabled;

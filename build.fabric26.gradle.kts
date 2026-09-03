@@ -77,11 +77,33 @@ loom {
         named("client") {
             client()
             programArgs("--username", "LordFinn")
+            // LOCAL/UNCOMMITTED: DevAuth Neo (run/mods) needs this system property to actually activate -
+            // otherwise it logs "DevAuth disabled" and the dev environment stays on the plain offline
+            // account. Real Microsoft device-code login (opens in the player's own browser, never touches
+            // credentials here), just for taking screenshots with a real skin.
+            // "account" set explicitly to skip DevAuth's interactive console prompt for a new account
+            // label (this run has no attached interactive terminal, so that prompt reads EOF and errors
+            // out with "Nothing provided!" instead of proceeding) - once set, DevAuth opens its own
+            // embedded-browser login window in the actual game window for the real Microsoft sign-in.
+            vmArgs("-Ddevauth.enabled=1", "-Ddevauth.account=LordFinnReal")
             runDir = "run"
         }
         named("server") {
             server()
             runDir = "run-server"
+        }
+        // LOCAL/UNCOMMITTED: second client for screenshot sessions needing two players in view (a
+        // conversation, contacts list, etc). Plain offline account, no shaders needed here since this one
+        // isn't what's being screenshotted from - see run/mods (Iris/Sodium/DevAuth) and
+        // run/config/iris.properties on the primary "client" run instead.
+        create("client2") {
+            client()
+            programArgs("--username", "LordFinnAlt")
+            // Real auth here too now (a second real Microsoft account) - see the "client" run's own
+            // comment above for why -Ddevauth.account=... is set explicitly (skips DevAuth's interactive
+            // console prompt, which this run has no attached terminal for).
+            vmArgs("-Ddevauth.enabled=1", "-Ddevauth.account=LordFinnAlt")
+            runDir = "run-client2"
         }
     }
 }
@@ -307,6 +329,7 @@ sourceSets.main {
         "fr/lordfinn/crazyphone/item/CrazyPhoneCaptureShortcut.java",
         "fr/lordfinn/crazyphone/utils/PhotoItemData.java",
         "fr/lordfinn/crazyphone/recipe/CrazyPhoneDuplicatePhotoRecipe.java",
+        "fr/lordfinn/crazyphone/recipe/CrazyPhoneCraftingCondition.java",
         "fr/lordfinn/crazyphone/init/ModRecipes.java",
         "fr/lordfinn/crazyphone/enchantment/ModEnchantments.java",
         "fr/lordfinn/crazyphone/data/SoulboundStash.java",
@@ -385,6 +408,17 @@ tasks.named<ProcessResources>("processResources") {
         destinationDir.resolve("data/neoforge/loot_modifiers/global_loot_modifiers.json").delete()
         destinationDir.resolve("data/crazyphone/recipe/duplicate_photo.json").delete()
         destinationDir.resolve("data/crazyphone/recipes/duplicate_photo.json").delete()
+
+        // crazy_phone.json's tracked "key" entries use the older {"item": "..."} object form (needed by
+        // 1.21.1's own Ingredient codec, which has no bare-string shorthand at all) - NeoForge's own
+        // IngredientCodecs wrapper keeps accepting that form on >=26 for back-compat, but plain Fabric's
+        // vanilla-only codec there does not (confirmed against the real vanilla_client jar's own shipped
+        // recipes on 26.1.2, which all use bare item-id strings) - so only this Fabric >=26 node needs its
+        // build output patched to match.
+        val recipeFile = destinationDir.resolve("data/crazyphone/recipes/crazy_phone.json")
+        recipeFile.writeText(
+            """{"type":"minecraft:crafting_shaped","category":"misc","fabric:load_conditions":[{"condition":"crazyphone:crafting_enabled"}],"pattern":["GGG","GPG","GRG"],"key":{"G":"minecraft:gold_ingot","P":"minecraft:glass_pane","R":"minecraft:redstone"},"result":{"id":"crazyphone:crazy_phone","count":1}}""" + "\n"
+        )
     }
 }
 

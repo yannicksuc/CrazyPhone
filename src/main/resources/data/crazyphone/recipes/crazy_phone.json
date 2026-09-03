@@ -1,0 +1,34 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "neoforge:conditions": [
+    {
+      "type": "crazyphone:crafting_enabled"
+    }
+  ],
+  "fabric:load_conditions": [
+    {
+      "condition": "crazyphone:crafting_enabled"
+    }
+  ],
+  "pattern": [
+    "GGG",
+    "GPG",
+    "GRG"
+  ],
+  "key": {
+    "G": {
+      "item": "minecraft:gold_ingot"
+    },
+    "P": {
+      "item": "minecraft:glass_pane"
+    },
+    "R": {
+      "item": "minecraft:redstone"
+    }
+  },
+  "result": {
+    "id": "crazyphone:crazy_phone",
+    "count": 1
+  }
+}

@@ -23,6 +23,7 @@ import /^$ game_rules_pkg {^/net.minecraft.world.level.GameRules/^$}^/;
 import fr.lordfinn.crazyphone.Config;
 import fr.lordfinn.crazyphone.data.PhoneAttachmentTypes;
 import fr.lordfinn.crazyphone.data.SoulboundStash;
+import fr.lordfinn.crazyphone.init.ModItems;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,7 +33,7 @@ public class SoulboundHandler {
 
     @SubscribeEvent
     public static void onLivingDrops(LivingDropsEvent event) {
-        if (!Config.soulboundEnchantmentEnabled)
+        if (!Config.soulboundEnchantmentEnabled && !Config.phoneSoulboundByDefault)
             return;
         if (!(event.getEntity() instanceof ServerPlayer player))
             return;
@@ -40,14 +41,14 @@ public class SoulboundHandler {
         if (player.level().getGameRules()./^$ keep_inventory_call {^/getBoolean(GameRules.RULE_KEEPINVENTORY)/^$}^/)
             return;
 
+        // Null when the enchantment feature is off/unresolvable - still fine, isSoulbound() below falls
+        // back to the phoneSoulboundByDefault-only check in that case.
         Holder<Enchantment> soulbound = resolveSoulbound(player);
-        if (soulbound == null)
-            return;
 
         List<ItemStack> kept = new ArrayList<>();
         event.getDrops().removeIf(itemEntity -> {
             ItemStack stack = itemEntity.getItem();
-            if (EnchantmentHelper.getItemEnchantmentLevel(soulbound, stack) <= 0)
+            if (!isSoulbound(stack, soulbound))
                 return false;
             kept.add(stack);
             return true;
@@ -86,6 +87,13 @@ public class SoulboundHandler {
     private static Holder<Enchantment> resolveSoulbound(ServerPlayer player) {
         return ModEnchantments.resolve(player.level());
     }
+
+    private static boolean isSoulbound(ItemStack stack, Holder<Enchantment> soulbound) {
+        if (Config.soulboundEnchantmentEnabled && soulbound != null
+                && EnchantmentHelper.getItemEnchantmentLevel(soulbound, stack) > 0)
+            return true;
+        return Config.phoneSoulboundByDefault && stack.is(ModItems.CRAZY_PHONE.get());
+    }
 }
 *///?}
 //? if fabric && >=1.20.5 {
@@ -104,6 +112,7 @@ import /^$ game_rules_pkg {^/net.minecraft.world.level.GameRules/^$}^/;
 import fr.lordfinn.crazyphone.Config;
 import fr.lordfinn.crazyphone.data.PhoneAttachmentTypes;
 import fr.lordfinn.crazyphone.data.SoulboundStash;
+import fr.lordfinn.crazyphone.init.ModItems;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -117,7 +126,7 @@ import java.util.List;
 public class SoulboundHandler {
     public static void register() {
         ServerLivingEntityEvents.ALLOW_DEATH.register((entity, damageSource, damageAmount) -> {
-            if (Config.soulboundEnchantmentEnabled && entity instanceof ServerPlayer player)
+            if ((Config.soulboundEnchantmentEnabled || Config.phoneSoulboundByDefault) && entity instanceof ServerPlayer player)
                 stashSoulboundItems(player);
             return true;
         });
@@ -147,14 +156,12 @@ public class SoulboundHandler {
             return;
 
         Holder<Enchantment> soulbound = resolveSoulbound(player);
-        if (soulbound == null)
-            return;
 
         Inventory inventory = player.getInventory();
         List<ItemStack> kept = new ArrayList<>();
         for (int slot = 0; slot < inventory.getContainerSize(); slot++) {
             ItemStack stack = inventory.getItem(slot);
-            if (EnchantmentHelper.getItemEnchantmentLevel(soulbound, stack) <= 0)
+            if (!isSoulbound(stack, soulbound))
                 continue;
             kept.add(stack.copy());
             inventory.setItem(slot, ItemStack.EMPTY);
@@ -169,6 +176,13 @@ public class SoulboundHandler {
 
     private static Holder<Enchantment> resolveSoulbound(ServerPlayer player) {
         return ModEnchantments.resolve(player.level());
+    }
+
+    private static boolean isSoulbound(ItemStack stack, Holder<Enchantment> soulbound) {
+        if (Config.soulboundEnchantmentEnabled && soulbound != null
+                && EnchantmentHelper.getItemEnchantmentLevel(soulbound, stack) > 0)
+            return true;
+        return Config.phoneSoulboundByDefault && stack.is(ModItems.CRAZY_PHONE.get());
     }
 }
 *///?}

@@ -87,6 +87,7 @@ public class Crazyphone {
         //? if <1.21.10 {
         ModRecipes.REGISTRY.register(modEventBus);
         //?}
+        fr.lordfinn.crazyphone.recipe.CrazyPhoneCraftingCondition.REGISTRY.register(modEventBus);
         //? if >=1.20.5 {
         /*fr.lordfinn.crazyphone.init.ModLootModifiers.LOOT_MODIFIER_SERIALIZERS.register(modEventBus);
         *///?}

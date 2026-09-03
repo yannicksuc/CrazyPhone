@@ -300,6 +300,19 @@ tasks.named<ProcessResources>("processResources") {
             photoModelFile.writeText("""{"type": "crazyphone:photo_card_model"}""" + "\n")
             val photoItemFile = destinationDir.resolve("assets/crazyphone/items/crazy_phone_photo.json")
             photoItemFile.writeText("""{"model": {"type": "crazyphone:photo_card_model"}}""" + "\n")
+
+            // crazy_phone.json's tracked "key" entries use the older {"item": "..."} object form (needed by
+            // 1.21.1's own Ingredient codec, which has no bare-string shorthand). NeoForge's own
+            // IngredientCodecs wrapper is designed to keep accepting that older form for back-compat even on
+            // >=26, but this rewrites the build output to the newer bare-string form anyway rather than
+            // relying on that unverified assumption - same "patch the build output, not the tracked shared
+            // resource" approach as the two files above.
+            val recipeFile = destinationDir.resolve("data/crazyphone/recipes/crazy_phone.json")
+            if (recipeFile.exists()) {
+                recipeFile.writeText(
+                    """{"type":"minecraft:crafting_shaped","category":"misc","neoforge:conditions":[{"type":"crazyphone:crafting_enabled"}],"pattern":["GGG","GPG","GRG"],"key":{"G":"minecraft:gold_ingot","P":"minecraft:glass_pane","R":"minecraft:redstone"},"result":{"id":"crazyphone:crazy_phone","count":1}}""" + "\n"
+                )
+            }
         }
     }
 

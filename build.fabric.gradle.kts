@@ -365,6 +365,7 @@ sourceSets.main {
             // "Duplicate a photo with paper" crafting recipe - see CrazyPhoneDuplicatePhotoRecipe's own doc
             // comment (NeoForge-1.21.10 not backported yet; no equivalent Fabric node exists in this project).
             "fr/lordfinn/crazyphone/recipe/CrazyPhoneDuplicatePhotoRecipe.java",
+            "fr/lordfinn/crazyphone/recipe/CrazyPhoneCraftingCondition.java",
             "fr/lordfinn/crazyphone/init/ModRecipes.java",
             // Task #164 (SavedData/player-attachment persistence): Soulbound enchantment death-drop
             // handling. ModEnchantments is loader-agnostic by inspection (only RegistryAccess/Registries.

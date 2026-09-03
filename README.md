@@ -39,7 +39,9 @@ versions.
 
 **Phone basics** - two-step registration (number/name, then a dedicated password step with a clear warning
 that the password is visible to server admins) + PIN sign-in, home screen launcher, lock screen, back/home
-navigation.
+navigation. Craftable (glass pane in the middle, ringed by gold ingots, redstone at the bottom-center -
+toggleable via `crazyPhoneCraftingEnabled`, see [Configuration](#-configuration)) or given directly with
+`/crazyphone give <number>`.
 
 **Messaging** - contacts, favorites, and groups in one scrollable, recency-sorted screen; group
 conversations with their own settings (rename, custom icon, invite/exclude, admin); real-time text;
@@ -301,6 +303,8 @@ file or via `/crazyphone feature`.
 | `maxVoiceMessagesStoredPerConversation` | `30` | 5-500 | Voice messages (with audio) kept on disk per conversation. (NeoForge only) |
 | `maxVoiceMessageRecordingSeconds` | `60` | 5-600 | Maximum length of a single voice message recording. (NeoForge only) |
 | `soulboundEnchantmentEnabled` | `true` | - | Whether the Soulbound enchantment actually keeps enchanted items on death. |
+| `phoneSoulboundByDefault` | `false` | - | Whether the Crazy Phone item survives death on its own, without needing the Soulbound enchantment applied to it. |
+| `crazyPhoneCraftingEnabled` | `true` | - | Whether the Crazy Phone item can be crafted. Takes effect on the next `/reload` or restart, not instantly like the toggles above. |
 
 **Permissions** *(NeoForge only for now)*: each toggleable feature also has a permission node
 (`crazyphone.feature.<calls|voice_messages|images|mayor_voting>`), for restricting a feature to
