@@ -2,8 +2,10 @@ package fr.lordfinn.crazyphone.client.render;
 
 /**
  * Draws a {@link CrazyPhonePhotoFrameEntity}. Two looks, chosen per-photo by whether its texture has
- * meaningful transparency (see {@link FabricPictureCache.CachedTexture#hasTransparency()}):
- * - Opaque photo on a floor/ceiling placement: the photo itself covers the ENTIRE top face edge to edge (no
+ * meaningful transparency (see {@link FabricPictureCache.CachedTexture#hasTransparency()}) - applies the
+ * same way regardless of which face the frame is attached to (floor/ceiling/wall alike - "images on sides
+ * still have no profondeur" - live request, an earlier version only boxed floor/ceiling placements):
+ * - Opaque photo: the photo itself covers the ENTIRE outward face edge to edge (no
  *   separate top/background quad at all - a straight-down view sees only the photo, "je ne veux pas de
  *   bordure visible depuis le dessus" - live request), sized to the photo's own actual displayed rectangle
  *   (aspect-fit within the resize slot), not the full slot - "seulement la taille de l'image réelle compte"
@@ -60,9 +62,12 @@ public class CrazyPhonePhotoFrameRenderer extends EntityRenderer<CrazyPhonePhoto
     private static final /*$ res_loc {*/ResourceLocation/*$}*/ GROUND_BACKING_TEXTURE =
             Crazyphone.parseId("crazyphone:textures/entity/photo_frame_ground_backing.png");
     private static final float DEPTH = (float) CrazyPhonePhotoFrameEntity.DEPTH;
-    // How far the brown border/backing extends past the photo's own actual edge on every side, in blocks -
-    // sized to read as a thin mat around the photo, not a wide picture-frame border.
-    private static final float BORDER_MARGIN = 1f / 16f;
+    // The side walls sit FLUSH against the photo's own edge, zero gap - an earlier version added a small
+    // margin here, which (since the top face is the photo alone, no background quad under it anymore) left
+    // an empty 1-pixel ring between the photo's edge and the walls where the block underneath showed through
+    // ("il ne faut pas laisser un vide de 1 pixel sur la face du dessus" - live request, reported with a
+    // screenshot showing exactly that gap).
+    private static final float BORDER_MARGIN = 0f;
     // "reculer l'image de 0.75 pixel pour que ça flotte à .25 pixel au dessus de la face visée" - a
     // transparent photo skips the box entirely and just floats this far off the face instead (out of the
     // full 1-pixel/DEPTH budget, only a quarter pixel of it is used as a gap).
@@ -95,7 +100,9 @@ public class CrazyPhonePhotoFrameRenderer extends EntityRenderer<CrazyPhonePhoto
         }
 
         boolean transparent = texture != null && texture.hasTransparency();
-        boolean boxed = entity.isFloorOrCeiling() && !transparent;
+        // The depth-wise box (side walls) now applies to every opaque placement, not just floor/ceiling -
+        // "images on sides still have no profondeur" (live request, reported for wall-mounted frames).
+        boolean boxed = !transparent;
 
         if (boxed)
             drawBoxSides(poseStack, buffer, packedLight, drawW, drawH);
@@ -238,7 +245,8 @@ public class CrazyPhonePhotoFrameRenderer extends EntityRenderer<CrazyPhonePhoto
     private static final Identifier GROUND_BACKING_TEXTURE =
             Crazyphone.parseId("crazyphone:textures/entity/photo_frame_ground_backing.png");
     private static final float DEPTH = (float) CrazyPhonePhotoFrameEntity.DEPTH;
-    private static final float BORDER_MARGIN = 1f / 16f;
+    // Flush against the photo's own edge, zero gap - see the <26 branch's own comment on this same constant.
+    private static final float BORDER_MARGIN = 0f;
     private static final float TRANSPARENT_FLOAT_GAP = DEPTH * 0.25f;
 
     public CrazyPhonePhotoFrameRenderer(EntityRendererProvider.Context context) {
@@ -250,7 +258,6 @@ public class CrazyPhonePhotoFrameRenderer extends EntityRenderer<CrazyPhonePhoto
         public double faceOffset;
         public float width = 1f, height = 1f;
         public int rotation;
-        public boolean floorOrCeiling;
         public java.util.UUID photoId;
         public CrazyPhonePhotoFrameEntity entity;
     }
@@ -268,7 +275,6 @@ public class CrazyPhonePhotoFrameRenderer extends EntityRenderer<CrazyPhonePhoto
         state.width = entity.widthBlocks();
         state.height = entity.heightBlocks();
         state.rotation = entity.rotation();
-        state.floorOrCeiling = entity.isFloorOrCeiling();
         state.photoId = entity.photoId();
         state.entity = entity;
     }
@@ -288,7 +294,9 @@ public class CrazyPhonePhotoFrameRenderer extends EntityRenderer<CrazyPhonePhoto
         }
 
         boolean transparent = texture != null && texture.hasTransparency();
-        boolean boxed = state.floorOrCeiling && !transparent;
+        // The depth-wise box (side walls) now applies to every opaque placement, not just floor/ceiling -
+        // "images on sides still have no profondeur" (live request, reported for wall-mounted frames).
+        boolean boxed = !transparent;
 
         if (boxed) {
             float finalW = drawW, finalH = drawH;

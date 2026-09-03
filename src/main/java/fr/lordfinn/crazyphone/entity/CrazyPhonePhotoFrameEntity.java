@@ -277,7 +277,9 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
      * item-frame-equivalent) for any block whose shape can't be read in that direction (e.g. air itself,
      * though tryPlace already rejects that case before an entity ever exists). */
     public double computeFaceOffset(Level level) {
-        BlockState state = level.getBlockState(attachPos);
+        // attachPos can be null very early in construction - see computeBoundingBox's own comment.
+        BlockPos pos = attachPos != null ? attachPos : BlockPos.containing(this.position());
+        BlockState state = level.getBlockState(pos);
         Direction face = attachFace();
         // getCollisionShape(), not getShape() (the render/pick outline) - an earlier attempt at fixing a
         // punch-through-to-the-block-behind bug switched this to getShape() on the theory that it'd match
@@ -287,7 +289,7 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
         // known-good collision shape pending a more careful, non-live-blocking investigation of the
         // original (much narrower) bug. The [0,1] clamp below is a defensive floor/ceiling against any
         // single block's shape producing a wild bounds() value, regardless of which shape source is used.
-        VoxelShape shape = state.getCollisionShape(level, attachPos);
+        VoxelShape shape = state.getCollisionShape(level, pos);
         if (shape.isEmpty())
             return face.getAxisDirection() == Direction.AxisDirection.POSITIVE ? 1.0 : 0.0;
         AABB bounds = shape.bounds();
@@ -352,6 +354,15 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
     // after construction, and from refreshDimensions() on every resize) is the actual mechanism instead;
     // getBoundingBox() itself just returns whatever was last set via that, same as any other entity.
     private AABB computeBoundingBox() {
+        // Entity's own vanilla constructor calls refreshDimensions() (hence this) as part of ITS OWN
+        // construction, which runs before this subclass's own field initializers do (attachPos's `=
+        // BlockPos.ZERO` initializer is ordinary Java bytecode placed at the START of this class's
+        // constructor, which only runs AFTER super(type, level) returns) - so attachPos can genuinely still
+        // be null the very first time this is ever called. Falling back to the entity's own tracked block
+        // position here (already set by Entity's constructor before it calls refreshDimensions) avoids an
+        // NPE there; tryPlace() calls refreshDimensions() again right after setting the real attachPos, so
+        // this fallback is only ever visible for a single transient construction step, never in practice.
+        BlockPos pos = attachPos != null ? attachPos : BlockPos.containing(this.position());
         Level lvl = this.level();
         Direction face = attachFace();
         double faceOffset = lvl != null ? computeFaceOffset(lvl) : (face.getAxisDirection() == Direction.AxisDirection.POSITIVE ? 1.0 : 0.0);
@@ -370,15 +381,15 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
         // full slot uses - only the half-extent shrinks, the center never moves.
         double halfU = (displayWidthBlocks >= 0 ? displayWidthBlocks : (negU + posU)) / 2.0;
         double halfV = (displayHeightBlocks >= 0 ? displayHeightBlocks : (negV + posV)) / 2.0;
-        double cx = attachPos.getX() + 0.5, cy = attachPos.getY() + 0.5, cz = attachPos.getZ() + 0.5;
+        double cx = pos.getX() + 0.5, cy = pos.getY() + 0.5, cz = pos.getZ() + 0.5;
         double u0 = centerU - halfU, u1 = centerU + halfU, v0 = centerV - halfV, v1 = centerV + halfV;
         return switch (face) {
-            case DOWN -> new AABB(cx + u0, attachPos.getY() + faceOffset - DEPTH, cz + v0, cx + u1, attachPos.getY() + faceOffset, cz + v1);
-            case UP -> new AABB(cx + u0, attachPos.getY() + faceOffset, cz + v0, cx + u1, attachPos.getY() + faceOffset + DEPTH, cz + v1);
-            case NORTH -> new AABB(cx + u0, cy + v0, attachPos.getZ() + faceOffset - DEPTH, cx + u1, cy + v1, attachPos.getZ() + faceOffset);
-            case SOUTH -> new AABB(cx + u0, cy + v0, attachPos.getZ() + faceOffset, cx + u1, cy + v1, attachPos.getZ() + faceOffset + DEPTH);
-            case WEST -> new AABB(attachPos.getX() + faceOffset - DEPTH, cy + v0, cz + u0, attachPos.getX() + faceOffset, cy + v1, cz + u1);
-            case EAST -> new AABB(attachPos.getX() + faceOffset, cy + v0, cz + u0, attachPos.getX() + faceOffset + DEPTH, cy + v1, cz + u1);
+            case DOWN -> new AABB(cx + u0, pos.getY() + faceOffset - DEPTH, cz + v0, cx + u1, pos.getY() + faceOffset, cz + v1);
+            case UP -> new AABB(cx + u0, pos.getY() + faceOffset, cz + v0, cx + u1, pos.getY() + faceOffset + DEPTH, cz + v1);
+            case NORTH -> new AABB(cx + u0, cy + v0, pos.getZ() + faceOffset - DEPTH, cx + u1, cy + v1, pos.getZ() + faceOffset);
+            case SOUTH -> new AABB(cx + u0, cy + v0, pos.getZ() + faceOffset, cx + u1, cy + v1, pos.getZ() + faceOffset + DEPTH);
+            case WEST -> new AABB(pos.getX() + faceOffset - DEPTH, cy + v0, cz + u0, pos.getX() + faceOffset, cy + v1, cz + u1);
+            case EAST -> new AABB(pos.getX() + faceOffset, cy + v0, cz + u0, pos.getX() + faceOffset + DEPTH, cy + v1, cz + u1);
         };
     }
 
