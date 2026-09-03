@@ -409,6 +409,27 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
         this.setBoundingBox(computeBoundingBox());
     }
 
+    // Entity#getDimensions(Pose) is what feeds this.dimensions, which is what vanilla's OWN unmodified
+    // setPos()/makeBoundingBox() falls back to whenever they run un-intercepted (see this class's own tick()
+    // comment for the whole story of why nothing intercepts them anymore) - vanilla's own base implementation
+    // just returns this.type.getDimensions(), the raw EntityType default (sized(1.0f,1.0f) in
+    // ModEntities.java), regardless of this entity's actual configured size. Overriding THIS instead - a
+    // plain data-provider method vanilla's own machinery already calls as part of its NORMAL, unmodified
+    // flow - is a materially different, lower-risk change than the five reverted attempts: it never touches
+    // setPos(), makeBoundingBox(), or tick() at all, so whatever broke rendering each of those five times has
+    // nothing to interact with here. Can't capture the full asymmetric/thin/rotated shape this way (vanilla's
+    // own EntityDimensions is only ever a symmetric width x height box centered on the tracked position, no
+    // per-axis or off-center support) - this is a strictly better FALLBACK for whenever vanilla's own
+    // machinery runs unmodified, not a replacement for computeBoundingBox()'s own precise result (which
+    // still applies normally via refreshDimensions()/onSyncedDataUpdated whenever those fire).
+    @Override
+    public net.minecraft.world.entity.EntityDimensions getDimensions(net.minecraft.world.entity.Pose pose) {
+        if (this.entityData == null)
+            return super.getDimensions(pose);
+        float size = Math.max(0.0625f, Math.max(widthBlocks(), heightBlocks()));
+        return net.minecraft.world.entity.EntityDimensions.fixed(size, size);
+    }
+
     // Entity#setPos(x,y,z) independently calls this.setBoundingBox(this.makeBoundingBox()), using
     // EntityDimensions (this.dimensions - the raw EntityType default, sized(1.0f,1.0f) in ModEntities.java,
     // never touched by this class) to rebuild a generic box, undoing whatever refreshDimensions() had just
