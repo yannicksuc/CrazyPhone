@@ -34,6 +34,7 @@ import fr.lordfinn.crazyphone.client.gui.CrazyPhoneConversationScreen;
 import fr.lordfinn.crazyphone.client.gui.CrazyPhoneContactsScreenScreen;
 import fr.lordfinn.crazyphone.client.gui.CrazyPhoneContactInfoScreenScreen;
 import fr.lordfinn.crazyphone.client.gui.CrazyPhoneGroupSettingsScreenScreen;
+import fr.lordfinn.crazyphone.client.gui.CrazyPhonePhotoFrameResizeScreen;
 // The 3 call screens (Calling/InCall/IncomingCall) need CrazyPhoneCallActionMessage, which needs
 // voicechat.CallRegistry - not ported this pass (see build.fabric.gradle.kts's TODO(#165)/SVC note).
 // Their MENU classes stay registered (see ModMenus.java) since ScreenMenuUtils.openCallScreenForPlayer,
@@ -83,6 +84,7 @@ public class ModScreens {
 		event.register(ModMenus.CRAZY_PHONE_CALLING_SCREEN.get(), CrazyPhoneCallingScreenScreen::new);
 		event.register(ModMenus.CRAZY_PHONE_IN_CALL_SCREEN.get(), CrazyPhoneInCallScreenScreen::new);
 		event.register(ModMenus.CRAZY_PHONE_INCOMING_CALL_SCREEN.get(), CrazyPhoneIncomingCallScreenScreen::new);
+		event.register(ModMenus.CRAZY_PHONE_PHOTO_FRAME_RESIZE.get(), CrazyPhonePhotoFrameResizeScreen::new);
 	}
 	//?}
 	//? if fabric && >=1.20.5 {
@@ -99,6 +101,7 @@ public class ModScreens {
 		MenuScreens.register(ModMenus.CRAZY_PHONE_MAYORS_CANDIDATES_LIST.get(), CrazyPhoneMayorsCandidatesListScreen::new);
 		MenuScreens.register(ModMenus.CRAZY_PHONE_MY_PHOTOS_SCREEN.get(), CrazyPhoneMyPhotosScreenScreen::new);
 		MenuScreens.register(ModMenus.CRAZY_PHONE_GROUP_SETTINGS_SCREEN.get(), CrazyPhoneGroupSettingsScreenScreen::new);
+		MenuScreens.register(ModMenus.CRAZY_PHONE_PHOTO_FRAME_RESIZE.get(), CrazyPhonePhotoFrameResizeScreen::new);
 		// Mayor-candidate poster screen stays NeoForge-only, matching the feature itself.
 		// TODO: calling/in-call/incoming-call screens wait on a voicechat.CallRegistry Fabric port.
 	}

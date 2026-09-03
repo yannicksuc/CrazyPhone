@@ -332,6 +332,50 @@ public class ScreenMenuUtils {
     }
     *///?}
 
+    // >=1.20.5 only, matching the whole photo-frame feature's own floor (see ModEntities.java's own doc
+    // comment) - no extra opening data at all (see CrazyPhonePhotoFrameResizeMenu's own doc comment), so
+    // unlike every openXScreen above there's no packetBuffer to populate, on either loader.
+    //? if neoforge && >=1.20.5 {
+    /*public static void openPhotoFrameResizeMenu(Player player, fr.lordfinn.crazyphone.entity.CrazyPhonePhotoFrameEntity entity) {
+        if (!(player instanceof ServerPlayer))
+            return;
+        player.openMenu(new net.minecraft.world.MenuProvider() {
+            @Override
+            public Component getDisplayName() {
+                return Component.translatable("gui.crazyphone.photo_frame_resize.title");
+            }
+
+            @Override
+            public AbstractContainerMenu createMenu(int id, Inventory inventory, Player p) {
+                return new fr.lordfinn.crazyphone.world.inventory.CrazyPhonePhotoFrameResizeMenu(id, inventory, entity);
+            }
+        }, buf -> {
+        });
+    }
+    *///?}
+    //? if fabric && >=1.20.5 {
+    /*public static void openPhotoFrameResizeMenu(Player player, fr.lordfinn.crazyphone.entity.CrazyPhonePhotoFrameEntity entity) {
+        if (!(player instanceof ServerPlayer))
+            return;
+        player.openMenu(new /^$ fabric_ext_menu_provider {^/net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory/^$}^/<RegistryFriendlyByteBuf>() {
+            @Override
+            public Component getDisplayName() {
+                return Component.translatable("gui.crazyphone.photo_frame_resize.title");
+            }
+
+            @Override
+            public AbstractContainerMenu createMenu(int id, Inventory inventory, Player p) {
+                return new fr.lordfinn.crazyphone.world.inventory.CrazyPhonePhotoFrameResizeMenu(id, inventory, entity);
+            }
+
+            @Override
+            public RegistryFriendlyByteBuf getScreenOpeningData(ServerPlayer p) {
+                return new RegistryFriendlyByteBuf(Unpooled.buffer(), p.registryAccess());
+            }
+        });
+    }
+    *///?}
+
     //? if neoforge {
     public static void openPhoneMayorCandidateMenu(Player player, String candidateNumber) {
         if (player instanceof ServerPlayer) {

@@ -362,6 +362,15 @@ sourceSets.main {
             // (see CrazyphoneFabricClient), which needs no separate empty-click handler of its own.
             "fr/lordfinn/crazyphone/item/CrazyPhoneCaptureShortcut.java",
             "fr/lordfinn/crazyphone/utils/PhotoItemData.java",
+            // Placeable/resizable wall-photo entity - see CrazyPhonePhotoFrameEntity's own doc comment for
+            // why it isn't a vanilla HangingEntity. >=1.20.5 only (see ModEntities.java's own doc comment).
+            "fr/lordfinn/crazyphone/utils/PhotoFrameData.java",
+            "fr/lordfinn/crazyphone/entity/CrazyPhonePhotoFrameEntity.java",
+            "fr/lordfinn/crazyphone/init/ModEntities.java",
+            "fr/lordfinn/crazyphone/client/render/CrazyPhonePhotoFrameRenderer.java",
+            "fr/lordfinn/crazyphone/init/ModEntityRenderers.java",
+            "fr/lordfinn/crazyphone/world/inventory/CrazyPhonePhotoFrameResizeMenu.java",
+            "fr/lordfinn/crazyphone/client/gui/CrazyPhonePhotoFrameResizeScreen.java",
             // "Duplicate a photo with paper" crafting recipe - see CrazyPhoneDuplicatePhotoRecipe's own doc
             // comment (NeoForge-1.21.10 not backported yet; no equivalent Fabric node exists in this project).
             "fr/lordfinn/crazyphone/recipe/CrazyPhoneDuplicatePhotoRecipe.java",

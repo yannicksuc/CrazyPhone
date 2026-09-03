@@ -120,6 +120,10 @@ public class Config {
             .comment("Whether the Crazy Phone item can be crafted. When false, the recipe is disabled - phones can still be given via /crazyphone give.")
             .define("crazyPhoneCraftingEnabled", true);
 
+    private static final ModConfigSpec.IntValue MAX_PHOTO_FRAME_SIZE_BLOCKS = BUILDER
+            .comment("Maximum size, in blocks on a side, a placed photo frame can be resized up to via its own right-click resize dialog.")
+            .defineInRange("maxPhotoFrameSizeBlocks", 8, 1, 32);
+
     static final ModConfigSpec SPEC = BUILDER.build();
 
     public static int maxStoredMessagesPerConversation;
@@ -142,6 +146,7 @@ public class Config {
     public static boolean soulboundEnchantmentEnabled;
     public static boolean phoneSoulboundByDefault;
     public static boolean crazyPhoneCraftingEnabled;
+    public static int maxPhotoFrameSizeBlocks;
 
     @SubscribeEvent
     static void onLoad(final ModConfigEvent event) {
@@ -165,6 +170,7 @@ public class Config {
         soulboundEnchantmentEnabled = SOULBOUND_ENCHANTMENT_ENABLED.get();
         phoneSoulboundByDefault = PHONE_SOULBOUND_BY_DEFAULT.get();
         crazyPhoneCraftingEnabled = CRAZY_PHONE_CRAFTING_ENABLED.get();
+        maxPhotoFrameSizeBlocks = MAX_PHOTO_FRAME_SIZE_BLOCKS.get();
     }
 
     /** Setters for the toggleable features below, used by /crazyphone feature to change them at runtime
@@ -223,6 +229,7 @@ public class Config {
     public static boolean soulboundEnchantmentEnabled = true;
     public static boolean phoneSoulboundByDefault = false;
     public static boolean crazyPhoneCraftingEnabled = true;
+    public static int maxPhotoFrameSizeBlocks = 8;
 
     public static void setMayorElectionFeatureEnabled(boolean enabled) {
         mayorElectionFeatureEnabled = enabled;

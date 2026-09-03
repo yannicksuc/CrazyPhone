@@ -56,6 +56,7 @@ import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneGroupSettingsScreenMenu;
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneCallingScreenMenu;
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneIncomingCallScreenMenu;
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneInCallScreenMenu;
+import fr.lordfinn.crazyphone.world.inventory.CrazyPhonePhotoFrameResizeMenu;
 import fr.lordfinn.crazyphone.Crazyphone;
 import org.jetbrains.annotations.NotNull;
 
@@ -92,6 +93,11 @@ public class ModMenus {
 			() -> IMenuTypeExtension.create(CrazyPhoneInCallScreenMenu::new));
 	public static final DeferredHolder<MenuType<?>, MenuType<CrazyPhoneIncomingCallScreenMenu>> CRAZY_PHONE_INCOMING_CALL_SCREEN = REGISTRY.register("crazy_phone_incoming_call_screen",
 			() -> IMenuTypeExtension.create(CrazyPhoneIncomingCallScreenMenu::new));
+		// No extra opening data at all (see CrazyPhonePhotoFrameResizeMenu own doc comment) - still
+		// registered via IMenuTypeExtension.create like every other menu here for consistency, its factory
+		// just ignores the buffer argument.
+		public static final DeferredHolder<MenuType<?>, MenuType<CrazyPhonePhotoFrameResizeMenu>> CRAZY_PHONE_PHOTO_FRAME_RESIZE = REGISTRY.register("crazy_phone_photo_frame_resize",
+				() -> IMenuTypeExtension.create(CrazyPhonePhotoFrameResizeMenu::new));
     //?}
     //? if fabric && >=1.20.5 {
     /*// Vanilla's own MenuType constructor is private (only Fabric API's own access-widened
@@ -126,6 +132,7 @@ public class ModMenus {
     public static RegistryEntry<MenuType<CrazyPhoneCallingScreenMenu>> CRAZY_PHONE_CALLING_SCREEN;
     public static RegistryEntry<MenuType<CrazyPhoneInCallScreenMenu>> CRAZY_PHONE_IN_CALL_SCREEN;
     public static RegistryEntry<MenuType<CrazyPhoneIncomingCallScreenMenu>> CRAZY_PHONE_INCOMING_CALL_SCREEN;
+    public static RegistryEntry<MenuType<CrazyPhonePhotoFrameResizeMenu>> CRAZY_PHONE_PHOTO_FRAME_RESIZE;
 
     private static <T extends net.minecraft.world.inventory.AbstractContainerMenu> RegistryEntry<MenuType<T>> registerMenu(
             String id, /^$ fabric_ext_menu_type {^/ExtendedScreenHandlerType/^$}^/.ExtendedFactory<T, RegistryFriendlyByteBuf> factory) {
@@ -146,6 +153,7 @@ public class ModMenus {
         CRAZY_PHONE_CALLING_SCREEN = registerMenu("crazy_phone_calling_screen", CrazyPhoneCallingScreenMenu::new);
         CRAZY_PHONE_IN_CALL_SCREEN = registerMenu("crazy_phone_in_call_screen", CrazyPhoneInCallScreenMenu::new);
         CRAZY_PHONE_INCOMING_CALL_SCREEN = registerMenu("crazy_phone_incoming_call_screen", CrazyPhoneIncomingCallScreenMenu::new);
+        CRAZY_PHONE_PHOTO_FRAME_RESIZE = registerMenu("crazy_phone_photo_frame_resize", CrazyPhonePhotoFrameResizeMenu::new);
         // CRAZY_PHONE_MAYOR_CANDIDATE_SCREEN stays NeoForge-only, matching the mayor-poster feature itself
         // (see build.fabric.gradle.kts) - the picture-folders/album screens it used to sit alongside are gone.
     }

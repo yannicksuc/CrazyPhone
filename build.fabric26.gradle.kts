@@ -332,6 +332,16 @@ sourceSets.main {
         "fr/lordfinn/crazyphone/client/gui/CrazyPhonePhotoViewerScreen.java",
         "fr/lordfinn/crazyphone/item/CrazyPhoneCaptureShortcut.java",
         "fr/lordfinn/crazyphone/utils/PhotoItemData.java",
+        // Placeable/resizable wall-photo entity - see CrazyPhonePhotoFrameEntity's own doc comment for why
+        // it isn't a vanilla HangingEntity, and CrazyPhonePhotoFrameRenderer's own doc comment for the
+        // caveat that its >=26 rendering branch has no prior in-repo precedent to have been checked against.
+        "fr/lordfinn/crazyphone/utils/PhotoFrameData.java",
+        "fr/lordfinn/crazyphone/entity/CrazyPhonePhotoFrameEntity.java",
+        "fr/lordfinn/crazyphone/init/ModEntities.java",
+        "fr/lordfinn/crazyphone/client/render/CrazyPhonePhotoFrameRenderer.java",
+        "fr/lordfinn/crazyphone/init/ModEntityRenderers.java",
+        "fr/lordfinn/crazyphone/world/inventory/CrazyPhonePhotoFrameResizeMenu.java",
+        "fr/lordfinn/crazyphone/client/gui/CrazyPhonePhotoFrameResizeScreen.java",
         "fr/lordfinn/crazyphone/recipe/CrazyPhoneDuplicatePhotoRecipe.java",
         "fr/lordfinn/crazyphone/recipe/CrazyPhoneCraftingCondition.java",
         "fr/lordfinn/crazyphone/init/ModRecipes.java",

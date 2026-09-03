@@ -13,8 +13,10 @@ import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 
+import fr.lordfinn.crazyphone.utils.PhotoFrameData;
 import fr.lordfinn.crazyphone.utils.PhotoItemData;
 
 import java.util.UUID;
@@ -60,6 +62,35 @@ public class CrazyPhonePhotoItem extends Item {
         ItemStack stack = player.getItemInHand(hand);
         openViewerOnClient(world, stack);
         return InteractionResult.SUCCESS;
+    }
+    *///?}
+
+    // >=1.20.5 only - see ModEntities.java's own doc comment for the whole photo-frame feature's floor.
+    // Right-clicking a block face with a photo places it as a CrazyPhonePhotoFrameEntity instead of opening
+    // the viewer (that's what a bare right-click in open air, or a right-click that fails to place, still
+    // does - see use() above, still called normally when useOn returns PASS).
+    //? if >=1.20.5 {
+    /*@Override
+    public net.minecraft.world.InteractionResult useOn(UseOnContext context) {
+        Level world = context.getLevel();
+        if (world.isClientSide())
+            return net.minecraft.world.InteractionResult.SUCCESS;
+        ItemStack stack = context.getItemInHand();
+        PhotoItemData photoData = PhotoItemData.fromStack(stack);
+        if (photoData == null)
+            return net.minecraft.world.InteractionResult.PASS;
+        PhotoFrameData frameData = PhotoFrameData.fromStack(stack);
+        int widthUnits = frameData != null ? frameData.widthUnits() : fr.lordfinn.crazyphone.entity.CrazyPhonePhotoFrameEntity.DEFAULT_SIZE_UNITS;
+        int heightUnits = frameData != null ? frameData.heightUnits() : fr.lordfinn.crazyphone.entity.CrazyPhonePhotoFrameEntity.DEFAULT_SIZE_UNITS;
+        fr.lordfinn.crazyphone.entity.CrazyPhonePhotoFrameEntity entity = fr.lordfinn.crazyphone.entity.CrazyPhonePhotoFrameEntity.tryPlace(
+                world, context.getClickedPos(), context.getClickedFace(), photoData, new PhotoFrameData(widthUnits, heightUnits));
+        if (entity == null)
+            return net.minecraft.world.InteractionResult.FAIL;
+        world.addFreshEntity(entity);
+        entity.playPlaceSound();
+        if (context.getPlayer() != null && !context.getPlayer().getAbilities().instabuild)
+            stack.shrink(1);
+        return net.minecraft.world.InteractionResult.SUCCESS;
     }
     *///?}
 

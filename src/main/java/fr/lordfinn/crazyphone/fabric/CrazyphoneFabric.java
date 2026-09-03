@@ -39,6 +39,7 @@ public class CrazyphoneFabric implements ModInitializer {
         ModMenus.register();
         ModRecipes.register();
         fr.lordfinn.crazyphone.recipe.CrazyPhoneCraftingCondition.register();
+        fr.lordfinn.crazyphone.init.ModEntities.register();
         ModPackets.registerCommon();
         ModPackets.registerServer();
         PhoneAttachmentTypes.register();

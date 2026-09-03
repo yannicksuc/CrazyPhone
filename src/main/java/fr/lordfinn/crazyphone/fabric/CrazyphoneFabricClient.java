@@ -25,6 +25,7 @@ public class CrazyphoneFabricClient implements ClientModInitializer {
     public void onInitializeClient() {
         ModPackets.registerClient();
         ModScreens.register();
+        fr.lordfinn.crazyphone.init.ModEntityRenderers.register();
         CrazyPhoneItemProperties.register();
         PhoneClickableCursorHandler.register();
         CrazyPhoneItemInInventoryTickProcedure.register();
