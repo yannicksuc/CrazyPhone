@@ -15,8 +15,7 @@ Voice Chat**, place a real voice call or leave a recorded message. Everything li
 hand, no separate app, no separate menu system bolted onto vanilla UI, and **no external camera mod
 dependency** - photo capture, storage, and rendering are all built in.
 
-CrazyPhone is a standalone rewrite of the smartphone feature originally found in the **CrazyThings** mod:
-https://www.curseforge.com/minecraft/mc-mods/crazythings
+CrazyPhone is a standalone rewrite of the smartphone feature originally found in my **CrazyThings** mod.
 Same look, same core idea, but the storage layer was rebuilt from scratch to fix a bug in the original that
 could crash a server: it kept *every* message from *every* conversation forever in one blob and broadcast
 the whole thing to *every* player on *every* login. This version paginates conversations, caps what's
