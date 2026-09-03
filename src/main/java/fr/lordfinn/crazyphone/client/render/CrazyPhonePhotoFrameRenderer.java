@@ -127,6 +127,17 @@ public class CrazyPhonePhotoFrameRenderer extends EntityRenderer<CrazyPhonePhoto
     private void applyFaceTransform(CrazyPhonePhotoFrameEntity entity, PoseStack poseStack) {
         Direction face = entity.attachFace();
         double faceOffset = entity.computeFaceOffset(entity.level());
+        // Off-center slots (the anchor sitting at a corner/edge rather than dead center - see
+        // CrazyPhonePhotoFrameEntity#setExtents) need the SAME world-space center offset
+        // computeBoundingBox() applies to the hitbox, or the render silently stays centered on attachPos
+        // while the (correct) hitbox moves - "blue square position is not kept... it's always centered"
+        // (live request, confirmed live with an exact overlay showing the render staying put while the
+        // hitbox/intended placement shifted). Applied here, in WORLD space, BEFORE any rotation - working
+        // out the equivalent LOCAL-space offset per face would mean re-deriving which world axis each
+        // rotation maps local x/y to and with what sign, exactly the kind of per-face sign mistake the
+        // north/south depth fix already made once; doing it in world space, mirroring
+        // computeBoundingBox's own per-face axis assignment directly, has no such ambiguity.
+        applyCenterOffset(entity, face, poseStack);
         switch (face) {
             case DOWN -> {
                 poseStack.translate(0, faceOffset - 0.5, 0);
@@ -149,6 +160,22 @@ public class CrazyPhonePhotoFrameRenderer extends EntityRenderer<CrazyPhonePhoto
                 poseStack.translate(faceOffset - 0.5, 0, 0);
                 poseStack.mulPose(Axis.YP.rotationDegrees(90));
             }
+        }
+    }
+
+    // Same U/V-to-world-axis assignment as CrazyPhonePhotoFrameEntity#computeBoundingBox: X for
+    // down/up/north/south's "width" axis, Z for down/up's "height" axis and west/east's "width" axis, Y for
+    // north/south/west/east's "height" axis.
+    private static void applyCenterOffset(CrazyPhonePhotoFrameEntity entity, Direction face, PoseStack poseStack) {
+        double negU = entity.negUUnits() / (double) CrazyPhonePhotoFrameEntity.UNITS_PER_BLOCK;
+        double posU = entity.posUUnits() / (double) CrazyPhonePhotoFrameEntity.UNITS_PER_BLOCK;
+        double negV = entity.negVUnits() / (double) CrazyPhonePhotoFrameEntity.UNITS_PER_BLOCK;
+        double posV = entity.posVUnits() / (double) CrazyPhonePhotoFrameEntity.UNITS_PER_BLOCK;
+        double centerU = (posU - negU) / 2.0, centerV = (posV - negV) / 2.0;
+        switch (face) {
+            case DOWN, UP -> poseStack.translate(centerU, 0, centerV);
+            case NORTH, SOUTH -> poseStack.translate(centerU, centerV, 0);
+            case WEST, EAST -> poseStack.translate(0, centerV, centerU);
         }
     }
 
@@ -249,12 +276,17 @@ public class CrazyPhonePhotoFrameRenderer extends EntityRenderer<CrazyPhonePhoto
     }
 
     // The plain brown "backing" at the block-flush side (z=0) of a boxed frame - see drawImageQuad's own
-    // comment for why this replaced a mirrored second copy of the photo there.
+    // comment for why this replaced a mirrored second copy of the photo there. Its visible side needs to
+    // face INWARD (toward the block, opposite of the photo's outward-facing normal) - `mirrored` is
+    // inverted relative to drawImageQuad/drawBoxSides for exactly that reason ("le fond de l'image est
+    // toujours rendu dans le mauvais sens" - live request: this had copied the SAME winding as the outward-
+    // facing photo instead of the opposite one, so it faced the wrong way on every face, not just
+    // north/south).
     private void drawBacking(PoseStack poseStack, MultiBufferSource buffer, int light, float w, float h, boolean mirrored) {
         VertexConsumer consumer = buffer.getBuffer(RenderType.entityCutout(GROUND_BACKING_TEXTURE));
         var pose = poseStack.last();
         float x0 = -w / 2f, x1 = w / 2f, y0 = -h / 2f, y1 = h / 2f;
-        if (!mirrored) {
+        if (mirrored) {
             vertex(consumer, pose, x0, y1, 0f, 0f, 0f, light);
             vertex(consumer, pose, x0, y0, 0f, 0f, 1f, light);
             vertex(consumer, pose, x1, y0, 0f, 1f, 1f, light);
@@ -319,6 +351,10 @@ public class CrazyPhonePhotoFrameRenderer extends EntityRenderer<CrazyPhonePhoto
         public Direction face = Direction.NORTH;
         public double faceOffset;
         public float width = 1f, height = 1f;
+        // World-space center offset from attachPos, matching CrazyPhonePhotoFrameEntity#computeBoundingBox's
+        // own centerU/centerV exactly - see applyFaceTransform's own comment for why this needs to travel
+        // through the render state at all (an off-center slot's render was silently ignoring it otherwise).
+        public double centerU, centerV;
         public int rotation;
         public java.util.UUID photoId;
     }
@@ -335,6 +371,12 @@ public class CrazyPhonePhotoFrameRenderer extends EntityRenderer<CrazyPhonePhoto
         state.faceOffset = entity.computeFaceOffset(entity.level());
         state.width = entity.widthBlocks();
         state.height = entity.heightBlocks();
+        double negU = entity.negUUnits() / (double) CrazyPhonePhotoFrameEntity.UNITS_PER_BLOCK;
+        double posU = entity.posUUnits() / (double) CrazyPhonePhotoFrameEntity.UNITS_PER_BLOCK;
+        double negV = entity.negVUnits() / (double) CrazyPhonePhotoFrameEntity.UNITS_PER_BLOCK;
+        double posV = entity.posVUnits() / (double) CrazyPhonePhotoFrameEntity.UNITS_PER_BLOCK;
+        state.centerU = (posU - negU) / 2.0;
+        state.centerV = (posV - negV) / 2.0;
         state.rotation = entity.rotation();
         state.photoId = entity.photoId();
     }
@@ -381,6 +423,9 @@ public class CrazyPhonePhotoFrameRenderer extends EntityRenderer<CrazyPhonePhoto
     private void applyFaceTransform(State state, PoseStack poseStack) {
         Direction face = state.face;
         double faceOffset = state.faceOffset;
+        // See the <26 branch's own comment on this same method for why this needs to happen in world space,
+        // before any rotation, rather than as a local-space translate after it.
+        applyCenterOffset(face, state.centerU, state.centerV, poseStack);
         switch (face) {
             case DOWN -> {
                 poseStack.translate(0, faceOffset - 0.5, 0);
@@ -403,6 +448,14 @@ public class CrazyPhonePhotoFrameRenderer extends EntityRenderer<CrazyPhonePhoto
                 poseStack.translate(faceOffset - 0.5, 0, 0);
                 poseStack.mulPose(Axis.YP.rotationDegrees(90));
             }
+        }
+    }
+
+    private static void applyCenterOffset(Direction face, double centerU, double centerV, PoseStack poseStack) {
+        switch (face) {
+            case DOWN, UP -> poseStack.translate(centerU, 0, centerV);
+            case NORTH, SOUTH -> poseStack.translate(centerU, centerV, 0);
+            case WEST, EAST -> poseStack.translate(0, centerV, centerU);
         }
     }
 
@@ -468,11 +521,11 @@ public class CrazyPhonePhotoFrameRenderer extends EntityRenderer<CrazyPhonePhoto
         }
     }
 
-    // The plain brown "backing" at the block-flush side (z=0) of a boxed frame - see drawImageQuad's own
-    // comment.
+    // The plain brown "backing" at the block-flush side (z=0) of a boxed frame - see the <26 branch's own
+    // comment on this same method for why `mirrored` is inverted relative to drawImageQuad/drawBoxSides.
     private static void drawBacking(VertexConsumer consumer, PoseStack.Pose pose, float w, float h, boolean mirrored, int light) {
         float x0 = -w / 2f, x1 = w / 2f, y0 = -h / 2f, y1 = h / 2f;
-        if (!mirrored) {
+        if (mirrored) {
             vertex(consumer, pose, x0, y1, 0f, 0f, 0f, light);
             vertex(consumer, pose, x0, y0, 0f, 0f, 1f, light);
             vertex(consumer, pose, x1, y0, 0f, 1f, 1f, light);
