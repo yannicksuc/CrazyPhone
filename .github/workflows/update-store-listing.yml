@@ -1,0 +1,48 @@
+name: Update store listing
+
+# Pushes docs/store-listing.md's content to the Modrinth project page's own description whenever that file
+# changes on main - so the two stop drifting apart the way the original, entirely unversioned listing text
+# did (see docs/store-listing.md's own history: it was still describing a hard Camera-mod dependency and
+# the old album UI months after both were replaced).
+#
+# CurseForge only, deliberately not covered here: it has no public API for editing a project's description
+# (its Upload API, used by CurseForgeGradle in release.yml, only covers uploading files/changelogs) - the
+# same real gap scripts/delete-release-version.ps1's own comment already documents for version deletion.
+# That half still needs a manual paste into CurseForge's own project editor.
+#
+# One-time setup, on top of release.yml's own (this reuses the same MODRINTH_TOKEN and modrinth_project_id):
+#   - MODRINTH_TOKEN needs the "Write project data" scope in addition to whatever release.yml already
+#     needs from it - a token scoped only for "Create versions" gets a 401 on the PATCH below.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/store-listing.md'
+
+jobs:
+  update-modrinth:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Push docs/store-listing.md to the Modrinth project body
+        env:
+          MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
+          MODRINTH_PROJECT_ID: ${{ vars.modrinth_project_id }}
+        run: |
+          if [ -z "$MODRINTH_TOKEN" ] || [ -z "$MODRINTH_PROJECT_ID" ]; then
+            echo "::error::MODRINTH_TOKEN secret or modrinth_project_id variable is not set - see this workflow's own header comment."
+            exit 1
+          fi
+          body=$(jq -n --rawfile body docs/store-listing.md '{body: $body}')
+          http_code=$(curl -s -o response.json -w '%{http_code}' -X PATCH \
+            "https://api.modrinth.com/v2/project/${MODRINTH_PROJECT_ID}" \
+            -H "Authorization: ${MODRINTH_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d "$body")
+          cat response.json
+          if [ "$http_code" -ge 300 ]; then
+            echo "::error::Modrinth PATCH failed with HTTP $http_code - see response body above. A 401/403 usually means MODRINTH_TOKEN is missing the \"Write project data\" scope."
+            exit 1
+          fi
+          echo "Modrinth project description updated (HTTP $http_code)."
