@@ -151,14 +151,16 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
     // WALLS (north/south/east/west): "up" on screen always grows the photo UP in the world (V = -row,
     // gravity gives every wall the same vertical reference) - but "right" on screen only grows the photo
     // toward world +X or +Z depending on which way the VIEWER is actually facing that specific wall, which
-    // flips between opposite walls. Standing in front of a wall and facing it: facing north, east is your
+    // flips between opposite walls. Critical detail an earlier version of this got backwards ("sur les murs
+    // gauche et droite sont inversé" - live request): attachFace() is which face of the BLOCK the frame sits
+    // on, i.e. the direction the frame's own visible side points TOWARD - a NORTH-attached frame points
+    // north, so the viewer looking at it is standing to the north and facing SOUTH, back at the wall, the
+    // OPPOSITE of attachFace() itself. Standing in front of a wall and facing it: facing north, east is your
     // right; facing south, west is your right; facing east, south is your right; facing west, north is your
-    // right (ordinary compass facts, not guessed) - cross-referenced against
-    // CrazyPhonePhotoFrameEntity#computeBoundingBox's own fixed U=+X/V=+Y (north/south) or U=+Z/V=+Y
-    // (east/west) axis assignment: north and east already agree with "posU = viewer's right" as computeBoundingBox
-    // defines it, south and west don't (need signU=-1) - the exact "seule une image placée direction nord
-    // affiche une grille qui a du sens" live report (north happening to already agree with computeBoundingBox's
-    // own arbitrary sign choice, the other three not).
+    // right (ordinary compass facts) - applied to face.getOpposite() (the viewer's actual facing), not face
+    // itself, then cross-referenced against CrazyPhonePhotoFrameEntity#computeBoundingBox's own fixed
+    // U=+X/V=+Y (north/south) or U=+Z/V=+Y (east/west) axis assignment: south and west already agree with
+    // "posU = viewer's right" as computeBoundingBox defines it, north and east don't (need signU=-1).
     //
     // FLOOR/CEILING: no gravity reference at all - "up" in the image instead follows the frame's own
     // rotation (CrazyPhonePhotoFrameEntity#rotation(), a 90-degree-per-step visual spin - see
@@ -177,7 +179,7 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
                 default -> new int[]{1, -1, -1};
             };
         }
-        int signU = (face == Direction.SOUTH || face == Direction.WEST) ? -1 : 1;
+        int signU = (face == Direction.NORTH || face == Direction.EAST) ? -1 : 1;
         return new int[]{0, signU, -1};
     }
 
