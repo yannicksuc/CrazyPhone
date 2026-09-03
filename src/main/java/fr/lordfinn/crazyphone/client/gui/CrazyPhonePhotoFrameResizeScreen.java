@@ -119,10 +119,12 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
         gridLeft = this.leftPos + (this.imageWidth - gridPx) / 2;
         gridTop = this.topPos + GRID_TOP_MARGIN;
 
-        previewNegU = unitsToBlocks(menu.negUUnits());
-        previewPosU = unitsToBlocks(menu.posUUnits());
-        previewNegV = unitsToBlocks(menu.negVUnits());
-        previewPosV = unitsToBlocks(menu.posVUnits());
+        int[] axisU = axisToBlocks(menu.negUUnits(), menu.posUUnits());
+        previewNegU = axisU[0];
+        previewPosU = axisU[1];
+        int[] axisV = axisToBlocks(menu.negVUnits(), menu.posVUnits());
+        previewNegV = axisV[0];
+        previewPosV = axisV[1];
 
         ownButtons.clear();
         Button rotate = Button.builder(Component.translatable("gui.crazyphone.photo_frame_resize.rotate"), b ->
@@ -132,8 +134,21 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
         ownButtons.add(rotate);
     }
 
-    private static int unitsToBlocks(int units) {
-        return Math.max(0, Math.round(units / (float) UNITS_PER_BLOCK));
+    // Inverse of commitSize's own negU/posU = blocks*UNITS_PER_BLOCK + half formula (see that method's own
+    // doc comment for the full derivation) - the anchor's own column always accounts for exactly half a
+    // block on each side, so subtracting that back out before dividing is what makes "just the anchor cell"
+    // (negUnits=posUnits=4, the default 1x1 size) round-trip to exactly 0 extra columns each side, not 1
+    // ("pour une image de 1x1 ça affiche une taille par défaut de 2x2" - an earlier version rounded each
+    // side to the nearest WHOLE block independently instead, which doubled a 0.5-block default up to a full
+    // block on both sides). A size that DIDN'T originate from this grid (the default symmetric placement, or
+    // a Silk-Touch-restored symmetric size - see CrazyPhonePhotoFrameEntity#setSizeUnits) only round-trips
+    // exactly here for odd total block counts; even totals are inherently off-grid by half a column under a
+    // column-boundary-aligned-to-attachPos grid and just round to the nearest whole column instead.
+    private static int[] axisToBlocks(int negUnits, int posUnits) {
+        int half = UNITS_PER_BLOCK / 2;
+        int negBlocks = Math.max(0, Math.round((negUnits - half) / (float) UNITS_PER_BLOCK));
+        int posBlocks = Math.max(0, Math.round((posUnits - half) / (float) UNITS_PER_BLOCK));
+        return new int[]{negBlocks, posBlocks};
     }
 
     private int colAt(double mouseX) {
@@ -168,9 +183,19 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
         previewPosV = maxRow;
     }
 
+    // previewNegU/previewPosU are column COUNTS beyond the anchor's own column (0 each = just the anchor
+    // cell = 1 block total, not 0 - "sélectionner 2x2 cases devrait résulter en une image de 2x2", "que le
+    // centre devrait afficher un cube de 1x1" - live request), so the anchor's own column always contributes
+    // half a block on EACH side of attachPos's own center, with every whole extra selected column adding a
+    // full block beyond that - see this method's own derivation: a selection spanning grid columns
+    // [-previewNegU, +previewPosU] (previewNegU+previewPosU+1 columns, matching sizeLabel/the highlighted
+    // cell count exactly) covers world space from (attachPos - previewNegU) to (attachPos + previewPosU + 1)
+    // blocks, i.e. previewNegU+0.5 blocks on the near side of attachPos's own center and previewPosU+0.5 on
+    // the far side.
     private void commitSize() {
-        int negU = previewNegU * UNITS_PER_BLOCK, posU = previewPosU * UNITS_PER_BLOCK;
-        int negV = previewNegV * UNITS_PER_BLOCK, posV = previewPosV * UNITS_PER_BLOCK;
+        int half = UNITS_PER_BLOCK / 2;
+        int negU = previewNegU * UNITS_PER_BLOCK + half, posU = previewPosU * UNITS_PER_BLOCK + half;
+        int negV = previewNegV * UNITS_PER_BLOCK + half, posV = previewPosV * UNITS_PER_BLOCK + half;
         this.minecraft.gameMode.handleInventoryButtonClick(menu.containerId, CrazyPhonePhotoFrameResizeMenu.encodeAxisU(negU, posU));
         this.minecraft.gameMode.handleInventoryButtonClick(menu.containerId, CrazyPhonePhotoFrameResizeMenu.encodeAxisV(negV, posV));
     }
@@ -255,14 +280,19 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
     private void syncFromMenuIfIdle() {
         if (dragging)
             return;
-        previewNegU = unitsToBlocks(menu.negUUnits());
-        previewPosU = unitsToBlocks(menu.posUUnits());
-        previewNegV = unitsToBlocks(menu.negVUnits());
-        previewPosV = unitsToBlocks(menu.posVUnits());
+        int[] axisU = axisToBlocks(menu.negUUnits(), menu.posUUnits());
+        previewNegU = axisU[0];
+        previewPosU = axisU[1];
+        int[] axisV = axisToBlocks(menu.negVUnits(), menu.posVUnits());
+        previewNegV = axisV[0];
+        previewPosV = axisV[1];
     }
 
+    // +1: previewNegU/posU count EXTRA columns beyond the anchor's own - the anchor's column always counts
+    // for one block by itself, matching the highlighted cell count and commitSize's own math (see that
+    // method's doc comment).
     private Component sizeLabel() {
-        int widthBlocks = previewNegU + previewPosU, heightBlocks = previewNegV + previewPosV;
+        int widthBlocks = previewNegU + previewPosU + 1, heightBlocks = previewNegV + previewPosV + 1;
         return Component.translatable("gui.crazyphone.photo_frame_resize.size", widthBlocks, heightBlocks);
     }
 

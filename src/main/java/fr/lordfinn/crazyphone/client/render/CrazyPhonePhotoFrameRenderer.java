@@ -105,8 +105,10 @@ public class CrazyPhonePhotoFrameRenderer extends EntityRenderer<CrazyPhonePhoto
         boolean boxed = !transparent;
         float depthSign = outwardDepthSign(entity.attachFace());
 
-        if (boxed)
+        if (boxed) {
             drawBoxSides(poseStack, buffer, packedLight, drawW, drawH, depthSign);
+            drawBacking(poseStack, buffer, packedLight, drawW, drawH);
+        }
         if (texture != null) {
             float z = depthSign * (boxed ? DEPTH : (transparent ? TRANSPARENT_FLOAT_GAP : DEPTH));
             drawImageQuad(poseStack, buffer, packedLight, texture.location(), drawW, drawH, z, rotation);
@@ -202,21 +204,32 @@ public class CrazyPhonePhotoFrameRenderer extends EntityRenderer<CrazyPhonePhoto
         vertex(consumer, pose, xb, yb, depthSign * DEPTH, 1f, 0f, light);
     }
 
+    // ONE face only, at the outward z - drawing a mirrored second copy at the block-flush side ("front face,
+    // then back face") made the photo visibly render twice, close enough in depth to look like a smeared
+    // double exposure ("tu dessine deux fois l'image" - live request). The block-flush side gets its own
+    // plain brown quad instead (drawBacking) when this is a boxed placement, matching a real photo's
+    // cardboard backing rather than a mirrored copy of the picture itself.
     private void drawImageQuad(PoseStack poseStack, MultiBufferSource buffer, int light, /*$ res_loc {*/ResourceLocation/*$}*/ texture, float w, float h, float z, int rotation) {
         VertexConsumer consumer = buffer.getBuffer(RenderType.entityCutout(texture));
         var pose = poseStack.last();
         float x0 = -w / 2f, x1 = w / 2f, y0 = -h / 2f, y1 = h / 2f;
         float[] uv0 = uvForCorner(0, rotation), uv1 = uvForCorner(1, rotation), uv2 = uvForCorner(2, rotation), uv3 = uvForCorner(3, rotation);
-        // Front (outward) face, then back face at the block-flush side so the card reads correctly from
-        // both directions (matches this entity's own DEPTH-thick hitbox: z=0 at the face, z=DEPTH outward).
         vertex(consumer, pose, x0, y1, z, uv0[0], uv0[1], light);
         vertex(consumer, pose, x0, y0, z, uv1[0], uv1[1], light);
         vertex(consumer, pose, x1, y0, z, uv2[0], uv2[1], light);
         vertex(consumer, pose, x1, y1, z, uv3[0], uv3[1], light);
-        vertex(consumer, pose, x1, y1, 0f, uv3[0], uv3[1], light);
-        vertex(consumer, pose, x1, y0, 0f, uv2[0], uv2[1], light);
-        vertex(consumer, pose, x0, y0, 0f, uv1[0], uv1[1], light);
-        vertex(consumer, pose, x0, y1, 0f, uv0[0], uv0[1], light);
+    }
+
+    // The plain brown "backing" at the block-flush side (z=0) of a boxed frame - see drawImageQuad's own
+    // comment for why this replaced a mirrored second copy of the photo there.
+    private void drawBacking(PoseStack poseStack, MultiBufferSource buffer, int light, float w, float h) {
+        VertexConsumer consumer = buffer.getBuffer(RenderType.entityCutout(GROUND_BACKING_TEXTURE));
+        var pose = poseStack.last();
+        float x0 = -w / 2f, x1 = w / 2f, y0 = -h / 2f, y1 = h / 2f;
+        vertex(consumer, pose, x0, y1, 0f, 0f, 0f, light);
+        vertex(consumer, pose, x0, y0, 0f, 0f, 1f, light);
+        vertex(consumer, pose, x1, y0, 0f, 1f, 1f, light);
+        vertex(consumer, pose, x1, y1, 0f, 1f, 0f, light);
     }
 
     // Corner order: 0=top-left, 1=bottom-left, 2=bottom-right, 3=top-right (screen-space, front face).
@@ -317,6 +330,8 @@ public class CrazyPhonePhotoFrameRenderer extends EntityRenderer<CrazyPhonePhoto
             float finalW = drawW, finalH = drawH;
             collector.submitCustomGeometry(poseStack, /^$ render_type_import {^/RenderType/^$}^/.entityCutout(GROUND_BACKING_TEXTURE),
                     (pose, consumer) -> drawBoxSides(consumer, pose, finalW, finalH, depthSign, state.lightCoords));
+            collector.submitCustomGeometry(poseStack, /^$ render_type_import {^/RenderType/^$}^/.entityCutout(GROUND_BACKING_TEXTURE),
+                    (pose, consumer) -> drawBacking(consumer, pose, finalW, finalH, state.lightCoords));
         }
         if (texture != null) {
             float z = depthSign * (boxed ? DEPTH : (transparent ? TRANSPARENT_FLOAT_GAP : DEPTH));
@@ -389,6 +404,8 @@ public class CrazyPhonePhotoFrameRenderer extends EntityRenderer<CrazyPhonePhoto
         vertex(consumer, pose, xb, yb, depthSign * DEPTH, 1f, 0f, light);
     }
 
+    // ONE face only, at the outward z - see the <26 branch's own comment on this same method for why a
+    // mirrored second copy at z=0 was removed.
     private static void drawImageQuad(VertexConsumer consumer, PoseStack.Pose pose, float w, float h, float z, int rotation, int light) {
         float x0 = -w / 2f, x1 = w / 2f, y0 = -h / 2f, y1 = h / 2f;
         float[] uv0 = uvForCorner(0, rotation), uv1 = uvForCorner(1, rotation), uv2 = uvForCorner(2, rotation), uv3 = uvForCorner(3, rotation);
@@ -396,10 +413,16 @@ public class CrazyPhonePhotoFrameRenderer extends EntityRenderer<CrazyPhonePhoto
         vertex(consumer, pose, x0, y0, z, uv1[0], uv1[1], light);
         vertex(consumer, pose, x1, y0, z, uv2[0], uv2[1], light);
         vertex(consumer, pose, x1, y1, z, uv3[0], uv3[1], light);
-        vertex(consumer, pose, x1, y1, 0f, uv3[0], uv3[1], light);
-        vertex(consumer, pose, x1, y0, 0f, uv2[0], uv2[1], light);
-        vertex(consumer, pose, x0, y0, 0f, uv1[0], uv1[1], light);
-        vertex(consumer, pose, x0, y1, 0f, uv0[0], uv0[1], light);
+    }
+
+    // The plain brown "backing" at the block-flush side (z=0) of a boxed frame - see drawImageQuad's own
+    // comment.
+    private static void drawBacking(VertexConsumer consumer, PoseStack.Pose pose, float w, float h, int light) {
+        float x0 = -w / 2f, x1 = w / 2f, y0 = -h / 2f, y1 = h / 2f;
+        vertex(consumer, pose, x0, y1, 0f, 0f, 0f, light);
+        vertex(consumer, pose, x0, y0, 0f, 0f, 1f, light);
+        vertex(consumer, pose, x1, y0, 0f, 1f, 1f, light);
+        vertex(consumer, pose, x1, y1, 0f, 1f, 0f, light);
     }
 
     private static float[] uvForCorner(int corner, int rotation) {
