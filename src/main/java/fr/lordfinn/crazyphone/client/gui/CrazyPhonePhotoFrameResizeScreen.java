@@ -3,11 +3,15 @@ package fr.lordfinn.crazyphone.client.gui;
 /**
  * Resize/rotate dialog for a placed photo frame - a drag-select grid instead of +/- steppers: the blue
  * center cell is the block the frame is actually attached to (fixed, always inside any selection - it's
- * physically where the frame is stuck to the world), and dragging from anywhere selects a free rectangle
- * around it - the anchor can end up anywhere within that rectangle (a corner, an edge, dead center),
- * matching how {@link CrazyPhonePhotoFrameEntity#setExtents} lets the slot sit off-center. Releasing the
- * drag commits the size; the grid always opens pre-selected to the frame's CURRENT actual size, so
- * re-opening it shows what's already there rather than resetting. A Rotate button spins the photo 90° -
+ * physically where the frame is stuck to the world), and dragging from anywhere OUTSIDE the current
+ * selection selects a free rectangle around it - the anchor can end up anywhere within that rectangle (a
+ * corner, an edge, dead center), matching how {@link CrazyPhonePhotoFrameEntity#setExtents} lets the slot
+ * sit off-center. Dragging from INSIDE the current selection instead SHIFTS it (see #beginGesture/
+ * #updateShift) - same size, different position relative to the anchor, since the anchor itself can never
+ * move (it's the real block the frame is attached to) - "the center should be movable in the gui... the
+ * center is still the same block but selection around it move accordingly" (live request). Releasing
+ * either gesture commits the size; the grid always opens pre-selected to the frame's CURRENT actual size,
+ * so re-opening it shows what's already there rather than resetting. A Rotate button spins the photo 90° -
  * see CrazyPhonePhotoFrameRenderer's own doc comment for what "rotation" actually changes (a visual spin
  * in place, not a width/height axis swap).
  *
@@ -76,6 +80,15 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
     private int previewNegCol, previewPosCol, previewNegRow, previewPosRow;
     private boolean dragging;
     private int dragStartCol, dragStartRow;
+    // A second drag mode: clicking INSIDE the current selection (rather than anywhere else in the grid)
+    // shifts that whole selection, keeping its own SIZE fixed, instead of resizing it - the anchor (0,0)
+    // stays exactly where the frame is physically attached in the world (that never moves), but which part
+    // of the selection it sits under can - "the center should be movable... the center is still the same
+    // block but selection around it move accordingly" (live request). See #updateShift for the clamping
+    // that keeps the anchor inside the shifted selection at all times.
+    private boolean shifting;
+    private int shiftStartCol, shiftStartRow;
+    private int shiftBaseNegCol, shiftBasePosCol, shiftBaseNegRow, shiftBasePosRow;
 
     private static int computeMaxBlocks(CrazyPhonePhotoFrameResizeMenu menu) {
         return Math.max(1, menu.maxUnits() / UNITS_PER_BLOCK);
@@ -272,6 +285,29 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
         previewPosRow = maxRow;
     }
 
+    private boolean insideSelection(int col, int row) {
+        return col >= -previewNegCol && col <= previewPosCol && row >= -previewNegRow && row <= previewPosRow;
+    }
+
+    // Moves the WHOLE selection by the drag delta while keeping its own size fixed (negCol+posCol and
+    // negRow+posRow both stay constant) - the anchor (grid cell 0,0, where the frame is actually attached in
+    // the world) can never leave the selection, so each axis is clamped to the range that keeps BOTH sides
+    // simultaneously within [0, maxBlocks] for that axis's own (fixed) total width.
+    private void updateShift(int col, int row) {
+        int clampedCol = Math.max(-maxBlocks, Math.min(maxBlocks, col));
+        int clampedRow = Math.max(-maxBlocks, Math.min(maxBlocks, row));
+        int dCol = clampedCol - shiftStartCol;
+        int dRow = clampedRow - shiftStartRow;
+        int width = shiftBaseNegCol + shiftBasePosCol;
+        int height = shiftBaseNegRow + shiftBasePosRow;
+        int negCol = Math.max(Math.max(0, width - maxBlocks), Math.min(Math.min(width, maxBlocks), shiftBaseNegCol - dCol));
+        int negRow = Math.max(Math.max(0, height - maxBlocks), Math.min(Math.min(height, maxBlocks), shiftBaseNegRow - dRow));
+        previewNegCol = negCol;
+        previewPosCol = width - negCol;
+        previewNegRow = negRow;
+        previewPosRow = height - negRow;
+    }
+
     // previewNegCol/posCol/negRow/posRow count EXTRA cells beyond the anchor's own (0 each = just the anchor
     // cell = 1 block total, not 0 - "sélectionner 2x2 cases devrait résulter en une image de 2x2", "que le
     // centre devrait afficher un cube de 1x1" - live request), so the anchor's own cell always contributes
@@ -298,10 +334,9 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (button == 0 && insideGrid(mouseX, mouseY)) {
-            dragging = true;
-            dragStartCol = Math.max(-maxBlocks, Math.min(maxBlocks, colAt(mouseX)));
-            dragStartRow = Math.max(-maxBlocks, Math.min(maxBlocks, rowAt(mouseY)));
-            updatePreview(dragStartCol, dragStartRow);
+            int col = Math.max(-maxBlocks, Math.min(maxBlocks, colAt(mouseX)));
+            int row = Math.max(-maxBlocks, Math.min(maxBlocks, rowAt(mouseY)));
+            beginGesture(col, row);
             return true;
         }
         return super.mouseClicked(mouseX, mouseY, button);
@@ -313,13 +348,18 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
             updatePreview(colAt(mouseX), rowAt(mouseY));
             return true;
         }
+        if (shifting) {
+            updateShift(colAt(mouseX), rowAt(mouseY));
+            return true;
+        }
         return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
     }
 
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
-        if (dragging) {
+        if (dragging || shifting) {
             dragging = false;
+            shifting = false;
             commitSize();
             return true;
         }
@@ -330,10 +370,9 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
     /*@Override
     public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent event, boolean doubleClick) {
         if (event.button() == 0 && insideGrid(event.x(), event.y())) {
-            dragging = true;
-            dragStartCol = Math.max(-maxBlocks, Math.min(maxBlocks, colAt(event.x())));
-            dragStartRow = Math.max(-maxBlocks, Math.min(maxBlocks, rowAt(event.y())));
-            updatePreview(dragStartCol, dragStartRow);
+            int col = Math.max(-maxBlocks, Math.min(maxBlocks, colAt(event.x())));
+            int row = Math.max(-maxBlocks, Math.min(maxBlocks, rowAt(event.y())));
+            beginGesture(col, row);
             return true;
         }
         return super.mouseClicked(event, doubleClick);
@@ -345,19 +384,44 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
             updatePreview(colAt(event.x()), rowAt(event.y()));
             return true;
         }
+        if (shifting) {
+            updateShift(colAt(event.x()), rowAt(event.y()));
+            return true;
+        }
         return super.mouseDragged(event, dragX, dragY);
     }
 
     @Override
     public boolean mouseReleased(net.minecraft.client.input.MouseButtonEvent event) {
-        if (dragging) {
+        if (dragging || shifting) {
             dragging = false;
+            shifting = false;
             commitSize();
             return true;
         }
         return super.mouseReleased(event);
     }
     *///?}
+
+    // Clicking INSIDE the current selection shifts it (see #updateShift); clicking anywhere else in the
+    // grid starts a fresh resize drag (see #updatePreview) - not version-split itself, called from both
+    // mouseClicked bodies above.
+    private void beginGesture(int col, int row) {
+        if (insideSelection(col, row)) {
+            shifting = true;
+            shiftStartCol = col;
+            shiftStartRow = row;
+            shiftBaseNegCol = previewNegCol;
+            shiftBasePosCol = previewPosCol;
+            shiftBaseNegRow = previewNegRow;
+            shiftBasePosRow = previewPosRow;
+        } else {
+            dragging = true;
+            dragStartCol = col;
+            dragStartRow = row;
+            updatePreview(col, row);
+        }
+    }
 
     // ContainerData isn't guaranteed populated the instant this screen opens - the real values arrive via a
     // separate sync packet a moment later, so reading menu.negUUnits() etc only once at init() (or in either
@@ -367,7 +431,7 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
     // rendered after that sync packet lands self-corrects automatically, and also keeps satisfying "Grid
     // should keep in memory the size and display it by default" if the size changes from elsewhere.
     private void syncFromMenuIfIdle() {
-        if (dragging)
+        if (dragging || shifting)
             return;
         screenToPreview();
     }
