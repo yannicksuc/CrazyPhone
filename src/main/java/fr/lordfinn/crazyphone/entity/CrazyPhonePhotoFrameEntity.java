@@ -396,6 +396,30 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
         this.setBoundingBox(computeBoundingBox());
     }
 
+    // Entity#setPos(x,y,z) independently calls this.setBoundingBox(this.makeBoundingBox()) - a SEPARATE
+    // code path from refreshDimensions() above, using EntityDimensions (this.dimensions, which is never
+    // touched by this class - it stays at the raw EntityType default, sized(1.0f,1.0f) in ModEntities.java)
+    // to rebuild a completely generic box, silently OVERWRITING whatever refreshDimensions() had just set.
+    // setPos() isn't just called once at spawn - it fires routinely whenever a tracked entity's position is
+    // (re-)confirmed from the network, so without this override the box would keep reverting back to a
+    // plain 1x1x1 cube at unpredictable moments even for a perfectly fresh placement ("full cube, wrong
+    // height, wrong positioning, wrong depth" - live request, reproduced on a freshly re-placed frame,
+      // ruling out stale save data as the cause). Overriding this actual extension point - not just
+    // refreshDimensions() - is what makes EVERY caller of makeBoundingBox(), not only this class's own
+    // explicit refreshDimensions() calls, consistently get the real computed box instead.
+    //? if <26 {
+    @Override
+    protected AABB makeBoundingBox() {
+        return computeBoundingBox();
+    }
+    //?}
+    //? if >=26 {
+    /*@Override
+    protected AABB makeBoundingBox(net.minecraft.world.phys.Vec3 position) {
+        return computeBoundingBox();
+    }
+    *///?}
+
     // Silk Touch check shared by both hurt()/hurtServer() bodies below - not itself version-split, only its
     // TWO call sites' own method signatures differ (Entity#hurt is final and hurtServer(ServerLevel, ...)
     // is the real abstract override point on >=26 - confirmed via the real decompiled Entity.java, not
