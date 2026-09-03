@@ -57,7 +57,8 @@ punching while holding the phone - the latter two save straight to the phone's o
 conversation. **My Photos**, reachable from the home screen, is a flat, scrollable grid of every photo a
 phone owns (no album/folder layer) with delete, save-to-inventory, and send-to-conversation actions. The
 server keeps a small thumbnail (shown by default in chat, as the saved photo item's icon, and in My Photos)
-and a larger full-size version, fetched on demand when a photo is opened full-size. Saving a photo to your
+and a larger full-size version (resolution and upload size cap both configurable, see
+[Configuration](#-configuration)), fetched on demand when a photo is opened full-size. Saving a photo to your
 inventory gives you a physical item that re-opens the same viewer on right-click, always the same visual
 width regardless of the photo's actual resolution (height adapts). A locked or not-yet-registered phone
 can't take a photo through any of the three entry points. See the [platform table](#-platforms--versions)
@@ -67,6 +68,14 @@ for which targets have this working today.
 it, visible to yourself (first-person, rendered in-world with real lighting rather than a flat GUI overlay)
 and to everyone else (third-person). Held-photo size is always the same visual width regardless of the
 photo's resolution, matching the item's normal rendering.
+
+**Selfie mode** - hold the phone and press F5 to enter a dedicated selfie view: the phone extends on a
+selfie stick, held out and angled with the mouse (drag to reframe, starting from whatever direction you
+were already looking), while your arm and head visibly pose and track the shot in-world - both for yourself
+and for anyone else looking at you. The HUD (hotbar, crosshair, etc.) hides automatically during capture,
+and the item model swaps correctly between your own view and what other players see. Full parity between
+NeoForge and Fabric on both actively maintained targets - see the
+[maintenance table](#-platforms--versions) below.
 
 **Voice calls & voice messages** *(NeoForge only, optional, requires [Simple Voice Chat](https://modrepo.de/minecraft/voicechat))*
 - 1:1 and group voice calls: ring notification, dedicated Incoming Call / Calling / In Call screens,
@@ -127,6 +136,7 @@ ongoing port - see [PORTING-26x.md](PORTING-26x.md) for its detailed status and 
 | Mayor election | ✅ | ✅ | ✅ | ✅ | — *(pending)* | — | ✅ | — *(pending)* | — *(pending)* |
 | Native camera (capture/viewer/photo item/My Photos) | ✅ | ✅ | — *(pending)* | ✅ | — *(pending)* | — | ✅ | — *(pending)* | — *(pending)* |
 | Sneak-presenting (hold a photo up, two-hand grip) | ✅ | ✅ | — *(pending)* | ✅ | — *(pending)* | — | ✅ | — *(pending)* | — *(pending)* |
+| Selfie mode (camera/arm/head on a selfie stick) | — | ✅ | — | ✅ | — *(pending)* | — | ✅ | ✅ | — *(pending)* |
 | Voice calls & voice messages | ✅ *(SVC)* | ✅ *(SVC)* | ✅ *(SVC)* | ✅ *(SVC)* | — *(pending)* | — | — | — | — |
 | Soulbound enchantment | — | ✅ | ✅ | ✅ | — *(pending)* | — | ✅ | — *(pending)* | — *(pending)* |
 | Runtime-configurable settings | ✅ | ✅ | ✅ | ✅ | — *(pending)* | — | — | — | — |
