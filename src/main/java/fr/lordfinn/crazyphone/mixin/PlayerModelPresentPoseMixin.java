@@ -14,8 +14,15 @@ package fr.lordfinn.crazyphone.mixin;
  * submission timing entirely: every real invocation, deferred or not, lands here and gets the override
  * applied fresh. AvatarPresentPoseMixin's own extractRenderState injection (still needed, unchanged) is what
  * populates the ICrazyPhonePresentingState flag this reads.
+ *
+ * Was neoforge-only at first, same as AvatarPresentPoseMixin (see that file's own doc comment for the same
+ * mistaken assumption). This is the ONLY place isDualPresentingThisRender gets set on >=26 - the >=26 branch
+ * of PlayerPresentPoseMixin's own submit() injection never touches it, only its own <1.21.10 branch does
+ * (a leftover from when that flag was added, never carried over to the newer API branch) - so on Fabric
+ * >=26 specifically, dual-photo presenting rendered both cards using the single-photo center position and
+ * scale, stacking them on top of each other instead of splitting them one per hand. Widened to both loaders.
  */
-//? if neoforge && >=26 {
+//? if >=26 {
 /*import net.minecraft.client.model.player.PlayerModel;
 import net.minecraft.client.renderer.entity.state.AvatarRenderState;
 import net.minecraft.world.entity.HumanoidArm;

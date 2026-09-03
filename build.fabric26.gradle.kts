@@ -286,6 +286,10 @@ sourceSets.main {
         "fr/lordfinn/crazyphone/mixin/LivingEntityRenderStateMixin.java",
         "fr/lordfinn/crazyphone/mixin/AvatarPresentPoseMixin.java",
         "fr/lordfinn/crazyphone/mixin/PlayerPresentPoseMixin.java",
+        // Was missing entirely from this build script - never applied on Fabric >=26 as a result. See its
+        // own doc comment (widened from neoforge-only) for what that broke: dual-photo presenting stacked
+        // both cards on top of each other instead of splitting them one per hand.
+        "fr/lordfinn/crazyphone/mixin/PlayerModelPresentPoseMixin.java",
         // Selfie-mode arm pose (fixed tilt while framing a selfie in capture mode) - deliberately separate
         // from presenting above, see CrazyPhoneSelfiePose's own doc comment.
         "fr/lordfinn/crazyphone/client/CrazyPhoneSelfiePose.java",
@@ -355,6 +359,7 @@ val fabricClientMixins = listOf(
     "LivingEntityRenderStateMixin",
     "AvatarPresentPoseMixin",
     "PlayerPresentPoseMixin",
+    "PlayerModelPresentPoseMixin",
     "CrazyPhonePresentHandGripMixin",
     "CrazyPhonePresentHandGripInvokerMixin",
     "CrazyPhoneItemModelRegistrationMixin",
@@ -445,6 +450,8 @@ val fabric26ReadyToPublish = minecraftVersion == "26.1.2"
 val fabric26ModrinthProjectId = findProperty("modrinth_project_id") as String? ?: "REPLACE_WITH_MODRINTH_PROJECT_ID"
 val fabric26CurseforgeProjectId = findProperty("curseforge_project_id") as String? ?: "REPLACE_WITH_CURSEFORGE_PROJECT_ID"
 val fabric26ReleaseChangelog = System.getenv("RELEASE_CHANGELOG") ?: "See the GitHub release notes for this version."
+// See build.gradle.kts's own copy of this comment.
+val fabric26ReleaseType = System.getenv("RELEASE_TYPE") ?: "release"
 // See build.gradle.kts's own copy of this comment - CurseForge's API rejected a game-version-only
 // submission on the first real release run, and addJavaVersion() is the documented companion method.
 val fabric26CurseforgeJavaVersion = "Java ${java.toolchain.languageVersion.get()}"
@@ -456,7 +463,7 @@ if (fabric26ReadyToPublish && System.getenv("MODRINTH_TOKEN") != null) {
         projectId.set(fabric26ModrinthProjectId)
         versionNumber.set("${property("mod_version")}+fabric-$minecraftVersion")
         versionName.set("${property("mod_version")} - Fabric $minecraftVersion")
-        versionType.set("release")
+        versionType.set(fabric26ReleaseType)
         // "jar", not "remapJar" like build.fabric.gradle.kts's own working copy of this block - 26.x's
         // own Loom variant (net.fabricmc.fabric-loom, the unobfuscated-mode plugin id, see this file's
         // own top-of-file doc comment) has no remapping step at all here (nothing to remap TO, Mojang
@@ -478,7 +485,7 @@ if (fabric26ReadyToPublish && System.getenv("CURSEFORGE_TOKEN") != null) {
         val mainFile = upload(fabric26CurseforgeProjectId, tasks.named("jar"))
         mainFile.changelog = fabric26ReleaseChangelog
         mainFile.changelogType = "markdown"
-        mainFile.releaseType = "release"
+        mainFile.releaseType = fabric26ReleaseType
         mainFile.addGameVersion(minecraftVersion)
         mainFile.addModLoader("Fabric")
         mainFile.addJavaVersion(fabric26CurseforgeJavaVersion)

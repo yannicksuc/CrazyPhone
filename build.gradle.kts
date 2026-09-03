@@ -389,6 +389,11 @@ val readyToPublish = thisProject.name in setOf("1.21.1", "26.1")
 val modrinthProjectId = findProperty("modrinth_project_id") as String? ?: "REPLACE_WITH_MODRINTH_PROJECT_ID"
 val curseforgeProjectId = findProperty("curseforge_project_id") as String? ?: "REPLACE_WITH_CURSEFORGE_PROJECT_ID"
 val releaseChangelog = System.getenv("RELEASE_CHANGELOG") ?: "See the GitHub release notes for this version."
+// "release" | "beta" | "alpha" (Modrinth's own versionType values; CurseForge's releaseType values match
+// the same three names) - release.yml derives this from the pushed tag itself (a "-beta"/"-alpha" suffix,
+// matching this project's own existing tag convention - see the v1.2.0-beta.1 tag in its git history)
+// rather than needing a separate manual toggle here.
+val releaseType = System.getenv("RELEASE_TYPE") ?: "release"
 // CurseForge's own API rejected a game-version-only submission outright ("Invalid game version ID...
 // belongs to an invalid dependency") on the first real release run - CurseForgeGradle's own README
 // documents addJavaVersion() as a real, separate metadata method alongside addGameVersion()/
@@ -404,7 +409,7 @@ if (readyToPublish && System.getenv("MODRINTH_TOKEN") != null) {
         projectId.set(modrinthProjectId)
         versionNumber.set("${property("mod_version")}+neoforge-$minecraftVersion")
         versionName.set("${property("mod_version")} - NeoForge $minecraftVersion")
-        versionType.set("release")
+        versionType.set(releaseType)
         uploadFile.set(tasks.named("jar"))
         gameVersions.add(minecraftVersion)
         loaders.add("neoforge")
@@ -419,7 +424,7 @@ if (readyToPublish && System.getenv("CURSEFORGE_TOKEN") != null) {
         val mainFile = upload(curseforgeProjectId, tasks.named("jar"))
         mainFile.changelog = releaseChangelog
         mainFile.changelogType = "markdown"
-        mainFile.releaseType = "release"
+        mainFile.releaseType = releaseType
         mainFile.addGameVersion(minecraftVersion)
         mainFile.addModLoader("NeoForge")
         mainFile.addJavaVersion(curseforgeJavaVersion)

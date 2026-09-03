@@ -21,8 +21,19 @@ package fr.lordfinn.crazyphone.mixin;
  * ArmedEntityRenderState - confirmed by reading each class's own declaration in the decompiled source), so
  * LivingEntityRenderStateMixin's ICrazyPhonePresentingState field already applies to it with no extra mixin
  * needed for the state side.
+ *
+ * Was neoforge-only at first - copied from an assumption that presenting never needed Fabric parity,
+ * without checking whether THIS specific injection point actually depended on that. It does: without it
+ * running on Fabric, isPresenting/isDualPresenting never get computed for a real player there at all (the
+ * base LivingEntityRenderer#extractRenderState injection in PlayerPresentPoseMixin never fires for a real
+ * player either, same virtual-dispatch reason this file's own doc comment already explains), so
+ * presentingThisRender stays permanently false and CrazyPhonePhotoItemRenderer's third-person presenting
+ * branch never activates - live-reported on 26.1-fabric as "third-person sneak-presenting doesn't work
+ * anymore" (it never actually worked there; this is the same AvatarRenderer-override gap
+ * CrazyPhoneSelfieAvatarExtractMixin's own doc comment already found and fixed for selfie mode). Widened to
+ * both loaders.
  */
-//? if neoforge && >=26 {
+//? if >=26 {
 /*import net.minecraft.client.renderer.entity.player.AvatarRenderer;
 import net.minecraft.client.renderer.entity.state.AvatarRenderState;
 import net.minecraft.world.entity.Avatar;

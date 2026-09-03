@@ -64,11 +64,23 @@ jobs:
       # checkout/commit that doesn't preserve the mode bit.
       - run: chmod +x gradlew
 
+      - name: Derive release type from the tag (a "-beta"/"-alpha" suffix, e.g. v1.3.1-beta.1)
+        id: release_type
+        run: |
+          if [[ "${{ github.ref_name }}" == *-beta* ]]; then
+            echo "value=beta" >> "$GITHUB_OUTPUT"
+          elif [[ "${{ github.ref_name }}" == *-alpha* ]]; then
+            echo "value=alpha" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=release" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Build and publish ${{ matrix.node }}
         env:
           MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
           CURSEFORGE_TOKEN: ${{ secrets.CURSEFORGE_TOKEN }}
           RELEASE_CHANGELOG: ${{ github.event.head_commit.message }}
+          RELEASE_TYPE: ${{ steps.release_type.outputs.value }}
         # --no-configuration-cache: the first real release run hit two separate configuration-cache
         # incompatibilities - Minotaur's modrinth task warned about "Task.project ... unsupported with
         # the configuration cache" (didn't hard-fail there, but no guarantee it won't on another node),
