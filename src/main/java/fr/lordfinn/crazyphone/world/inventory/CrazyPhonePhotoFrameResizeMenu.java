@@ -50,12 +50,16 @@ public class CrazyPhonePhotoFrameResizeMenu extends AbstractContainerMenu {
     public CrazyPhonePhotoFrameResizeMenu(int id, Inventory inventory, CrazyPhonePhotoFrameEntity entity) {
         super(ModMenus.CRAZY_PHONE_PHOTO_FRAME_RESIZE.get(), id);
         this.entity = entity;
-        this.data = new SimpleContainerData(5);
+        this.data = new SimpleContainerData(6);
         this.data.set(0, entity.negUUnits());
         this.data.set(1, entity.posUUnits());
         this.data.set(2, entity.negVUnits());
         this.data.set(3, entity.posVUnits());
         this.data.set(4, entity.rotation());
+        // The screen needs this to translate "drag right/up on screen" into the correctly-signed
+        // negU/posU/negV/posV the entity expects for THIS specific face - see
+        // CrazyPhonePhotoFrameResizeScreen#screenToServerDelta's own doc comment.
+        this.data.set(5, entity.attachFace().get3DDataValue());
         addDataSlots(data);
     }
 
@@ -64,7 +68,7 @@ public class CrazyPhonePhotoFrameResizeMenu extends AbstractContainerMenu {
     public CrazyPhonePhotoFrameResizeMenu(int id, Inventory inventory, FriendlyByteBuf buf) {
         super(ModMenus.CRAZY_PHONE_PHOTO_FRAME_RESIZE.get(), id);
         this.entity = null;
-        this.data = new SimpleContainerData(5);
+        this.data = new SimpleContainerData(6);
         addDataSlots(data);
     }
 
@@ -86,6 +90,10 @@ public class CrazyPhonePhotoFrameResizeMenu extends AbstractContainerMenu {
 
     public int rotation() {
         return data.get(4);
+    }
+
+    public net.minecraft.core.Direction attachFace() {
+        return net.minecraft.core.Direction.from3DDataValue(data.get(5));
     }
 
     public int maxUnits() {

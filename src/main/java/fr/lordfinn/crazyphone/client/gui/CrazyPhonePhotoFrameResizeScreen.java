@@ -19,6 +19,18 @@ package fr.lordfinn.crazyphone.client.gui;
  * >=26 - see the two constructors below) rather than a fixed pixel budget, so the panel stays a bounded
  * fraction of the screen regardless of resolution or GUI scale.
  *
+ * SCREEN-space vs SERVER-space: the fields tracking the drag (previewNegCol/posCol/negRow/posRow) are
+ * pure screen directions - col+ is always "right on screen", row+ is always "down on screen", regardless
+ * of which face the frame is on. What the entity actually stores (negU/posU/negV/posV, matching
+ * CrazyPhonePhotoFrameEntity#computeBoundingBox's own U/V axes) depends on the attach face and, for
+ * floor/ceiling, the frame's own rotation - dragging "right" on a SOUTH wall grows the photo toward the
+ * viewer's own right, but that's the OPPOSITE world axis from dragging "right" on a NORTH wall. The
+ * transform between the two only ever happens at the two points that actually cross the boundary:
+ * #commitSize (screen -> server, on drag release) and #screenToPreview (server -> screen, whenever the
+ * grid needs to display the frame's current actual size) - see #axisTransform's own doc comment for the
+ * derivation ("L'agrandissement dans la grille est inversé... Pour les images placées au plafond et au
+ * sol ce n'est pas dépendant de la direction dans laquelle l'image est orientée" - live request).
+ *
  * Extends AbstractContainerScreen (needed so Minecraft#gameMode/the container-close packet machinery works
  * normally) but deliberately skips its background-panel rendering entirely (renderBg on <26, folded into
  * extractContents on >=26 - a real API rename confirmed via the real decompiled AbstractContainerScreen.java,
@@ -32,6 +44,7 @@ import net.minecraft.client.gui./*$ gui_graphics_type {*/GuiGraphics/*$}*/;
 *///?}
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
 
@@ -56,11 +69,11 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
     private int maxBlocks;
     private int cellPx;
     private int gridLeft, gridTop, gridCells;
-    // Selection boundaries in blocks from the anchor cell (0,0) - NOT forced symmetric, see this class's
-    // own doc comment. negU/negV are the extent in the negative column/row direction, posU/posV in the
-    // positive direction; the anchor itself can sit anywhere inside [-negU,posU]x[-negV,posV], including
-    // right on its own edge.
-    private int previewNegU, previewPosU, previewNegV, previewPosV;
+    // Selection boundaries in SCREEN directions from the anchor cell (0,0) - col+ is always right on
+    // screen, row+ is always down on screen, regardless of face/rotation (see this class's own doc comment
+    // for why these are kept separate from the entity's own U/V). NOT forced symmetric: the anchor can sit
+    // anywhere inside [-negCol,posCol]x[-negRow,posRow], including right on its own edge.
+    private int previewNegCol, previewPosCol, previewNegRow, previewPosRow;
     private boolean dragging;
     private int dragStartCol, dragStartRow;
 
@@ -119,12 +132,7 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
         gridLeft = this.leftPos + (this.imageWidth - gridPx) / 2;
         gridTop = this.topPos + GRID_TOP_MARGIN;
 
-        int[] axisU = axisToBlocks(menu.negUUnits(), menu.posUUnits());
-        previewNegU = axisU[0];
-        previewPosU = axisU[1];
-        int[] axisV = axisToBlocks(menu.negVUnits(), menu.posVUnits());
-        previewNegV = axisV[0];
-        previewPosV = axisV[1];
+        screenToPreview();
 
         ownButtons.clear();
         Button rotate = Button.builder(Component.translatable("gui.crazyphone.photo_frame_resize.rotate"), b ->
@@ -132,6 +140,85 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
                 .bounds(this.leftPos + this.imageWidth / 2 - 40, this.topPos + 6, 80, 20).build();
         addRenderableWidget(rotate);
         ownButtons.add(rotate);
+    }
+
+    // Which screen direction (col+/right, row+/down) each server axis (U/V) actually corresponds to for the
+    // CURRENT face/rotation - the whole reason this transform exists at all. Returns {swap, signU, signV}:
+    // swap=0 means U comes from col and V comes from row (the "normal" case); swap=1 means U comes from row
+    // and V comes from col instead (a floor/ceiling rotated an odd number of quarter turns). signU/signV are
+    // +1 or -1, applied to whichever screen axis feeds that server axis.
+    //
+    // WALLS (north/south/east/west): "up" on screen always grows the photo UP in the world (V = -row,
+    // gravity gives every wall the same vertical reference) - but "right" on screen only grows the photo
+    // toward world +X or +Z depending on which way the VIEWER is actually facing that specific wall, which
+    // flips between opposite walls. Standing in front of a wall and facing it: facing north, east is your
+    // right; facing south, west is your right; facing east, south is your right; facing west, north is your
+    // right (ordinary compass facts, not guessed) - cross-referenced against
+    // CrazyPhonePhotoFrameEntity#computeBoundingBox's own fixed U=+X/V=+Y (north/south) or U=+Z/V=+Y
+    // (east/west) axis assignment: north and east already agree with "posU = viewer's right" as computeBoundingBox
+    // defines it, south and west don't (need signU=-1) - the exact "seule une image placée direction nord
+    // affiche une grille qui a du sens" live report (north happening to already agree with computeBoundingBox's
+    // own arbitrary sign choice, the other three not).
+    //
+    // FLOOR/CEILING: no gravity reference at all - "up" in the image instead follows the frame's own
+    // rotation (CrazyPhonePhotoFrameEntity#rotation(), a 90-degree-per-step visual spin - see
+    // CrazyPhonePhotoFrameRenderer's own doc comment). Every extra rotation step turns the screen's own
+    // col/row axes by one more quarter turn relative to computeBoundingBox's fixed U=X/V=Z assignment - an
+    // ordinary 90-degree rotation of an axis-aligned rectangle is always exactly a swap-plus-sign-flip (never
+    // a true diagonal), so this is expressed the same {swap, signU, signV} way as the wall case rather than
+    // needing real matrix math.
+    private int[] axisTransform() {
+        Direction face = menu.attachFace();
+        if (face.getAxis() == Direction.Axis.Y) {
+            return switch (Math.floorMod(menu.rotation(), 4)) {
+                case 0 -> new int[]{0, 1, -1};
+                case 1 -> new int[]{1, 1, 1};
+                case 2 -> new int[]{0, -1, 1};
+                default -> new int[]{1, -1, -1};
+            };
+        }
+        int signU = (face == Direction.SOUTH || face == Direction.WEST) ? -1 : 1;
+        return new int[]{0, signU, -1};
+    }
+
+    private static int[] applySign(int neg, int pos, int sign) {
+        return sign > 0 ? new int[]{neg, pos} : new int[]{pos, neg};
+    }
+
+    // Screen (col/row) extents -> server (U/V) extents, on drag release - see #axisTransform's own doc
+    // comment.
+    private int[][] screenToServer() {
+        int[] t = axisTransform();
+        int[] u, v;
+        if (t[0] == 0) {
+            u = applySign(previewNegCol, previewPosCol, t[1]);
+            v = applySign(previewNegRow, previewPosRow, t[2]);
+        } else {
+            u = applySign(previewNegRow, previewPosRow, t[1]);
+            v = applySign(previewNegCol, previewPosCol, t[2]);
+        }
+        return new int[][]{u, v};
+    }
+
+    // Server (U/V) extents -> screen (col/row) extents, whenever the grid needs to display the frame's
+    // current actual size - the structural inverse of #screenToServer (applySign is its own inverse for a
+    // given sign, and the swap direction is simply read the other way).
+    private void screenToPreview() {
+        int[] axisU = axisToBlocks(menu.negUUnits(), menu.posUUnits());
+        int[] axisV = axisToBlocks(menu.negVUnits(), menu.posVUnits());
+        int[] t = axisTransform();
+        int[] col, row;
+        if (t[0] == 0) {
+            col = applySign(axisU[0], axisU[1], t[1]);
+            row = applySign(axisV[0], axisV[1], t[2]);
+        } else {
+            col = applySign(axisV[0], axisV[1], t[2]);
+            row = applySign(axisU[0], axisU[1], t[1]);
+        }
+        previewNegCol = col[0];
+        previewPosCol = col[1];
+        previewNegRow = row[0];
+        previewPosRow = row[1];
     }
 
     // Inverse of commitSize's own negU/posU = blocks*UNITS_PER_BLOCK + half formula (see that method's own
@@ -177,25 +264,25 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
         int maxCol = Math.max(0, Math.max(dragStartCol, clampedCol));
         int minRow = Math.min(0, Math.min(dragStartRow, clampedRow));
         int maxRow = Math.max(0, Math.max(dragStartRow, clampedRow));
-        previewNegU = -minCol;
-        previewPosU = maxCol;
-        previewNegV = -minRow;
-        previewPosV = maxRow;
+        previewNegCol = -minCol;
+        previewPosCol = maxCol;
+        previewNegRow = -minRow;
+        previewPosRow = maxRow;
     }
 
-    // previewNegU/previewPosU are column COUNTS beyond the anchor's own column (0 each = just the anchor
+    // previewNegCol/posCol/negRow/posRow count EXTRA cells beyond the anchor's own (0 each = just the anchor
     // cell = 1 block total, not 0 - "sélectionner 2x2 cases devrait résulter en une image de 2x2", "que le
-    // centre devrait afficher un cube de 1x1" - live request), so the anchor's own column always contributes
-    // half a block on EACH side of attachPos's own center, with every whole extra selected column adding a
-    // full block beyond that - see this method's own derivation: a selection spanning grid columns
-    // [-previewNegU, +previewPosU] (previewNegU+previewPosU+1 columns, matching sizeLabel/the highlighted
-    // cell count exactly) covers world space from (attachPos - previewNegU) to (attachPos + previewPosU + 1)
-    // blocks, i.e. previewNegU+0.5 blocks on the near side of attachPos's own center and previewPosU+0.5 on
-    // the far side.
+    // centre devrait afficher un cube de 1x1" - live request), so the anchor's own cell always contributes
+    // half a block on EACH side, with every whole extra selected cell adding a full block beyond that - see
+    // this method's own derivation: a selection spanning grid columns [-previewNegCol, +previewPosCol]
+    // (previewNegCol+previewPosCol+1 columns, matching sizeLabel/the highlighted cell count exactly) covers
+    // world space from (attachPos - previewNegCol) to (attachPos + previewPosCol + 1) blocks along whichever
+    // world axis that screen column currently maps to.
     private void commitSize() {
         int half = UNITS_PER_BLOCK / 2;
-        int negU = previewNegU * UNITS_PER_BLOCK + half, posU = previewPosU * UNITS_PER_BLOCK + half;
-        int negV = previewNegV * UNITS_PER_BLOCK + half, posV = previewPosV * UNITS_PER_BLOCK + half;
+        int[][] uv = screenToServer();
+        int negU = uv[0][0] * UNITS_PER_BLOCK + half, posU = uv[0][1] * UNITS_PER_BLOCK + half;
+        int negV = uv[1][0] * UNITS_PER_BLOCK + half, posV = uv[1][1] * UNITS_PER_BLOCK + half;
         this.minecraft.gameMode.handleInventoryButtonClick(menu.containerId, CrazyPhonePhotoFrameResizeMenu.encodeAxisU(negU, posU));
         this.minecraft.gameMode.handleInventoryButtonClick(menu.containerId, CrazyPhonePhotoFrameResizeMenu.encodeAxisV(negV, posV));
     }
@@ -280,19 +367,16 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
     private void syncFromMenuIfIdle() {
         if (dragging)
             return;
-        int[] axisU = axisToBlocks(menu.negUUnits(), menu.posUUnits());
-        previewNegU = axisU[0];
-        previewPosU = axisU[1];
-        int[] axisV = axisToBlocks(menu.negVUnits(), menu.posVUnits());
-        previewNegV = axisV[0];
-        previewPosV = axisV[1];
+        screenToPreview();
     }
 
-    // +1: previewNegU/posU count EXTRA columns beyond the anchor's own - the anchor's column always counts
+    // +1: previewNegCol/posCol count EXTRA cells beyond the anchor's own - the anchor's cell always counts
     // for one block by itself, matching the highlighted cell count and commitSize's own math (see that
-    // method's doc comment).
+    // method's doc comment). Deliberately shown as screen col/row counts, not server U/V - "2 columns wide
+    // on screen" and "2 blocks wide" mean the same thing to whoever's looking at the grid regardless of
+    // which server axis that ends up being.
     private Component sizeLabel() {
-        int widthBlocks = previewNegU + previewPosU + 1, heightBlocks = previewNegV + previewPosV + 1;
+        int widthBlocks = previewNegCol + previewPosCol + 1, heightBlocks = previewNegRow + previewPosRow + 1;
         return Component.translatable("gui.crazyphone.photo_frame_resize.size", widthBlocks, heightBlocks);
     }
 
@@ -308,7 +392,7 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
                 int x = gridLeft + (col + maxBlocks) * cellPx;
                 int y = gridTop + (row + maxBlocks) * cellPx;
                 boolean anchor = col == 0 && row == 0;
-                boolean selected = col >= -previewNegU && col <= previewPosU && row >= -previewNegV && row <= previewPosV;
+                boolean selected = col >= -previewNegCol && col <= previewPosCol && row >= -previewNegRow && row <= previewPosRow;
                 int fillColor = anchor ? 0xFF3388FF : (selected ? 0x8033AAFF : 0x30FFFFFF);
                 guiGraphics.fill(x + 1, y + 1, x + cellPx - 1, y + cellPx - 1, fillColor);
             }
@@ -329,7 +413,7 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
                 int x = gridLeft + (col + maxBlocks) * cellPx;
                 int y = gridTop + (row + maxBlocks) * cellPx;
                 boolean anchor = col == 0 && row == 0;
-                boolean selected = col >= -previewNegU && col <= previewPosU && row >= -previewNegV && row <= previewPosV;
+                boolean selected = col >= -previewNegCol && col <= previewPosCol && row >= -previewNegRow && row <= previewPosRow;
                 int fillColor = anchor ? 0xFF3388FF : (selected ? 0x8033AAFF : 0x30FFFFFF);
                 guiGraphics.fill(x + 1, y + 1, x + cellPx - 1, y + cellPx - 1, fillColor);
             }
