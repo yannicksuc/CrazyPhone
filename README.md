@@ -132,32 +132,34 @@ ongoing port - see [PORTING-26x.md](PORTING-26x.md) for its detailed status and 
 
 | | NeoForge 1.20.4 *(unmaintained)* | NeoForge 1.21.1 | NeoForge 1.21.10 *(unmaintained)* | NeoForge 26.1 | NeoForge 26.2 | Fabric 1.20.1 | Fabric 1.21.1 | Fabric 26.1 | Fabric 26.2 |
 |---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| Phone, messaging, contacts, groups | ✅ | ✅ | ✅ | ✅ | — *(pending)* | — | ✅ | — *(pending)* | — *(pending)* |
-| Mayor election | ✅ | ✅ | ✅ | ✅ | — *(pending)* | — | ✅ | — *(pending)* | — *(pending)* |
-| Native camera (capture/viewer/photo item/My Photos) | ✅ | ✅ | — *(pending)* | ✅ | — *(pending)* | — | ✅ | — *(pending)* | — *(pending)* |
-| Sneak-presenting (hold a photo up, two-hand grip) | ✅ | ✅ | — *(pending)* | ✅ | — *(pending)* | — | ✅ | — *(pending)* | — *(pending)* |
+| Phone, messaging, contacts, groups | ✅ | ✅ | ✅ | ✅ | — *(pending)* | — | ✅ | ✅ | — *(pending)* |
+| Mayor election | ✅ | ✅ | ✅ | ✅ | — *(pending)* | — | ✅ | ✅ | — *(pending)* |
+| Native camera (capture/viewer/photo item/My Photos) | ✅ | ✅ | — *(pending)* | ✅ | — *(pending)* | — | ✅ | ✅ | — *(pending)* |
+| Sneak-presenting (hold a photo up, two-hand grip) | ✅ | ✅ | — *(pending)* | ✅ | — *(pending)* | — | ✅ | ✅ | — *(pending)* |
 | Selfie mode (camera/arm/head on a selfie stick) | — | ✅ | — | ✅ | — *(pending)* | — | ✅ | ✅ | — *(pending)* |
 | Voice calls & voice messages | ✅ *(SVC)* | ✅ *(SVC)* | ✅ *(SVC)* | ✅ *(SVC)* | — *(pending)* | — | — | — | — |
-| Soulbound enchantment | — | ✅ | ✅ | ✅ | — *(pending)* | — | ✅ | — *(pending)* | — *(pending)* |
+| Soulbound enchantment | — | ✅ | ✅ | ✅ | — *(pending)* | — | ✅ | ✅ | — *(pending)* |
 | Runtime-configurable settings | ✅ | ✅ | ✅ | ✅ | — *(pending)* | — | — | — | — |
 
 - **NeoForge 1.21.10**'s camera and sneak-presenting features compile but don't work yet: Mojang reworked
   both item rendering and the screenshot/texture APIs the native pipeline uses on that version, and porting
   to the new APIs is a separate, tracked follow-up.
 - **NeoForge 26.1** compiles clean and has been live-tested (native camera, sneak-presenting including
-  two-hand dual-photo, voice calls) - the newest fully-verified target in the project.
+  two-hand dual-photo, selfie mode, voice calls) - the newest fully-verified target in the project.
 - **NeoForge 26.2** doesn't compile yet - blocked on the same item-rendering API migration 26.1 needed,
   not yet finished for this node. See [PORTING-26x.md](PORTING-26x.md).
 - **Fabric 1.20.1** is a walking skeleton for now - the item exists and registers, but the phone's
   networking layer needs an API (`CustomPacketPayload`) that doesn't exist before 1.20.5, so none of the
   screens/messaging/camera work yet on that specific version.
 - **Fabric 1.21.1** has the core feature set, the native camera pipeline (including punch-to-shoot,
-  standalone capture, and My Photos), sneak-presenting, and the Soulbound enchantment - but no voice
-  calls/messages, since [Simple Voice Chat](https://modrepo.de/minecraft/voicechat) integration hasn't been
-  ported to Fabric yet.
-- **Fabric 26.1 / 26.2** don't compile yet - blocked on the same NeoForge-only item-rendering rework 26.1/26.2
-  needed, plus their own Fabric-specific registration gap (no `BuiltinItemRendererRegistry`-equivalent wired
-  up for the new API yet). See [PORTING-26x.md](PORTING-26x.md).
+  standalone capture, and My Photos), sneak-presenting, selfie mode, and the Soulbound enchantment - but no
+  voice calls/messages, since [Simple Voice Chat](https://modrepo.de/minecraft/voicechat) integration hasn't
+  been ported to Fabric yet.
+- **Fabric 26.1** compiles clean and is live-tested, with full parity with NeoForge 26.1 except voice
+  calls/messages (same Fabric SVC gap as 1.21.1).
+- **Fabric 26.2** doesn't compile yet - blocked on the same item-rendering API migration 26.1/26.2 needed,
+  plus its own Fabric-specific registration gap (no `BuiltinItemRendererRegistry`-equivalent wired up for
+  the new API yet). See [PORTING-26x.md](PORTING-26x.md).
 
 ---
 
