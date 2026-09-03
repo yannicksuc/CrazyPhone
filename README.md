@@ -71,6 +71,14 @@ it, visible to yourself (first-person, rendered in-world with real lighting rath
 and to everyone else (third-person). Held-photo size is always the same visual width regardless of the
 photo's resolution, matching the item's normal rendering.
 
+**Photo frames** - right-click a photo item against any block surface to hang it as an entity, sized to fit
+that surface (not just the top of a full block - the frame reads the target block's real shape, so it can
+sit flush against a slab or stair too). Right-click a placed frame to open a resize GUI and grow it up to a
+configurable max size (see [Configuration](#-configuration)); the image always scales to fit without
+cropping. A single punch breaks it and drops the photo item; breaking with Silk Touch, or duplicating with a
+paper recipe, keeps the frame's chosen size for next time you place it. Floor/ceiling placements get a
+1-pixel-deep brown backing so they read as actually resting on the surface.
+
 **Selfie mode** - hold the phone and press F5 to enter a dedicated selfie view: the phone extends on a
 selfie stick, held out and angled with the mouse (drag to reframe, starting from whatever direction you
 were already looking), while your arm and head visibly pose and track the shot in-world - both for yourself
@@ -138,6 +146,7 @@ ongoing port - see [PORTING-26x.md](PORTING-26x.md) for its detailed status and 
 | Mayor election | — | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — *(pending)* | — *(pending)* |
 | Native camera (capture/viewer/photo item/My Photos) | — | ✅ | ✅ | ✅ | — *(pending)* | ✅ | ✅ | — *(pending)* | — *(pending)* |
 | Sneak-presenting (hold a photo up, two-hand grip) | — | ✅ | ✅ | ✅ | — *(pending)* | ✅ | ✅ | — *(pending)* | — *(pending)* |
+| Photo frames (placeable, resizable, silk touch) | — | — | ✅ | ✅ | — | ✅ | ✅ | — *(pending)* | — *(pending)* |
 | Selfie mode (camera/arm/head on a selfie stick) | — | — | ✅ | ✅ | — | ✅ | ✅ | — *(pending)* | — *(pending)* |
 | Voice calls & voice messages | — | ✅ *(SVC)* | ✅ *(SVC)* | — | ✅ *(SVC)* | ✅ *(SVC)* | — | — *(pending)* | — |
 | Soulbound enchantment | — | — | ✅ | ✅ | ✅ | ✅ | ✅ | — *(pending)* | — *(pending)* |
@@ -293,6 +302,7 @@ file or via `/crazyphone feature`.
 | `maxPhotosStoredPerOwner` | `300` | 10-5000 | Photos (both resolutions) kept on disk per owning phone number; oldest dropped first once exceeded, independent of conversation trimming. |
 | `photoFullMaxDimension` | `1024` | 64-4096 | Max size in pixels (longer side) for a photo's full-quality version. Higher looks sharper, costs more storage/network per photo. |
 | `photoFullMaxUploadBytes` | `4000000` | 100000-50000000 | Server-side ceiling on a full-quality photo upload; raise alongside `photoFullMaxDimension` if legitimate uploads start getting rejected. |
+| `maxPhotoFrameSizeBlocks` | `8` | 1-32 | Largest size (in blocks, per side) a placed photo frame can be grown to via its resize GUI. |
 | `mayorElectionFeatureEnabled` | `true` | - | Global switch for the mayor election feature. |
 | `callsFeatureEnabled` | `true` | - | Global switch for voice calls. No effect without Simple Voice Chat installed. (NeoForge only) |
 | `voiceMessagesFeatureEnabled` | `true` | - | Global switch for recording/sending voice messages. No effect without Simple Voice Chat installed. (NeoForge only) |
