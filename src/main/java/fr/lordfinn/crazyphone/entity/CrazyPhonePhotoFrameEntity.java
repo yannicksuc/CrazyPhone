@@ -396,48 +396,12 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
         this.setBoundingBox(computeBoundingBox());
     }
 
-    // Entity#setPos(x,y,z) independently calls this.setBoundingBox(this.makeBoundingBox()) - a SEPARATE
-    // code path from refreshDimensions() above, using EntityDimensions (this.dimensions, which is never
-    // touched by this class - it stays at the raw EntityType default, sized(1.0f,1.0f) in ModEntities.java)
-    // to rebuild a completely generic box, silently OVERWRITING whatever refreshDimensions() had just set.
-    // setPos() isn't just called once at spawn - it fires routinely whenever a tracked entity's position is
-    // (re-)confirmed from the network, so without this override the box would keep reverting back to a
-    // plain 1x1x1 cube at unpredictable moments even for a perfectly fresh placement ("full cube, wrong
-    // height, wrong positioning, wrong depth" - live request, reproduced on a freshly re-placed frame,
-      // ruling out stale save data as the cause). Overriding this actual extension point - not just
-    // refreshDimensions() - is what makes EVERY caller of makeBoundingBox(), not only this class's own
-    // explicit refreshDimensions() calls, consistently get the real computed box instead.
-    // computeBoundingBox() is now reachable from setPos(), which (unlike refreshDimensions()) can fire from
-    // deep inside vanilla's own Entity construction sequence, possibly before entityData/attachPos are
-    // actually ready - a genuinely new failure mode this override introduced, confirmed live (making
-    // makeBoundingBox() itself throw during construction left every frame with no render AND no hitbox at
-    // all, worse than the bug it was meant to fix - construction-time exceptions here get silently absorbed
-    // somewhere in vanilla's own entity-add pipeline rather than crashing outright). Falling back to a
-    // trivial box at the entity's own tracked position on ANY exception guarantees this never happens again,
-    // regardless of which future construction-order edge case might otherwise trip it - the real box still
-    // gets applied moments later via refreshDimensions() either way, same as the attachPos-null fallback in
-    // computeBoundingBox() itself already covers for the narrower case.
-    private AABB safeMakeBoundingBox() {
-        try {
-            return computeBoundingBox();
-        } catch (Exception e) {
-            double x = this.getX(), y = this.getY(), z = this.getZ();
-            return new AABB(x - 0.5, y, z - 0.5, x + 0.5, y + DEPTH, z + 0.5);
-        }
-    }
-
-    //? if <26 {
-    @Override
-    protected AABB makeBoundingBox() {
-        return safeMakeBoundingBox();
-    }
-    //?}
-    //? if >=26 {
-    /*@Override
-    protected AABB makeBoundingBox(net.minecraft.world.phys.Vec3 position) {
-        return safeMakeBoundingBox();
-    }
-    *///?}
+    // Tried overriding makeBoundingBox() here too (Entity#setPos independently rebuilds the box through it,
+    // using the untouched raw EntityType default dimensions, which can revert refreshDimensions()'s own work
+    // at unpredictable moments - a real, still-unfixed issue) - reverted after it broke rendering AND the
+    // hitbox entirely, live, even with every construction-order edge case guarded against. Whatever the
+    // actual mechanism is, it's evidently riskier than this narrower symptom is worth chasing further right
+    // now; left as a known gap rather than a second live regression in a row.
 
     // Silk Touch check shared by both hurt()/hurtServer() bodies below - not itself version-split, only its
     // TWO call sites' own method signatures differ (Entity#hurt is final and hurtServer(ServerLevel, ...)
