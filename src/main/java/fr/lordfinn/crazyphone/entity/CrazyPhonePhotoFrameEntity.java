@@ -127,14 +127,26 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
                 | ((posVBlocks & 0b111111) << 23);
     }
 
-    private static int roundToBlocks(int units) {
-        return Math.round(units / (float) UNITS_PER_BLOCK);
+    // Rounds a neg/pos unit pair to a block-count pair by rounding the TOTAL first and splitting, NOT each
+    // side independently - the same fix CrazyPhonePhotoFrameResizeScreen#axisToBlocks already needed for the
+    // exact same reason: a default 1-block slot is negUnits=posUnits=4 (half a block each side); rounding
+    // each side separately (0.5 -> 1) doubles the apparent total to 2 blocks ("l'image n'est plus contenue
+    // dans un bloc de 1x1 par défaut" - live request, reproduced on a freshly placed, never-resized frame).
+    private static int[] roundPairToBlocks(int negUnits, int posUnits) {
+        int totalUnits = negUnits + posUnits;
+        int totalBlocks = Math.max(1, Math.round(totalUnits / (float) UNITS_PER_BLOCK));
+        if (totalUnits <= 0)
+            return new int[]{0, totalBlocks};
+        int negBlocks = Math.round(totalBlocks * (negUnits / (float) totalUnits));
+        negBlocks = Math.max(0, Math.min(totalBlocks, negBlocks));
+        return new int[]{negBlocks, totalBlocks - negBlocks};
     }
 
     @Override
     public net.minecraft.network.protocol.Packet<net.minecraft.network.protocol.game.ClientGamePacketListener> getAddEntityPacket(net.minecraft.server.level.ServerEntity serverEntity) {
-        int packed = packSpawnData(attachFace(), rotation(),
-                roundToBlocks(negUUnits()), roundToBlocks(posUUnits()), roundToBlocks(negVUnits()), roundToBlocks(posVUnits()));
+        int[] u = roundPairToBlocks(negUUnits(), posUUnits());
+        int[] v = roundPairToBlocks(negVUnits(), posVUnits());
+        int packed = packSpawnData(attachFace(), rotation(), u[0], u[1], v[0], v[1]);
         return new net.minecraft.network.protocol.game.ClientboundAddEntityPacket(this, serverEntity, packed);
     }
 
