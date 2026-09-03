@@ -90,14 +90,6 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
     // (the entity's tracked position already sits at the attach block, offset only visually/collision-wise).
     public BlockPos attachPos = BlockPos.ZERO;
 
-    // Client-only, never synced or saved - the renderer pushes the REAL aspect-fit displayed size here once
-    // the photo's texture has actually resolved (see CrazyPhonePhotoFrameRenderer#updateDisplayBounds calls),
-    // so the hitbox can shrink to match the visible picture instead of the full resize-slot rectangle ("seulement
-    // la taille de l'image réelle compte... pas la taille max" - live request). Left at -1 (meaning "unknown,
-    // fall back to the full slot size") until the first successful render, which covers both the server
-    // (never has this - falls back permanently, which is fine: see computeBoundingBox's own comment) and the
-    // brief window before a client's own texture finishes loading.
-    private float displayWidthBlocks = -1f, displayHeightBlocks = -1f;
 
     public CrazyPhonePhotoFrameEntity(EntityType<? extends CrazyPhonePhotoFrameEntity> type, Level level) {
         super(type, level);
@@ -251,19 +243,6 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
         setRotation(rotation() + 1);
     }
 
-    /** Called client-side only, from the renderer, once a frame's texture has actually resolved - narrows
-     * this entity's own hitbox down to the real, aspect-fit displayed picture (see
-     * {@link #displayWidthBlocks}'s own field comment) instead of the full resize-slot rectangle. A no-op
-     * (skips the box rebuild) when the size hasn't actually changed, since this is called every render
-     * frame. */
-    public void updateDisplayBounds(float displayWidthBlocks, float displayHeightBlocks) {
-        if (this.displayWidthBlocks == displayWidthBlocks && this.displayHeightBlocks == displayHeightBlocks)
-            return;
-        this.displayWidthBlocks = displayWidthBlocks;
-        this.displayHeightBlocks = displayHeightBlocks;
-        this.refreshDimensions();
-    }
-
     // True for the two horizontal-face cases (floor/ceiling) - the ground-placed "1px deep, brown border
     // and background" visual treatment from the live request applies to these, not to wall-mounted frames.
     public boolean isFloorOrCeiling() {
@@ -390,15 +369,13 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
         // zero for the old-style symmetric size, nonzero once the anchor sits off-center within the
         // rectangle (see setExtents's own doc comment).
         double centerU = (posU - negU) / 2.0, centerV = (posV - negV) / 2.0;
-        // displayWidthBlocks/Height are only ever populated client-side once a texture has actually resolved
-        // (see that field's own comment) - the server (and a client before its first render) always falls
-        // back to the full slot size below, which is a strict superset of the real picture, so a break-punch
-        // there still lands (just possibly slightly more forgiving near the letterboxed margin) rather than
-        // ever rejecting a legitimate hit. Aspect-fit letterboxing is always centered WITHIN the slot (never
-        // biased toward one edge), so the refined display size shares the exact same centerU/centerV the
-        // full slot uses - only the half-extent shrinks, the center never moves.
-        double halfU = (displayWidthBlocks >= 0 ? displayWidthBlocks : (negU + posU)) / 2.0;
-        double halfV = (displayHeightBlocks >= 0 ? displayHeightBlocks : (negV + posV)) / 2.0;
+        // The hitbox is always the FULL resize slot, not a shrunk-to-the-letterboxed-content rectangle - an
+        // earlier version tried the latter (aspect-fit content only, pushed in from the client-side renderer
+        // once a texture resolved) and it repeatedly landed wrong across several rounds of live testing.
+        // "faut que ça marche comme les peintures" (live request) - vanilla paintings don't have this
+        // distinction either: their hitbox is always their full canvas, so this matches that directly.
+        double halfU = (negU + posU) / 2.0;
+        double halfV = (negV + posV) / 2.0;
         double cx = pos.getX() + 0.5, cy = pos.getY() + 0.5, cz = pos.getZ() + 0.5;
         double u0 = centerU - halfU, u1 = centerU + halfU, v0 = centerV - halfV, v1 = centerV + halfV;
         return switch (face) {

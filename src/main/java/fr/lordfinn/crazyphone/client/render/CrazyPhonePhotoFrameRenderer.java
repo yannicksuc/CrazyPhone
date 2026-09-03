@@ -7,17 +7,19 @@ package fr.lordfinn.crazyphone.client.render;
  * still have no profondeur" - live request, an earlier version only boxed floor/ceiling placements):
  * - Opaque photo: the photo itself covers the ENTIRE outward face edge to edge (no
  *   separate top/background quad at all - a straight-down view sees only the photo, "je ne veux pas de
- *   bordure visible depuis le dessus" - live request), sized to the photo's own actual displayed rectangle
- *   (aspect-fit within the resize slot), not the full slot - "seulement la taille de l'image réelle compte"
- *   (live request). Brown only shows on the four SIDE walls (see {@link #drawBoxSides}), DEPTH tall
+ *   bordure visible depuis le dessus" - live request), aspect-fit within the resize slot so it's never
+ *   stretched or cropped (see {@link #fitRotated}). The HITBOX, unlike this render size, is always the FULL
+ *   slot regardless of any letterboxing - see
+ *   {@link CrazyPhonePhotoFrameEntity#computeBoundingBox()}'s own comment for why (matches vanilla
+ *   paintings, whose hitbox is always their whole canvas). Brown only shows on the four SIDE walls (see
+ *   {@link #drawBoxSides}), DEPTH tall
  *   ({@link CrazyPhonePhotoFrameEntity#DEPTH}) and sized to the photo's own footprint plus a 1-pixel margin -
  *   this is the actual depth-wise border on the north/south/east/west sides the live request asked for,
  *   replacing an earlier flat 2D border AND an earlier version's coplanar top background quad that z-fought
  *   with the photo.
- * - Everything else (opaque wall placement, or ANY photo with transparency, on ANY face): a plain thin
- *   double-sided card, no border/background at all for the transparent case - a transparent photo instead
- *   floats a small gap off the face ({@link #TRANSPARENT_FLOAT_GAP}) rather than sitting in the box, so its
- *   see-through parts don't reveal the box's inside.
+ * - A photo with transparency, on any face: a plain thin single-sided card, no border/background at all -
+ *   it floats a small gap off the face ({@link #TRANSPARENT_FLOAT_GAP}) rather than sitting in the box, so
+ *   its see-through parts don't reveal the box's inside.
  *
  * Rotation ({@link CrazyPhonePhotoFrameEntity#rotation()}) is a pure visual spin of the photo's pixel
  * content within its existing slot rectangle - NOT a swap of which world axis width/height bind to (that
@@ -25,10 +27,6 @@ package fr.lordfinn.crazyphone.client.render;
  * benefit over what "add a rotate button" actually asked for). See {@link #uvForCorner} for how a 90°/270°
  * rotation both re-maps which texture edge lands on which screen edge AND swaps the effective aspect ratio
  * used to fit the image into its slot, so a rotated portrait photo still fits without stretching.
- *
- * Every frame, once a photo's texture has resolved, this pushes the REAL aspect-fit displayed size back
- * onto the entity ({@link CrazyPhonePhotoFrameEntity#updateDisplayBounds}) so its hitbox can shrink to match
- * the visible picture - see that method's own doc comment for why this is safe to do purely client-side.
  *
  * Hand-rolled VertexConsumer quads, same low-level technique CrazyPhonePhotoItemRenderer already uses for
  * its own Polaroid-card frame (see that class's own doc comment) - no baked model, this entity has no
@@ -96,7 +94,6 @@ public class CrazyPhonePhotoFrameRenderer extends EntityRenderer<CrazyPhonePhoto
             float[] fit = fitRotated(w, h, texture.width(), texture.height(), rotation);
             drawW = fit[0];
             drawH = fit[1];
-            entity.updateDisplayBounds(drawW, drawH);
         }
 
         boolean transparent = texture != null && texture.hasTransparency();
@@ -324,7 +321,6 @@ public class CrazyPhonePhotoFrameRenderer extends EntityRenderer<CrazyPhonePhoto
         public float width = 1f, height = 1f;
         public int rotation;
         public java.util.UUID photoId;
-        public CrazyPhonePhotoFrameEntity entity;
     }
 
     @Override
@@ -341,7 +337,6 @@ public class CrazyPhonePhotoFrameRenderer extends EntityRenderer<CrazyPhonePhoto
         state.height = entity.heightBlocks();
         state.rotation = entity.rotation();
         state.photoId = entity.photoId();
-        state.entity = entity;
     }
 
     @Override
@@ -355,7 +350,6 @@ public class CrazyPhonePhotoFrameRenderer extends EntityRenderer<CrazyPhonePhoto
             float[] fit = fitRotated(state.width, state.height, texture.width(), texture.height(), state.rotation);
             drawW = fit[0];
             drawH = fit[1];
-            state.entity.updateDisplayBounds(drawW, drawH);
         }
 
         boolean transparent = texture != null && texture.hasTransparency();
