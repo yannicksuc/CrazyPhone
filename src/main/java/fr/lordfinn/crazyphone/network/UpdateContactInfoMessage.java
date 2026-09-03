@@ -85,13 +85,15 @@ public record UpdateContactInfoMessage(String name, String uuid, String number) 
     // removed @OnlyIn's runtime stripping, so a genuinely separate, class-level-@EventBusSubscriber(Dist.
     // CLIENT)-annotated nested class is what keeps AutomaticEventSubscriber's dedicated-server scan from
     // ever loading this method's Minecraft.getInstance() reference at all.
-    //? if neoforge {
-    //? if <1.20.5 {
+    //? if neoforge && <1.20.5 {
     @OnlyIn(Dist.CLIENT)
-    //?} else {
+    //?}
+    //? if neoforge && >=1.20.5 <26 {
     /*@OnlyIn(Dist.CLIENT)
     *///?}
-    //?}
+    // >=26: @OnlyIn intentionally absent - inert on this version (NeoForge dropped its runtime member
+    // stripping there), and its mere presence in the jar triggers NeoForge's own OnlyInWarningsHandler at
+    // mod-load time, popping a warning window for the player at every launch for zero actual effect.
     static class ClientHandler {
         static void applyUpdate(UpdateContactInfoMessage message) {
             Minecraft mc = Minecraft.getInstance();

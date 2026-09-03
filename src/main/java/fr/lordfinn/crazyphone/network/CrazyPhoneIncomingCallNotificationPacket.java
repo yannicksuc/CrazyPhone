@@ -87,13 +87,15 @@ public record CrazyPhoneIncomingCallNotificationPacket(String conversationId, St
 
     // See CrazyPhoneGroupMembershipNotificationPacket's own doc comment on this pattern - nesting
     // Registration alone isn't enough, the risky method itself must live in its own separate class.
-    //? if neoforge {
-    //? if <1.20.5 {
+    //? if neoforge && <1.20.5 {
     @OnlyIn(Dist.CLIENT)
-    //?} else {
+    //?}
+    //? if neoforge && >=1.20.5 <26 {
     /*@OnlyIn(Dist.CLIENT)
     *///?}
-    //?}
+    // >=26: @OnlyIn intentionally absent - inert on this version (NeoForge dropped its runtime member
+    // stripping there), and its mere presence in the jar triggers NeoForge's own OnlyInWarningsHandler at
+    // mod-load time, popping a warning window for the player at every launch for zero actual effect.
     static class ClientHandler {
         static void showToast(CrazyPhoneIncomingCallNotificationPacket messagePacket) {
             Minecraft mc = Minecraft.getInstance();

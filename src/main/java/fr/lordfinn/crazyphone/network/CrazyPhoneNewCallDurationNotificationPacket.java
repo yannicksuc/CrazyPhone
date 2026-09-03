@@ -90,13 +90,15 @@ public record CrazyPhoneNewCallDurationNotificationPacket(String conversationId,
     // to fully load+verify THIS class (including whichever methods live directly on it) the moment
     // Registration's own register() resolves the ::handleData method reference during Common Setup, so
     // nesting Registration alone isn't enough; the risky method itself must live somewhere else entirely.
-    //? if neoforge {
-    //? if <1.20.5 {
+    //? if neoforge && <1.20.5 {
     @OnlyIn(Dist.CLIENT)
-    //?} else {
+    //?}
+    //? if neoforge && >=1.20.5 <26 {
     /*@OnlyIn(Dist.CLIENT)
     *///?}
-    //?}
+    // >=26: @OnlyIn intentionally absent - inert on this version (NeoForge dropped its runtime member
+    // stripping there), and its mere presence in the jar triggers NeoForge's own OnlyInWarningsHandler at
+    // mod-load time, popping a warning window for the player at every launch for zero actual effect.
     static class ClientHandler {
         static void applyUpdate(CrazyPhoneNewCallDurationNotificationPacket message) {
             Minecraft mc = Minecraft.getInstance();

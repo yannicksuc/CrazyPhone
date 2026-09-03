@@ -102,13 +102,15 @@ public record CrazyPhoneGroupMembershipNotificationPacket(String groupLabel, Str
     // - the same class-level pattern CrazyPhonePhotoItemClientBinding already established - so NeoForge's
     // dist-aware scanner skips loading THIS class entirely on the dedicated server, the same way it already
     // skips that one. See PORTING-26x.md for the full sweep across every packet class with this shape.
-    //? if neoforge {
-    //? if <1.20.5 {
+    //? if neoforge && <1.20.5 {
     @OnlyIn(Dist.CLIENT)
-    //?} else {
+    //?}
+    //? if neoforge && >=1.20.5 <26 {
     /*@OnlyIn(Dist.CLIENT)
     *///?}
-    //?}
+    // >=26: @OnlyIn intentionally absent here - it's inert on this version (see the doc comment above) and
+    // its mere presence in the jar triggers NeoForge's own OnlyInWarningsHandler at mod-load time, which
+    // shows the player a warning popup on every launch for something with zero actual effect.
     static class ClientHandler {
         static void showToast(CrazyPhoneGroupMembershipNotificationPacket messagePacket) {
             Minecraft mc = Minecraft.getInstance();
