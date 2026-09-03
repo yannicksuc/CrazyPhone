@@ -122,5 +122,4 @@ longer receive updates).
 ---
 
 *Voice calls and voice messages are built on top of [Simple Voice Chat](https://modrepo.de/minecraft/voicechat)
-by Max Henkel (optional, NeoForge only). CrazyPhone itself has no runtime dependency on Camera or any other
-third-party mod.*
+by Max Henkel (optional, NeoForge only).*
