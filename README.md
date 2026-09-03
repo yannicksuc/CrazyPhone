@@ -99,11 +99,29 @@ wholesale; see [Why this exists](#-why-this-exists).
 ## 🧩 Platforms & versions
 
 One shared `src/main/java` tree, preprocessed per target by [Stonecutter](https://stonecutter.kikugie.dev/)
-(`//? if fabric` / `//? if neoforge`, plus per-version checks) into 9 build targets. NeoForge 1.21.1 is the
-primary development target; everything else is kept in sync with it. The 26.x line is a newer, actively
+(`//? if fabric` / `//? if neoforge`, plus per-version checks) into 9 build targets.
+
+### Maintenance status
+
+Update this table whenever a target's status actually changes - it's the quick answer to "is this version
+still getting updates", separate from the detailed per-feature table below.
+
+| Target | Status |
+|---|---|
+| NeoForge 1.21.1 | 🟢 Actively maintained - primary NeoForge target |
+| Fabric 1.21.1 | 🟢 Actively maintained - primary Fabric target |
+| NeoForge 26.1 | 🟢 Actively maintained |
+| Fabric 26.1 | 🟢 Actively maintained |
+| NeoForge 1.21.10 | ⚪ Frozen - unmaintained indefinitely (since 2026-09-03) |
+| NeoForge 1.20.4 | ⚪ Frozen - unmaintained indefinitely (since 2026-09-02), local builds only |
+| Fabric 1.20.1 | ⚪ Not functional - phone networking needs an API absent before 1.20.5, no active work planned |
+| NeoForge 26.2 | 🟡 Work in progress - doesn't compile yet, see [PORTING-26x.md](PORTING-26x.md) |
+| Fabric 26.2 | 🟡 Work in progress - doesn't compile yet, see [PORTING-26x.md](PORTING-26x.md) |
+
+Only the 🟢 targets get new features and bugfixes going forward. The 26.x line is otherwise a newer,
 ongoing port - see [PORTING-26x.md](PORTING-26x.md) for its detailed status and remaining work.
 
-| | NeoForge 1.20.4 *(unmaintained)* | NeoForge 1.21.1 | NeoForge 1.21.10 | NeoForge 26.1 | NeoForge 26.2 | Fabric 1.20.1 | Fabric 1.21.1 | Fabric 26.1 | Fabric 26.2 |
+| | NeoForge 1.20.4 *(unmaintained)* | NeoForge 1.21.1 | NeoForge 1.21.10 *(unmaintained)* | NeoForge 26.1 | NeoForge 26.2 | Fabric 1.20.1 | Fabric 1.21.1 | Fabric 26.1 | Fabric 26.2 |
 |---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
 | Phone, messaging, contacts, groups | ✅ | ✅ | ✅ | ✅ | — *(pending)* | — | ✅ | — *(pending)* | — *(pending)* |
 | Mayor election | ✅ | ✅ | ✅ | ✅ | — *(pending)* | — | ✅ | — *(pending)* | — *(pending)* |
