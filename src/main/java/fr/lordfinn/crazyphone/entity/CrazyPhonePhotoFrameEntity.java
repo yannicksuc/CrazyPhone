@@ -111,42 +111,44 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
     //   by reading their real decompiled source, not guessed.
     //
     // Packed into the packet's own single "data" int (a VarInt over the wire, but still a real Java int, so
-    // 32 bits total): face (3 bits, 0-5), rotation (2 bits, 0-3), then the 4 extents ROUNDED TO WHOLE BLOCKS
-    // (6 bits each, 0-63 - the configured max is 32 blocks) rather than their full 1/8-block precision - 4 *
-    // 9 bits for full precision wouldn't fit alongside face+rotation in one int. The precise, unrounded
-    // values still arrive moments later via the normal entityData sync and correct this automatically
-    // (onSyncedDataUpdated fires again); this is only ever the entity's very first, synchronous approximation
-    // - and for anything actually placed through the resize grid (whole-block granularity already, see
-    // CrazyPhonePhotoFrameResizeScreen's own doc comment) it's not even an approximation, it's exact.
-    private static int packSpawnData(Direction face, int rotation, int negUBlocks, int posUBlocks, int negVBlocks, int posVBlocks) {
+    // 32 bits total): face (3 bits, 0-5), then the 4 extents in HALF-BLOCK units (7 bits each, 0-127 - the
+    // configured max is 32 blocks = 64 half-blocks) rather than their full 1/8-block precision - 3 + 4*7 = 31
+    // bits, just fits. Rotation is deliberately left out (it's a pure visual UV spin, never affects position
+    // or the hitbox - a brief moment at the default 0 until the normal entityData sync catches up is
+    // harmless, unlike position being wrong even briefly).
+    //
+    // Half-block granularity specifically (not whole-block, tried first) - a default, never-resized
+    // placement is exactly negUnits=posUnits=4 (0.25 block each? no - 4 units = HALF a block each side,
+    // UNITS_PER_BLOCK=8), which converts to EXACTLY 1 half-block-unit on each side with zero rounding
+    // ambiguity. Whole-block rounding couldn't represent that at all: 0.5 blocks rounds the same direction
+    // every time (Math.round(0.5) always rounds up), so a symmetric default came out as 1 block on one side
+    // and 0 on the other - visibly off-center right up until the real sync corrected it a moment later
+    // ("quand je place l'image elle se place pas au milieu correctement... si j'ouvre le gui grille et
+    // sélectionne le centre... l'image se remet bien centrée" - live request; the grid path was never
+    // affected since it sends full precision through the normal entityData sync, never through this
+    // approximation at all). Anything actually sized through the resize grid (whole-block granularity) or
+    // left at the default is exactly representable in half-blocks too, so this is lossless for both of those
+    // - only a genuinely odd-eighth Silk-Touch-restored size could still see a momentary quarter-block
+    // rounding error, self-correcting the same way.
+    private static final int HALF_UNITS_PER_BLOCK = UNITS_PER_BLOCK / 2;
+
+    private static int packSpawnData(Direction face, int negUHalfBlocks, int posUHalfBlocks, int negVHalfBlocks, int posVHalfBlocks) {
         return (face.get3DDataValue() & 0b111)
-                | ((rotation & 0b11) << 3)
-                | ((negUBlocks & 0b111111) << 5)
-                | ((posUBlocks & 0b111111) << 11)
-                | ((negVBlocks & 0b111111) << 17)
-                | ((posVBlocks & 0b111111) << 23);
+                | ((negUHalfBlocks & 0b1111111) << 3)
+                | ((posUHalfBlocks & 0b1111111) << 10)
+                | ((negVHalfBlocks & 0b1111111) << 17)
+                | ((posVHalfBlocks & 0b1111111) << 24);
     }
 
-    // Rounds a neg/pos unit pair to a block-count pair by rounding the TOTAL first and splitting, NOT each
-    // side independently - the same fix CrazyPhonePhotoFrameResizeScreen#axisToBlocks already needed for the
-    // exact same reason: a default 1-block slot is negUnits=posUnits=4 (half a block each side); rounding
-    // each side separately (0.5 -> 1) doubles the apparent total to 2 blocks ("l'image n'est plus contenue
-    // dans un bloc de 1x1 par défaut" - live request, reproduced on a freshly placed, never-resized frame).
-    private static int[] roundPairToBlocks(int negUnits, int posUnits) {
-        int totalUnits = negUnits + posUnits;
-        int totalBlocks = Math.max(1, Math.round(totalUnits / (float) UNITS_PER_BLOCK));
-        if (totalUnits <= 0)
-            return new int[]{0, totalBlocks};
-        int negBlocks = Math.round(totalBlocks * (negUnits / (float) totalUnits));
-        negBlocks = Math.max(0, Math.min(totalBlocks, negBlocks));
-        return new int[]{negBlocks, totalBlocks - negBlocks};
+    private static int roundToHalfBlocks(int units) {
+        return Math.round(units / (float) HALF_UNITS_PER_BLOCK);
     }
 
     @Override
     public net.minecraft.network.protocol.Packet<net.minecraft.network.protocol.game.ClientGamePacketListener> getAddEntityPacket(net.minecraft.server.level.ServerEntity serverEntity) {
-        int[] u = roundPairToBlocks(negUUnits(), posUUnits());
-        int[] v = roundPairToBlocks(negVUnits(), posVUnits());
-        int packed = packSpawnData(attachFace(), rotation(), u[0], u[1], v[0], v[1]);
+        int packed = packSpawnData(attachFace(),
+                roundToHalfBlocks(negUUnits()), roundToHalfBlocks(posUUnits()),
+                roundToHalfBlocks(negVUnits()), roundToHalfBlocks(posVUnits()));
         return new net.minecraft.network.protocol.game.ClientboundAddEntityPacket(this, serverEntity, packed);
     }
 
@@ -163,11 +165,10 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
         this.attachPos = this.blockPosition();
         int packed = packet.getData();
         this.entityData.set(DATA_FACE, packed & 0b111);
-        this.entityData.set(DATA_ROTATION, (packed >> 3) & 0b11);
-        this.entityData.set(DATA_NEG_U, ((packed >> 5) & 0b111111) * UNITS_PER_BLOCK);
-        this.entityData.set(DATA_POS_U, ((packed >> 11) & 0b111111) * UNITS_PER_BLOCK);
-        this.entityData.set(DATA_NEG_V, ((packed >> 17) & 0b111111) * UNITS_PER_BLOCK);
-        this.entityData.set(DATA_POS_V, ((packed >> 23) & 0b111111) * UNITS_PER_BLOCK);
+        this.entityData.set(DATA_NEG_U, ((packed >> 3) & 0b1111111) * HALF_UNITS_PER_BLOCK);
+        this.entityData.set(DATA_POS_U, ((packed >> 10) & 0b1111111) * HALF_UNITS_PER_BLOCK);
+        this.entityData.set(DATA_NEG_V, ((packed >> 17) & 0b1111111) * HALF_UNITS_PER_BLOCK);
+        this.entityData.set(DATA_POS_V, ((packed >> 24) & 0b1111111) * HALF_UNITS_PER_BLOCK);
         this.refreshDimensions();
     }
 
