@@ -315,6 +315,21 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
 
     @Override
     public void tick() {
+        // Self-heals the bounding box every tick, on both sides. Entity#setPos(x,y,z) independently rebuilds
+        // the box from the untouched raw EntityType default dimensions (sized(1.0f,1.0f) in ModEntities.java)
+        // whenever a tracked entity's position is (re-)confirmed from the network, silently undoing
+        // refreshDimensions()'s own work - real, reproduced live as the box reverting to a plain 1x1x1 cube.
+        // Four different attempts at intercepting that directly (overriding makeBoundingBox(), overriding
+        // setPos() three different ways, the last one matching vanilla's own proven BlockAttachedEntity
+        // pattern exactly) all broke rendering AND the hitbox entirely instead, live, for a reason never
+        // pinned down. This sidesteps the mystery rather than solving it: re-apply the correct box here,
+        // unconditionally, every tick - tick() itself has run this exact class's own "still attached" check
+        // safely through all four of those attempts without ever being implicated, so it's a genuinely
+        // separate code path from whatever setPos()/makeBoundingBox() broke. Any external reversion (from
+        // setPos or otherwise) self-corrects within a single tick (1/20s) instead of staying wrong
+        // indefinitely - a cheap fix (one cached blockstate read via computeFaceOffset) for an entity that
+        // never moves and was already ticking regardless.
+        this.setBoundingBox(computeBoundingBox());
         // Wall/ceiling/floor decor, not a physics object - no gravity, no drift, matches HangingEntity's
         // own tick() (empty on the server side beyond the "still attached" check vanilla does; this mirrors
         // that check with the broader non-full-face allowance instead of vanilla's own isFaceFull one).
