@@ -680,6 +680,43 @@ public class CrazyPhoneHelper {
         return NbtCompat.getString(PhoneTagAccess.getTag(phone), TAG_CALL_STATE);
     }
 
+    /** Same "state lives on the stack, vanilla's own equipment sync does the rest" pattern as
+     * screenOpen/callState above - lets OTHER players watching someone frame a selfie see their arm raised
+     * and head turned toward their own camera too (CrazyPhoneSelfieArmPoseMixin reads this for any entity,
+     * not just the local player), not just the framing player's own client. Written from the server side
+     * only, via CrazyPhoneSelfiePoseSyncPacket's own handler - the client-side live values in
+     * CrazyPhoneSelfieStickPose stay the local player's own authoritative, zero-latency source for their OWN
+     * rendering; this is purely the network-visible copy for bystanders. */
+    private static final String TAG_SELFIE_ACTIVE = "selfieActive";
+    private static final String TAG_SELFIE_STICK_X = "selfieStickX";
+    private static final String TAG_SELFIE_STICK_Y = "selfieStickY";
+
+    public static void setPhoneSelfiePose(ItemStack phone, boolean active, float stickX, float stickY) {
+        PhoneTagAccess.updateTag(phone, tag -> {
+            if (active) {
+                tag.putBoolean(TAG_SELFIE_ACTIVE, true);
+                tag.putFloat(TAG_SELFIE_STICK_X, stickX);
+                tag.putFloat(TAG_SELFIE_STICK_Y, stickY);
+            } else {
+                tag.remove(TAG_SELFIE_ACTIVE);
+                tag.remove(TAG_SELFIE_STICK_X);
+                tag.remove(TAG_SELFIE_STICK_Y);
+            }
+        });
+    }
+
+    public static boolean isPhoneSelfieActive(ItemStack phone) {
+        return NbtCompat.getBoolean(PhoneTagAccess.getTag(phone), TAG_SELFIE_ACTIVE);
+    }
+
+    public static float getPhoneSelfieStickX(ItemStack phone) {
+        return NbtCompat.getFloat(PhoneTagAccess.getTag(phone), TAG_SELFIE_STICK_X, 80f);
+    }
+
+    public static float getPhoneSelfieStickY(ItemStack phone) {
+        return NbtCompat.getFloat(PhoneTagAccess.getTag(phone), TAG_SELFIE_STICK_Y);
+    }
+
     /** Applies {@code state} to every CrazyPhone anywhere in {@code player}'s inventory whose OWN registered
      * number is one of {@code callNumbers} - not just the one in their main hand, since a call stays "active"
      * on a phone even after it's put away (see the item's in_call texture), and not every phone the player

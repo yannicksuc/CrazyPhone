@@ -8,7 +8,9 @@
 		{"predicate": {"crazyphone:screen_on": 1}, "model": "crazyphone:item/crazy_phone_on"},
 		{"predicate": {"crazyphone:calling": 1}, "model": "crazyphone:item/crazy_phone_calling"},
 		{"predicate": {"crazyphone:called_in": 1}, "model": "crazyphone:item/crazy_phone_called_in"},
-		{"predicate": {"crazyphone:in_call": 1}, "model": "crazyphone:item/crazy_phone_in_call"}
+		{"predicate": {"crazyphone:in_call": 1}, "model": "crazyphone:item/crazy_phone_in_call"},
+		{"predicate": {"crazyphone:selfie_mode": 1}, "model": "crazyphone:item/crazy_phone_with_selfie_stick"},
+		{"predicate": {"crazyphone:selfie_mode_self": 1}, "model": "crazyphone:item/crazy_phone_with_selfie_stick_framer_view"}
 	],
 	"elements": [
 		{

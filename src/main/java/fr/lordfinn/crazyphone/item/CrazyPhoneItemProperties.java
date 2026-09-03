@@ -73,6 +73,8 @@ public class CrazyPhoneItemProperties {
         event.register(Crazyphone.resource("calling"), CallState.CALLING_CODEC);
         event.register(Crazyphone.resource("called_in"), CallState.CALLED_IN_CODEC);
         event.register(Crazyphone.resource("in_call"), CallState.IN_CALL_CODEC);
+        event.register(Crazyphone.resource("selfie_mode"), SelfieMode.MAP_CODEC);
+        event.register(Crazyphone.resource("selfie_mode_self"), SelfieModeSelf.MAP_CODEC);
     }
     *///?}
     //? if >=1.21.10 {
@@ -113,6 +115,45 @@ public class CrazyPhoneItemProperties {
             };
         }
     }
+
+    // Entity-aware (see CrazyPhoneSelfiePose#isSelfieFraming's own doc comment) - true for the local player's
+    // own held stack while they're framing a selfie, or for any OTHER entity whose held stack reports selfie
+    // framing over the network, so bystanders see the selfie-stick model attached too, not just the framing
+    // player's own client.
+    public record SelfieMode() implements ConditionalItemModelProperty {
+        public static final MapCodec<SelfieMode> MAP_CODEC = MapCodec.unit(new SelfieMode());
+
+        @Override
+        public boolean get(ItemStack stack, @Nullable ClientLevel level, @Nullable LivingEntity entity, int seed, ItemDisplayContext displayContext) {
+            return fr.lordfinn.crazyphone.client.CrazyPhoneSelfiePose.isSelfieFraming(entity);
+        }
+
+        @Override
+        public MapCodec<SelfieMode> type() {
+            return MAP_CODEC;
+        }
+    }
+
+    // Wins over SelfieMode above (see this property's own placement LAST in crazy_phone.json's own overrides
+    // list - last-declared entry is checked first by ItemOverrides#resolve) specifically when the entity
+    // holding the stack IS the local viewing client itself - the framing player's own third-person-front
+    // selfie camera sees a model tuned for facing the lens (see
+    // crazy_phone_with_selfie_stick_framer_view.json), while everyone else watching them still sees the plain
+    // selfie-stick model above.
+    public record SelfieModeSelf() implements ConditionalItemModelProperty {
+        public static final MapCodec<SelfieModeSelf> MAP_CODEC = MapCodec.unit(new SelfieModeSelf());
+
+        @Override
+        public boolean get(ItemStack stack, @Nullable ClientLevel level, @Nullable LivingEntity entity, int seed, ItemDisplayContext displayContext) {
+            return entity == net.minecraft.client.Minecraft.getInstance().player
+                    && fr.lordfinn.crazyphone.client.CrazyPhoneSelfiePose.isSelfieFraming(entity);
+        }
+
+        @Override
+        public MapCodec<SelfieModeSelf> type() {
+            return MAP_CODEC;
+        }
+    }
     *///?}
     //? if fabric && >=1.21.10 {
     /*// No explicit registration needed here - CrazyPhoneConditionalItemModelPropertyMixin injects the
@@ -147,6 +188,27 @@ public class CrazyPhoneItemProperties {
         registerCallState("calling", State.CALLING);
         registerCallState("called_in", State.RINGING);
         registerCallState("in_call", State.ACTIVE);
+        // Entity-aware (see CrazyPhoneSelfiePose#isSelfieFraming's own doc comment) - true for the local
+        // player's own held stack while they're framing a selfie, or for any OTHER entity whose held stack
+        // reports selfie framing over the network, so bystanders see the selfie-stick model attached too, not
+        // just the framing player's own client.
+        ItemProperties.register(
+                ModItems.CRAZY_PHONE.get(),
+                Crazyphone.resource("selfie_mode"),
+                (stack, level, entity, seed) -> fr.lordfinn.crazyphone.client.CrazyPhoneSelfiePose.isSelfieFraming(entity) ? 1.0f : 0.0f
+        );
+        // Wins over selfie_mode above (see this override's own placement LAST in crazy_phone.json's own
+        // overrides list - last-declared entry is checked first by ItemOverrides#resolve) specifically when
+        // the entity holding the stack IS the local viewing client itself - the framing player's own
+        // third-person-front selfie camera sees a model tuned for facing the lens (see
+        // crazy_phone_with_selfie_stick_framer_view.json), while everyone else watching them still sees the
+        // plain selfie-stick model above.
+        ItemProperties.register(
+                ModItems.CRAZY_PHONE.get(),
+                Crazyphone.resource("selfie_mode_self"),
+                (stack, level, entity, seed) -> entity == net.minecraft.client.Minecraft.getInstance().player
+                        && fr.lordfinn.crazyphone.client.CrazyPhoneSelfiePose.isSelfieFraming(entity) ? 1.0f : 0.0f
+        );
     }
 
     private static void registerCallState(String propertyName, State targetState) {

@@ -12,7 +12,14 @@
     "PlayerModelPresentPoseMixin",
     "CrazyPhonePresentHandGripMixin",
     "CrazyPhonePresentHandGripInvokerMixin",
-    "CrazyPhonePhotoItemRenderMixin"
+    "CrazyPhonePhotoItemRenderMixin",
+    "CrazyPhoneSelfieRenderStateMixin",
+    "CrazyPhoneSelfieAvatarExtractMixin",
+    "CrazyPhoneSelfieArmPoseMixin",
+    "PlayerModelSelfiePoseMixin",
+    "CrazyPhoneSelfieStickMouseMixin",
+    "CrazyPhoneSelfieCameraMixin",
+    "CrazyPhoneCaptureViewCycleMixin"
   ],
   "injectors": {
     "defaultRequire": 1

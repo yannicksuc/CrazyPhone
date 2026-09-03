@@ -6,7 +6,7 @@ on a single shared source tree targeting both **NeoForge** and **Fabric**, acros
 versions.
 
 [![Minecraft](https://img.shields.io/badge/Minecraft-1.20.1%20%E2%80%93%201.21.10-62B47A?logo=minecraft&logoColor=white)](https://www.minecraft.net/)
-[![NeoForge](https://img.shields.io/badge/NeoForge-1.20.4%20%C2%B7%201.21.1%20%C2%B7%201.21.10-D7791E)](https://neoforged.net/)
+[![NeoForge](https://img.shields.io/badge/NeoForge-1.21.1%20%C2%B7%201.21.10-D7791E)](https://neoforged.net/)
 [![Fabric](https://img.shields.io/badge/Fabric-1.20.1%20%C2%B7%201.21.1-DBB69B)](https://fabricmc.net/)
 [![Java](https://img.shields.io/badge/Java-17%20%2F%2021-ED8B00?logo=openjdk&logoColor=white)](https://adoptium.net/)
 [![License](https://img.shields.io/badge/License-All%20Rights%20Reserved-red)](#-license)
@@ -103,7 +103,7 @@ One shared `src/main/java` tree, preprocessed per target by [Stonecutter](https:
 primary development target; everything else is kept in sync with it. The 26.x line is a newer, actively
 ongoing port - see [PORTING-26x.md](PORTING-26x.md) for its detailed status and remaining work.
 
-| | NeoForge 1.20.4 | NeoForge 1.21.1 | NeoForge 1.21.10 | NeoForge 26.1 | NeoForge 26.2 | Fabric 1.20.1 | Fabric 1.21.1 | Fabric 26.1 | Fabric 26.2 |
+| | NeoForge 1.20.4 *(unmaintained)* | NeoForge 1.21.1 | NeoForge 1.21.10 | NeoForge 26.1 | NeoForge 26.2 | Fabric 1.20.1 | Fabric 1.21.1 | Fabric 26.1 | Fabric 26.2 |
 |---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
 | Phone, messaging, contacts, groups | ✅ | ✅ | ✅ | ✅ | — *(pending)* | — | ✅ | — *(pending)* | — *(pending)* |
 | Mayor election | ✅ | ✅ | ✅ | ✅ | — *(pending)* | — | ✅ | — *(pending)* | — *(pending)* |
@@ -135,7 +135,7 @@ ongoing port - see [PORTING-26x.md](PORTING-26x.md) for its detailed status and 
 
 ## 📋 Requirements
 
-**NeoForge** (1.20.4, 1.21.1, or 1.21.10):
+**NeoForge** (1.21.1 or 1.21.10 - 1.20.4 still builds locally but is no longer published or maintained):
 
 | Dependency | Required for |
 |---|---|
@@ -157,7 +157,7 @@ feature-wise.
 ## 🎮 Installation (players / server admins)
 
 **NeoForge:**
-1. Install [NeoForge](https://neoforged.net/) for your target Minecraft version (1.20.4, 1.21.1, or 1.21.10).
+1. Install [NeoForge](https://neoforged.net/) for your target Minecraft version (1.21.1 or 1.21.10 - see the [platform table](#-platforms--versions) for why 1.20.4 isn't listed here anymore).
 2. (Optional) Install **[Simple Voice Chat](https://modrepo.de/minecraft/voicechat)** into `mods/` for calls and voice messages.
 3. Drop the built `crazyphone-*.jar` for that version into `mods/`.
 4. Launch the game, craft/obtain a Crazy Phone, and register a number.
@@ -194,8 +194,8 @@ gradlew.bat :1.21.1-fabric:runClient
 ./gradlew :1.21.1-fabric:runClient
 ```
 
-Swap `1.21.1` for `1.20.4`, `1.21.10`, `26.1` or `26.2` (NeoForge), or `1.21.1-fabric` for
-`1.20.1-fabric`, `26.1-fabric` or `26.2-fabric` (Fabric).
+Swap `1.21.1` for `1.20.4` *(unmaintained, local builds only)*, `1.21.10`, `26.1` or `26.2` (NeoForge), or
+`1.21.1-fabric` for `1.20.1-fabric`, `26.1-fabric` or `26.2-fabric` (Fabric).
 
 **Testing across several nodes at once** (Windows/PowerShell): `scripts/dev-launch.ps1` wraps the commands
 above with PID/log tracking per (version, kind) and a fixed dedicated-server port per node, so you don't

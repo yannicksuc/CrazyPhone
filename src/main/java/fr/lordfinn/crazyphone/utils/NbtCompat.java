@@ -51,6 +51,18 @@ public final class NbtCompat {
         return getLong(tag, key, 0L);
     }
 
+    public static float getFloat(CompoundTag tag, String key, float def) {
+        //? if <1.21.10 {
+        return tag.contains(key) ? tag.getFloat(key) : def;
+        //? } else {
+        /*return tag.getFloatOr(key, def);
+        *///?}
+    }
+
+    public static float getFloat(CompoundTag tag, String key) {
+        return getFloat(tag, key, 0f);
+    }
+
     public static boolean getBoolean(CompoundTag tag, String key, boolean def) {
         //? if <1.21.10 {
         return tag.contains(key) ? tag.getBoolean(key) : def;

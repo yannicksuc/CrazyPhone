@@ -44,6 +44,7 @@ public class CrazyphoneFabricClient implements ClientModInitializer {
         net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents.JOIN.register(
                 (handler, sender, client) -> fr.lordfinn.crazyphone.client.picture.FabricPictureCache.reset());
         fr.lordfinn.crazyphone.client.CrazyPhonePresentDebugCommand.register();
+        fr.lordfinn.crazyphone.client.CrazyPhoneSelfieCameraDebugCommand.register();
         // Punch-to-shoot: fires every tick the attack key is held, clickCount != 0 only on the actual
         // click-down tick (see ClientPreAttackCallback's own doc comment) - returning true cancels the
         // vanilla attack/block-break/hand-swing entirely, covering block/entity/empty-air uniformly (unlike

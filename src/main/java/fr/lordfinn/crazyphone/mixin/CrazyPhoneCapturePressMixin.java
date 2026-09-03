@@ -2,9 +2,11 @@ package fr.lordfinn.crazyphone.mixin;
 
 /**
  * Fabric-only equivalent of the NeoForge-only CrazyPhoneCaptureMode's {@code InputEvent.MouseButton.Pre} hook
- * (Fabric API has no direct equivalent) - left click exits capture mode, right click takes the shot, both
- * cancelling vanilla's own click handling entirely (attack/block-break/item-use) by injecting at HEAD with a
- * cancellable callback, exactly like NeoForge's own Pre-style input event does.
+ * (Fabric API has no direct equivalent) - right click takes the shot (F5 now owns view cycling, see
+ * CrazyPhoneCaptureViewCycleMixin; Escape is the only way to exit capture mode, see
+ * CrazyPhoneCaptureEscapeMixin) - both still cancelling vanilla's own click handling entirely (attack/block-
+ * break/item-use) by injecting at HEAD with a cancellable callback, exactly like NeoForge's own Pre-style
+ * input event does, even now that left click itself has nothing left to do.
  *
  * Targets MouseHandler#onPress directly (private, void, signature (long, int, int, int) - GLFW's raw window
  * handle, button, action, mods) on <26 - confirmed via decompiled source that 26.x consolidated
@@ -32,9 +34,7 @@ public abstract class CrazyPhoneCapturePressMixin {
             return;
         ci.cancel();
         int button = buttonInfo.button();
-        if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT)
-            CrazyPhoneCaptureMode.exit();
-        else if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT)
+        if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT)
             CrazyPhoneCaptureMode.triggerCapture();
     }
     ^///? } else {
@@ -43,9 +43,7 @@ public abstract class CrazyPhoneCapturePressMixin {
         if (!CrazyPhoneCaptureMode.isActive() || action != GLFW.GLFW_PRESS)
             return;
         ci.cancel();
-        if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT)
-            CrazyPhoneCaptureMode.exit();
-        else if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT)
+        if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT)
             CrazyPhoneCaptureMode.triggerCapture();
     }
     //?}

@@ -22,6 +22,7 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 *///?}
 //?}
 
+import net.minecraft.client.CameraType;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui./*$ gui_graphics_type {*/GuiGraphics/*$}*/;
 //? if >=26 {
@@ -51,8 +52,9 @@ import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
  * at render time (never touching the persisted options.fov() value at all, unlike the retired
  * CrazyPhoneZoomController - which is what let zoom silently cap out once options.fov()'s own 30-110 slider
  * clamp was hit, and what left FOV stuck if the player disconnected mid-shot instead of properly exiting),
- * mouse scroll for zoom, left-click-cancels/right-click-shoots, and hiding the held phone + rest of the HUD
- * while framing, the same way vanilla's own F1 does.
+ * mouse scroll for zoom, left-click toggles a "selfie" (third-person-front) framing/right-click-shoots,
+ * Escape cancels, and hiding the held phone + rest of the HUD while framing, the same way vanilla's own F1
+ * does.
  *
  * The state/trigger logic below (enter/exit/tick/triggerCapture/drawReticle/drawZoomReadout) is loader-
  * neutral; only the actual hook wiring differs (NeoForge: ViewportEvent.ComputeFov/InputEvent/RenderHandEvent/
@@ -85,12 +87,27 @@ public final class CrazyPhoneCaptureMode {
     private static boolean capturing = false;
     private static float targetZoom = MIN_ZOOM;
     private static float currentZoom = MIN_ZOOM;
+    // Left click used to exit capture mode outright, then toggled between first-person and "selfie" framing -
+    // now F5 (CrazyPhoneCaptureViewCycleMixin) owns view switching entirely, cycling through 4 states instead
+    // of vanilla's own 3 (Escape is still the only way to exit capture mode, see the button handlers below).
+    // 0=first-person (normal framing), 1=selfie (third-person-front + the arm/head/camera posing below),
+    // 2=third-person-back (plain, no posing), 3=third-person-front (plain, no posing - vanilla's own mirrored
+    // view, distinct from state 1 only in that the posing/camera-parenting mixins don't activate for it).
+    private static int viewState = 0;
+    // Saving/restoring the player's own pre-capture F5 state (instead of just always resetting to
+    // FIRST_PERSON on exit) means someone who was already in third-person when they opened the phone lands
+    // back exactly where they were, not force-switched to first-person by a feature they never touched.
+    private static CameraType previousCameraType = null;
 
     private CrazyPhoneCaptureMode() {
     }
 
     public static boolean isActive() {
         return active;
+    }
+
+    public static boolean isSelfieMode() {
+        return viewState == 1;
     }
 
     public static float currentZoom() {
@@ -116,7 +133,33 @@ public final class CrazyPhoneCaptureMode {
         currentZoom = MIN_ZOOM;
         capturing = false;
         active = true;
+        previousCameraType = mc.options.getCameraType();
+        viewState = 0;
+        mc.options.setCameraType(CameraType.FIRST_PERSON);
         DEBUG_LOGGER.info("enter() activated capture mode, conversationId='{}'", newConversationId);
+    }
+
+    /** Advances the F5 view cycle by one step (see {@code viewState}'s own doc comment for the 4 states) -
+     * called from {@link fr.lordfinn.crazyphone.mixin.CrazyPhoneCaptureViewCycleMixin}, which drains vanilla's
+     * own F5 keybind click queue itself while capture mode is active so vanilla's normal 3-state handling in
+     * {@code Minecraft#handleKeybinds()} never runs for it (see that mixin's own doc comment). */
+    public static void cycleView() {
+        if (!active)
+            return;
+        viewState = (viewState + 1) % 4;
+        Minecraft mc = Minecraft.getInstance();
+        switch (viewState) {
+            case 0 -> mc.options.setCameraType(CameraType.FIRST_PERSON);
+            case 1 -> {
+                mc.options.setCameraType(CameraType.THIRD_PERSON_FRONT);
+                float lookXRot = mc.player != null ? mc.player.getXRot() : 0f;
+                fr.lordfinn.crazyphone.client.CrazyPhoneSelfieStickPose.resetToLook(lookXRot);
+            }
+            case 2 -> mc.options.setCameraType(CameraType.THIRD_PERSON_BACK);
+            case 3 -> mc.options.setCameraType(CameraType.THIRD_PERSON_FRONT);
+            default -> throw new IllegalStateException("Unexpected view state " + viewState);
+        }
+        DEBUG_LOGGER.info("cycleView() -> {}", viewState);
     }
 
     /** Single choke point for every capture entry point (punch-to-shoot, the home screen's Photo icon, the
@@ -139,6 +182,14 @@ public final class CrazyPhoneCaptureMode {
         active = false;
         mc./*$ mc_set_screen {*/setScreen/*$}*/(previousScreen);
         previousScreen = null;
+        if (previousCameraType != null)
+            mc.options.setCameraType(previousCameraType);
+        previousCameraType = null;
+        viewState = 0;
+        // tick() (the usual place this fires from, see its own doc comment) never runs again once active is
+        // false, so this has to fire explicitly here too - otherwise a player who exits capture mode entirely
+        // while framing a selfie would stay "active" in every OTHER player's own view forever.
+        sendSelfiePoseDeactivate();
     }
 
     public static void adjustZoom(double scrollDeltaY) {
@@ -153,6 +204,37 @@ public final class CrazyPhoneCaptureMode {
         if (!active)
             return;
         currentZoom += (targetZoom - currentZoom) * LERP_SPEED;
+        tickSelfiePoseSync();
+    }
+
+    // Broadcasts the local player's own live selfie pose to the server (see
+    // CrazyPhoneSelfiePoseSyncPacket's own doc comment for why this lives on the item stack, not a
+    // dedicated broadcast) - throttled, since stick angles change continuously while the mouse moves, unlike
+    // screen_on/call-state's own one-shot transition-only sends. Fires one final "deactivate" the instant
+    // selfie mode itself ends (cycling to a different view state), same reasoning exit()'s own explicit call
+    // documents for the "capture mode closes entirely" case this doesn't cover.
+    private static final int SELFIE_POSE_SYNC_INTERVAL_TICKS = 3;
+    private static int selfiePoseSyncCooldown = 0;
+    private static boolean lastSyncedSelfieActive = false;
+
+    private static void tickSelfiePoseSync() {
+        if (isSelfieMode()) {
+            if (--selfiePoseSyncCooldown > 0)
+                return;
+            selfiePoseSyncCooldown = SELFIE_POSE_SYNC_INTERVAL_TICKS;
+            NetworkAccess.sendToServer(new fr.lordfinn.crazyphone.network.CrazyPhoneSelfiePoseSyncPacket(
+                    true, CrazyPhoneSelfieStickPose.stickX, CrazyPhoneSelfieStickPose.stickY));
+            lastSyncedSelfieActive = true;
+        } else if (lastSyncedSelfieActive) {
+            sendSelfiePoseDeactivate();
+        }
+    }
+
+    private static void sendSelfiePoseDeactivate() {
+        if (!lastSyncedSelfieActive)
+            return;
+        NetworkAccess.sendToServer(new fr.lordfinn.crazyphone.network.CrazyPhoneSelfiePoseSyncPacket(false, 0f, 0f));
+        lastSyncedSelfieActive = false;
     }
 
     public static void triggerCapture() {
@@ -221,14 +303,21 @@ public final class CrazyPhoneCaptureMode {
         event.setCanceled(true);
     }
 
+    // The camera's own position/rotation while framing a selfie is now fully owned by
+    // CrazyPhoneSelfieCameraMixin (a TAIL injection into Camera#setup that overwrites both directly, computed
+    // from the same live stick angle driving the arm bone) - this superseded two earlier, partial attempts
+    // that lived here (a CalculateDetachedCameraDistanceEvent distance-only nudge, then a ComputeCameraAngles
+    // yaw/pitch nudge on top of that), both live-reported as "desynced"/"just a zoomed F5, doesn't follow the
+    // arm". Removed rather than left in place: CrazyPhoneSelfieCameraMixin's own TAIL injection overwrites
+    // whatever position/rotation vanilla's own Camera#setup computed anyway, so their effect was already
+    // fully moot dead weight, not just superseded.
+
     @SubscribeEvent
     public static void onMouseButton(InputEvent.MouseButton.Pre event) {
         if (!active || event.getAction() != GLFW.GLFW_PRESS)
             return;
         event.setCanceled(true);
-        if (event.getButton() == GLFW.GLFW_MOUSE_BUTTON_LEFT)
-            exit();
-        else if (event.getButton() == GLFW.GLFW_MOUSE_BUTTON_RIGHT)
+        if (event.getButton() == GLFW.GLFW_MOUSE_BUTTON_RIGHT)
             triggerCapture();
     }
 
@@ -312,10 +401,42 @@ public final class CrazyPhoneCaptureMode {
             event.setCanceled(true);
     }
     *///?}
-    // >=1.21.10: no-op - VanillaGuiLayers was reworked on that version (several fields used above no
-    // longer exist, e.g. JUMP_METER/EXPERIENCE_BAR/DEBUG_OVERLAY/SAVING_INDICATOR), and the capture
-    // feature as a whole is already known not to work there yet (see FabricPictureCapture/CrazyPhonePhotoItem's
-    // own 1.21.10 TODOs) - not worth chasing the new field names until that backport happens.
+    // 1.21.10-only no-op: its own VanillaGuiLayers has neither the <1.21.10 field names (JUMP_METER,
+    // DEBUG_OVERLAY, SAVING_INDICATOR - confirmed gone by the compile error those threw here) nor the >=26
+    // ones yet, a genuinely separate third shape not worth chasing on a now-frozen/unmaintained target (same
+    // status as 1.20.4 - see the project's own README). HUD stays visible during capture on this version,
+    // matching its pre-existing (pre-selfie-work) behavior.
+    //? if >=1.21.10 <26 {
+    /*@SubscribeEvent
+    public static void onRenderGuiLayer(RenderGuiLayerEvent.Pre event) {
+    }
+    *///?}
+    //? if >=26 {
+    /*// VanillaGuiLayers reworked on this version (confirmed against the real decompiled 26.1.2 source):
+    // JUMP_METER/DEBUG_OVERLAY/SAVING_INDICATOR no longer exist at all, EXPERIENCE_BAR renamed to
+    // EXPERIENCE_LEVEL, and net.minecraft.resources.ResourceLocation was itself renamed to Identifier -
+    // live-reported the hotbar/HUD wasn't hidden at all during capture on this version (the prior no-op
+    // here), matching the >=1.20.5 <1.21.10 list above field-for-field where a direct equivalent exists.
+    private static final java.util.Set<net.minecraft.resources.Identifier> HIDDEN_LAYERS = java.util.Set.of(
+            net.neoforged.neoforge.client.gui.VanillaGuiLayers.HOTBAR, net.neoforged.neoforge.client.gui.VanillaGuiLayers.CROSSHAIR,
+            net.neoforged.neoforge.client.gui.VanillaGuiLayers.PLAYER_HEALTH, net.neoforged.neoforge.client.gui.VanillaGuiLayers.ARMOR_LEVEL,
+            net.neoforged.neoforge.client.gui.VanillaGuiLayers.FOOD_LEVEL, net.neoforged.neoforge.client.gui.VanillaGuiLayers.AIR_LEVEL,
+            net.neoforged.neoforge.client.gui.VanillaGuiLayers.VEHICLE_HEALTH, net.neoforged.neoforge.client.gui.VanillaGuiLayers.EXPERIENCE_LEVEL,
+            net.neoforged.neoforge.client.gui.VanillaGuiLayers.EFFECTS, net.neoforged.neoforge.client.gui.VanillaGuiLayers.BOSS_OVERLAY,
+            net.neoforged.neoforge.client.gui.VanillaGuiLayers.CHAT, net.neoforged.neoforge.client.gui.VanillaGuiLayers.SUBTITLE_OVERLAY,
+            net.neoforged.neoforge.client.gui.VanillaGuiLayers.OVERLAY_MESSAGE, net.neoforged.neoforge.client.gui.VanillaGuiLayers.SCOREBOARD_SIDEBAR,
+            net.neoforged.neoforge.client.gui.VanillaGuiLayers.TITLE, net.neoforged.neoforge.client.gui.VanillaGuiLayers.SPECTATOR_TOOLTIP,
+            net.neoforged.neoforge.client.gui.VanillaGuiLayers.SELECTED_ITEM_NAME, net.neoforged.neoforge.client.gui.VanillaGuiLayers.SLEEP_OVERLAY,
+            net.neoforged.neoforge.client.gui.VanillaGuiLayers.DEMO_OVERLAY, net.neoforged.neoforge.client.gui.VanillaGuiLayers.TAB_LIST,
+            net.neoforged.neoforge.client.gui.VanillaGuiLayers.CONTEXTUAL_INFO_BAR, net.neoforged.neoforge.client.gui.VanillaGuiLayers.CONTEXTUAL_INFO_BAR_BACKGROUND
+    );
+
+    @SubscribeEvent
+    public static void onRenderGuiLayer(RenderGuiLayerEvent.Pre event) {
+        if (active && HIDDEN_LAYERS.contains(event.getName()))
+            event.setCanceled(true);
+    }
+    *///?}
     //?}
     // tick() is called from FabricPictureCapture#tickAll instead of its own event subscriber here - that
     // class already has a client-tick hook registered on both loaders (mirroring CallRingtoneManager's

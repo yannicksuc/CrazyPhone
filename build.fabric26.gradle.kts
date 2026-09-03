@@ -241,6 +241,7 @@ sourceSets.main {
         "fr/lordfinn/crazyphone/client/PhoneClickableCursorHandler.java",
         "fr/lordfinn/crazyphone/procedures/CrazyPhoneItemInInventoryTickProcedure.java",
         "fr/lordfinn/crazyphone/network/CrazyPhoneUploadPicturePacket.java",
+        "fr/lordfinn/crazyphone/network/CrazyPhoneSelfiePoseSyncPacket.java",
         "fr/lordfinn/crazyphone/network/CrazyPhonePictureRequestPacket.java",
         "fr/lordfinn/crazyphone/network/CrazyPhonePictureResponsePacket.java",
         "fr/lordfinn/crazyphone/network/CrazyPhoneGivePhotoItemPacket.java",
@@ -263,6 +264,39 @@ sourceSets.main {
         "fr/lordfinn/crazyphone/mixin/LivingEntityRenderStateMixin.java",
         "fr/lordfinn/crazyphone/mixin/AvatarPresentPoseMixin.java",
         "fr/lordfinn/crazyphone/mixin/PlayerPresentPoseMixin.java",
+        // Selfie-mode arm pose (fixed tilt while framing a selfie in capture mode) - deliberately separate
+        // from presenting above, see CrazyPhoneSelfiePose's own doc comment.
+        "fr/lordfinn/crazyphone/client/CrazyPhoneSelfiePose.java",
+        // Reads an OTHER entity's selfie pose off their own held phone stack (synced server-side by
+        // CrazyPhoneSelfiePoseSyncPacket, propagated by vanilla's own equipment sync) - see
+        // CrazyPhoneSelfiePose's own doc comment for why.
+        "fr/lordfinn/crazyphone/client/CrazyPhoneSelfiePoseNetwork.java",
+        // Was <1.21.10-only ("state only, the live-stick-angle mouse hook stays <1.21.10-only for now") -
+        // that deferral predates the rest of the >=26 selfie port (camera/arm/model-selection) added since;
+        // live-reported as "moving the mouse turns the head normally, the stick angle never updates" once
+        // that rest existed but this mouse hook itself was still missing here. The mixin file itself is
+        // fully loader/version-neutral already (no //? if gate at all - targets plain vanilla
+        // MouseHandler#handleAccumulatedMovement()), so just needed including.
+        "fr/lordfinn/crazyphone/client/CrazyPhoneSelfieStickPose.java",
+        "fr/lordfinn/crazyphone/mixin/CrazyPhoneSelfieStickMouseMixin.java",
+        "fr/lordfinn/crazyphone/client/ICrazyPhoneSelfieState.java",
+        "fr/lordfinn/crazyphone/mixin/CrazyPhoneSelfieRenderStateMixin.java",
+        "fr/lordfinn/crazyphone/mixin/CrazyPhoneSelfieAvatarExtractMixin.java",
+        "fr/lordfinn/crazyphone/mixin/CrazyPhoneSelfieArmPoseMixin.java",
+        // Now applies on both loaders (>=26) - see this mixin's own doc comment for why it started
+        // neoforge-only and was widened once Fabric selfie camera parity made the gap visible.
+        "fr/lordfinn/crazyphone/mixin/PlayerModelSelfiePoseMixin.java",
+        // F5 cycles capture mode's own 4 view states instead of vanilla's normal 3 - targets plain vanilla
+        // Minecraft#handleKeybinds(), loader/version-neutral.
+        "fr/lordfinn/crazyphone/mixin/CrazyPhoneCaptureViewCycleMixin.java",
+        // Selfie camera parented to the arm - <1.21.10-only (inert placeholder on this version, see that
+        // mixin's own doc comment), same reasoning as CrazyPhoneSelfieRenderStateMixin's own placeholder.
+        // Its /selfiecamdebug command is likewise a no-op stub here (see CrazyPhoneSelfieCameraDebugCommand's
+        // own doc comment) - still needs including since CrazyphoneFabricClient calls .register() on it
+        // unconditionally for every >=1.20.5 Fabric node.
+        "fr/lordfinn/crazyphone/mixin/CrazyPhoneSelfieCameraMixin.java",
+        "fr/lordfinn/crazyphone/client/CrazyPhoneSelfieCameraDebug.java",
+        "fr/lordfinn/crazyphone/client/CrazyPhoneSelfieCameraDebugCommand.java",
         "fr/lordfinn/crazyphone/client/CrazyPhonePresentDebug.java",
         "fr/lordfinn/crazyphone/client/CrazyPhonePresentDebugCommand.java",
         "fr/lordfinn/crazyphone/mixin/CrazyPhonePresentHandGripMixin.java",
@@ -301,7 +335,14 @@ val fabricClientMixins = listOf(
     "CrazyPhonePresentHandGripMixin",
     "CrazyPhonePresentHandGripInvokerMixin",
     "CrazyPhoneItemModelRegistrationMixin",
-    "CrazyPhoneConditionalItemModelPropertyMixin"
+    "CrazyPhoneConditionalItemModelPropertyMixin",
+    "CrazyPhoneSelfieRenderStateMixin",
+    "CrazyPhoneSelfieAvatarExtractMixin",
+    "CrazyPhoneSelfieArmPoseMixin",
+    "PlayerModelSelfiePoseMixin",
+    "CrazyPhoneCaptureViewCycleMixin",
+    "CrazyPhoneSelfieCameraMixin",
+    "CrazyPhoneSelfieStickMouseMixin"
 ).joinToString(",\n    ") { "\"$it\"" }
 
 val modMetadataProperties = mapOf(

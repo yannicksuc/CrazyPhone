@@ -1,21 +1,31 @@
 {
 	"model": {
 		"type": "minecraft:condition",
-		"property": "crazyphone:in_call",
-		"on_true": {"type": "minecraft:model", "model": "crazyphone:item/crazy_phone_in_call"},
+		"property": "crazyphone:selfie_mode_self",
+		"on_true": {"type": "minecraft:model", "model": "crazyphone:item/crazy_phone_with_selfie_stick_framer_view"},
 		"on_false": {
 			"type": "minecraft:condition",
-			"property": "crazyphone:called_in",
-			"on_true": {"type": "minecraft:model", "model": "crazyphone:item/crazy_phone_called_in"},
+			"property": "crazyphone:selfie_mode",
+			"on_true": {"type": "minecraft:model", "model": "crazyphone:item/crazy_phone_with_selfie_stick"},
 			"on_false": {
 				"type": "minecraft:condition",
-				"property": "crazyphone:calling",
-				"on_true": {"type": "minecraft:model", "model": "crazyphone:item/crazy_phone_calling"},
+				"property": "crazyphone:in_call",
+				"on_true": {"type": "minecraft:model", "model": "crazyphone:item/crazy_phone_in_call"},
 				"on_false": {
 					"type": "minecraft:condition",
-					"property": "crazyphone:screen_on",
-					"on_true": {"type": "minecraft:model", "model": "crazyphone:item/crazy_phone_on"},
-					"on_false": {"type": "minecraft:model", "model": "crazyphone:item/crazy_phone"}
+					"property": "crazyphone:called_in",
+					"on_true": {"type": "minecraft:model", "model": "crazyphone:item/crazy_phone_called_in"},
+					"on_false": {
+						"type": "minecraft:condition",
+						"property": "crazyphone:calling",
+						"on_true": {"type": "minecraft:model", "model": "crazyphone:item/crazy_phone_calling"},
+						"on_false": {
+							"type": "minecraft:condition",
+							"property": "crazyphone:screen_on",
+							"on_true": {"type": "minecraft:model", "model": "crazyphone:item/crazy_phone_on"},
+							"on_false": {"type": "minecraft:model", "model": "crazyphone:item/crazy_phone"}
+						}
+					}
 				}
 			}
 		}

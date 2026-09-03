@@ -35,6 +35,8 @@ public abstract class CrazyPhoneConditionalItemModelPropertyMixin {
         ID_MAPPER.put(Crazyphone.resource("calling"), CrazyPhoneItemProperties.CallState.CALLING_CODEC);
         ID_MAPPER.put(Crazyphone.resource("called_in"), CrazyPhoneItemProperties.CallState.CALLED_IN_CODEC);
         ID_MAPPER.put(Crazyphone.resource("in_call"), CrazyPhoneItemProperties.CallState.IN_CALL_CODEC);
+        ID_MAPPER.put(Crazyphone.resource("selfie_mode"), CrazyPhoneItemProperties.SelfieMode.MAP_CODEC);
+        ID_MAPPER.put(Crazyphone.resource("selfie_mode_self"), CrazyPhoneItemProperties.SelfieModeSelf.MAP_CODEC);
     }
 }
 *///?}

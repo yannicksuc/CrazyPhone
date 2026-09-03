@@ -32,11 +32,10 @@ jobs:
           # java here is the DAEMON's own JVM (what runs Gradle/the plugins, incl. the stonecutter
           # plugin itself, which requires 21+ regardless of any node's own compile target) - not the
           # node's actual bytecode target, which java.toolchain.languageVersion in each build script
-          # already selects separately via Gradle's own toolchain auto-provisioning. Confirmed live:
-          # 1.20.4 under java:17 failed at plugin resolution ("stonecutter... requires at least JVM
-          # runtime version 21") before ever reaching its own Java-17 compilation step.
-          - node: 1.20.4
-            java: 21
+          # already selects separately via Gradle's own toolchain auto-provisioning.
+          #
+          # 1.20.4 deliberately absent - the user decided to stop maintaining that target (2026-09-03);
+          # it's no longer published here even though the subproject itself is still in the build.
           - node: 1.21.1
             java: 21
           - node: 1.21.1-fabric

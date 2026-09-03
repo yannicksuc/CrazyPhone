@@ -293,6 +293,7 @@ sourceSets.main {
             // FabricPictureCapture's own doc comment). Being generalized to NeoForge incrementally (see the
             // implementation plan) - Fabric-only for now.
             "fr/lordfinn/crazyphone/network/CrazyPhoneUploadPicturePacket.java",
+            "fr/lordfinn/crazyphone/network/CrazyPhoneSelfiePoseSyncPacket.java",
             "fr/lordfinn/crazyphone/network/CrazyPhonePictureRequestPacket.java",
             "fr/lordfinn/crazyphone/network/CrazyPhonePictureResponsePacket.java",
             "fr/lordfinn/crazyphone/network/CrazyPhoneGivePhotoItemPacket.java",
@@ -325,6 +326,26 @@ sourceSets.main {
             // feature beyond the arm-pose one itself.
             "fr/lordfinn/crazyphone/client/CrazyPhonePresentPose.java",
             "fr/lordfinn/crazyphone/mixin/PlayerPresentPoseMixin.java",
+            // Selfie-mode arm pose (fixed tilt while framing a selfie in capture mode) - deliberately
+            // separate from presenting above, see CrazyPhoneSelfiePose's own doc comment.
+            "fr/lordfinn/crazyphone/client/CrazyPhoneSelfiePose.java",
+            // Reads an OTHER entity's selfie pose off their own held phone stack (synced server-side by
+            // CrazyPhoneSelfiePoseSyncPacket, propagated by vanilla's own equipment sync) - see
+            // CrazyPhoneSelfiePose's own doc comment for why.
+            "fr/lordfinn/crazyphone/client/CrazyPhoneSelfiePoseNetwork.java",
+            "fr/lordfinn/crazyphone/mixin/CrazyPhoneSelfieArmPoseMixin.java",
+            // Live selfie-stick angle, applied as an extra arm-bone rotation on top of the existing selfie
+            // arm-raise (see CrazyPhoneSelfiePose's own doc comment) - not a separate held-model swap.
+            "fr/lordfinn/crazyphone/client/CrazyPhoneSelfieStickPose.java",
+            "fr/lordfinn/crazyphone/mixin/CrazyPhoneSelfieStickMouseMixin.java",
+            // F5 cycles capture mode's own 4 view states instead of vanilla's normal 3 - targets plain vanilla
+            // Minecraft#handleKeybinds(), loader-neutral.
+            "fr/lordfinn/crazyphone/mixin/CrazyPhoneCaptureViewCycleMixin.java",
+            // Selfie camera parented to the arm - loader-neutral (plain vanilla Camera/ModelPart), see that
+            // mixin's own doc comment. Plus its live-tune /selfiecamdebug command and backing knobs.
+            "fr/lordfinn/crazyphone/mixin/CrazyPhoneSelfieCameraMixin.java",
+            "fr/lordfinn/crazyphone/client/CrazyPhoneSelfieCameraDebug.java",
+            "fr/lordfinn/crazyphone/client/CrazyPhoneSelfieCameraDebugCommand.java",
             // Live-tunable knobs for the first-person presenting card, plus the /presentdebug client command
             // that edits them from chat - see CrazyPhonePresentDebug's own doc comment on why (avoiding
             // another recompile/relaunch round trip for every single 3D-offset guess).
@@ -378,7 +399,11 @@ val fabricClientMixins = (if (minecraftVersion != "1.20.1") listOf(
     "CrazyPhoneCaptureEscapeMixin",
     "PlayerPresentPoseMixin",
     "CrazyPhonePresentHandGripMixin",
-    "CrazyPhonePresentHandGripInvokerMixin"
+    "CrazyPhonePresentHandGripInvokerMixin",
+    "CrazyPhoneSelfieArmPoseMixin",
+    "CrazyPhoneSelfieStickMouseMixin",
+    "CrazyPhoneCaptureViewCycleMixin",
+    "CrazyPhoneSelfieCameraMixin"
 ) else emptyList()).joinToString(",\n    ") { "\"$it\"" }
 
 val modMetadataProperties = mapOf(
