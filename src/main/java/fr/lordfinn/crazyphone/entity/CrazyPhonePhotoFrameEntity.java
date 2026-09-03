@@ -399,30 +399,14 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
     // Entity#setPos(x,y,z) independently calls this.setBoundingBox(this.makeBoundingBox()), using
     // EntityDimensions (this.dimensions - the raw EntityType default, sized(1.0f,1.0f) in ModEntities.java,
     // never touched by this class) to rebuild a generic box, undoing whatever refreshDimensions() had just
-    // set. Two earlier attempts at fixing this up broke rendering entirely, live - both, it turns out, still
-    // called super.setPos()/vanilla's own setPos() first (which runs makeBoundingBox() itself before either
-    // fixup got a chance to run), even though only one of them looked like it directly touched
-    // makeBoundingBox(). The actual working pattern, confirmed by reading vanilla's own
-    // BlockAttachedEntity#setPos and HangingEntity#recalculateBoundingBox (the exact same "custom box
-    // anchored to a wall" problem, solved without this issue at all): NEVER call super.setPos() or go
-    // through makeBoundingBox() in the first place - call the raw setPosRaw(x, y, z) instead (confirmed
-    // against the real decompiled Entity.java: pure position/chunk-tracking bookkeeping, no bounding-box
-    // logic whatsoever), then set the real box directly. Passing the incoming x/y/z straight through to
-    // setPosRaw (rather than substituting attachPos's own position) matters too - vanilla's own load
-    // pipeline calls setPos() with the entity's SAVED position before this class's own
-    // readAdditionalSaveData has restored attachPos, so forcing a different position here would leave a
-    // reloaded frame stuck at the wrong spot until something else happened to move it again.
-    @Override
-    public void setPos(double x, double y, double z) {
-        this.setPosRaw(x, y, z);
-        // entityData is only null for the single earliest instant of construction, if Entity's own
-        // constructor calls setPos() before defineSynchedData() has run (a final field, legally
-        // readable-as-null before its own assignment) - skip the box fixup for just that one instant rather
-        // than let attachFace() NPE on it; refreshDimensions() (called explicitly right after entityData IS
-        // populated, from tryPlace()/onSyncedDataUpdated) sets the real box a moment later regardless.
-        if (this.entityData != null)
-            this.setBoundingBox(computeBoundingBox());
-    }
+    // set - a real, still-open issue. THREE different fixes attempted here, including one that exactly
+    // matched vanilla's own proven BlockAttachedEntity#setPos/HangingEntity#recalculateBoundingBox pattern
+    // (setPosRaw instead of super.setPos(), confirmed via the real decompiled Entity.java to have zero
+    // bounding-box logic) - all three broke rendering AND the hitbox entirely, live, for a reason never
+    // pinned down (setBoundingBox() itself is trivial, `this.bb = box`, so it isn't recursion either).
+    // Stopping here rather than trying a fourth blind variant - touching setPos() at all appears to trigger
+    // something specific to this codebase/setup that plain reasoning from the vanilla source hasn't
+    // explained. Left as a known, currently-unsolved gap.
 
     // Silk Touch check shared by both hurt()/hurtServer() bodies below - not itself version-split, only its
     // TWO call sites' own method signatures differ (Entity#hurt is final and hurtServer(ServerLevel, ...)
