@@ -49,9 +49,10 @@ public record CrazyPhoneUploadPicturePacket(String conversationId, byte[] thumbn
     private static final Logger LOGGER = LoggerFactory.getLogger("crazyphone");
     // Generous but real ceilings - the client already downscales/compresses before sending (see
     // FabricPictureCapture), this is defense in depth against a modified client the same way
-    // VoiceMessageUploadPacket caps PCM length.
+    // VoiceMessageUploadPacket caps PCM length. The full-image ceiling is configurable (Config#
+    // photoFullMaxUploadBytes) since it's coupled to Config#photoFullMaxDimension - raising the capture
+    // resolution needs this raised too, or legitimate higher-quality uploads start getting rejected.
     private static final int THUMBNAIL_MAX_BYTES = 200_000;
-    private static final int FULL_MAX_BYTES = 2_000_000;
 
     //? if >=1.20.5 {
     /*public static final Type<CrazyPhoneUploadPicturePacket> TYPE = new Type<>(
@@ -100,7 +101,7 @@ public record CrazyPhoneUploadPicturePacket(String conversationId, byte[] thumbn
             LOGGER.warn("Picture upload rejected: thumbnail {} bytes", thumbnailPng.length);
             return;
         }
-        if (fullPng.length == 0 || fullPng.length > FULL_MAX_BYTES) {
+        if (fullPng.length == 0 || fullPng.length > fr.lordfinn.crazyphone.Config.photoFullMaxUploadBytes) {
             LOGGER.warn("Picture upload rejected: full image {} bytes", fullPng.length);
             return;
         }

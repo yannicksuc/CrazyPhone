@@ -46,6 +46,14 @@ public class Config {
             .comment("Target height in pixels for a photo's low-quality preview (thumbnails, chat bubbles) - lower looks more like pixel art, higher looks closer to the full photo. 0 disables the separate preview entirely (the full photo is reused as-is, so nothing extra is stored). If the photo's own height is already shorter than this, no resize happens either - a photo is never upscaled for its preview.")
             .defineInRange("photoThumbnailPixelHeight", 16, 0, 256);
 
+    private static final ModConfigSpec.IntValue PHOTO_FULL_MAX_DIMENSION = BUILDER
+            .comment("Maximum size in pixels, on the longer side, for a photo's full-quality version (fetched on demand when a photo is opened full-size) - independent of the player's actual render resolution. Higher looks sharper but costs more storage/network per photo.")
+            .defineInRange("photoFullMaxDimension", 1024, 64, 4096);
+
+    private static final ModConfigSpec.IntValue PHOTO_FULL_MAX_UPLOAD_BYTES = BUILDER
+            .comment("Server-side ceiling, in bytes, on a photo's full-quality upload (defense in depth against a modified client - the real client already stays under this by construction, via photoFullMaxDimension). Raise this if you raise photoFullMaxDimension high enough that legitimate uploads start getting rejected.")
+            .defineInRange("photoFullMaxUploadBytes", 4_000_000, 100_000, 50_000_000);
+
     private static final ModConfigSpec.BooleanValue MAYOR_ELECTION_FEATURE_ENABLED = BUILDER
             .comment("Whether the mayor election/voting feature (accessible from the phone) is enabled.")
             .define("mayorElectionFeatureEnabled", true);
@@ -108,6 +116,8 @@ public class Config {
     public static int maxImagesStoredPerConversation;
     public static int maxPhotosStoredPerOwner;
     public static int photoThumbnailPixelHeight;
+    public static int photoFullMaxDimension;
+    public static int photoFullMaxUploadBytes;
     public static boolean mayorElectionFeatureEnabled;
     public static boolean callsFeatureEnabled;
     public static boolean voiceMessagesFeatureEnabled;
@@ -127,6 +137,8 @@ public class Config {
         maxImagesStoredPerConversation = MAX_IMAGES_STORED_PER_CONVERSATION.get();
         maxPhotosStoredPerOwner = MAX_PHOTOS_STORED_PER_OWNER.get();
         photoThumbnailPixelHeight = PHOTO_THUMBNAIL_PIXEL_HEIGHT.get();
+        photoFullMaxDimension = PHOTO_FULL_MAX_DIMENSION.get();
+        photoFullMaxUploadBytes = PHOTO_FULL_MAX_UPLOAD_BYTES.get();
         mayorElectionFeatureEnabled = MAYOR_ELECTION_FEATURE_ENABLED.get();
         callsFeatureEnabled = CALLS_FEATURE_ENABLED.get();
         voiceMessagesFeatureEnabled = VOICE_MESSAGES_FEATURE_ENABLED.get();
@@ -181,6 +193,8 @@ public class Config {
     public static int maxImagesStoredPerConversation = 50;
     public static int maxPhotosStoredPerOwner = 300;
     public static int photoThumbnailPixelHeight = 16;
+    public static int photoFullMaxDimension = 1024;
+    public static int photoFullMaxUploadBytes = 4_000_000;
     public static boolean mayorElectionFeatureEnabled = true;
     public static boolean callsFeatureEnabled = true;
     public static boolean voiceMessagesFeatureEnabled = true;

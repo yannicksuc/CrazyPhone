@@ -277,6 +277,8 @@ file or via `/crazyphone feature`.
 | `maxMessagesSentPerRequest` | `100` | 10-1000 | Messages sent to a client in one page load of a conversation. |
 | `maxImagesStoredPerConversation` | `50` | 5-2000 | Image messages kept on disk per conversation (capped separately - heaviest text-adjacent payload). |
 | `maxPhotosStoredPerOwner` | `300` | 10-5000 | Photos (both resolutions) kept on disk per owning phone number; oldest dropped first once exceeded, independent of conversation trimming. |
+| `photoFullMaxDimension` | `1024` | 64-4096 | Max size in pixels (longer side) for a photo's full-quality version. Higher looks sharper, costs more storage/network per photo. |
+| `photoFullMaxUploadBytes` | `4000000` | 100000-50000000 | Server-side ceiling on a full-quality photo upload; raise alongside `photoFullMaxDimension` if legitimate uploads start getting rejected. |
 | `mayorElectionFeatureEnabled` | `true` | - | Global switch for the mayor election feature. |
 | `callsFeatureEnabled` | `true` | - | Global switch for voice calls. No effect without Simple Voice Chat installed. (NeoForge only) |
 | `voiceMessagesFeatureEnabled` | `true` | - | Global switch for recording/sending voice messages. No effect without Simple Voice Chat installed. (NeoForge only) |

@@ -40,8 +40,12 @@ public final class FabricPictureCapture {
     // texture-cache costs bounded regardless of the player's actual render resolution. Two resolutions are
     // derived from the SAME screenshot: the low-quality preview (target height set by
     // Config#photoThumbnailPixelHeight) is what's shown by default everywhere (chat bubbles, the photo
-    // item's own icon), FULL is only fetched on demand when a photo is actually opened full-size.
-    public static final int FULL_MAX_DIMENSION = 512;
+    // item's own icon), FULL (Config#photoFullMaxDimension) is only fetched on demand when a photo is
+    // actually opened full-size. Was a fixed 512 constant - live-reported as noticeably low quality once
+    // people actually opened a full-size photo, made configurable (default raised to 1024) instead of
+    // just bumping the fixed value, matching every other capacity/quality knob in this file's own class
+    // (Config). No local constant anymore - see Config#photoFullMaxDimension directly at each call site
+    // below, read fresh every capture so a runtime config change (NeoForge) takes effect immediately.
 
     // Set for the span between requestCapture() being called and the deferred capture actually running -
     // CrazyPhoneConversationScreen checks this to skip its own render() for those frames (see its own
@@ -113,7 +117,7 @@ public final class FabricPictureCapture {
     private static void captureBothResolutions(BiConsumer<byte[], byte[]> callback) {
         Minecraft mc = Minecraft.getInstance();
         try (NativeImage full = Screenshot.takeScreenshot(mc.getMainRenderTarget())) {
-            try (NativeImage fullScaled = downscale(full, FULL_MAX_DIMENSION)) {
+            try (NativeImage fullScaled = downscale(full, Config.photoFullMaxDimension)) {
                 byte[] fullBytes = fullScaled.asByteArray();
                 int targetHeight = Config.photoThumbnailPixelHeight;
                 // 0 means "no separate low-quality preview" and a target at/above the photo's own height
@@ -142,7 +146,7 @@ public final class FabricPictureCapture {
         Minecraft mc = Minecraft.getInstance();
         try {
             Screenshot.takeScreenshot(mc.getMainRenderTarget(), full -> {
-                try (NativeImage fullImg = full; NativeImage fullScaled = downscale(fullImg, FULL_MAX_DIMENSION)) {
+                try (NativeImage fullImg = full; NativeImage fullScaled = downscale(fullImg, Config.photoFullMaxDimension)) {
                     byte[] fullBytes = toPngBytes(fullScaled);
                     int targetHeight = Config.photoThumbnailPixelHeight;
                     if (targetHeight <= 0 || targetHeight >= fullScaled.getHeight()) {
