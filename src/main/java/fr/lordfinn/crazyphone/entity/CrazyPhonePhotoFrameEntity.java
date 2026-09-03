@@ -396,12 +396,31 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
         this.setBoundingBox(computeBoundingBox());
     }
 
-    // Tried overriding makeBoundingBox() here too (Entity#setPos independently rebuilds the box through it,
-    // using the untouched raw EntityType default dimensions, which can revert refreshDimensions()'s own work
-    // at unpredictable moments - a real, still-unfixed issue) - reverted after it broke rendering AND the
-    // hitbox entirely, live, even with every construction-order edge case guarded against. Whatever the
-    // actual mechanism is, it's evidently riskier than this narrower symptom is worth chasing further right
-    // now; left as a known gap rather than a second live regression in a row.
+    // Entity#setPos(x,y,z) independently calls this.setBoundingBox(this.makeBoundingBox()), using
+    // EntityDimensions (this.dimensions - the raw EntityType default, sized(1.0f,1.0f) in ModEntities.java,
+    // never touched by this class) to rebuild a generic box, undoing whatever refreshDimensions() had just
+    // set - setPos() fires routinely whenever a tracked entity's position is (re-)confirmed from the
+    // network, not just once at spawn, so the box could revert to a plain cube at unpredictable moments even
+    // for a fresh placement. Overriding makeBoundingBox() itself (the method setPos() actually calls) was
+    // the first attempt at fixing this and broke rendering AND the hitbox entirely, live, twice in a row,
+    // for reasons that were never pinned down (not exceptions - even a try/catch fallback didn't help) -
+    // reverted. This is the safer alternative: let setPos() do its normal thing (including its own,
+    // temporarily wrong, box), then immediately fix it up afterward with the exact same computeBoundingBox()
+    // call refreshDimensions() already makes successfully elsewhere - doesn't touch makeBoundingBox()'s own
+    // virtual dispatch at all, so whatever broke it before has nothing to interact with here. setPos(double,
+    // double, double) has the identical signature and is non-final on both <26 and >=26 (confirmed against
+    // both real decompiled Entity.java copies), so this needs no Stonecutter version split.
+    @Override
+    public void setPos(double x, double y, double z) {
+        super.setPos(x, y, z);
+        // entityData is only null for the single earliest instant of construction, if Entity's own
+        // constructor calls setPos() before defineSynchedData() has run - skip the fixup for just that one
+        // instant rather than let attachFace() NPE on a null entityData; refreshDimensions() (called
+        // explicitly right after entityData IS populated, from tryPlace()/onSyncedDataUpdated) corrects it a
+        // moment later regardless.
+        if (this.entityData != null)
+            this.setBoundingBox(computeBoundingBox());
+    }
 
     // Silk Touch check shared by both hurt()/hurtServer() bodies below - not itself version-split, only its
     // TWO call sites' own method signatures differ (Entity#hurt is final and hurtServer(ServerLevel, ...)
