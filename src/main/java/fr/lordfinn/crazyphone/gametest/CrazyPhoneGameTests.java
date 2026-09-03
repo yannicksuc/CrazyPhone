@@ -409,6 +409,84 @@ public class CrazyPhoneGameTests {
         helper.succeed();
     }
 
+    /** Placing a photo (no prior frame metadata, so the default size applies) against the platform's own
+     * floor must create a CrazyPhonePhotoFrameEntity attached to that exact block/face, at the default 1x1
+     * size - the core data-flow tryPlace() is responsible for, real-world-tested since none of this touches
+     * client-only rendering (the part a GameTest genuinely can't cover; only a live player can confirm the
+     * frame actually LOOKS right - see the live feature request this whole entity type was built for). */
+    //? if <26 {
+    @GameTest(template = "platform", batch = "photoFramePlacement")
+    //?}
+    public static void photoFramePlacement_createsEntityAtDefaultSize(GameTestHelper helper) {
+        net.minecraft.core.BlockPos floorPos = helper.absolutePos(new net.minecraft.core.BlockPos(1, 1, 1));
+        net.minecraft.world.item.ItemStack photo = new net.minecraft.world.item.ItemStack(ModItems.CRAZY_PHONE_PHOTO.get());
+        fr.lordfinn.crazyphone.utils.PhotoItemData photoData = new fr.lordfinn.crazyphone.utils.PhotoItemData(UUID.randomUUID(), "555", 0);
+        photoData.writeTo(photo);
+
+        fr.lordfinn.crazyphone.entity.CrazyPhonePhotoFrameEntity entity = fr.lordfinn.crazyphone.entity.CrazyPhonePhotoFrameEntity.tryPlace(
+                helper.getLevel(), floorPos, net.minecraft.core.Direction.UP, photoData,
+                new fr.lordfinn.crazyphone.utils.PhotoFrameData(
+                        fr.lordfinn.crazyphone.entity.CrazyPhonePhotoFrameEntity.DEFAULT_SIZE_UNITS,
+                        fr.lordfinn.crazyphone.entity.CrazyPhonePhotoFrameEntity.DEFAULT_SIZE_UNITS));
+
+        helper.assertTrue(entity != null, "tryPlace must succeed against a solid floor block");
+        helper.assertTrue(entity.attachPos.equals(floorPos), "the entity must remember the exact block it was placed against");
+        helper.assertTrue(entity.attachFace() == net.minecraft.core.Direction.UP, "the entity must remember the exact face it was placed against");
+        helper.assertTrue(entity.widthUnits() == fr.lordfinn.crazyphone.entity.CrazyPhonePhotoFrameEntity.DEFAULT_SIZE_UNITS
+                        && entity.heightUnits() == fr.lordfinn.crazyphone.entity.CrazyPhonePhotoFrameEntity.DEFAULT_SIZE_UNITS,
+                "a freshly placed frame must start at the default 1x1 size");
+        helper.assertTrue(entity.photoId().equals(photoData.photoId()), "the placed frame must point at the same photo the item carried");
+        helper.succeed();
+    }
+
+    /** Breaking a resized frame with a Silk Touch tool must drop a photo item carrying that SAME size in
+     * its own PhotoFrameData, so re-placing it recreates the frame at the size it was broken at - the exact
+     * behavior the live feature request asked for ("garde en mémoire ses propriétés de taille"). A plain
+     * (non-silk-touch) break is deliberately NOT covered here the same way - dropStack() vs.
+     * dropStackWithFrameData()'s own difference is a one-line branch in hurt()/hurtServer(), and duplicating
+     * this same setup just to assert the ABSENCE of PhotoFrameData wouldn't meaningfully add confidence. */
+    //? if <26 {
+    @GameTest(template = "platform", batch = "photoFrameSilkTouchBreak")
+    //?}
+    public static void photoFrameSilkTouchBreak_preservesResizedDimensions(GameTestHelper helper) {
+        net.minecraft.core.BlockPos floorPos = helper.absolutePos(new net.minecraft.core.BlockPos(1, 1, 1));
+        UUID photoId = UUID.randomUUID();
+        fr.lordfinn.crazyphone.utils.PhotoItemData photoData = new fr.lordfinn.crazyphone.utils.PhotoItemData(photoId, "555", 0);
+        int resizedWidth = fr.lordfinn.crazyphone.entity.CrazyPhonePhotoFrameEntity.DEFAULT_SIZE_UNITS * 2;
+        int resizedHeight = fr.lordfinn.crazyphone.entity.CrazyPhonePhotoFrameEntity.DEFAULT_SIZE_UNITS * 3;
+        fr.lordfinn.crazyphone.entity.CrazyPhonePhotoFrameEntity entity = fr.lordfinn.crazyphone.entity.CrazyPhonePhotoFrameEntity.tryPlace(
+                helper.getLevel(), floorPos, net.minecraft.core.Direction.UP, photoData,
+                new fr.lordfinn.crazyphone.utils.PhotoFrameData(resizedWidth, resizedHeight));
+        helper.assertTrue(entity != null, "sanity: placement must succeed before this test can break it");
+        helper.getLevel().addFreshEntity(entity);
+
+        ServerPlayer player = makeTestPlayer(helper);
+        net.minecraft.world.item.ItemStack silkTouchTool = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.DIAMOND_PICKAXE);
+        net.minecraft.core.Holder<net.minecraft.world.item.enchantment.Enchantment> silkTouch = helper.getLevel().registryAccess()
+                .lookupOrThrow(net.minecraft.core.registries.Registries.ENCHANTMENT).getOrThrow(net.minecraft.world.item.enchantment.Enchantments.SILK_TOUCH);
+        silkTouchTool.enchant(silkTouch, 1);
+        player.setItemInHand(InteractionHand.MAIN_HAND, silkTouchTool);
+
+        net.minecraft.world.damagesource.DamageSource playerDamage = helper.getLevel().damageSources().playerAttack(player);
+        //? if <26 {
+        entity.hurt(playerDamage, 1.0f);
+        //?}
+        //? if >=26 {
+        /*entity.hurtServer((net.minecraft.server.level.ServerLevel) helper.getLevel(), playerDamage, 1.0f);
+        *///?}
+
+        java.util.List<net.minecraft.world.entity.item.ItemEntity> drops = helper.getLevel().getEntitiesOfClass(
+                net.minecraft.world.entity.item.ItemEntity.class, entity.getBoundingBox().inflate(2));
+        net.minecraft.world.item.ItemStack dropped = drops.isEmpty() ? net.minecraft.world.item.ItemStack.EMPTY : drops.get(0).getItem();
+        helper.assertTrue(!dropped.isEmpty(), "a silk-touch break must drop a photo item");
+        fr.lordfinn.crazyphone.utils.PhotoFrameData droppedFrameData = fr.lordfinn.crazyphone.utils.PhotoFrameData.fromStack(dropped);
+        helper.assertTrue(droppedFrameData != null, "the silk-touch-dropped item must carry PhotoFrameData at all");
+        helper.assertTrue(droppedFrameData.widthUnits() == resizedWidth && droppedFrameData.heightUnits() == resizedHeight,
+                "the silk-touch-dropped item must remember the exact resized dimensions the frame was broken at, got "
+                        + droppedFrameData.widthUnits() + "x" + droppedFrameData.heightUnits() + ", expected " + resizedWidth + "x" + resizedHeight);
+        helper.succeed();
+    }
+
     //? if >=26 {
     /*
     // 26.x removed @GameTest/@GameTestHolder entirely - vanilla's own annotation scanner is gone, replaced
@@ -440,6 +518,8 @@ public class CrazyPhoneGameTests {
             helper.register(Crazyphone.resource("held_phone_number_resolves_correctly"), (java.util.function.Consumer<GameTestHelper>) CrazyPhoneGameTests::heldPhoneNumber_resolvesCorrectly);
             helper.register(Crazyphone.resource("screen_navigation_still_works_while_in_call"), (java.util.function.Consumer<GameTestHelper>) CrazyPhoneGameTests::screenNavigation_stillWorksNormally_whileInCall);
             helper.register(Crazyphone.resource("group_settings_menu_opens_tagged_with_conversation_id"), (java.util.function.Consumer<GameTestHelper>) CrazyPhoneGameTests::groupSettingsMenu_opensViaRealMenuPath_taggedWithConversationId);
+            helper.register(Crazyphone.resource("photo_frame_placement_creates_entity_at_default_size"), (java.util.function.Consumer<GameTestHelper>) CrazyPhoneGameTests::photoFramePlacement_createsEntityAtDefaultSize);
+            helper.register(Crazyphone.resource("photo_frame_silk_touch_break_preserves_resized_dimensions"), (java.util.function.Consumer<GameTestHelper>) CrazyPhoneGameTests::photoFrameSilkTouchBreak_preservesResizedDimensions);
         });
     }
 
@@ -454,6 +534,8 @@ public class CrazyPhoneGameTests {
         registerTest(event, "held_phone_number_resolves_correctly", "held_phone_number_sanity");
         registerTest(event, "screen_navigation_still_works_while_in_call", "navigate_while_in_call");
         registerTest(event, "group_settings_menu_opens_tagged_with_conversation_id", "open_group_settings_menu");
+        registerTest(event, "photo_frame_placement_creates_entity_at_default_size", "photo_frame_placement");
+        registerTest(event, "photo_frame_silk_touch_break_preserves_resized_dimensions", "photo_frame_silk_touch_break");
     }
 
     private static void registerTest(net.neoforged.neoforge.event.RegisterGameTestsEvent event, String testName, String batchName) {

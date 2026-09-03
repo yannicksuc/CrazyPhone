@@ -114,6 +114,12 @@ public class CrazyPhonePhotoViewerScreen extends Screen implements PhoneScreen {
     }
     //?}
 
+    // White "photo paper" border - live-requested so the preview reads as a physical photo, not a bare
+    // texture floating on the dimmed background. A few pixels on every side, drawn as one fill() rect
+    // BEHIND the image (see drawFitted's own call site) rather than four separate strips - simpler, and the
+    // image itself covers the middle so only the border ring stays visible.
+    private static final int BORDER_PX = 6;
+
     // Fits the image within an 80%-of-window box, preserving aspect ratio and centering it - same box
     // proportions the old CrazyPhoneImageScreen used, just computed from the real cached dimensions now
     // (that screen's Camera-mod-derived image data didn't reliably expose real width/height either).
@@ -125,6 +131,7 @@ public class CrazyPhonePhotoViewerScreen extends Screen implements PhoneScreen {
         int drawHeight = (int) Math.round(texture.height() * scale);
         int x = (width - drawWidth) / 2;
         int y = (height - drawHeight) / 2;
+        guiGraphics.fill(x - BORDER_PX, y - BORDER_PX, x + drawWidth + BORDER_PX, y + drawHeight + BORDER_PX, 0xFFFFFFFF);
         // GuiGraphics#blit (a batched call) is what lost to the background here - checked against the real
         // Camera mod jar's own ImageScreen#drawImage (de.maxhenkel.camera.gui.ImageScreen, javap'd from
         // libs/camera-neoforge-1.21.1-1.0.21.jar) for how a screen showing a full-size in-memory image over a
