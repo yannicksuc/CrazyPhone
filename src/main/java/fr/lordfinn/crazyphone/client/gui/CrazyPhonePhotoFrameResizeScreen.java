@@ -393,17 +393,26 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
         return (int) Math.floor((mouseY - gridTop) / cellPx) - maxBlocks;
     }
 
-    // Half-block equivalents of #colAt/#rowAt - drive every resize/shift gesture in this screen
+    // Half-block BOUNDARY coordinates - unlike #colAt/#rowAt (which report which CELL a point falls inside,
+    // correctly FLOOR-based since a point unambiguously belongs to exactly one cell), these report the
+    // nearest grid-line BOUNDARY, so they round to the CLOSEST half-cell line rather than always the one
+    // at-or-before the click. An earlier version used floor here too, which snapped a click ANYWHERE within
+    // a given half-cell to that half-cell's own leading (up-left) edge - up to a whole half-cell's worth of
+    // pixels short of the boundary the player actually meant to click, and always in the same up-left
+    // direction, which is exactly the systematic "handle lands short of where I clicked, at what looks like
+    // a cell center instead of the intersection" bug reported live ("the handle go overboard and create a
+    // selection using the red handle that is at the center of the square on it's top left corner" - same
+    // observed with yellow - live request). Drive every resize/shift gesture in this screen
     // (#updateCornerDrag, #beginNearestCornerDrag, #updateShift), all half-block resolution. signedHalfCol=
     // 0/1 are the anchor cell's own two halves (its left/neg and right/pos half respectively), matching how
     // previewNegCol/previewPosCol already exclude the anchor's own implicit halves - see this class's own
     // doc comment.
     private int halfColAt(double mouseX) {
-        return (int) Math.floor((mouseX - gridLeft) / halfCellPx) - maxHalf;
+        return (int) Math.round((mouseX - gridLeft) / (double) halfCellPx) - maxHalf;
     }
 
     private int halfRowAt(double mouseY) {
-        return (int) Math.floor((mouseY - gridTop) / halfCellPx) - maxHalf;
+        return (int) Math.round((mouseY - gridTop) / (double) halfCellPx) - maxHalf;
     }
 
     // Bounds against #limitHalf (the REAL clamp ceiling), NOT #maxHalf (the display-only layout bound) -
