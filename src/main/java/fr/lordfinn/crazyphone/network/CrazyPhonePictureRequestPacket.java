@@ -152,7 +152,14 @@ public record CrazyPhonePictureRequestPacket(List<Entry> entries) implements Cus
 
         Level world = player.level();
         PhotoSavedData data = PhotoSavedData.get(world);
-        List<CrazyPhonePictureResponsePacket.Entry> response = new ArrayList<>(entries.size());
+        // Vanilla caps a whole encoded packet at 8 MiB (io.netty.handler.codec.EncoderException: "Packet too
+        // large") - batching several FULL-resolution entries (each up to Config#photoFullMaxUploadBytes, a
+        // few MB) into ONE response easily blows past that, which a single-photo-per-packet request never
+        // could. Flushed as multiple response packets instead of one, bounded well under the real cap so
+        // per-entry protocol overhead and a batch that's already close to the limit still can't tip it over.
+        final int MAX_RESPONSE_PAYLOAD_BYTES = 3_000_000;
+        List<CrazyPhonePictureResponsePacket.Entry> batch = new ArrayList<>();
+        long batchBytes = 0;
         for (Entry request : entries) {
             PhotoSavedData.PhotoEntry entry = data.getPhoto(request.photoId());
             // Viewing a photo only requires knowing its id (the item's own in-hand/GUI/ground renderer and
@@ -165,9 +172,16 @@ public record CrazyPhonePictureRequestPacket(List<Entry> entries) implements Cus
             // responding at all leaves it stuck IN_FLIGHT forever with no error anywhere to explain why.
             byte[] bytes = entry == null ? new byte[0]
                     : request.resolution() == PhotoResolution.THUMBNAIL ? entry.thumbnail() : entry.full();
-            response.add(new CrazyPhonePictureResponsePacket.Entry(request.photoId(), request.resolution(), bytes));
+            if (!batch.isEmpty() && batchBytes + bytes.length > MAX_RESPONSE_PAYLOAD_BYTES) {
+                NetworkAccess.sendToPlayer(player, new CrazyPhonePictureResponsePacket(batch));
+                batch = new ArrayList<>();
+                batchBytes = 0;
+            }
+            batch.add(new CrazyPhonePictureResponsePacket.Entry(request.photoId(), request.resolution(), bytes));
+            batchBytes += bytes.length;
         }
-        NetworkAccess.sendToPlayer(player, new CrazyPhonePictureResponsePacket(response));
+        if (!batch.isEmpty())
+            NetworkAccess.sendToPlayer(player, new CrazyPhonePictureResponsePacket(batch));
     }
 
     //? if neoforge {
