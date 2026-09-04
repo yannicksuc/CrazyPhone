@@ -73,11 +73,14 @@ photo's resolution, matching the item's normal rendering.
 
 **Photo frames** - right-click a photo item against any block surface to hang it as an entity, sized to fit
 that surface (not just the top of a full block - the frame reads the target block's real shape, so it can
-sit flush against a slab or stair too). Right-click a placed frame to open a resize GUI and grow it up to a
-configurable max size (see [Configuration](#-configuration)); the image always scales to fit without
-cropping. A single punch breaks it and drops the photo item; breaking with Silk Touch, or duplicating with a
-paper recipe, keeps the frame's chosen size for next time you place it. Floor/ceiling placements get a
-1-pixel-deep brown backing so they read as actually resting on the surface.
+sit flush against a slab or stair too). Right-click a placed frame to open a drag-select resize GUI (half-
+block precision, two named corner handles plus a double-click nearest-corner shortcut, or shift the whole
+selection by dragging inside it) and grow it up to a configurable max size (see
+[Configuration](#-configuration)); the image always scales to fit without cropping. A small hotbar below the
+grid adds **Rotate** and a **Fullbright** toggle (so a frame stays lit even mounted on a block that gives no
+light of its own). A single punch breaks it and drops the photo item; breaking with Silk Touch, or
+duplicating with a paper recipe, keeps the frame's chosen size for next time you place it. Floor/ceiling
+placements get a 1-pixel-deep brown backing so they read as actually resting on the surface.
 
 **Selfie mode** - hold the phone and press F5 to enter a dedicated selfie view: the phone extends on a
 selfie stick, held out and angled with the mouse (drag to reframe, starting from whatever direction you
@@ -345,6 +348,7 @@ mayor candidates, feature names) tab-complete. *(Command tree is ported to Fabri
 | `/crazyphone mayor candidate add <number>` | 4 | Register a phone number as a mayor candidate. |
 | `/crazyphone mayor candidate remove <number>` | 4 | Remove a mayor candidate. |
 | `/crazyphone mayor candidate program <number>` | 4 | Attach the image currently held in hand as that candidate's campaign poster. *(NeoForge only)* |
+| `/crazyphone cache clear [player]` | 4 | Wipe a player's local photo cache (RAM and disk both) - defaults to the command's own sender. For troubleshooting a stuck or corrupted client-side cache. |
 
 Permission levels are [vanilla op levels](https://minecraft.wiki/w/Permission_level); a permission plugin
 can further restrict any of these the same way it would any other command.
