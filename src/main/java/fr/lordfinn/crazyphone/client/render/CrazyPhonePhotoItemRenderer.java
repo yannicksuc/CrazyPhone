@@ -493,11 +493,12 @@ public final class CrazyPhonePhotoItemRenderer {
         // frame-colored fill too, unlike the front where the photo quad covers it - otherwise the inner
         // rectangle is just an open hole showing whatever is behind the whole card.
         sliceBack(frameBuffer, pose, packedLight, packedOverlay, -iw, iw, ih, -ih, -t, uB, 1 - uB, uB, 1 - uB); // center
-        // Frame edge - see renderFramedCard's own doc comment on why this is double-sided.
-        doubleSidedQuad(frameBuffer, pose, packedLight, packedOverlay, -ow, oh, t, ow, oh, t, ow, oh, -t, -ow, oh, -t, 0, 1, 0); // top
-        doubleSidedQuad(frameBuffer, pose, packedLight, packedOverlay, -ow, -oh, -t, ow, -oh, -t, ow, -oh, t, -ow, -oh, t, 0, -1, 0); // bottom
-        doubleSidedQuad(frameBuffer, pose, packedLight, packedOverlay, -ow, oh, -t, -ow, oh, t, -ow, -oh, t, -ow, -oh, -t, -1, 0, 0); // left
-        doubleSidedQuad(frameBuffer, pose, packedLight, packedOverlay, ow, oh, t, ow, oh, -t, ow, -oh, -t, ow, -oh, t, 1, 0, 0); // right
+        // Frame edge - one correctly-wound quad per face (see edgeQuad's own doc comment on how "correct"
+        // was actually determined here, not the double-drawn-both-ways hack this replaced).
+        edgeQuad(frameBuffer, pose, packedLight, packedOverlay, -ow, oh, t, ow, oh, t, ow, oh, -t, -ow, oh, -t, 0, 1, 0); // top
+        edgeQuad(frameBuffer, pose, packedLight, packedOverlay, -ow, -oh, -t, ow, -oh, -t, ow, -oh, t, -ow, -oh, t, 0, -1, 0); // bottom
+        edgeQuad(frameBuffer, pose, packedLight, packedOverlay, -ow, -oh, -t, -ow, -oh, t, -ow, oh, t, -ow, oh, -t, -1, 0, 0); // left
+        edgeQuad(frameBuffer, pose, packedLight, packedOverlay, ow, -oh, t, ow, -oh, -t, ow, oh, -t, ow, oh, t, 1, 0, 0); // right
 
         // Photo, front face only, full (uncropped) 0..1 UV - pushed slightly ahead of the frame's own front
         // face (and its edges overlapped slightly past iw/ih) to avoid z-fighting AND a raking-angle gap
@@ -535,12 +536,11 @@ public final class CrazyPhonePhotoItemRenderer {
                 -h, h, -t, 1, 0,
                 0, 0, -1);
         // Frame edge - a thin strip on each of the 4 sides, connecting the front face's border to the back
-        // face's. Emitted with both windings (see doubleSidedQuad) since getting the "correct" single
-        // winding right for 4 different face orientations by hand isn't worth the risk of an invisible edge.
-        doubleSidedQuad(frameBuffer, pose, packedLight, packedOverlay, -h, h, t, h, h, t, h, h, -t, -h, h, -t, 0, 1, 0); // top
-        doubleSidedQuad(frameBuffer, pose, packedLight, packedOverlay, -h, -h, -t, h, -h, -t, h, -h, t, -h, -h, t, 0, -1, 0); // bottom
-        doubleSidedQuad(frameBuffer, pose, packedLight, packedOverlay, -h, h, -t, -h, h, t, -h, -h, t, -h, -h, -t, -1, 0, 0); // left
-        doubleSidedQuad(frameBuffer, pose, packedLight, packedOverlay, h, h, t, h, h, -t, h, -h, -t, h, -h, t, 1, 0, 0); // right
+        // face's. One correctly-wound quad per face - see edgeQuad's own doc comment.
+        edgeQuad(frameBuffer, pose, packedLight, packedOverlay, -h, h, t, h, h, t, h, h, -t, -h, h, -t, 0, 1, 0); // top
+        edgeQuad(frameBuffer, pose, packedLight, packedOverlay, -h, -h, -t, h, -h, -t, h, -h, t, -h, -h, t, 0, -1, 0); // bottom
+        edgeQuad(frameBuffer, pose, packedLight, packedOverlay, -h, -h, -t, -h, -h, t, -h, h, t, -h, h, -t, -1, 0, 0); // left
+        edgeQuad(frameBuffer, pose, packedLight, packedOverlay, h, -h, t, h, -h, -t, h, h, -t, h, h, t, 1, 0, 0); // right
 
         // Inset photo, front face only - pushed slightly ahead of the frame's own front face to avoid
         // z-fighting with it.
@@ -612,26 +612,28 @@ public final class CrazyPhonePhotoItemRenderer {
         vertex(buffer, pose, x3, y3, z3, u3, v3, light, overlay, nx, ny, nz);
     }
 
-    // A quad sampling a single UV point (fine for the near-solid-color frame texture) emitted in both vertex
-    // orders, so it renders regardless of which winding direction the current RenderType treats as front.
-    private static void doubleSidedQuad(VertexConsumer buffer, PoseStack.Pose pose, int light, int overlay,
-                                         float x0, float y0, float z0,
-                                         float x1, float y1, float z1,
-                                         float x2, float y2, float z2,
-                                         float x3, float y3, float z3,
-                                         float nx, float ny, float nz) {
+    // A quad sampling a single UV point (fine for the near-solid-color frame texture) for one of the card's
+    // 4 thin edge strips. Used to be drawn TWICE - once in the given vertex order, once reversed with the
+    // normal negated too - because whoever wrote the original per-face vertex order for left/right got them
+    // backwards relative to their own stated outward normal (top/bottom were actually already correct) and
+    // papered over it with a double-draw instead of finding the right order. Two coplanar quads at the exact
+    // same depth, with opposite winding AND opposite normals, is exactly what vanilla's simple forward
+    // renderer shrugs off but Sodium+Iris's normal/shadow-aware pipeline doesn't - live-reported as a
+    // glitchy border specifically on these edge strips with both active. Every call site's vertex order was
+    // re-derived by hand (cross-product of consecutive edges against the stated outward normal) so exactly
+    // one correctly-wound quad is emitted per face, normal unchanged from what was already being passed.
+    private static void edgeQuad(VertexConsumer buffer, PoseStack.Pose pose, int light, int overlay,
+                                  float x0, float y0, float z0,
+                                  float x1, float y1, float z1,
+                                  float x2, float y2, float z2,
+                                  float x3, float y3, float z3,
+                                  float nx, float ny, float nz) {
         quad(buffer, pose, light, overlay,
                 x0, y0, z0, 0.5f, 0.5f,
                 x1, y1, z1, 0.5f, 0.5f,
                 x2, y2, z2, 0.5f, 0.5f,
                 x3, y3, z3, 0.5f, 0.5f,
                 nx, ny, nz);
-        quad(buffer, pose, light, overlay,
-                x3, y3, z3, 0.5f, 0.5f,
-                x2, y2, z2, 0.5f, 0.5f,
-                x1, y1, z1, 0.5f, 0.5f,
-                x0, y0, z0, 0.5f, 0.5f,
-                -nx, -ny, -nz);
     }
 
     private static void vertex(VertexConsumer buffer, PoseStack.Pose pose, float x, float y, float z,
@@ -907,10 +909,10 @@ public final class CrazyPhonePhotoItemRenderer {
                     -h, -h, -t, 1, 1,
                     -h, h, -t, 1, 0,
                     0, 0, -1);
-            doubleSidedQuad(frameBuffer, pose, packedLight, packedOverlay, -h, h, t, h, h, t, h, h, -t, -h, h, -t, 0, 1, 0);
-            doubleSidedQuad(frameBuffer, pose, packedLight, packedOverlay, -h, -h, -t, h, -h, -t, h, -h, t, -h, -h, t, 0, -1, 0);
-            doubleSidedQuad(frameBuffer, pose, packedLight, packedOverlay, -h, h, -t, -h, h, t, -h, -h, t, -h, -h, -t, -1, 0, 0);
-            doubleSidedQuad(frameBuffer, pose, packedLight, packedOverlay, h, h, t, h, h, -t, h, -h, -t, h, -h, t, 1, 0, 0);
+            edgeQuad(frameBuffer, pose, packedLight, packedOverlay, -h, h, t, h, h, t, h, h, -t, -h, h, -t, 0, 1, 0);
+            edgeQuad(frameBuffer, pose, packedLight, packedOverlay, -h, -h, -t, h, -h, -t, h, -h, t, -h, -h, t, 0, -1, 0);
+            edgeQuad(frameBuffer, pose, packedLight, packedOverlay, -h, -h, -t, -h, -h, t, -h, h, t, -h, h, -t, -1, 0, 0);
+            edgeQuad(frameBuffer, pose, packedLight, packedOverlay, h, -h, t, h, -h, -t, h, h, -t, h, h, t, 1, 0, 0);
         });
 
         net.minecraft.resources./^$ res_loc {^/ResourceLocation/^$}^/ photoTexture = PLACEHOLDER_TEXTURE;
@@ -985,10 +987,10 @@ public final class CrazyPhonePhotoItemRenderer {
             sliceBack(frameBuffer, pose, packedLight, packedOverlay, fiw, fow, -fih, -foh, -t, 1 - uB, 1, 1 - uB, 1);
             sliceBack(frameBuffer, pose, packedLight, packedOverlay, -fiw, fiw, fih, -fih, -t, uB, 1 - uB, uB, 1 - uB);
 
-            doubleSidedQuad(frameBuffer, pose, packedLight, packedOverlay, -fow, foh, t, fow, foh, t, fow, foh, -t, -fow, foh, -t, 0, 1, 0);
-            doubleSidedQuad(frameBuffer, pose, packedLight, packedOverlay, -fow, -foh, -t, fow, -foh, -t, fow, -foh, t, -fow, -foh, t, 0, -1, 0);
-            doubleSidedQuad(frameBuffer, pose, packedLight, packedOverlay, -fow, foh, -t, -fow, foh, t, -fow, -foh, t, -fow, -foh, -t, -1, 0, 0);
-            doubleSidedQuad(frameBuffer, pose, packedLight, packedOverlay, fow, foh, t, fow, foh, -t, fow, -foh, -t, fow, -foh, t, 1, 0, 0);
+            edgeQuad(frameBuffer, pose, packedLight, packedOverlay, -fow, foh, t, fow, foh, t, fow, foh, -t, -fow, foh, -t, 0, 1, 0);
+            edgeQuad(frameBuffer, pose, packedLight, packedOverlay, -fow, -foh, -t, fow, -foh, -t, fow, -foh, t, -fow, -foh, t, 0, -1, 0);
+            edgeQuad(frameBuffer, pose, packedLight, packedOverlay, -fow, -foh, -t, -fow, -foh, t, -fow, foh, t, -fow, foh, -t, -1, 0, 0);
+            edgeQuad(frameBuffer, pose, packedLight, packedOverlay, fow, -foh, t, fow, -foh, -t, fow, foh, -t, fow, foh, t, 1, 0, 0);
         });
 
         float pz = t + PHOTO_Z_EPSILON;

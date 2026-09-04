@@ -306,10 +306,17 @@ public final class FabricPictureCache {
     // nameSuffix only exists so the locally-derived thumbnail (see deriveThumbnailFromFull) can't collide
     // with a texture name a real network fetch of the same key would also use, in the (currently impossible,
     // but cheap to guard against) case both paths ever raced to register the same key.
+    //
+    // <1.21.10's setFilter(false, false) explicitly disables mipmapping - a freshly uploaded GL texture
+    // defaults to a mip-sampling MIN_FILTER (GL_NEAREST_MIPMAP_LINEAR) even though only the base level ever
+    // gets generated here, an incomplete-texture state vanilla's own batched renderer happens to tolerate
+    // but a heavier third-party render pipeline might not. AbstractTexture has no equivalent method on
+    // >=1.21.10 (needs its own real API investigation, not guessed) - left as a known gap there for now.
     private static CachedTexture registerTexture(Key key, NativeImage image, String nameSuffix) {
         String name = "crazyphone-picture-" + key.resolution().name().toLowerCase(Locale.ROOT) + "-" + key.photoId() + nameSuffix;
         //? if <1.21.10 {
         DynamicTexture texture = new DynamicTexture(image);
+        texture.setFilter(false, false);
         /*$ res_loc {*/ResourceLocation/*$}*/ id = Minecraft.getInstance().getTextureManager().register(name, texture);
         //? } else {
         /*// 1.21.10 changed DynamicTexture's constructor (now takes a name Supplier and uploads itself) and
