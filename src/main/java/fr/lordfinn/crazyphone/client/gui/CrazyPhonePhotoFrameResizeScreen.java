@@ -371,23 +371,27 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
     // U=+X/V=+Y (north/south) or U=+Z/V=+Y (east/west) axis assignment: south and west already agree with
     // "posU = viewer's right" as computeBoundingBox defines it, north and east don't (need signU=-1).
     //
-    // FLOOR/CEILING: no gravity reference at all - "up" in the image instead follows the frame's own
-    // rotation (CrazyPhonePhotoFrameEntity#rotation(), a 90-degree-per-step visual spin - see
-    // CrazyPhonePhotoFrameRenderer's own doc comment). Every extra rotation step turns the screen's own
-    // col/row axes by one more quarter turn relative to computeBoundingBox's fixed U=X/V=Z assignment - an
-    // ordinary 90-degree rotation of an axis-aligned rectangle is always exactly a swap-plus-sign-flip (never
-    // a true diagonal), so this is expressed the same {swap, signU, signV} way as the wall case rather than
-    // needing real matrix math.
+    // FLOOR/CEILING: FIXED, like the walls - NOT dependent on CrazyPhonePhotoFrameEntity#rotation() at all.
+    // An earlier version made this depend on rotation, on the theory that "up" in the grid should track
+    // "up" in the currently-displayed (rotated) picture - but CrazyPhonePhotoFrameRenderer's own doc comment
+    // is explicit that rotation is a pure visual spin of the picture's PIXEL CONTENT within its existing
+    // slot rectangle, "NOT a swap of which world axis width/height bind to" - the physical slot (what this
+    // grid actually edits) never rotates, only the texture drawn inside it does, so tying the grid's own
+    // axis mapping to rotation was mixing up two genuinely independent things. That mistake is exactly what
+    // produced the reported bug: half the rotation states (whichever ones happened to share this fixed
+    // mapping's own signs) worked, the other half didn't - "quand l'image est placée au sol... seulement si
+    // l'image est orienté vers north ou sud [c'est haut/bas qui sont inversés]... sur west et est c'est
+    // gauche et droite qui sont inversés" (live request). UP's value below is the one already confirmed
+    // live ("les images placées au plafond ça marche" - live request, at whatever rotation was tested);
+    // DOWN mirrors it with V flipped, matching how opposite WALLS also flip exactly one sign between them
+    // (see the comment above) - floor and ceiling face fully opposite directions the same way north/south
+    // or east/west do.
     private int[] axisTransform() {
         Direction face = menu.attachFace();
-        if (face.getAxis() == Direction.Axis.Y) {
-            return switch (Math.floorMod(menu.rotation(), 4)) {
-                case 0 -> new int[]{0, 1, -1};
-                case 1 -> new int[]{1, 1, 1};
-                case 2 -> new int[]{0, -1, 1};
-                default -> new int[]{1, -1, -1};
-            };
-        }
+        if (face == Direction.UP)
+            return new int[]{0, 1, -1};
+        if (face == Direction.DOWN)
+            return new int[]{0, 1, 1};
         int signU = (face == Direction.NORTH || face == Direction.EAST) ? -1 : 1;
         return new int[]{0, signU, -1};
     }
