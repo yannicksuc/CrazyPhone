@@ -359,6 +359,35 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
         return Math.clamp(raw, 0.0, 1.0);
     }
 
+    // Vanilla Entity#getLightProbePosition defaults to getEyePosition(), which for this entity is just its
+    // own tracked position() (roughly the SUPPORTING block's own center, per tryPlace's setPos call) - i.e.
+    // it samples light from INSIDE the solid block this frame is attached to, not from the open air a few
+    // pixels in front of it where the photo actually renders. Solid blocks are dark inside by definition, so
+    // the whole entity rendered pitch black - "l'entité est dessinée toute noir comme si elle était dans le
+    // bloc" (live request), which a NEIGHBORING non-solid block placement incidentally "fixed" by triggering
+    // a lighting recalculation that happened to also relight the (still wrong) probe position from an
+    // adjacent light source, not because the underlying position was actually corrected. Overridden to nudge
+    // the probe just past the block's own face - same faceOffset used everywhere else in this class (render
+    // depth, hitbox) - plus a small further OUTWARD_LIGHT_PROBE_MARGIN, deliberately enough to land in the
+    // NEIGHBORING block's own integer light cell (light is stored per-block, and the face itself sits
+    // exactly on the boundary between the two) rather than right on that boundary where rounding could still
+    // land back inside the solid one.
+    private static final double OUTWARD_LIGHT_PROBE_MARGIN = 0.1;
+
+    @Override
+    public net.minecraft.world.phys.Vec3 getLightProbePosition(float partialTick) {
+        Level lvl = this.level();
+        double faceOffset = lvl != null ? computeFaceOffset(lvl) : (attachFace().getAxisDirection() == Direction.AxisDirection.POSITIVE ? 1.0 : 0.0);
+        Direction face = attachFace();
+        double along = (faceOffset - 0.5) + (face.getAxisDirection() == Direction.AxisDirection.POSITIVE ? OUTWARD_LIGHT_PROBE_MARGIN : -OUTWARD_LIGHT_PROBE_MARGIN);
+        net.minecraft.world.phys.Vec3 center = this.position();
+        return switch (face.getAxis()) {
+            case Y -> center.add(0, along, 0);
+            case Z -> center.add(0, 0, along);
+            case X -> center.add(along, 0, 0);
+        };
+    }
+
     @Override
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
         builder.define(DATA_PHOTO_ID, "");
