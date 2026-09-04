@@ -78,6 +78,7 @@ package fr.lordfinn.crazyphone.client.gui;
  * not guessed) and draws its own grid/buttons manually instead, mirroring CrazyPhonePhotoViewerScreen's own
  * established "skip Screen#render's default background pass" pattern (see that class's own doc comment).
  */
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import fr.lordfinn.crazyphone.client.CursorEffects;
 import net.minecraft.client.gui./*$ gui_graphics_type {*/GuiGraphics/*$}*/;
@@ -307,28 +308,48 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
         int hotbarY = gridTop + gridPx + 4;
         int rowWidth = HOTBAR_BUTTON_SIZE * 2 + HOTBAR_BUTTON_GAP;
         int rowLeft = this.leftPos + this.imageWidth / 2 - rowWidth / 2;
-        Button rotate = createSquareIconButton(rowLeft, hotbarY, ROTATE_ICON, b ->
+        rotateButton = createSquareIconButton(rowLeft, hotbarY, () -> ROTATE_ICON, b ->
                 this.minecraft.gameMode.handleInventoryButtonClick(menu.containerId, CrazyPhonePhotoFrameResizeMenu.ROTATE_BUTTON_ID));
-        rotate.setTooltip(Tooltip.create(Component.translatable("gui.crazyphone.photo_frame_resize.rotate")));
-        addRenderableWidget(rotate);
-        ownButtons.add(rotate);
+        addRenderableWidget(rotateButton);
+        ownButtons.add(rotateButton);
 
-        Button fullbright = createSquareIconButton(rowLeft + HOTBAR_BUTTON_SIZE + HOTBAR_BUTTON_GAP, hotbarY, FULLBRIGHT_ICON, b ->
+        fullbrightButton = createSquareIconButton(rowLeft + HOTBAR_BUTTON_SIZE + HOTBAR_BUTTON_GAP, hotbarY,
+                () -> menu.fullbright() ? FULLBRIGHT_ICON_ON : FULLBRIGHT_ICON_OFF, b ->
                 this.minecraft.gameMode.handleInventoryButtonClick(menu.containerId, CrazyPhonePhotoFrameResizeMenu.FULLBRIGHT_BUTTON_ID));
-        fullbright.setTooltip(Tooltip.create(Component.translatable("gui.crazyphone.photo_frame_resize.fullbright")));
-        addRenderableWidget(fullbright);
-        ownButtons.add(fullbright);
+        addRenderableWidget(fullbrightButton);
+        ownButtons.add(fullbrightButton);
+
+        updateHotbarTooltips();
+    }
+
+    private Button rotateButton, fullbrightButton;
+
+    // Both hotbar tooltips get a second, gray "lore" line explaining what clicking will actually do - for
+    // fullbright specifically, both the title AND the lore reflect CURRENT state (not just the icon) -
+    // "also add lore to tooltip to reflect the state and what will happen on clique for both buttons" (live
+    // request). Re-set every frame (see render()/extractRenderState() below) rather than once in init(),
+    // same reasoning as the icon supplier - fullbright's own tooltip content depends on state that can
+    // change while this screen is open.
+    private void updateHotbarTooltips() {
+        rotateButton.setTooltip(Tooltip.create(Component.translatable("gui.crazyphone.photo_frame_resize.rotate")
+                .append("\n").append(Component.translatable("gui.crazyphone.photo_frame_resize.rotate.lore").withStyle(ChatFormatting.GRAY))));
+        String stateKey = menu.fullbright() ? "gui.crazyphone.photo_frame_resize.fullbright_on" : "gui.crazyphone.photo_frame_resize.fullbright_off";
+        String loreKey = menu.fullbright() ? "gui.crazyphone.photo_frame_resize.fullbright_on.lore" : "gui.crazyphone.photo_frame_resize.fullbright_off.lore";
+        fullbrightButton.setTooltip(Tooltip.create(Component.translatable(stateKey)
+                .append("\n").append(Component.translatable(loreKey).withStyle(ChatFormatting.GRAY))));
     }
 
     // A "counterclockwise arrows" emoji (U+1F504, ":arrows_counterclockwise:") from the bundled Pixel
     // Twemoji font (assets/minecraft/font/default.json) - "a colored text icon using the new resource pack
     // we added" (live request) - drawn as plain Component text via #createSquareIconButton, no image blit.
     private static final Component ROTATE_ICON = Component.literal("🔄");
-    // A "high brightness" emoji (U+1F506, ":high_brightness:") - toggles CrazyPhonePhotoFrameEntity#
-    // fullbright(), same icon regardless of current state (the tooltip and the render's own visual result
-    // are the feedback) - "ajoute un bouton toggle... pour activer/désactiver le calcul de la lumière...
-    // afficher l'image en fullbright" (live request).
-    private static final Component FULLBRIGHT_ICON = Component.literal("🔆");
+    // "high brightness" (U+1F506, ":high_brightness:") while fullbright is ON, "low brightness" (U+1F505,
+    // ":low_brightness:") while it's OFF - toggles CrazyPhonePhotoFrameEntity#fullbright(). Re-read every
+    // frame via #createSquareIconButton's own icon supplier rather than fixed at button creation, so the
+    // glyph itself reflects current state - "fullbright button need to change between on / off" (live
+    // request; an earlier version showed the same icon regardless of state).
+    private static final Component FULLBRIGHT_ICON_ON = Component.literal("🔆");
+    private static final Component FULLBRIGHT_ICON_OFF = Component.literal("🔅");
     private static final int HOTBAR_BUTTON_SIZE = 14;
     private static final int HOTBAR_BUTTON_GAP = 4;
 
@@ -337,13 +358,15 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
     // own delete/favorite buttons ("same technique as the squre button for example in contacts page for
     // delete and favory" - live request): vanilla's own text centering truncates (buttonWidth-textWidth)/2
     // to an int, which for an odd leftover visibly biases the glyph a pixel off-center, so the icon is drawn
-    // manually (with a 0.5px sub-pixel pose nudge) after blanking vanilla's own auto-centered label.
-    private Button createSquareIconButton(int x, int y, Component icon, Button.OnPress onPress) {
-        return new Button(x, y, HOTBAR_BUTTON_SIZE, HOTBAR_BUTTON_SIZE, icon, onPress, supplier -> icon.copy()) {
+    // manually (with a 0.5px sub-pixel pose nudge) after blanking vanilla's own auto-centered label. Takes a
+    // SUPPLIER, not a fixed Component, so a caller like the fullbright toggle can have its own icon reflect
+    // live state rather than whatever it was at button-creation time.
+    private Button createSquareIconButton(int x, int y, java.util.function.Supplier<Component> iconSupplier, Button.OnPress onPress) {
+        return new Button(x, y, HOTBAR_BUTTON_SIZE, HOTBAR_BUTTON_SIZE, iconSupplier.get(), onPress, supplier -> iconSupplier.get().copy()) {
             //? if >=26 {
             /*@Override
             public void extractContents(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
-                Component message = getMessage();
+                Component message = iconSupplier.get();
                 this.extractDefaultSprite(guiGraphics);
 
                 var font = Minecraft.getInstance().font;
@@ -358,10 +381,9 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
             *///? } else {
             @Override
             public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-                Component message = getMessage();
+                Component message = iconSupplier.get();
                 setMessage(Component.empty());
                 super.renderWidget(guiGraphics, mouseX, mouseY, partialTick);
-                setMessage(message);
 
                 var font = Minecraft.getInstance().font;
                 int textWidth = font.width(message);
@@ -914,6 +936,7 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
     public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
         syncFromMenuIfIdle();
         updateCursor(mouseX, mouseY);
+        updateHotbarTooltips();
         guiGraphics.fill(leftPos, topPos, leftPos + imageWidth, topPos + imageHeight, 0xE0101010);
         guiGraphics.centeredText(this.font, this.title, leftPos + imageWidth / 2, topPos + 8, 0xA0A0A0);
         guiGraphics.centeredText(this.font, sizeLabel(), leftPos + imageWidth / 2, topPos + imageHeight - 16, 0xFFFFFF);
@@ -927,6 +950,7 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         syncFromMenuIfIdle();
         updateCursor(mouseX, mouseY);
+        updateHotbarTooltips();
         this./*$ gui_render_transparent_background {*/renderTransparentBackground/*$}*/(guiGraphics);
         guiGraphics.fill(leftPos, topPos, leftPos + imageWidth, topPos + imageHeight, 0xE0101010);
         guiGraphics.drawCenteredString(this.font, this.title, leftPos + imageWidth / 2, topPos + 8, 0xA0A0A0);
