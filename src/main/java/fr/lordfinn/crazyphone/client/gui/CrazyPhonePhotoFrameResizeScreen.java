@@ -85,20 +85,28 @@ import net.minecraft.client.gui./*$ gui_graphics_type {*/GuiGraphics/*$}*/;
 /*import net.minecraft.client.gui.GuiGraphicsExtractor;
 *///?}
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
 
 import fr.lordfinn.crazyphone.entity.CrazyPhonePhotoFrameEntity;
+import fr.lordfinn.crazyphone.utils.GuiCompat;
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhonePhotoFrameResizeMenu;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<CrazyPhonePhotoFrameResizeMenu> {
-    private static final int GRID_TOP_MARGIN = 34;
-    private static final int GRID_BOTTOM_MARGIN = 32;
+    // Just the title now - the Rotate button used to also live in this strip, directly on top of the title
+    // text ("the rotate button is on top of the Resize photo title" - live request), since both were
+    // centered at the same X and its own bounds (topPos+6..+26) overlapped the title's own Y (topPos+8).
+    // It's been moved into a hotbar row in the BOTTOM margin instead (see #HOTBAR_BUTTON_SIZE/#init), which
+    // is why this shrank from the old 34.
+    private static final int GRID_TOP_MARGIN = 20;
+    // Room for the hotbar row (see #HOTBAR_BUTTON_SIZE) plus the existing size label below it.
+    private static final int GRID_BOTTOM_MARGIN = 42;
     private static final int SIDE_MARGIN = 16;
     private static final int MIN_CELL_PX = 6;
     private static final int MAX_CELL_PX = 24;
@@ -279,12 +287,68 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
 
         screenToPreview();
 
+        // A row of small square icon buttons below the grid, currently just Rotate - "I would prefere a
+        // hotbar bellow with different square buttons, icons... and a tooltip on hover" (live request).
+        // Centered under the grid; a second button would just need HOTBAR_BUTTON_SIZE+HOTBAR_BUTTON_GAP
+        // added per slot, same row.
         ownButtons.clear();
-        Button rotate = Button.builder(Component.translatable("gui.crazyphone.photo_frame_resize.rotate"), b ->
-                this.minecraft.gameMode.handleInventoryButtonClick(menu.containerId, CrazyPhonePhotoFrameResizeMenu.ROTATE_BUTTON_ID))
-                .bounds(this.leftPos + this.imageWidth / 2 - 40, this.topPos + 6, 80, 20).build();
+        int hotbarY = gridTop + gridPx + 4;
+        int hotbarX = this.leftPos + this.imageWidth / 2 - HOTBAR_BUTTON_SIZE / 2;
+        Button rotate = createSquareIconButton(hotbarX, hotbarY, ROTATE_ICON, b ->
+                this.minecraft.gameMode.handleInventoryButtonClick(menu.containerId, CrazyPhonePhotoFrameResizeMenu.ROTATE_BUTTON_ID));
+        rotate.setTooltip(Tooltip.create(Component.translatable("gui.crazyphone.photo_frame_resize.rotate")));
         addRenderableWidget(rotate);
         ownButtons.add(rotate);
+    }
+
+    // A "counterclockwise arrows" emoji (U+1F504, ":arrows_counterclockwise:") from the bundled Pixel
+    // Twemoji font (assets/minecraft/font/default.json) - "a colored text icon using the new resource pack
+    // we added" (live request) - drawn as plain Component text via #createSquareIconButton, no image blit.
+    private static final Component ROTATE_ICON = Component.literal("🔄");
+    private static final int HOTBAR_BUTTON_SIZE = 14;
+
+    // A small SQUARE Button showing a single centered icon glyph, using the real vanilla button background
+    // (hover/press/disabled all keep working normally) - same technique as CrazyPhoneContactsScreenScreen's
+    // own delete/favorite buttons ("same technique as the squre button for example in contacts page for
+    // delete and favory" - live request): vanilla's own text centering truncates (buttonWidth-textWidth)/2
+    // to an int, which for an odd leftover visibly biases the glyph a pixel off-center, so the icon is drawn
+    // manually (with a 0.5px sub-pixel pose nudge) after blanking vanilla's own auto-centered label.
+    private Button createSquareIconButton(int x, int y, Component icon, Button.OnPress onPress) {
+        return new Button(x, y, HOTBAR_BUTTON_SIZE, HOTBAR_BUTTON_SIZE, icon, onPress, supplier -> icon.copy()) {
+            //? if >=26 {
+            /*@Override
+            public void extractContents(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
+                Component message = getMessage();
+                this.extractDefaultSprite(guiGraphics);
+
+                var font = Minecraft.getInstance().font;
+                int textWidth = font.width(message);
+                int drawX = getX() + (getWidth() - textWidth) / 2;
+                int drawY = getY() + (getHeight() - 8) / 2;
+                GuiCompat.pushPose(guiGraphics);
+                GuiCompat.translate(guiGraphics, 0.5f, 0f);
+                guiGraphics./^$ gui_draw_string {^/drawString/^$}^/(font, message, drawX, drawY, 0xFFFFFFFF, true);
+                GuiCompat.popPose(guiGraphics);
+            }
+            *///? } else {
+            @Override
+            public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+                Component message = getMessage();
+                setMessage(Component.empty());
+                super.renderWidget(guiGraphics, mouseX, mouseY, partialTick);
+                setMessage(message);
+
+                var font = Minecraft.getInstance().font;
+                int textWidth = font.width(message);
+                int drawX = getX() + (getWidth() - textWidth) / 2;
+                int drawY = getY() + (getHeight() - 8) / 2;
+                GuiCompat.pushPose(guiGraphics);
+                GuiCompat.translate(guiGraphics, 0.5f, 0f);
+                guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(font, message, drawX, drawY, 0xFFFFFFFF, true);
+                GuiCompat.popPose(guiGraphics);
+            }
+            //?}
+        };
     }
 
     // Which screen direction (col+/right, row+/down) each server axis (U/V) actually corresponds to for the
