@@ -152,12 +152,16 @@ public record CrazyPhonePictureRequestPacket(List<Entry> entries) implements Cus
 
         Level world = player.level();
         PhotoSavedData data = PhotoSavedData.get(world);
-        // Vanilla caps a whole encoded packet at 8 MiB (io.netty.handler.codec.EncoderException: "Packet too
-        // large") - batching several FULL-resolution entries (each up to Config#photoFullMaxUploadBytes, a
-        // few MB) into ONE response easily blows past that, which a single-photo-per-packet request never
-        // could. Flushed as multiple response packets instead of one, bounded well under the real cap so
+        // Vanilla/Netty rejects an encoded packet past some size ceiling (io.netty.handler.codec.
+        // EncoderException: "Packet too large: size X is over Y") - confirmed live at a real cap somewhere
+        // under ~2.7 MB (a 3,000,000-byte budget here still let 3 batched FULL-resolution entries add up to
+        // 2,743,531 bytes and get disconnected), well short of whatever number the exception message itself
+        // claims (its own tail is truncated in the client log, so the exact Y is unconfirmed) - batching
+        // several FULL-resolution entries (each up to Config#photoFullMaxUploadBytes, a few MB) into ONE
+        // response can blow past it, which a single-photo-per-packet request never could. Flushed as
+        // multiple response packets instead of one, bounded well under the observed failure point so
         // per-entry protocol overhead and a batch that's already close to the limit still can't tip it over.
-        final int MAX_RESPONSE_PAYLOAD_BYTES = 3_000_000;
+        final int MAX_RESPONSE_PAYLOAD_BYTES = 1_000_000;
         List<CrazyPhonePictureResponsePacket.Entry> batch = new ArrayList<>();
         long batchBytes = 0;
         for (Entry request : entries) {
