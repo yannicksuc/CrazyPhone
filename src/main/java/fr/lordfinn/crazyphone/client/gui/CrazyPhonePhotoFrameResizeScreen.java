@@ -22,18 +22,22 @@ package fr.lordfinn.crazyphone.client.gui;
  * button spins the photo 90° - see CrazyPhonePhotoFrameRenderer's own doc comment for what "rotation"
  * actually changes (a visual spin in place, not a width/height axis swap).
  *
- * Grid selection precision is HALF a block for both the corner handles AND the shift, not the whole-block
- * granularity this screen used to be limited to entirely, nor the entity's own finer 1/8-block unit storage
- * (a plain drag gesture over dozens of tiny sub-block cells would still be far fussier to use than it's
- * worth, so only STARTING a fresh selection - clicking outside the current one entirely - still snaps to
- * whole blocks). The two named corner handles (see #tryBeginCornerDrag/#updateCornerDrag) are a distinct
- * resize gesture from the shift: "also want top left and bottom left corners to be dragable also in mid
- * positioning" (live request), each a small square centered exactly on its corner point at half a normal
- * cell's size - "red and yellow corner handle are squares centered on corner with half the size" (live
- * request, red = top-left, yellow = the diagonally OPPOSITE corner, bottom-right - "yellow corner should be
- * at the opposite of red", live request), with a hit-test margin beyond that visual size so grabbing one
- * doesn't need to be pixel-perfect (see #HANDLE_HIT_MARGIN, live request). Because a selection edge can now
- * land mid-cell, plain whole-cell shading
+ * Grid selection precision is HALF a block EVERYWHERE - the shift, starting a fresh selection, and both
+ * corner-resize gestures below - not the whole-block granularity this screen used to be limited to, nor the
+ * entity's own finer 1/8-block unit storage (a plain drag gesture over dozens of tiny sub-block cells would
+ * still be far fussier to use than it's worth, so the STEP is half a block, never finer). The two named
+ * corner handles (see #tryBeginCornerDrag/#updateCornerDrag) are a distinct resize gesture from the shift:
+ * "also want top left and bottom left corners to be dragable also in mid positioning" (live request), each
+ * a small square centered exactly on its corner point at half a normal cell's size - "red and yellow corner
+ * handle are squares centered on corner with half the size" (live request, red = top-left, yellow = the
+ * diagonally OPPOSITE corner, bottom-right - "yellow corner should be at the opposite of red", live
+ * request), with a hit-test margin beyond that visual size so grabbing one doesn't need to be pixel-perfect
+ * (see #HANDLE_HIT_MARGIN, live request). A DOUBLE-click on any cell is a more forgiving alternative to
+ * grabbing a handle precisely - it jump-grabs whichever of the CURRENT selection's four logical corners
+ * (not just the two drawn ones - #cornerDragCol/#cornerDragRow track each axis independently, so any
+ * combination works) is nearest to the click and starts dragging it from there ("un double clique sur une
+ * case... doit faire bouger le corner le plus proche" - live request; see #beginNearestCornerDrag).
+ * Because a selection edge can now land mid-cell, plain whole-cell shading
  * would lie about what's actually selected, so every non-anchor cell renders as two independently-colored
  * halves along whichever axis a handle can move - "the gray square can be divided in quarters for
  * independent coloration based on selection" (live request) - each surviving cell corner-carved on both
@@ -102,9 +106,14 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
     private static final int HANDLE_COLOR_TOP_LEFT = 0xFFFF3333;
     private static final int HANDLE_COLOR_BOTTOM_RIGHT = 0xFFFFDD33;
 
-    private static final int CORNER_NONE = 0;
-    private static final int CORNER_TOP_LEFT = 1;
-    private static final int CORNER_BOTTOM_RIGHT = 2;
+    // Which side of an axis a corner-style drag is currently moving - NONE (that axis's edges are untouched
+    // by this drag), NEG (the -negCol/-negRow side), POS (the +posCol/+posRow side). Two independent values
+    // (one per axis, see #cornerDragCol/#cornerDragRow) rather than a single "which named corner" enum -
+    // that's what lets #beginNearestCornerDrag pick any of the four logical corners (top-left, top-right,
+    // bottom-left, bottom-right) even though only two are drawn as named handles.
+    private static final int EDGE_NONE = 0;
+    private static final int EDGE_NEG = 1;
+    private static final int EDGE_POS = 2;
 
     private final List<Button> ownButtons = new ArrayList<>();
     private int maxBlocks;
@@ -121,8 +130,13 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
     // previewNegRow=previewPosRow=0, matching just the anchor cell, 1 block total. NOT forced symmetric:
     // the anchor can sit anywhere inside the resulting rectangle, including right on its own edge.
     private int previewNegCol, previewPosCol, previewNegRow, previewPosRow;
+    // Starting a fresh selection (clicking outside the current one) is HALF-block resolution too, same as
+    // everything else in this screen - "la sélection initiale si je clique sur des carrés gris je dois
+    // pouvoir sélectionner en mid position" (live request). dragStartHalfCol/Row are boundary coordinates
+    // (see #halfColAt/#halfRowAt's own doc comment), not cell indices - #updatePreview treats them exactly
+    // like #updateCornerDrag treats a corner-handle boundary.
     private boolean dragging;
-    private int dragStartCol, dragStartRow;
+    private int dragStartHalfCol, dragStartHalfRow;
     // A second drag mode: clicking INSIDE the current selection (rather than anywhere else in the grid,
     // including right on the blue anchor square itself) shifts that whole selection, keeping its own SIZE
     // fixed, instead of resizing it - the anchor (0,0) stays exactly where the frame is physically attached
@@ -140,9 +154,37 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
     private boolean shifting;
     private int shiftStartHalfCol, shiftStartHalfRow;
     private int shiftBaseNegCol, shiftBasePosCol, shiftBaseNegRow, shiftBasePosRow;
-    // A third drag mode: grabbing one of the two corner handles (see this class's own doc comment) resizes
-    // at half-block resolution instead of whole-block, moving only the two edges that meet at that corner.
-    private int cornerDrag = CORNER_NONE;
+    // A third drag mode: grabbing one of the two named corner handles (#tryBeginCornerDrag), OR
+    // double-clicking any cell to jump-grab whichever corner of the CURRENT selection is nearest
+    // (#beginNearestCornerDrag - "un double clique sur une case, même dans la sélection, doit faire bouger
+    // le corner le plus proche... attention ne pas bouger l'autre coin" - live request), resizes at
+    // half-block resolution, moving only the two edges (one from {negCol,posCol}, one from {negRow,posRow})
+    // that meet at that corner - the opposite two edges never move on their own.
+    private int cornerDragCol = EDGE_NONE, cornerDragRow = EDGE_NONE;
+
+    private boolean isCornerDragging() {
+        return cornerDragCol != EDGE_NONE || cornerDragRow != EDGE_NONE;
+    }
+
+    // Manual double-click detection, used only by the <26 mouseClicked body below - >=26's own
+    // MouseButtonEvent-based mouseClicked already receives a doubleClick flag straight from the input
+    // system (see the version-split bodies). Two clicks count as a double-click if they land in the same
+    // grid CELL within DOUBLE_CLICK_MS, matching vanilla's own inventory double-click window.
+    private static final long DOUBLE_CLICK_MS = 250;
+    private long lastClickTimeMs = -1;
+    private int lastClickCol = Integer.MIN_VALUE, lastClickRow = Integer.MIN_VALUE;
+
+    private boolean consumeDoubleClick(double mouseX, double mouseY) {
+        int col = Math.max(-maxBlocks, Math.min(maxBlocks, colAt(mouseX)));
+        int row = Math.max(-maxBlocks, Math.min(maxBlocks, rowAt(mouseY)));
+        long now = System.currentTimeMillis();
+        boolean isDouble = lastClickTimeMs >= 0 && now - lastClickTimeMs <= DOUBLE_CLICK_MS
+                && col == lastClickCol && row == lastClickRow;
+        lastClickTimeMs = isDouble ? -1 : now;
+        lastClickCol = col;
+        lastClickRow = row;
+        return isDouble;
+    }
 
     private static int computeMaxBlocks(CrazyPhonePhotoFrameResizeMenu menu) {
         return Math.max(1, menu.maxUnits() / UNITS_PER_BLOCK);
@@ -346,25 +388,26 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
         return mouseX >= gridLeft && mouseX < gridLeft + gridPx && mouseY >= gridTop && mouseY < gridTop + gridPx;
     }
 
-    // Bounding box of the drag's two endpoints AND the anchor (0,0) - this is what guarantees the anchor
-    // always ends up inside the resulting rectangle without ever forcing it to the CENTER of that rectangle
-    // ("I should be able to trace a rectangle with the blue square on the bottom left corner for example" -
-    // live request): if the whole drag happens on one side of the anchor, the rectangle just extends from
-    // the anchor to the cursor, anchor included at its own edge; if the drag straddles the anchor, it ends
-    // up somewhere in the interior instead. Still whole-block (col/row are block indices, from #colAt/
-    // #rowAt) - only the two corner handles get half-block precision - so the result is doubled into
-    // half-block units at the very end to match previewNegCol/etc's own storage unit.
-    private void updatePreview(int col, int row) {
-        int clampedCol = Math.max(-maxBlocks, Math.min(maxBlocks, col));
-        int clampedRow = Math.max(-maxBlocks, Math.min(maxBlocks, row));
-        int minCol = Math.min(0, Math.min(dragStartCol, clampedCol));
-        int maxCol = Math.max(0, Math.max(dragStartCol, clampedCol));
-        int minRow = Math.min(0, Math.min(dragStartRow, clampedRow));
-        int maxRow = Math.max(0, Math.max(dragStartRow, clampedRow));
-        previewNegCol = -minCol * 2;
-        previewPosCol = maxCol * 2;
-        previewNegRow = -minRow * 2;
-        previewPosRow = maxRow * 2;
+    // Bounding box of the drag's two endpoints AND the anchor's own boundary span [0,2) - this is what
+    // guarantees the anchor always ends up inside the resulting rectangle without ever forcing it to the
+    // CENTER of that rectangle ("I should be able to trace a rectangle with the blue square on the bottom
+    // left corner for example" - live request): if the whole drag happens on one side of the anchor, the
+    // rectangle just extends from the anchor to the cursor, anchor included at its own edge; if the drag
+    // straddles the anchor, it ends up somewhere in the interior instead. HALF-block resolution (boundary
+    // coordinates from #halfColAt/#halfRowAt, same domain #updateCornerDrag already uses) - "la sélection
+    // initiale si je clique sur des carrés gris je dois pouvoir sélectionner en mid position" (live
+    // request); an earlier version only reached whole-block precision here.
+    private void updatePreview(double mouseX, double mouseY) {
+        int hc = clampHalf(halfColAt(mouseX));
+        int hr = clampHalf(halfRowAt(mouseY));
+        int leftB = Math.min(0, Math.min(dragStartHalfCol, hc));
+        int rightB = Math.max(2, Math.max(dragStartHalfCol, hc));
+        int topB = Math.min(0, Math.min(dragStartHalfRow, hr));
+        int bottomB = Math.max(2, Math.max(dragStartHalfRow, hr));
+        previewNegCol = clampHalfExtent(-leftB);
+        previewPosCol = clampHalfExtent(rightB - 2);
+        previewNegRow = clampHalfExtent(-topB);
+        previewPosRow = clampHalfExtent(bottomB - 2);
     }
 
     // Whole-block-cell overlap test (col/row are block indices, from #colAt/#rowAt) - true if that block's
@@ -401,23 +444,42 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
         previewPosRow = height - negRow;
     }
 
-    // Drags the top-left corner of the selection (see this class's own doc comment) - moves the left edge
-    // (negCol) and top edge (negRow) together, at half-block resolution, leaving the opposite (bottom-right)
-    // corner fixed. Both edges are independently clamped to [0, maxHalf] - the anchor's own cell can never
-    // be pushed out of the selection since neither edge can go negative.
-    // Drags the bottom-right corner instead - right edge (posCol) and bottom edge (posRow) together, the
-    // corner diagonally OPPOSITE the top-left/red one ("yellow corner should be at the opposite of red" -
-    // live request), leaving the top-left corner fixed.
+    // Moves whichever edges #cornerDragCol/#cornerDragRow currently point at to the mouse's own half-block
+    // boundary position, at half-block resolution - each edge independently clamped to [0, maxHalf], so the
+    // anchor's own cell can never be pushed out of the selection (neither edge can go negative) and a drag
+    // can never exceed the configured max size ("attention ne pas bouger l'autre coin sauf si pas dans la
+    // taille max autorisé" - live request: the OTHER two edges are never touched here at all, and the ones
+    // that are get the same ordinary clamp every other half-block edit in this screen already uses). The
+    // two named handles (#tryBeginCornerDrag) and the double-click nearest-corner jump
+    // (#beginNearestCornerDrag) both just set cornerDragCol/cornerDragRow differently before calling this.
     private void updateCornerDrag(double mouseX, double mouseY) {
         int hc = clampHalf(halfColAt(mouseX));
         int hr = clampHalf(halfRowAt(mouseY));
-        if (cornerDrag == CORNER_TOP_LEFT) {
+        if (cornerDragCol == EDGE_NEG)
             previewNegCol = clampHalfExtent(-hc);
-            previewNegRow = clampHalfExtent(-hr);
-        } else if (cornerDrag == CORNER_BOTTOM_RIGHT) {
+        else if (cornerDragCol == EDGE_POS)
             previewPosCol = clampHalfExtent(hc - 2);
+        if (cornerDragRow == EDGE_NEG)
+            previewNegRow = clampHalfExtent(-hr);
+        else if (cornerDragRow == EDGE_POS)
             previewPosRow = clampHalfExtent(hr - 2);
-        }
+    }
+
+    // Double-click alternative to precisely grabbing a named handle - "un double clique sur une case, même
+    // dans la sélection, doit faire bouger si possible le corner le plus proche" (live request): picks
+    // whichever of the CURRENT selection's four logical corners is nearest to the click (independently per
+    // axis - nearest to the left edge or the right edge; nearest to the top edge or the bottom edge), starts
+    // dragging exactly those two edges, and jumps them to the click position immediately (so a plain
+    // double-click with no drag already resizes to there, same as a single click precisely on a handle
+    // would after a small drag).
+    private void beginNearestCornerDrag(double mouseX, double mouseY) {
+        int hc = clampHalf(halfColAt(mouseX));
+        int hr = clampHalf(halfRowAt(mouseY));
+        int leftB = -previewNegCol, rightB = previewPosCol + 2;
+        cornerDragCol = Math.abs(hc - rightB) < Math.abs(hc - leftB) ? EDGE_POS : EDGE_NEG;
+        int topB = -previewNegRow, bottomB = previewPosRow + 2;
+        cornerDragRow = Math.abs(hr - bottomB) < Math.abs(hr - topB) ? EDGE_POS : EDGE_NEG;
+        updateCornerDrag(mouseX, mouseY);
     }
 
     // Pixel box of the top-left/bottom-right corner handles - a square centered exactly on the selection's
@@ -458,11 +520,13 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
     // underneath them.
     private boolean tryBeginCornerDrag(double mouseX, double mouseY) {
         if (hitBoxWithMargin(topLeftHandleBox(), mouseX, mouseY)) {
-            cornerDrag = CORNER_TOP_LEFT;
+            cornerDragCol = EDGE_NEG;
+            cornerDragRow = EDGE_NEG;
             return true;
         }
         if (hitBoxWithMargin(bottomRightHandleBox(), mouseX, mouseY)) {
-            cornerDrag = CORNER_BOTTOM_RIGHT;
+            cornerDragCol = EDGE_POS;
+            cornerDragRow = EDGE_POS;
             return true;
         }
         return false;
@@ -480,7 +544,7 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
     // below), which is safe precisely because it's never open at the same time as a PhoneScreen fighting
     // over the same per-frame state.
     private void updateCursor(double mouseX, double mouseY) {
-        boolean resizeIntent = cornerDrag != CORNER_NONE
+        boolean resizeIntent = isCornerDragging()
                 || hitBoxWithMargin(topLeftHandleBox(), mouseX, mouseY)
                 || hitBoxWithMargin(bottomRightHandleBox(), mouseX, mouseY);
         if (!resizeIntent && !shifting && insideGrid(mouseX, mouseY)) {
@@ -530,7 +594,7 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
         if (button == 0 && insideGrid(mouseX, mouseY)) {
             if (tryBeginCornerDrag(mouseX, mouseY))
                 return true;
-            beginGesture(mouseX, mouseY);
+            beginGesture(mouseX, mouseY, consumeDoubleClick(mouseX, mouseY));
             return true;
         }
         return super.mouseClicked(mouseX, mouseY, button);
@@ -538,12 +602,12 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
 
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
-        if (cornerDrag != CORNER_NONE) {
+        if (isCornerDragging()) {
             updateCornerDrag(mouseX, mouseY);
             return true;
         }
         if (dragging) {
-            updatePreview(colAt(mouseX), rowAt(mouseY));
+            updatePreview(mouseX, mouseY);
             return true;
         }
         if (shifting) {
@@ -555,10 +619,11 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
 
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
-        if (dragging || shifting || cornerDrag != CORNER_NONE) {
+        if (dragging || shifting || isCornerDragging()) {
             dragging = false;
             shifting = false;
-            cornerDrag = CORNER_NONE;
+            cornerDragCol = EDGE_NONE;
+            cornerDragRow = EDGE_NONE;
             commitSize();
             return true;
         }
@@ -571,7 +636,7 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
         if (event.button() == 0 && insideGrid(event.x(), event.y())) {
             if (tryBeginCornerDrag(event.x(), event.y()))
                 return true;
-            beginGesture(event.x(), event.y());
+            beginGesture(event.x(), event.y(), doubleClick);
             return true;
         }
         return super.mouseClicked(event, doubleClick);
@@ -579,12 +644,12 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
 
     @Override
     public boolean mouseDragged(net.minecraft.client.input.MouseButtonEvent event, double dragX, double dragY) {
-        if (cornerDrag != CORNER_NONE) {
+        if (isCornerDragging()) {
             updateCornerDrag(event.x(), event.y());
             return true;
         }
         if (dragging) {
-            updatePreview(colAt(event.x()), rowAt(event.y()));
+            updatePreview(event.x(), event.y());
             return true;
         }
         if (shifting) {
@@ -596,10 +661,11 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
 
     @Override
     public boolean mouseReleased(net.minecraft.client.input.MouseButtonEvent event) {
-        if (dragging || shifting || cornerDrag != CORNER_NONE) {
+        if (dragging || shifting || isCornerDragging()) {
             dragging = false;
             shifting = false;
-            cornerDrag = CORNER_NONE;
+            cornerDragCol = EDGE_NONE;
+            cornerDragRow = EDGE_NONE;
             commitSize();
             return true;
         }
@@ -607,12 +673,19 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
     }
     *///?}
 
-    // Two ways to click inside the grid (after #tryBeginCornerDrag has already had first refusal on the two
-    // corner handles): clicking anywhere inside the current selection - the blue anchor square included -
-    // starts a half-block-precision shift of the whole selection (#updateShift); clicking outside the
-    // selection entirely starts a fresh resize drag (#updatePreview). Not version-split itself, called from
-    // both mouseClicked bodies above.
-    private void beginGesture(double mouseX, double mouseY) {
+    // Three ways to click inside the grid (after #tryBeginCornerDrag has already had first refusal on the
+    // two named corner handles): a DOUBLE click anywhere jump-grabs whichever corner of the current
+    // selection is nearest (#beginNearestCornerDrag - checked first, applies whether the click landed
+    // inside or outside the selection); otherwise, a single click inside the current selection - the blue
+    // anchor square included - starts a half-block-precision shift of the whole selection (#updateShift),
+    // while a single click outside it starts a fresh resize drag (#updatePreview) - "si hors sélection, un
+    // clique simple suffit" (live request). Not version-split itself, called from both mouseClicked bodies
+    // above.
+    private void beginGesture(double mouseX, double mouseY, boolean doubleClick) {
+        if (doubleClick) {
+            beginNearestCornerDrag(mouseX, mouseY);
+            return;
+        }
         int col = Math.max(-maxBlocks, Math.min(maxBlocks, colAt(mouseX)));
         int row = Math.max(-maxBlocks, Math.min(maxBlocks, rowAt(mouseY)));
         if (insideSelection(col, row)) {
@@ -625,9 +698,9 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
             shiftBasePosRow = previewPosRow;
         } else {
             dragging = true;
-            dragStartCol = col;
-            dragStartRow = row;
-            updatePreview(col, row);
+            dragStartHalfCol = clampHalf(halfColAt(mouseX));
+            dragStartHalfRow = clampHalf(halfRowAt(mouseY));
+            updatePreview(mouseX, mouseY);
         }
     }
 
@@ -639,7 +712,7 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
     // rendered after that sync packet lands self-corrects automatically, and also keeps satisfying "Grid
     // should keep in memory the size and display it by default" if the size changes from elsewhere.
     private void syncFromMenuIfIdle() {
-        if (dragging || shifting || cornerDrag != CORNER_NONE)
+        if (dragging || shifting || isCornerDragging())
             return;
         screenToPreview();
     }
