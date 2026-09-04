@@ -1,5 +1,6 @@
 package fr.lordfinn.crazyphone.client.gui.components;
 
+import fr.lordfinn.crazyphone.client.EmojiShortcodes;
 import fr.lordfinn.crazyphone.init.ModItems;
 import fr.lordfinn.crazyphone.utils.Contact;
 import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
@@ -151,7 +152,7 @@ public class MessageDisplayManager {
             x,
             0, // temp y, updated in render
             width,
-            Component.literal(bubbleText),
+            EmojiShortcodes.styleForDisplay(bubbleText),
             scale,
             (!isSender ? 0xff000000 : 0xffffffff),
             (transparentBackground ? 0x00ffffff : (!isSender ? 0xccfafafa : 0xcc0084ff))

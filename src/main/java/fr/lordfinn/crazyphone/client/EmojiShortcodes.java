@@ -3,6 +3,9 @@ package fr.lordfinn.crazyphone.client;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -11,8 +14,10 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -144,6 +149,8 @@ public final class EmojiShortcodes {
     }
 
     private static volatile Map<String, String> shortcodes;
+    private static volatile Set<String> emojiValues;
+    private static volatile int maxEmojiValueLength = 1;
 
     private EmojiShortcodes() {
     }
@@ -160,6 +167,75 @@ public final class EmojiShortcodes {
         text = applyPattern(text, SHORTCODE_PATTERN, map::get);
         text = applyPattern(text, EMOTICON_PATTERN, match -> map.get(EMOTICON_SHORTCODES.get(match)));
         return text;
+    }
+
+    /** Builds a display {@link Component} for an already-converted message (see {@link #replace}) where
+     * every run matching a known Twemoji glyph gets an explicit white color style, so it renders in its own
+     * true colors regardless of the surrounding bubble's text color - Twemoji glyphs are pre-rendered color
+     * images, not flat glyphs meant to be tinted the way ordinary text is, and a dark-text bubble's own color
+     * would otherwise multiply them down to a black silhouette (live-reported: the exact same emoji renders
+     * correctly in a white-text bubble and as solid black in a black-text one - see MessageDisplayManager's
+     * per-sender text color). Plain-text runs are left with no explicit style, so they still inherit whatever
+     * default color the caller's own drawString(...) call passes for the rest of the line - {@link Font}
+     * only falls back to that default for characters with no style color of their own, so mixing styled and
+     * unstyled runs in one Component is exactly how vanilla's own colored-text-within-a-line already works. */
+    public static Component styleForDisplay(String text) {
+        if (text == null || text.isEmpty())
+            return Component.empty();
+        Set<String> values = emojiValues();
+        if (values.isEmpty())
+            return Component.literal(text);
+        MutableComponent result = Component.empty();
+        StringBuilder plain = new StringBuilder();
+        int i = 0;
+        int length = text.length();
+        while (i < length) {
+            String match = null;
+            int maxLen = Math.min(maxEmojiValueLength, length - i);
+            for (int candidateLen = maxLen; candidateLen >= 1; candidateLen--) {
+                String candidate = text.substring(i, i + candidateLen);
+                if (values.contains(candidate)) {
+                    match = candidate;
+                    break;
+                }
+            }
+            if (match != null) {
+                if (!plain.isEmpty()) {
+                    result.append(Component.literal(plain.toString()));
+                    plain.setLength(0);
+                }
+                result.append(Component.literal(match).withStyle(style -> style.withColor(0xFFFFFF)));
+                i += match.length();
+            } else {
+                plain.append(text.charAt(i));
+                i++;
+            }
+        }
+        if (!plain.isEmpty())
+            result.append(Component.literal(plain.toString()));
+        return result;
+    }
+
+    // Every distinct glyph value the bundled index can produce, plus the longest one's length (in UTF-16
+    // chars - some entries are surrogate pairs, a few reportedly longer multi-codepoint sequences) so
+    // styleForDisplay can bound its greedy longest-match search instead of guessing a fixed size.
+    private static Set<String> emojiValues() {
+        Set<String> loaded = emojiValues;
+        if (loaded == null) {
+            synchronized (EmojiShortcodes.class) {
+                loaded = emojiValues;
+                if (loaded == null) {
+                    Map<String, String> map = shortcodes();
+                    Set<String> values = new HashSet<>(map.values());
+                    int max = 1;
+                    for (String value : values)
+                        max = Math.max(max, value.length());
+                    maxEmojiValueLength = max;
+                    emojiValues = loaded = values;
+                }
+            }
+        }
+        return loaded;
     }
 
     /** Live-typing hook: called right after the player types a space, with everything typed before that
