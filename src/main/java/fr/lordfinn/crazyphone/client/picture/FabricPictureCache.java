@@ -25,6 +25,7 @@ import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/;
 
 import fr.lordfinn.crazyphone.Config;
+import fr.lordfinn.crazyphone.network.CrazyPhoneClearPictureCachePacket;
 import fr.lordfinn.crazyphone.network.CrazyPhonePictureRequestPacket;
 import fr.lordfinn.crazyphone.utils.NetworkAccess;
 import fr.lordfinn.crazyphone.utils.PhotoResolution;
@@ -182,6 +183,33 @@ public final class FabricPictureCache {
         }
         IN_FLIGHT.clear();
         FAILED.clear();
+    }
+
+    /** Full wipe, on top of what reset() already does - additionally deletes every file under the disk
+     * cache directory, which reset() deliberately leaves alone (see its own doc comment: a photo cached
+     * from one server stays valid on another). This is the explicit "actually purge everything" entry
+     * point, driven by {@link CrazyPhoneClearPictureCachePacket} from the admin-only
+     * {@code /crazyphone cache clear} command - for a stale/corrupted local cache that reset()'s own
+     * per-reconnect clearing wouldn't touch (a bad disk file keeps getting reloaded from disk on every
+     * getOrRequest, reconnect or not). */
+    public static void clearAll() {
+        reset();
+        CompletableFuture.runAsync(() -> {
+            Path dir = Minecraft.getInstance().gameDirectory.toPath().resolve("crazyphone").resolve("photocache");
+            if (!Files.isDirectory(dir))
+                return;
+            try (var files = Files.list(dir)) {
+                files.forEach(file -> {
+                    try {
+                        Files.deleteIfExists(file);
+                    } catch (IOException e) {
+                        LOGGER.warn("Failed to delete disk-cached file {}", file, e);
+                    }
+                });
+            } catch (IOException e) {
+                LOGGER.warn("Failed to list photo disk cache directory {}", dir, e);
+            }
+        }, DISK_IO);
     }
 
     public static void onBatchReceived(List<fr.lordfinn.crazyphone.network.CrazyPhonePictureResponsePacket.Entry> entries) {

@@ -34,6 +34,7 @@ package fr.lordfinn.crazyphone.fabric;
         fr.lordfinn.crazyphone.network.CrazyPhoneGivePhotoItemPacket.registerFabricType();
         fr.lordfinn.crazyphone.network.CrazyPhoneMyPhotosActionMessage.registerFabricType();
         fr.lordfinn.crazyphone.network.CrazyPhonePictureResponsePacket.registerFabricType();
+        fr.lordfinn.crazyphone.network.CrazyPhoneClearPictureCachePacket.registerFabricType();
         fr.lordfinn.crazyphone.network.ConversationRequestPacket.registerFabricType();
         fr.lordfinn.crazyphone.network.ConversationResponsePacket.registerFabricType();
         fr.lordfinn.crazyphone.network.CrazyPhoneCallActionMessage.registerFabricType();
@@ -55,6 +56,7 @@ package fr.lordfinn.crazyphone.fabric;
         fr.lordfinn.crazyphone.network.CrazyPhoneNewMessageNotificationPacket.registerFabricClientReceiver();
         fr.lordfinn.crazyphone.network.UpdateContactInfoMessage.registerFabricClientReceiver();
         fr.lordfinn.crazyphone.network.CrazyPhonePictureResponsePacket.registerFabricClientReceiver();
+        fr.lordfinn.crazyphone.network.CrazyPhoneClearPictureCachePacket.registerFabricClientReceiver();
         fr.lordfinn.crazyphone.network.ConversationResponsePacket.registerFabricClientReceiver();
     }
 

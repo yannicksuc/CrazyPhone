@@ -61,6 +61,8 @@
   "command.crazyphone.state_disabled": "désactivée",
   "command.crazyphone.feature_status_line": "%s : ",
   "command.crazyphone.feature_now": "%s est maintenant ",
+  "command.crazyphone.cache_cleared": "Cache photo local de %s vidé.",
+  "command.crazyphone.cache_clear_needs_player": "Exécute cette commande en tant que joueur, ou précise-en un : /crazyphone cache clear <joueur>",
 
   "message.crazyphone.vote_removed": "✅ Le vote du numéro %s a été supprimé.",
   "message.crazyphone.vote_not_found": "ℹ️ Le numéro %s n'a pas voté.",

@@ -296,6 +296,7 @@ sourceSets.main {
             "fr/lordfinn/crazyphone/network/CrazyPhoneSelfiePoseSyncPacket.java",
             "fr/lordfinn/crazyphone/network/CrazyPhonePictureRequestPacket.java",
             "fr/lordfinn/crazyphone/network/CrazyPhonePictureResponsePacket.java",
+            "fr/lordfinn/crazyphone/network/CrazyPhoneClearPictureCachePacket.java",
             "fr/lordfinn/crazyphone/network/CrazyPhoneGivePhotoItemPacket.java",
             "fr/lordfinn/crazyphone/network/CrazyPhoneMyPhotosActionMessage.java",
             "fr/lordfinn/crazyphone/world/inventory/CrazyPhoneMyPhotosScreenMenu.java",

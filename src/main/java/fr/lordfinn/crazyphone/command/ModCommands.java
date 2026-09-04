@@ -5,6 +5,7 @@ import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
 
 //? if neoforge {
@@ -25,15 +26,19 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.SharedSuggestionProvider;
+import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 
 import fr.lordfinn.crazyphone.FeatureFlag;
 import fr.lordfinn.crazyphone.data.PhoneRegistrySavedData;
+import fr.lordfinn.crazyphone.network.CrazyPhoneClearPictureCachePacket;
 import fr.lordfinn.crazyphone.network.FeatureFlagSyncPacket;
+import fr.lordfinn.crazyphone.utils.NetworkAccess;
 //? if neoforge {
 import fr.lordfinn.crazyphone.procedures.CrazyPhoneAddMayorProgramFromMainHandProcedure;
 //?}
@@ -72,6 +77,7 @@ import fr.lordfinn.crazyphone.procedures.VoteForMayorProcedure;
  * /crazyphone mayor candidate add &lt;number&gt;      (level 4)
  * /crazyphone mayor candidate remove &lt;number&gt;   (level 4)
  * /crazyphone mayor candidate program &lt;number&gt;  (level 4 - candidate's program poster from the item in hand)
+ * /crazyphone cache clear [player]              (level 4 - defaults to the command's own sender)
  * </pre>
  */
 //? if neoforge {
@@ -161,7 +167,12 @@ public class ModCommands {
                                 .then(Commands.literal("clear").requires(permLevel(4))
                                         .then(Commands.argument("phoneNumber", IntegerArgumentType.integer(100, 999)).suggests(REGISTERED_NUMBERS)
                                                 .executes(ModCommands::mayorVotesClear))))
-                        .then(candidate));
+                        .then(candidate))
+                .then(Commands.literal("cache").requires(permLevel(4))
+                        .then(Commands.literal("clear")
+                                .executes(ModCommands::cacheClearSelf)
+                                .then(Commands.argument("player", EntityArgument.player())
+                                        .executes(ModCommands::cacheClearPlayer))));
     }
 
     // --- phones ---
@@ -284,6 +295,33 @@ public class ModCommands {
     //?}
     // No Fabric mayorCandidateProgram - the "candidate program" leaf isn't registered on Fabric at all (see
     // buildCommandTree's own note), so this method would be unreachable there anyway.
+
+    // --- cache ---
+
+    private static int cacheClearSelf(CommandContext<CommandSourceStack> arguments) {
+        // No player argument given - only meaningful for a real player running it on themselves; a
+        // console/command-block sender has no client-side cache to clear and must name someone explicitly.
+        if (!(arguments.getSource().getEntity() instanceof ServerPlayer player)) {
+            arguments.getSource().sendFailure(Component.translatable("command.crazyphone.cache_clear_needs_player"));
+            return 0;
+        }
+        return clearCacheFor(arguments.getSource(), player);
+    }
+
+    private static int cacheClearPlayer(CommandContext<CommandSourceStack> arguments) throws CommandSyntaxException {
+        ServerPlayer player = EntityArgument.getPlayer(arguments, "player");
+        return clearCacheFor(arguments.getSource(), player);
+    }
+
+    /** Backing logic for both {@code /crazyphone cache clear} forms - tells the target player's own client
+     * to wipe {@link fr.lordfinn.crazyphone.client.picture.FabricPictureCache} (RAM and disk both, see its
+     * own {@code clearAll()} doc comment), for troubleshooting a stuck/corrupted local photo cache. */
+    private static int clearCacheFor(CommandSourceStack source, ServerPlayer player) {
+        NetworkAccess.sendToPlayer(player, new CrazyPhoneClearPictureCachePacket());
+        source.sendSuccess(() -> Component.translatable("command.crazyphone.cache_cleared", player.getName())
+                .withStyle(ChatFormatting.GREEN), true);
+        return 1;
+    }
 
     // --- shared helpers ---
 
