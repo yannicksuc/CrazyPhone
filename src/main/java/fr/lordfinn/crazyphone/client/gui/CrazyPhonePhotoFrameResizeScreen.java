@@ -374,27 +374,34 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
     // you didn't change anything for images placed on walls it was working before" / "the bugs was towards
     // images placed on floor" - live request) - reverted back to exactly this.
     //
-    // FLOOR/CEILING: FIXED, NOT dependent on CrazyPhonePhotoFrameEntity#rotation() at all, and both use the
-    // EXACT SAME transform - a genuinely different conclusion from an earlier round of this same comment,
-    // worth spelling out why. Rotation only ever feeds CrazyPhonePhotoFrameRenderer#uvForCorner, which
-    // decides which TEXTURE pixel lands at which SCREEN corner of the slot - it never touches the slot's own
-    // local x/y extents (drawImageQuad's w/h, straight from widthBlocks()/heightBlocks(), i.e. straight from
-    // U/V) or the face's own pose-stack rotation that maps those local extents onto world X/Z. That's
-    // exactly what the renderer's own doc comment already says ("rotation... is NOT a swap of which world
-    // axis width/height bind to") - U is always local-X/world-X-ish and V is always local-Y/world-Z-ish for
-    // both DOWN and UP, for every rotation value, full stop. An earlier round tried making this grid track
-    // rotation anyway (on the theory that "up in the grid" should follow "up in the currently-displayed
-    // picture"), live-confirmed as the explicitly wanted behavior at the time - but two live floor tests at
-    // DIFFERENT placement-facings (seeding genuinely different rotation() values through tryPlace) then
-    // showed the IDENTICAL up/down/left/right symptom pattern regardless of rotation, which is exactly what
-    // you'd see if U/V truly can't be made to track rotation this way - confirming the renderer's own
-    // documented design over the original intuition. What actually needed fixing was simpler than a
-    // per-rotation table: just V's own sign, the same one flip that also happens to make DOWN identical to
-    // UP's own already-confirmed value instead of its deliberately-mirrored opposite.
+    // FLOOR/CEILING: FIXED, NOT dependent on CrazyPhonePhotoFrameEntity#rotation() at all - rotation only
+    // ever feeds CrazyPhonePhotoFrameRenderer#uvForCorner, which decides which TEXTURE pixel lands at which
+    // SCREEN corner of the slot; it never touches the slot's own local x/y extents (drawImageQuad's w/h,
+    // straight from widthBlocks()/heightBlocks(), i.e. straight from U/V) or the face's own pose-stack
+    // rotation that maps those local extents onto world X/Z - exactly what the renderer's own doc comment
+    // already says ("rotation... is NOT a swap of which world axis width/height bind to"). Confirmed live,
+    // twice, by two floor tests at genuinely different placement-facings (different seeded rotation()
+    // values via tryPlace) showing the IDENTICAL up/down/left/right symptom pattern regardless of rotation -
+    // exactly what you'd see if U/V structurally can't track rotation, which is why this stays fixed rather
+    // than a per-rotation table (an earlier round tried the latter, live-requested at the time, before this
+    // rotation-independence was confirmed).
+    //
+    // DOWN and UP take OPPOSITE signV (not the same value - an earlier round briefly unified them after
+    // misreading stale test data, which was wrong: "quand j'augmente vers le haut... ça va vers le bas,
+    // donc vers le sud... ce n'est pas bon" - live request, confirmed live against the CURRENT code, twice,
+    // at two different rotations, forcing floor's V back to the opposite of ceiling's own independently
+    // -confirmed value). This actually has a clean explanation: DOWN's pose-stack rotation is Axis.XP(+90),
+    // UP's is Axis.XP(-90) - opposite angles about the SAME axis (X) leave that axis (which becomes U)
+    // unaffected in both cases, but flip the OTHER in-plane axis (Z, which becomes V) between the two,
+    // since a +θ and a -θ rotation of the same plane are mirror images of each other. U staying identical
+    // while only V flips isn't a coincidence, it's exactly what opposite-signed rotations about a shared
+    // axis are expected to do.
     private int[] axisTransform() {
         Direction face = menu.attachFace();
-        if (face == Direction.UP || face == Direction.DOWN)
+        if (face == Direction.UP)
             return new int[]{0, 1, -1};
+        if (face == Direction.DOWN)
+            return new int[]{0, 1, 1};
         int signU = (face == Direction.NORTH || face == Direction.EAST) ? -1 : 1;
         return new int[]{0, signU, -1};
     }
