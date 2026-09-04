@@ -35,11 +35,13 @@ import java.util.UUID;
 /**
  * The flat "My Photos" gallery - every photo this phone owns, no album/folder layer above it (see
  * {@link CrazyPhoneMyPhotosScreenMenu}). Visual design (3x3 Instagram-style grid, center-crop thumbnails,
- * amber selection border, row-scroll, Delete/Take/Send action bar) is an original re-implementation of this
- * mod's own pre-Camera-mod-removal picture grid, ported to render through {@link FabricPictureCache} instead
- * of a real container of ItemStacks - there's no Slot/AbstractContainerMenu grid backing this at all
- * anymore, just a plain resolved {@code List<UUID>}, so selection/scroll/rendering all work directly against
- * photo ids instead of slot indices.
+ * amber selection border, Delete/Take/Send action bar) is an original re-implementation of this mod's own
+ * pre-Camera-mod-removal picture grid, ported to render through {@link FabricPictureCache} instead of a real
+ * container of ItemStacks - there's no Slot/AbstractContainerMenu grid backing this at all anymore, just a
+ * plain resolved {@code List<UUID>}, so selection/scroll/rendering all work directly against photo ids
+ * instead of slot indices. Scrolling is continuous pixel movement, scissor-cropped to the grid's own rect
+ * (see renderThumbnails), matching CrazyPhoneConversationScreen's own message-feed scroll rather than
+ * snapping a whole row at a time per wheel tick.
  */
 public class CrazyPhoneMyPhotosScreenScreen extends CrazyPhoneDefaultScreenScreen<CrazyPhoneMyPhotosScreenMenu> {
     private static final HashMap<String, Object> guistate = new HashMap<>();
@@ -48,11 +50,16 @@ public class CrazyPhoneMyPhotosScreenScreen extends CrazyPhoneDefaultScreenScree
     private static final int THUMB_SIZE = 34;
     private static final int THUMB_PITCH = 36;
     private static final int GRID_TOP_Y = 30;
+    private static final int GRID_WIDTH = GRID_COLUMNS * THUMB_PITCH;
+    private static final int GRID_HEIGHT = VISIBLE_ROWS * THUMB_PITCH;
     private static final int SELECTED_BORDER_COLOR = CrazyPhoneColors.ACCENT_YELLOW;
     private static final int SELECTED_INSET = 2;
+    // Matches CrazyPhoneConversationScreen's own message-feed scroll step - continuous pixel scrolling
+    // (scissor-cropped, see renderThumbnails) instead of snapping a whole row at a time per wheel tick.
+    private static final int SCROLL_STEP = 10;
 
     private final Set<UUID> selectedPhotoIds = new HashSet<>();
-    private int scrollRowOffset = 0;
+    private int scrollPosition = 0;
     private Button buttonDelete;
     private Button buttonTake;
     private Button buttonSend;
@@ -98,41 +105,68 @@ public class CrazyPhoneMyPhotosScreenScreen extends CrazyPhoneDefaultScreenScree
     }
     //?}
 
-    private int maxRowOffset() {
+    private int maxScrollPosition() {
         int rowCount = (menu.photoIds.size() + GRID_COLUMNS - 1) / GRID_COLUMNS;
-        return Math.max(0, rowCount - VISIBLE_ROWS);
+        return Math.max(0, rowCount * THUMB_PITCH - GRID_HEIGHT);
     }
 
-    // Warms the cache for the visible grid plus one row of lookahead below it, so scrolling one row down
-    // usually finds its thumbnails already resolved (or at least already in flight as one shared batch
-    // request) instead of each of that row's photos triggering its own separate fetch the moment
-    // renderThumbnails first asks for it. Called once up front from init() and again every time scrolling
-    // actually changes which row is at the top.
+    /** Row-index (not pixel) of the topmost row any part of which is currently visible - shared by
+     * rendering, hit-testing and prefetch so all three agree on exactly the same window as scrollPosition
+     * moves continuously instead of snapping row-to-row. */
+    private int topVisibleRow() {
+        return scrollPosition / THUMB_PITCH;
+    }
+
+    // Warms the cache for every row that's even partially on screen plus one full row of lookahead below,
+    // so scrolling usually finds thumbnails already resolved (or at least already in flight as one shared
+    // batch request) instead of each photo triggering its own separate fetch the moment renderThumbnails
+    // first asks for it. Called once up front from init() and again on every scroll tick.
     private void prefetchVisible() {
-        int firstIndex = scrollRowOffset * GRID_COLUMNS;
-        int lastIndex = Math.min(menu.photoIds.size(), firstIndex + GRID_COLUMNS * (VISIBLE_ROWS + 1));
+        int firstIndex = topVisibleRow() * GRID_COLUMNS;
+        int lastIndex = Math.min(menu.photoIds.size(), firstIndex + GRID_COLUMNS * (VISIBLE_ROWS + 2));
         if (firstIndex >= lastIndex)
             return;
         PhotoResolution resolution = fr.lordfinn.crazyphone.ClientConfig.phonePhotoListPixelated ? PhotoResolution.THUMBNAIL : PhotoResolution.FULL;
         FabricPictureCache.prefetch(menu.photoIds.subList(firstIndex, lastIndex), resolution);
     }
 
+    private int gridLeft() {
+        return this.leftPos + fr.lordfinn.crazyphone.world.inventory.CrazyPhoneDefaultScreenMenu.HEADER_CONTENT_START_X;
+    }
+
+    private int gridTop() {
+        return this.topPos + GRID_TOP_Y;
+    }
+
+    private boolean isWithinGridCropZone(double mouseX, double mouseY) {
+        int x0 = gridLeft(), y0 = gridTop();
+        return mouseX >= x0 && mouseX < x0 + GRID_WIDTH && mouseY >= y0 && mouseY < y0 + GRID_HEIGHT;
+    }
+
+    // Continuous pixel scroll (see mouseScrolled) instead of snapping a whole row at a time - drawn one row
+    // of overscan past the bottom of the viewport so a partially-scrolled-in row isn't missing until it's
+    // fully aligned, then scissor-cropped to the grid's own rect (same technique as
+    // CrazyPhoneConversationScreen's message feed) so that overscan row - and any row scrolled half off the
+    // top - is cleanly clipped instead of spilling into the header/action-bar areas above/below the grid.
     private void renderThumbnails(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics) {
-        int firstIndex = scrollRowOffset * GRID_COLUMNS;
-        for (int visible = 0; visible < GRID_COLUMNS * VISIBLE_ROWS; visible++) {
-            int index = firstIndex + visible;
-            if (index >= menu.photoIds.size())
-                break;
+        int gridLeft = gridLeft(), gridTop = gridTop();
+        guiGraphics.enableScissor(gridLeft, gridTop, gridLeft + GRID_WIDTH, gridTop + GRID_HEIGHT);
+
+        int topRow = topVisibleRow();
+        int firstIndex = topRow * GRID_COLUMNS;
+        int lastIndex = Math.min(menu.photoIds.size(), firstIndex + GRID_COLUMNS * (VISIBLE_ROWS + 1));
+        PhotoResolution resolution = fr.lordfinn.crazyphone.ClientConfig.phonePhotoListPixelated ? PhotoResolution.THUMBNAIL : PhotoResolution.FULL;
+        for (int index = firstIndex; index < lastIndex; index++) {
             UUID photoId = menu.photoIds.get(index);
-            PhotoResolution resolution = fr.lordfinn.crazyphone.ClientConfig.phonePhotoListPixelated ? PhotoResolution.THUMBNAIL : PhotoResolution.FULL;
             FabricPictureCache.CachedTexture texture = FabricPictureCache.getOrRequest(photoId, resolution);
             if (texture == null)
                 continue;
 
-            int col = visible % GRID_COLUMNS;
-            int row = visible / GRID_COLUMNS;
-            int x = this.leftPos + fr.lordfinn.crazyphone.world.inventory.CrazyPhoneDefaultScreenMenu.HEADER_CONTENT_START_X + col * THUMB_PITCH;
-            int y = this.topPos + GRID_TOP_Y + row * THUMB_PITCH;
+            int rel = index - firstIndex;
+            int col = rel % GRID_COLUMNS;
+            int row = topRow + rel / GRID_COLUMNS;
+            int x = gridLeft + col * THUMB_PITCH;
+            int y = gridTop + row * THUMB_PITCH - scrollPosition;
 
             boolean selected = selectedPhotoIds.contains(photoId);
             if (selected) {
@@ -143,6 +177,8 @@ public class CrazyPhoneMyPhotosScreenScreen extends CrazyPhoneDefaultScreenScree
                 drawCroppedThumbnail(guiGraphics, x, y, THUMB_SIZE, THUMB_SIZE, texture);
             }
         }
+
+        guiGraphics.disableScissor();
     }
 
     /** "Cover" crop: always fills the full width x height target - the source UV rect is shrunk to the
@@ -186,15 +222,19 @@ public class CrazyPhoneMyPhotosScreenScreen extends CrazyPhoneDefaultScreenScree
     private boolean mouseClickedImpl(double mouseX, double mouseY, int button) {
         if (button != 0 && button != 1)
             return false;
-        int firstIndex = scrollRowOffset * GRID_COLUMNS;
-        for (int visible = 0; visible < GRID_COLUMNS * VISIBLE_ROWS; visible++) {
-            int index = firstIndex + visible;
-            if (index >= menu.photoIds.size())
-                break;
-            int col = visible % GRID_COLUMNS;
-            int row = visible / GRID_COLUMNS;
-            int x = this.leftPos + fr.lordfinn.crazyphone.world.inventory.CrazyPhoneDefaultScreenMenu.HEADER_CONTENT_START_X + col * THUMB_PITCH;
-            int y = this.topPos + GRID_TOP_Y + row * THUMB_PITCH;
+        if (!isWithinGridCropZone(mouseX, mouseY))
+            return false;
+
+        int gridLeft = gridLeft(), gridTop = gridTop();
+        int topRow = topVisibleRow();
+        int firstIndex = topRow * GRID_COLUMNS;
+        int lastIndex = Math.min(menu.photoIds.size(), firstIndex + GRID_COLUMNS * (VISIBLE_ROWS + 1));
+        for (int index = firstIndex; index < lastIndex; index++) {
+            int rel = index - firstIndex;
+            int col = rel % GRID_COLUMNS;
+            int row = topRow + rel / GRID_COLUMNS;
+            int x = gridLeft + col * THUMB_PITCH;
+            int y = gridTop + row * THUMB_PITCH - scrollPosition;
             if (mouseX < x || mouseX >= x + THUMB_SIZE || mouseY < y || mouseY >= y + THUMB_SIZE)
                 continue;
 
@@ -214,9 +254,9 @@ public class CrazyPhoneMyPhotosScreenScreen extends CrazyPhoneDefaultScreenScree
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-        int newOffset = Math.max(0, Math.min(maxRowOffset(), scrollRowOffset - (int) Math.signum(scrollY)));
-        if (newOffset != scrollRowOffset) {
-            scrollRowOffset = newOffset;
+        int newPosition = Math.max(0, Math.min(maxScrollPosition(), scrollPosition - (int) (scrollY * SCROLL_STEP)));
+        if (newPosition != scrollPosition) {
+            scrollPosition = newPosition;
             prefetchVisible();
             return true;
         }
