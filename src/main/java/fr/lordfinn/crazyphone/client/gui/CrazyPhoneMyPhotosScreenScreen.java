@@ -103,6 +103,20 @@ public class CrazyPhoneMyPhotosScreenScreen extends CrazyPhoneDefaultScreenScree
         return Math.max(0, rowCount - VISIBLE_ROWS);
     }
 
+    // Warms the cache for the visible grid plus one row of lookahead below it, so scrolling one row down
+    // usually finds its thumbnails already resolved (or at least already in flight as one shared batch
+    // request) instead of each of that row's photos triggering its own separate fetch the moment
+    // renderThumbnails first asks for it. Called once up front from init() and again every time scrolling
+    // actually changes which row is at the top.
+    private void prefetchVisible() {
+        int firstIndex = scrollRowOffset * GRID_COLUMNS;
+        int lastIndex = Math.min(menu.photoIds.size(), firstIndex + GRID_COLUMNS * (VISIBLE_ROWS + 1));
+        if (firstIndex >= lastIndex)
+            return;
+        PhotoResolution resolution = fr.lordfinn.crazyphone.ClientConfig.phonePhotoListPixelated ? PhotoResolution.THUMBNAIL : PhotoResolution.FULL;
+        FabricPictureCache.prefetch(menu.photoIds.subList(firstIndex, lastIndex), resolution);
+    }
+
     private void renderThumbnails(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics) {
         int firstIndex = scrollRowOffset * GRID_COLUMNS;
         for (int visible = 0; visible < GRID_COLUMNS * VISIBLE_ROWS; visible++) {
@@ -203,6 +217,7 @@ public class CrazyPhoneMyPhotosScreenScreen extends CrazyPhoneDefaultScreenScree
         int newOffset = Math.max(0, Math.min(maxRowOffset(), scrollRowOffset - (int) Math.signum(scrollY)));
         if (newOffset != scrollRowOffset) {
             scrollRowOffset = newOffset;
+            prefetchVisible();
             return true;
         }
         return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
@@ -233,6 +248,7 @@ public class CrazyPhoneMyPhotosScreenScreen extends CrazyPhoneDefaultScreenScree
             this.addRenderableWidget(buttonTake);
         }
         updateActionButtonsState();
+        prefetchVisible();
     }
 
     private void deleteSelected() {
