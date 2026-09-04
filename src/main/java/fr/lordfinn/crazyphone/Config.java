@@ -44,7 +44,7 @@ public class Config {
 
     private static final ModConfigSpec.IntValue PHOTO_THUMBNAIL_PIXEL_HEIGHT = BUILDER
             .comment("Target height in pixels for a photo's low-quality preview (thumbnails, chat bubbles) - lower looks more like pixel art, higher looks closer to the full photo. 0 disables the separate preview entirely (the full photo is reused as-is, so nothing extra is stored). If the photo's own height is already shorter than this, no resize happens either - a photo is never upscaled for its preview.")
-            .defineInRange("photoThumbnailPixelHeight", 16, 0, 256);
+            .defineInRange("photoThumbnailPixelHeight", 14, 0, 256);
 
     private static final ModConfigSpec.IntValue PHOTO_FULL_MAX_DIMENSION = BUILDER
             .comment("Maximum size in pixels, on the longer side, for a photo's full-quality version (fetched on demand when a photo is opened full-size) - independent of the player's actual render resolution. Higher looks sharper but costs more storage/network per photo.")
@@ -213,7 +213,7 @@ public class Config {
     public static int maxMessagesSentPerRequest = 100;
     public static int maxImagesStoredPerConversation = 50;
     public static int maxPhotosStoredPerOwner = 300;
-    public static int photoThumbnailPixelHeight = 16;
+    public static int photoThumbnailPixelHeight = 14;
     public static int photoFullMaxDimension = 1024;
     public static int photoFullMaxUploadBytes = 4_000_000;
     public static boolean mayorElectionFeatureEnabled = true;
