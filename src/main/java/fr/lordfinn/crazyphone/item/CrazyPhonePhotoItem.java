@@ -100,8 +100,10 @@ public class CrazyPhonePhotoItem extends Item {
         PhotoFrameData frameData = PhotoFrameData.fromStack(stack);
         int widthUnits = frameData != null ? frameData.widthUnits() : fr.lordfinn.crazyphone.entity.CrazyPhonePhotoFrameEntity.DEFAULT_SIZE_UNITS;
         int heightUnits = frameData != null ? frameData.heightUnits() : fr.lordfinn.crazyphone.entity.CrazyPhonePhotoFrameEntity.DEFAULT_SIZE_UNITS;
+        net.minecraft.world.item.component.DyedItemColor dyed = stack.get(net.minecraft.core.component.DataComponents.DYED_COLOR);
+        int borderRgb = dyed != null ? dyed.rgb() : 0xFFFFFF;
         fr.lordfinn.crazyphone.entity.CrazyPhonePhotoFrameEntity entity = fr.lordfinn.crazyphone.entity.CrazyPhonePhotoFrameEntity.tryPlace(
-                world, context.getClickedPos(), context.getClickedFace(), context.getHorizontalDirection(), photoData, new PhotoFrameData(widthUnits, heightUnits));
+                world, context.getClickedPos(), context.getClickedFace(), context.getHorizontalDirection(), photoData, new PhotoFrameData(widthUnits, heightUnits), borderRgb);
         if (entity == null)
             return net.minecraft.world.InteractionResult.FAIL;
         world.addFreshEntity(entity);

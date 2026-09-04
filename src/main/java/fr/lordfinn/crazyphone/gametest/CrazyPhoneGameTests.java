@@ -427,7 +427,8 @@ public class CrazyPhoneGameTests {
                 helper.getLevel(), floorPos, net.minecraft.core.Direction.UP, net.minecraft.core.Direction.WEST, photoData,
                 new fr.lordfinn.crazyphone.utils.PhotoFrameData(
                         fr.lordfinn.crazyphone.entity.CrazyPhonePhotoFrameEntity.DEFAULT_SIZE_UNITS,
-                        fr.lordfinn.crazyphone.entity.CrazyPhonePhotoFrameEntity.DEFAULT_SIZE_UNITS));
+                        fr.lordfinn.crazyphone.entity.CrazyPhonePhotoFrameEntity.DEFAULT_SIZE_UNITS),
+                0xFFFFFF);
 
         helper.assertTrue(entity != null, "tryPlace must succeed against a solid floor block");
         helper.assertTrue(entity.attachPos.equals(floorPos), "the entity must remember the exact block it was placed against");
@@ -461,7 +462,7 @@ public class CrazyPhoneGameTests {
         int resizedHeight = fr.lordfinn.crazyphone.entity.CrazyPhonePhotoFrameEntity.DEFAULT_SIZE_UNITS * 3;
         fr.lordfinn.crazyphone.entity.CrazyPhonePhotoFrameEntity entity = fr.lordfinn.crazyphone.entity.CrazyPhonePhotoFrameEntity.tryPlace(
                 helper.getLevel(), floorPos, net.minecraft.core.Direction.UP, net.minecraft.core.Direction.NORTH, photoData,
-                new fr.lordfinn.crazyphone.utils.PhotoFrameData(resizedWidth, resizedHeight));
+                new fr.lordfinn.crazyphone.utils.PhotoFrameData(resizedWidth, resizedHeight), 0xFFFFFF);
         helper.assertTrue(entity != null, "sanity: placement must succeed before this test can break it");
         helper.getLevel().addFreshEntity(entity);
 

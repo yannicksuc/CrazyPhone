@@ -105,6 +105,13 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
     // same photo already in the player's inventory - two ItemStacks need identical NBT/components to stack,
     // and a wrong "created" value is exactly that kind of silent mismatch.
     public int createdMinutes = 0;
+    // Not synced (this is a server-only entity class - never reference the client-only
+    // CrazyPhonePhotoItemRenderer from here, even just for its DEFAULT_BORDER_RGB constant) - same reasoning
+    // and same fix shape as createdMinutes right above: the item's own dyed border color (see
+    // CrazyPhonePhotoItemRenderer#borderRgb, 0xFFFFFF = undyed white) has nowhere else to live once placed
+    // as a frame, so it's captured here at placement and restored on dropStack() - otherwise dyeing a photo,
+    // placing it, then breaking it back would silently discard the color.
+    public int borderRgb = 0xFFFFFF;
 
 
     public CrazyPhonePhotoFrameEntity(EntityType<? extends CrazyPhonePhotoFrameEntity> type, Level level) {
@@ -193,7 +200,7 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
      * own role but with the fuller-block requirement deliberately dropped. Returns null if the face can't
      * hold a frame (fully empty shape, e.g. air, or already occupied - see {@link #spaceFree}). */
     public static CrazyPhonePhotoFrameEntity tryPlace(Level level, BlockPos clickedPos, Direction face,
-                                                        Direction placerFacing, PhotoItemData photoData, PhotoFrameData frameData) {
+                                                        Direction placerFacing, PhotoItemData photoData, PhotoFrameData frameData, int borderRgb) {
         BlockState state = level.getBlockState(clickedPos);
         // Any non-empty collision shape on the clicked block counts as attachable - deliberately broader
         // than vanilla item frames (Block#isFaceFull, full-cube-only). A photo can hang off a slab's top,
@@ -226,6 +233,7 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
         entity.entityData.set(DATA_PHOTO_ID, photoData.photoId().toString());
         entity.entityData.set(DATA_OWNER, photoData.owner());
         entity.createdMinutes = photoData.createdMinutes();
+        entity.borderRgb = borderRgb;
         entity.setExtentsRaw(frameData.widthUnits() / 2, frameData.widthUnits() - frameData.widthUnits() / 2,
                 frameData.heightUnits() / 2, frameData.heightUnits() - frameData.heightUnits() / 2);
         entity.setPos(clickedPos.getX() + 0.5, clickedPos.getY() + 0.5, clickedPos.getZ() + 0.5);
@@ -660,6 +668,17 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
     private ItemStack dropStack() {
         ItemStack stack = new ItemStack(ModItems.CRAZY_PHONE_PHOTO.get());
         new PhotoItemData(photoId(), owner(), createdMinutes).writeTo(stack);
+        // Only actually writes the component when genuinely dyed (matches vanilla's own "absent means
+        // undyed" convention for DYED_COLOR - see CrazyPhonePhotoItemRenderer#borderRgb's matching read
+        // side) - an un-dyed frame's dropped stack stays with no DYED_COLOR at all, same as a plain photo
+        // that was never placed.
+        if (borderRgb != 0xFFFFFF) {
+            //? if >=26 {
+            /*stack.set(net.minecraft.core.component.DataComponents.DYED_COLOR, new net.minecraft.world.item.component.DyedItemColor(borderRgb));
+            *///? } else {
+            stack.set(net.minecraft.core.component.DataComponents.DYED_COLOR, new net.minecraft.world.item.component.DyedItemColor(borderRgb, false));
+            //?}
+        }
         return stack;
     }
 
@@ -694,6 +713,7 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
         this.entityData.set(DATA_PHOTO_ID, fr.lordfinn.crazyphone.utils.NbtCompat.getString(tag, "PhotoId"));
         this.entityData.set(DATA_OWNER, fr.lordfinn.crazyphone.utils.NbtCompat.getString(tag, "Owner"));
         createdMinutes = fr.lordfinn.crazyphone.utils.NbtCompat.getInt(tag, "Created", 0);
+        borderRgb = fr.lordfinn.crazyphone.utils.NbtCompat.getInt(tag, "BorderRgb", 0xFFFFFF);
         this.entityData.set(DATA_NEG_U, fr.lordfinn.crazyphone.utils.NbtCompat.getInt(tag, "NegU", DEFAULT_SIZE_UNITS / 2));
         this.entityData.set(DATA_POS_U, fr.lordfinn.crazyphone.utils.NbtCompat.getInt(tag, "PosU", DEFAULT_SIZE_UNITS / 2));
         this.entityData.set(DATA_NEG_V, fr.lordfinn.crazyphone.utils.NbtCompat.getInt(tag, "NegV", DEFAULT_SIZE_UNITS / 2));
@@ -712,6 +732,7 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
         tag.putString("PhotoId", this.entityData.get(DATA_PHOTO_ID));
         tag.putString("Owner", this.entityData.get(DATA_OWNER));
         tag.putInt("Created", createdMinutes);
+        tag.putInt("BorderRgb", borderRgb);
         tag.putInt("NegU", this.entityData.get(DATA_NEG_U));
         tag.putInt("PosU", this.entityData.get(DATA_POS_U));
         tag.putInt("NegV", this.entityData.get(DATA_NEG_V));
@@ -728,6 +749,7 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
         this.entityData.set(DATA_PHOTO_ID, input.getStringOr("PhotoId", ""));
         this.entityData.set(DATA_OWNER, input.getStringOr("Owner", ""));
         createdMinutes = input.getIntOr("Created", 0);
+        borderRgb = input.getIntOr("BorderRgb", 0xFFFFFF);
         this.entityData.set(DATA_NEG_U, input.getIntOr("NegU", DEFAULT_SIZE_UNITS / 2));
         this.entityData.set(DATA_POS_U, input.getIntOr("PosU", DEFAULT_SIZE_UNITS / 2));
         this.entityData.set(DATA_NEG_V, input.getIntOr("NegV", DEFAULT_SIZE_UNITS / 2));
@@ -746,6 +768,7 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
         output.putString("PhotoId", this.entityData.get(DATA_PHOTO_ID));
         output.putString("Owner", this.entityData.get(DATA_OWNER));
         output.putInt("Created", createdMinutes);
+        output.putInt("BorderRgb", borderRgb);
         output.putInt("NegU", this.entityData.get(DATA_NEG_U));
         output.putInt("PosU", this.entityData.get(DATA_POS_U));
         output.putInt("NegV", this.entityData.get(DATA_NEG_V));

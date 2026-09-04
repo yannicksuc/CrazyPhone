@@ -132,6 +132,22 @@ public final class CrazyPhonePhotoItemRenderer {
     // not-in-hand card's own CARD_THICKNESS_HALF, which read as too thick once the border itself was halved.
     private static final float HAND_CARD_THICKNESS_HALF = HAND_FRAME_BORDER / 2f;
 
+    // Undyed default - matches the frame texture's own near-white pixels exactly (a rgb multiply by white is
+    // a no-op), so an un-dyed photo looks identical to before this feature existed. Public so
+    // CrazyPhonePhotoFrameEntity#dropStack can tell "actually dyed" apart from "just never set" when
+    // deciding whether to write DYED_COLOR onto a dropped stack at all.
+    public static final int DEFAULT_BORDER_RGB = 0xFFFFFF;
+
+    // DataComponents.DYED_COLOR / DyedItemColor#rgb() are identical APIs on both 1.21.1 and 26.1 (confirmed
+    // against real decompiled source for both - only DyedItemColor's OTHER field, showInTooltip, was dropped
+    // on 26.1, and this never touches that field), so this needs no stonecutter version gate at all. Reused
+    // by both the <26 render() path and the >=26 ModelImpl#update() path below, plus
+    // CrazyPhonePresentHandGripMixin's own direct renderHandFramedCard() call site.
+    public static int borderRgb(ItemStack stack) {
+        net.minecraft.world.item.component.DyedItemColor dyed = stack.get(net.minecraft.core.component.DataComponents.DYED_COLOR);
+        return dyed != null ? dyed.rgb() : DEFAULT_BORDER_RGB;
+    }
+
     private CrazyPhonePhotoItemRenderer() {
     }
 
@@ -304,10 +320,11 @@ public final class CrazyPhonePhotoItemRenderer {
         }
 
         PhotoItemData data = PhotoItemData.fromStack(stack);
+        int borderRgb = borderRgb(stack);
         if (isHand) {
-            renderHandFramedCard(data, poseStack, bufferSource, packedLight, packedOverlay);
+            renderHandFramedCard(data, poseStack, bufferSource, packedLight, packedOverlay, borderRgb);
         } else {
-            renderFramedCard(data, poseStack, bufferSource, packedLight, packedOverlay);
+            renderFramedCard(data, poseStack, bufferSource, packedLight, packedOverlay, borderRgb);
         }
 
         poseStack.popPose();
@@ -434,6 +451,61 @@ public final class CrazyPhonePhotoItemRenderer {
         *///?}
     }
 
+    // Dyed counterpart of the plain quad() above, for the two flat front/back frame faces that don't go
+    // through slice()/sliceBack() (renderFramedCard/renderFramedCardNew's own front+back quads).
+    private static void quad(VertexConsumer buffer, PoseStack.Pose pose, int light, int overlay, int r, int g, int b,
+                              float x0, float y0, float z0, float u0, float v0,
+                              float x1, float y1, float z1, float u1, float v1,
+                              float x2, float y2, float z2, float u2, float v2,
+                              float x3, float y3, float z3, float u3, float v3,
+                              float nx, float ny, float nz) {
+        tintedQuad(buffer, pose, light, overlay, r, g, b,
+                x0, y0, z0, u0, v0,
+                x1, y1, z1, u1, v1,
+                x2, y2, z2, u2, v2,
+                x3, y3, z3, u3, v3,
+                nx, ny, nz);
+    }
+
+    // Dyed counterparts of slice/sliceBack/edgeQuad below - same geometry/UV math, but through tintedQuad
+    // (the FRAME_TEXTURE-sampling border/edge geometry only; the inset photo quad itself is never tinted, so
+    // its call sites keep using the plain, un-dyed quad()/slice()/etc.).
+    private static void slice(VertexConsumer buffer, PoseStack.Pose pose, int light, int overlay, int r, int g, int b,
+                               float xLeft, float xRight, float yTop, float yBottom, float z,
+                               float uLeft, float uRight, float vTop, float vBottom) {
+        tintedQuad(buffer, pose, light, overlay, r, g, b,
+                xLeft, yTop, z, uLeft, vTop,
+                xLeft, yBottom, z, uLeft, vBottom,
+                xRight, yBottom, z, uRight, vBottom,
+                xRight, yTop, z, uRight, vTop,
+                0, 0, 1);
+    }
+
+    private static void sliceBack(VertexConsumer buffer, PoseStack.Pose pose, int light, int overlay, int r, int g, int b,
+                                   float xLeft, float xRight, float yTop, float yBottom, float z,
+                                   float uLeft, float uRight, float vTop, float vBottom) {
+        tintedQuad(buffer, pose, light, overlay, r, g, b,
+                xRight, yTop, z, uRight, vTop,
+                xRight, yBottom, z, uRight, vBottom,
+                xLeft, yBottom, z, uLeft, vBottom,
+                xLeft, yTop, z, uLeft, vTop,
+                0, 0, -1);
+    }
+
+    private static void edgeQuad(VertexConsumer buffer, PoseStack.Pose pose, int light, int overlay, int r, int g, int b,
+                                  float x0, float y0, float z0,
+                                  float x1, float y1, float z1,
+                                  float x2, float y2, float z2,
+                                  float x3, float y3, float z3,
+                                  float nx, float ny, float nz) {
+        tintedQuad(buffer, pose, light, overlay, r, g, b,
+                x0, y0, z0, 0.5f, 0.5f,
+                x1, y1, z1, 0.5f, 0.5f,
+                x2, y2, z2, 0.5f, 0.5f,
+                x3, y3, z3, 0.5f, 0.5f,
+                nx, ny, nz);
+    }
+
     // Same Polaroid-style frame as renderFramedCard (front/back/1px edge, off-white frame texture), but
     // nine-sliced around the real (uncropped) photo aspect ratio instead of a fixed 14x14 square opening -
     // the four 1x1 corner tiles and four edge strips of the frame texture stay a constant physical width,
@@ -442,7 +514,9 @@ public final class CrazyPhonePhotoItemRenderer {
     // draw the presented card directly on the arm's own poseStack instead of going through render()'s own
     // dispatch - see that mixin's own doc comment for why (the arm and the card need to share one transform,
     // not two independently-computed ones that can drift apart).
-    public static void renderHandFramedCard(PhotoItemData data, PoseStack poseStack, MultiBufferSource bufferSource, int packedLight, int packedOverlay) {
+    public static void renderHandFramedCard(PhotoItemData data, PoseStack poseStack, MultiBufferSource bufferSource, int packedLight, int packedOverlay, int rgb) {
+        // dyeR/G/B, not r/g/b - this method already has a single-letter local `b` for the border WIDTH below.
+        int dyeR = (rgb >> 16) & 0xFF, dyeG = (rgb >> 8) & 0xFF, dyeB = rgb & 0xFF;
         /*$ res_loc {*/ResourceLocation/*$}*/ photoTexture = PLACEHOLDER_TEXTURE;
         float iw = 0.5f, ih = 0.5f;
         if (data != null) {
@@ -469,36 +543,36 @@ public final class CrazyPhonePhotoItemRenderer {
 
         // Frame front, nine-sliced: 4 fixed-size corners + 4 edges stretched only along their long axis: the
         // hollow center (where the photo quad goes) is left unfilled.
-        slice(frameBuffer, pose, packedLight, packedOverlay, -ow, -iw, oh, ih, t, 0, uB, 0, uB); // top-left
-        slice(frameBuffer, pose, packedLight, packedOverlay, -iw, iw, oh, ih, t, uB, 1 - uB, 0, uB); // top
-        slice(frameBuffer, pose, packedLight, packedOverlay, iw, ow, oh, ih, t, 1 - uB, 1, 0, uB); // top-right
-        slice(frameBuffer, pose, packedLight, packedOverlay, -ow, -iw, ih, -ih, t, 0, uB, uB, 1 - uB); // left
-        slice(frameBuffer, pose, packedLight, packedOverlay, iw, ow, ih, -ih, t, 1 - uB, 1, uB, 1 - uB); // right
-        slice(frameBuffer, pose, packedLight, packedOverlay, -ow, -iw, -ih, -oh, t, 0, uB, 1 - uB, 1); // bottom-left
-        slice(frameBuffer, pose, packedLight, packedOverlay, -iw, iw, -ih, -oh, t, uB, 1 - uB, 1 - uB, 1); // bottom
-        slice(frameBuffer, pose, packedLight, packedOverlay, iw, ow, -ih, -oh, t, 1 - uB, 1, 1 - uB, 1); // bottom-right
+        slice(frameBuffer, pose, packedLight, packedOverlay, dyeR, dyeG, dyeB, -ow, -iw, oh, ih, t, 0, uB, 0, uB); // top-left
+        slice(frameBuffer, pose, packedLight, packedOverlay, dyeR, dyeG, dyeB, -iw, iw, oh, ih, t, uB, 1 - uB, 0, uB); // top
+        slice(frameBuffer, pose, packedLight, packedOverlay, dyeR, dyeG, dyeB, iw, ow, oh, ih, t, 1 - uB, 1, 0, uB); // top-right
+        slice(frameBuffer, pose, packedLight, packedOverlay, dyeR, dyeG, dyeB, -ow, -iw, ih, -ih, t, 0, uB, uB, 1 - uB); // left
+        slice(frameBuffer, pose, packedLight, packedOverlay, dyeR, dyeG, dyeB, iw, ow, ih, -ih, t, 1 - uB, 1, uB, 1 - uB); // right
+        slice(frameBuffer, pose, packedLight, packedOverlay, dyeR, dyeG, dyeB, -ow, -iw, -ih, -oh, t, 0, uB, 1 - uB, 1); // bottom-left
+        slice(frameBuffer, pose, packedLight, packedOverlay, dyeR, dyeG, dyeB, -iw, iw, -ih, -oh, t, uB, 1 - uB, 1 - uB, 1); // bottom
+        slice(frameBuffer, pose, packedLight, packedOverlay, dyeR, dyeG, dyeB, iw, ow, -ih, -oh, t, 1 - uB, 1, 1 - uB, 1); // bottom-right
 
         // Frame back, nine-sliced the same as the front - a single stretched quad here would distort the
         // border's own width unevenly on a rectangular (non-square) hand photo, exactly the artifact a
         // nine-slice exists to avoid.
-        sliceBack(frameBuffer, pose, packedLight, packedOverlay, -ow, -iw, oh, ih, -t, 0, uB, 0, uB); // top-left
-        sliceBack(frameBuffer, pose, packedLight, packedOverlay, -iw, iw, oh, ih, -t, uB, 1 - uB, 0, uB); // top
-        sliceBack(frameBuffer, pose, packedLight, packedOverlay, iw, ow, oh, ih, -t, 1 - uB, 1, 0, uB); // top-right
-        sliceBack(frameBuffer, pose, packedLight, packedOverlay, -ow, -iw, ih, -ih, -t, 0, uB, uB, 1 - uB); // left
-        sliceBack(frameBuffer, pose, packedLight, packedOverlay, iw, ow, ih, -ih, -t, 1 - uB, 1, uB, 1 - uB); // right
-        sliceBack(frameBuffer, pose, packedLight, packedOverlay, -ow, -iw, -ih, -oh, -t, 0, uB, 1 - uB, 1); // bottom-left
-        sliceBack(frameBuffer, pose, packedLight, packedOverlay, -iw, iw, -ih, -oh, -t, uB, 1 - uB, 1 - uB, 1); // bottom
-        sliceBack(frameBuffer, pose, packedLight, packedOverlay, iw, ow, -ih, -oh, -t, 1 - uB, 1, 1 - uB, 1); // bottom-right
+        sliceBack(frameBuffer, pose, packedLight, packedOverlay, dyeR, dyeG, dyeB, -ow, -iw, oh, ih, -t, 0, uB, 0, uB); // top-left
+        sliceBack(frameBuffer, pose, packedLight, packedOverlay, dyeR, dyeG, dyeB, -iw, iw, oh, ih, -t, uB, 1 - uB, 0, uB); // top
+        sliceBack(frameBuffer, pose, packedLight, packedOverlay, dyeR, dyeG, dyeB, iw, ow, oh, ih, -t, 1 - uB, 1, 0, uB); // top-right
+        sliceBack(frameBuffer, pose, packedLight, packedOverlay, dyeR, dyeG, dyeB, -ow, -iw, ih, -ih, -t, 0, uB, uB, 1 - uB); // left
+        sliceBack(frameBuffer, pose, packedLight, packedOverlay, dyeR, dyeG, dyeB, iw, ow, ih, -ih, -t, 1 - uB, 1, uB, 1 - uB); // right
+        sliceBack(frameBuffer, pose, packedLight, packedOverlay, dyeR, dyeG, dyeB, -ow, -iw, -ih, -oh, -t, 0, uB, 1 - uB, 1); // bottom-left
+        sliceBack(frameBuffer, pose, packedLight, packedOverlay, dyeR, dyeG, dyeB, -iw, iw, -ih, -oh, -t, uB, 1 - uB, 1 - uB, 1); // bottom
+        sliceBack(frameBuffer, pose, packedLight, packedOverlay, dyeR, dyeG, dyeB, iw, ow, -ih, -oh, -t, 1 - uB, 1, 1 - uB, 1); // bottom-right
         // The back's own hollow center (where the front's photo shows through the opening) needs a plain
         // frame-colored fill too, unlike the front where the photo quad covers it - otherwise the inner
         // rectangle is just an open hole showing whatever is behind the whole card.
-        sliceBack(frameBuffer, pose, packedLight, packedOverlay, -iw, iw, ih, -ih, -t, uB, 1 - uB, uB, 1 - uB); // center
+        sliceBack(frameBuffer, pose, packedLight, packedOverlay, dyeR, dyeG, dyeB, -iw, iw, ih, -ih, -t, uB, 1 - uB, uB, 1 - uB); // center
         // Frame edge - one correctly-wound quad per face (see edgeQuad's own doc comment on how "correct"
         // was actually determined here, not the double-drawn-both-ways hack this replaced).
-        edgeQuad(frameBuffer, pose, packedLight, packedOverlay, -ow, oh, t, ow, oh, t, ow, oh, -t, -ow, oh, -t, 0, 1, 0); // top
-        edgeQuad(frameBuffer, pose, packedLight, packedOverlay, -ow, -oh, -t, ow, -oh, -t, ow, -oh, t, -ow, -oh, t, 0, -1, 0); // bottom
-        edgeQuad(frameBuffer, pose, packedLight, packedOverlay, -ow, -oh, -t, -ow, -oh, t, -ow, oh, t, -ow, oh, -t, -1, 0, 0); // left
-        edgeQuad(frameBuffer, pose, packedLight, packedOverlay, ow, -oh, t, ow, -oh, -t, ow, oh, -t, ow, oh, t, 1, 0, 0); // right
+        edgeQuad(frameBuffer, pose, packedLight, packedOverlay, dyeR, dyeG, dyeB, -ow, oh, t, ow, oh, t, ow, oh, -t, -ow, oh, -t, 0, 1, 0); // top
+        edgeQuad(frameBuffer, pose, packedLight, packedOverlay, dyeR, dyeG, dyeB, -ow, -oh, -t, ow, -oh, -t, ow, -oh, t, -ow, -oh, t, 0, -1, 0); // bottom
+        edgeQuad(frameBuffer, pose, packedLight, packedOverlay, dyeR, dyeG, dyeB, -ow, -oh, -t, -ow, -oh, t, -ow, oh, t, -ow, oh, -t, -1, 0, 0); // left
+        edgeQuad(frameBuffer, pose, packedLight, packedOverlay, dyeR, dyeG, dyeB, ow, -oh, t, ow, -oh, -t, ow, oh, -t, ow, oh, t, 1, 0, 0); // right
 
         // Photo, front face only, full (uncropped) 0..1 UV - pushed slightly ahead of the frame's own front
         // face (and its edges overlapped slightly past iw/ih) to avoid z-fighting AND a raking-angle gap
@@ -516,20 +590,21 @@ public final class CrazyPhonePhotoItemRenderer {
 
     // Polaroid-style card: a 16x16 off-white frame (front, back, and a 1px physical edge) with the
     // cover-cropped thumbnail inset 1px on the front only.
-    private static void renderFramedCard(PhotoItemData data, PoseStack poseStack, MultiBufferSource bufferSource, int packedLight, int packedOverlay) {
+    private static void renderFramedCard(PhotoItemData data, PoseStack poseStack, MultiBufferSource bufferSource, int packedLight, int packedOverlay, int rgb) {
+        int r = (rgb >> 16) & 0xFF, g = (rgb >> 8) & 0xFF, b = rgb & 0xFF;
         PoseStack.Pose pose = poseStack.last();
         VertexConsumer frameBuffer = bufferSource.getBuffer(/*$ render_types {*/RenderType/*$}*/.entityCutout(FRAME_TEXTURE));
         float t = CARD_THICKNESS_HALF;
         float h = FRAME_HALF;
 
         // Frame front/back.
-        quad(frameBuffer, pose, packedLight, packedOverlay,
+        quad(frameBuffer, pose, packedLight, packedOverlay, r, g, b,
                 -h, h, t, 0, 0,
                 -h, -h, t, 0, 1,
                 h, -h, t, 1, 1,
                 h, h, t, 1, 0,
                 0, 0, 1);
-        quad(frameBuffer, pose, packedLight, packedOverlay,
+        quad(frameBuffer, pose, packedLight, packedOverlay, r, g, b,
                 h, h, -t, 0, 0,
                 h, -h, -t, 0, 1,
                 -h, -h, -t, 1, 1,
@@ -537,10 +612,10 @@ public final class CrazyPhonePhotoItemRenderer {
                 0, 0, -1);
         // Frame edge - a thin strip on each of the 4 sides, connecting the front face's border to the back
         // face's. One correctly-wound quad per face - see edgeQuad's own doc comment.
-        edgeQuad(frameBuffer, pose, packedLight, packedOverlay, -h, h, t, h, h, t, h, h, -t, -h, h, -t, 0, 1, 0); // top
-        edgeQuad(frameBuffer, pose, packedLight, packedOverlay, -h, -h, -t, h, -h, -t, h, -h, t, -h, -h, t, 0, -1, 0); // bottom
-        edgeQuad(frameBuffer, pose, packedLight, packedOverlay, -h, -h, -t, -h, -h, t, -h, h, t, -h, h, -t, -1, 0, 0); // left
-        edgeQuad(frameBuffer, pose, packedLight, packedOverlay, h, -h, t, h, -h, -t, h, h, -t, h, h, t, 1, 0, 0); // right
+        edgeQuad(frameBuffer, pose, packedLight, packedOverlay, r, g, b, -h, h, t, h, h, t, h, h, -t, -h, h, -t, 0, 1, 0); // top
+        edgeQuad(frameBuffer, pose, packedLight, packedOverlay, r, g, b, -h, -h, -t, h, -h, -t, h, -h, t, -h, -h, t, 0, -1, 0); // bottom
+        edgeQuad(frameBuffer, pose, packedLight, packedOverlay, r, g, b, -h, -h, -t, -h, -h, t, -h, h, t, -h, h, -t, -1, 0, 0); // left
+        edgeQuad(frameBuffer, pose, packedLight, packedOverlay, r, g, b, h, -h, t, h, -h, -t, h, h, -t, h, h, t, 1, 0, 0); // right
 
         // Inset photo, front face only - pushed slightly ahead of the frame's own front face to avoid
         // z-fighting with it.
@@ -692,7 +767,7 @@ public final class CrazyPhonePhotoItemRenderer {
     // via CrazyPhoneItemModelRegistrationMixin injecting straight into ItemModels#bootstrap() instead - see
     // that mixin's own doc comment.
     //? if >=26 {
-    /*private record DrawArgument(fr.lordfinn.crazyphone.utils.PhotoItemData data, boolean isHand) {
+    /*private record DrawArgument(fr.lordfinn.crazyphone.utils.PhotoItemData data, boolean isHand, int rgb) {
     }
 
     public static final class ModelImpl implements net.minecraft.client.renderer.item.ItemModel {
@@ -824,7 +899,7 @@ public final class CrazyPhonePhotoItemRenderer {
                     new org.joml.Vector3f(-extentHalf, -extentHalf, -extentHalf),
                     new org.joml.Vector3f(extentHalf, extentHalf, extentHalf)
             });
-            layer.setupSpecialModel(SPECIAL_RENDERER, new DrawArgument(data, isHand));
+            layer.setupSpecialModel(SPECIAL_RENDERER, new DrawArgument(data, isHand, borderRgb(item)));
         }
 
         public static final class Unbaked implements net.minecraft.client.renderer.item.ItemModel.Unbaked {
@@ -853,9 +928,9 @@ public final class CrazyPhonePhotoItemRenderer {
             if (argument == null)
                 return;
             if (argument.isHand())
-                renderHandFramedCardNew(argument.data(), poseStack, submitNodeCollector, lightCoords, overlayCoords);
+                renderHandFramedCardNew(argument.data(), poseStack, submitNodeCollector, lightCoords, overlayCoords, argument.rgb());
             else
-                renderFramedCardNew(argument.data(), poseStack, submitNodeCollector, lightCoords, overlayCoords);
+                renderFramedCardNew(argument.data(), poseStack, submitNodeCollector, lightCoords, overlayCoords, argument.rgb());
         }
 
         @Override
@@ -892,27 +967,28 @@ public final class CrazyPhonePhotoItemRenderer {
     // in submitCustomGeometry(...) per texture instead of pulling a VertexConsumer directly from a
     // MultiBufferSource - see this block's own doc comment above for why >=1.21.10 needs this split.
     private static void renderFramedCardNew(fr.lordfinn.crazyphone.utils.PhotoItemData data, PoseStack poseStack,
-                                             net.minecraft.client.renderer.SubmitNodeCollector collector, int packedLight, int packedOverlay) {
+                                             net.minecraft.client.renderer.SubmitNodeCollector collector, int packedLight, int packedOverlay, int rgb) {
+        int r = (rgb >> 16) & 0xFF, g = (rgb >> 8) & 0xFF, b = rgb & 0xFF;
         float t = CARD_THICKNESS_HALF;
         float h = FRAME_HALF;
 
         collector.submitCustomGeometry(poseStack, /^$ render_type_import {^/net.minecraft.client.renderer.RenderType/^$}^/.entityCutout(FRAME_TEXTURE), (pose, frameBuffer) -> {
-            quad(frameBuffer, pose, packedLight, packedOverlay,
+            quad(frameBuffer, pose, packedLight, packedOverlay, r, g, b,
                     -h, h, t, 0, 0,
                     -h, -h, t, 0, 1,
                     h, -h, t, 1, 1,
                     h, h, t, 1, 0,
                     0, 0, 1);
-            quad(frameBuffer, pose, packedLight, packedOverlay,
+            quad(frameBuffer, pose, packedLight, packedOverlay, r, g, b,
                     h, h, -t, 0, 0,
                     h, -h, -t, 0, 1,
                     -h, -h, -t, 1, 1,
                     -h, h, -t, 1, 0,
                     0, 0, -1);
-            edgeQuad(frameBuffer, pose, packedLight, packedOverlay, -h, h, t, h, h, t, h, h, -t, -h, h, -t, 0, 1, 0);
-            edgeQuad(frameBuffer, pose, packedLight, packedOverlay, -h, -h, -t, h, -h, -t, h, -h, t, -h, -h, t, 0, -1, 0);
-            edgeQuad(frameBuffer, pose, packedLight, packedOverlay, -h, -h, -t, -h, -h, t, -h, h, t, -h, h, -t, -1, 0, 0);
-            edgeQuad(frameBuffer, pose, packedLight, packedOverlay, h, -h, t, h, -h, -t, h, h, -t, h, h, t, 1, 0, 0);
+            edgeQuad(frameBuffer, pose, packedLight, packedOverlay, r, g, b, -h, h, t, h, h, t, h, h, -t, -h, h, -t, 0, 1, 0);
+            edgeQuad(frameBuffer, pose, packedLight, packedOverlay, r, g, b, -h, -h, -t, h, -h, -t, h, -h, t, -h, -h, t, 0, -1, 0);
+            edgeQuad(frameBuffer, pose, packedLight, packedOverlay, r, g, b, -h, -h, -t, -h, -h, t, -h, h, t, -h, h, -t, -1, 0, 0);
+            edgeQuad(frameBuffer, pose, packedLight, packedOverlay, r, g, b, h, -h, t, h, -h, -t, h, h, -t, h, h, t, 1, 0, 0);
         });
 
         net.minecraft.resources./^$ res_loc {^/ResourceLocation/^$}^/ photoTexture = PLACEHOLDER_TEXTURE;
@@ -948,7 +1024,9 @@ public final class CrazyPhonePhotoItemRenderer {
     }
 
     private static void renderHandFramedCardNew(fr.lordfinn.crazyphone.utils.PhotoItemData data, PoseStack poseStack,
-                                                 net.minecraft.client.renderer.SubmitNodeCollector collector, int packedLight, int packedOverlay) {
+                                                 net.minecraft.client.renderer.SubmitNodeCollector collector, int packedLight, int packedOverlay, int rgb) {
+        // dyeR/G/B, not r/g/b - this method already has a single-letter local `b` for the border WIDTH below.
+        int dyeR = (rgb >> 16) & 0xFF, dyeG = (rgb >> 8) & 0xFF, dyeB = rgb & 0xFF;
         net.minecraft.resources./^$ res_loc {^/ResourceLocation/^$}^/ photoTexture = PLACEHOLDER_TEXTURE;
         float iw = 0.5f, ih = 0.5f;
         if (data != null) {
@@ -968,29 +1046,29 @@ public final class CrazyPhonePhotoItemRenderer {
         float fiw = iw, fih = ih, fow = ow, foh = oh;
 
         collector.submitCustomGeometry(poseStack, /^$ render_type_import {^/net.minecraft.client.renderer.RenderType/^$}^/.entityCutout(FRAME_TEXTURE), (pose, frameBuffer) -> {
-            slice(frameBuffer, pose, packedLight, packedOverlay, -fow, -fiw, foh, fih, t, 0, uB, 0, uB);
-            slice(frameBuffer, pose, packedLight, packedOverlay, -fiw, fiw, foh, fih, t, uB, 1 - uB, 0, uB);
-            slice(frameBuffer, pose, packedLight, packedOverlay, fiw, fow, foh, fih, t, 1 - uB, 1, 0, uB);
-            slice(frameBuffer, pose, packedLight, packedOverlay, -fow, -fiw, fih, -fih, t, 0, uB, uB, 1 - uB);
-            slice(frameBuffer, pose, packedLight, packedOverlay, fiw, fow, fih, -fih, t, 1 - uB, 1, uB, 1 - uB);
-            slice(frameBuffer, pose, packedLight, packedOverlay, -fow, -fiw, -fih, -foh, t, 0, uB, 1 - uB, 1);
-            slice(frameBuffer, pose, packedLight, packedOverlay, -fiw, fiw, -fih, -foh, t, uB, 1 - uB, 1 - uB, 1);
-            slice(frameBuffer, pose, packedLight, packedOverlay, fiw, fow, -fih, -foh, t, 1 - uB, 1, 1 - uB, 1);
+            slice(frameBuffer, pose, packedLight, packedOverlay, dyeR, dyeG, dyeB, -fow, -fiw, foh, fih, t, 0, uB, 0, uB);
+            slice(frameBuffer, pose, packedLight, packedOverlay, dyeR, dyeG, dyeB, -fiw, fiw, foh, fih, t, uB, 1 - uB, 0, uB);
+            slice(frameBuffer, pose, packedLight, packedOverlay, dyeR, dyeG, dyeB, fiw, fow, foh, fih, t, 1 - uB, 1, 0, uB);
+            slice(frameBuffer, pose, packedLight, packedOverlay, dyeR, dyeG, dyeB, -fow, -fiw, fih, -fih, t, 0, uB, uB, 1 - uB);
+            slice(frameBuffer, pose, packedLight, packedOverlay, dyeR, dyeG, dyeB, fiw, fow, fih, -fih, t, 1 - uB, 1, uB, 1 - uB);
+            slice(frameBuffer, pose, packedLight, packedOverlay, dyeR, dyeG, dyeB, -fow, -fiw, -fih, -foh, t, 0, uB, 1 - uB, 1);
+            slice(frameBuffer, pose, packedLight, packedOverlay, dyeR, dyeG, dyeB, -fiw, fiw, -fih, -foh, t, uB, 1 - uB, 1 - uB, 1);
+            slice(frameBuffer, pose, packedLight, packedOverlay, dyeR, dyeG, dyeB, fiw, fow, -fih, -foh, t, 1 - uB, 1, 1 - uB, 1);
 
-            sliceBack(frameBuffer, pose, packedLight, packedOverlay, -fow, -fiw, foh, fih, -t, 0, uB, 0, uB);
-            sliceBack(frameBuffer, pose, packedLight, packedOverlay, -fiw, fiw, foh, fih, -t, uB, 1 - uB, 0, uB);
-            sliceBack(frameBuffer, pose, packedLight, packedOverlay, fiw, fow, foh, fih, -t, 1 - uB, 1, 0, uB);
-            sliceBack(frameBuffer, pose, packedLight, packedOverlay, -fow, -fiw, fih, -fih, -t, 0, uB, uB, 1 - uB);
-            sliceBack(frameBuffer, pose, packedLight, packedOverlay, fiw, fow, fih, -fih, -t, 1 - uB, 1, uB, 1 - uB);
-            sliceBack(frameBuffer, pose, packedLight, packedOverlay, -fow, -fiw, -fih, -foh, -t, 0, uB, 1 - uB, 1);
-            sliceBack(frameBuffer, pose, packedLight, packedOverlay, -fiw, fiw, -fih, -foh, -t, uB, 1 - uB, 1 - uB, 1);
-            sliceBack(frameBuffer, pose, packedLight, packedOverlay, fiw, fow, -fih, -foh, -t, 1 - uB, 1, 1 - uB, 1);
-            sliceBack(frameBuffer, pose, packedLight, packedOverlay, -fiw, fiw, fih, -fih, -t, uB, 1 - uB, uB, 1 - uB);
+            sliceBack(frameBuffer, pose, packedLight, packedOverlay, dyeR, dyeG, dyeB, -fow, -fiw, foh, fih, -t, 0, uB, 0, uB);
+            sliceBack(frameBuffer, pose, packedLight, packedOverlay, dyeR, dyeG, dyeB, -fiw, fiw, foh, fih, -t, uB, 1 - uB, 0, uB);
+            sliceBack(frameBuffer, pose, packedLight, packedOverlay, dyeR, dyeG, dyeB, fiw, fow, foh, fih, -t, 1 - uB, 1, 0, uB);
+            sliceBack(frameBuffer, pose, packedLight, packedOverlay, dyeR, dyeG, dyeB, -fow, -fiw, fih, -fih, -t, 0, uB, uB, 1 - uB);
+            sliceBack(frameBuffer, pose, packedLight, packedOverlay, dyeR, dyeG, dyeB, fiw, fow, fih, -fih, -t, 1 - uB, 1, uB, 1 - uB);
+            sliceBack(frameBuffer, pose, packedLight, packedOverlay, dyeR, dyeG, dyeB, -fow, -fiw, -fih, -foh, -t, 0, uB, 1 - uB, 1);
+            sliceBack(frameBuffer, pose, packedLight, packedOverlay, dyeR, dyeG, dyeB, -fiw, fiw, -fih, -foh, -t, uB, 1 - uB, 1 - uB, 1);
+            sliceBack(frameBuffer, pose, packedLight, packedOverlay, dyeR, dyeG, dyeB, fiw, fow, -fih, -foh, -t, 1 - uB, 1, 1 - uB, 1);
+            sliceBack(frameBuffer, pose, packedLight, packedOverlay, dyeR, dyeG, dyeB, -fiw, fiw, fih, -fih, -t, uB, 1 - uB, uB, 1 - uB);
 
-            edgeQuad(frameBuffer, pose, packedLight, packedOverlay, -fow, foh, t, fow, foh, t, fow, foh, -t, -fow, foh, -t, 0, 1, 0);
-            edgeQuad(frameBuffer, pose, packedLight, packedOverlay, -fow, -foh, -t, fow, -foh, -t, fow, -foh, t, -fow, -foh, t, 0, -1, 0);
-            edgeQuad(frameBuffer, pose, packedLight, packedOverlay, -fow, -foh, -t, -fow, -foh, t, -fow, foh, t, -fow, foh, -t, -1, 0, 0);
-            edgeQuad(frameBuffer, pose, packedLight, packedOverlay, fow, -foh, t, fow, -foh, -t, fow, foh, -t, fow, foh, t, 1, 0, 0);
+            edgeQuad(frameBuffer, pose, packedLight, packedOverlay, dyeR, dyeG, dyeB, -fow, foh, t, fow, foh, t, fow, foh, -t, -fow, foh, -t, 0, 1, 0);
+            edgeQuad(frameBuffer, pose, packedLight, packedOverlay, dyeR, dyeG, dyeB, -fow, -foh, -t, fow, -foh, -t, fow, -foh, t, -fow, -foh, t, 0, -1, 0);
+            edgeQuad(frameBuffer, pose, packedLight, packedOverlay, dyeR, dyeG, dyeB, -fow, -foh, -t, -fow, -foh, t, -fow, foh, t, -fow, foh, -t, -1, 0, 0);
+            edgeQuad(frameBuffer, pose, packedLight, packedOverlay, dyeR, dyeG, dyeB, fow, -foh, t, fow, -foh, -t, fow, foh, -t, fow, foh, t, 1, 0, 0);
         });
 
         float pz = t + PHOTO_Z_EPSILON;

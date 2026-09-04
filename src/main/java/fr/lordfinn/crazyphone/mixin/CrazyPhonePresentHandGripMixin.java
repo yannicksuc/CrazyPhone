@@ -89,7 +89,8 @@ public abstract class CrazyPhonePresentHandGripMixin {
             crazyphone$applyCardGripTransform(poseStack, player, isLeftHand);
             fr.lordfinn.crazyphone.utils.PhotoItemData data = fr.lordfinn.crazyphone.utils.PhotoItemData.fromStack(itemStack);
             fr.lordfinn.crazyphone.client.render.CrazyPhonePhotoItemRenderer.renderHandFramedCard(data, poseStack,
-                    bufferSource, lightCoords, net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY);
+                    bufferSource, lightCoords, net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY,
+                    fr.lordfinn.crazyphone.client.render.CrazyPhonePhotoItemRenderer.borderRgb(itemStack));
             poseStack.popPose();
         }
         // Always cancel now, not just for non-phone hands: the phone-holding hand's own card is drawn above

@@ -1,0 +1,10 @@
+{
+  "type": "minecraft:crafting_dye",
+  "category": "misc",
+  "group": "crazyphone_dyed_photo",
+  "target": "crazyphone:crazy_phone_photo",
+  "dye": "#minecraft:dyes",
+  "result": {
+    "id": "crazyphone:crazy_phone_photo"
+  }
+}
