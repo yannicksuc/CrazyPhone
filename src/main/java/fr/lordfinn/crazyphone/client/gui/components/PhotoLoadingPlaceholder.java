@@ -21,8 +21,8 @@ import fr.lordfinn.crazyphone.utils.GuiCompat;
 public final class PhotoLoadingPlaceholder {
     private static final /*$ res_loc {*/ResourceLocation/*$}*/ SPINNER =
             Crazyphone.parseId("crazyphone:textures/screens/crazyphone-photo-loading-spinner.png");
-    // mc-core-grey-5 - a neutral "empty slot" backing behind the spinner, not meant to read as content.
-    private static final int BACKGROUND_COLOR = 0xFF3D3938;
+    // mc-core-grey-4 - a neutral "empty slot" backing behind the spinner, not meant to read as content.
+    private static final int BACKGROUND_COLOR = 0xFF6B6562;
     private static final int FRAME_COUNT = 8;
     private static final int FRAME_MILLIS = 100;
     // The sprite is a native 32x32 - never drawn larger (a bigger box just gets more padding around it, not
