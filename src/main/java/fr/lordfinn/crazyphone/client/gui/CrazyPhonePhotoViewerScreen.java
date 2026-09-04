@@ -50,7 +50,7 @@ public class CrazyPhonePhotoViewerScreen extends Screen implements PhoneScreen {
         this.photoId = photoId;
         this.openedFromInventory = openedFromInventory;
         this.previousScreen = Minecraft.getInstance()./*$ mc_get_screen {*/screen/*$}*/;
-        this.tiltDegrees = (java.util.concurrent.ThreadLocalRandom.current().nextFloat() * 10f) - 5f;
+        this.tiltDegrees = (java.util.concurrent.ThreadLocalRandom.current().nextFloat() * 8f) - 4f;
     }
 
     @Override
@@ -127,10 +127,8 @@ public class CrazyPhonePhotoViewerScreen extends Screen implements PhoneScreen {
     // Material-Design-style elevation shadow behind the photo card: several progressively larger, fainter
     // rects stacked behind the card (not one hard-edged rect) to fake a soft drop shadow without a real blur
     // pass - GuiGraphics has no blur primitive available here (renderTransparentBackground's blur is a
-    // whole-screen post-process, not something you can scope to one rect). Offset down-and-right, matching
-    // the usual "light from the upper-left" convention.
-    private static final int SHADOW_OFFSET_X = 4;
-    private static final int SHADOW_OFFSET_Y = 6;
+    // whole-screen post-process, not something you can scope to one rect). Centered - grows evenly on every
+    // side rather than skewed toward one corner.
     private static final int[] SHADOW_LAYER_SPREAD = {0, 3, 7, 12};
     private static final int[] SHADOW_LAYER_ALPHA = {0x50, 0x30, 0x18, 0x0A};
 
@@ -159,8 +157,8 @@ public class CrazyPhonePhotoViewerScreen extends Screen implements PhoneScreen {
             int spread = SHADOW_LAYER_SPREAD[i];
             int argb = (SHADOW_LAYER_ALPHA[i] << 24);
             guiGraphics.fill(
-                    x - BORDER_PX - spread + SHADOW_OFFSET_X, y - BORDER_PX - spread + SHADOW_OFFSET_Y,
-                    x + drawWidth + BORDER_PX + spread + SHADOW_OFFSET_X, y + drawHeight + BORDER_PX + spread + SHADOW_OFFSET_Y,
+                    x - BORDER_PX - spread, y - BORDER_PX - spread,
+                    x + drawWidth + BORDER_PX + spread, y + drawHeight + BORDER_PX + spread,
                     argb);
         }
 
