@@ -100,23 +100,34 @@ public final class FabricPictureCapture {
     }
 
     // Called every client tick (see CrazyphoneFabricClient / the NeoForge client tick handler) - a no-op
-    // except on the tick right after requestCapture() leaves a callback pending.
+    // except on the tick right after requestCapture() leaves a callback pending. suppressPhoneRendering
+    // itself is deliberately NOT reset here - see captureBothResolutions's own doc comment on why it stays
+    // true until the actual pixel copy has genuinely happened, not just been requested.
     public static void onClientTick() {
         BiConsumer<byte[], byte[]> callback = pendingCallback;
         if (callback == null)
             return;
         pendingCallback = null;
-        suppressPhoneRendering = false;
         captureBothResolutions(callback);
     }
 
     // Captures the current frame once and derives both resolutions from it (one screenshot, not two) -
     // calls back with (null, null) if capture/encoding failed (e.g. an unusually small render target), which
     // the caller should treat as a silent best-effort skip, same as any other client action in this mod.
+    //
+    // suppressPhoneRendering is cleared right where the actual GPU->CPU pixel copy happens on each branch
+    // (immediately after Screenshot.takeScreenshot hands back real pixels), not by the caller beforehand -
+    // clearing it in onClientTick() before calling this worked fine on <1.21.10 (a synchronous call: the
+    // buffer read completes before the next line runs), but 1.21.10's callback-based takeScreenshot
+    // reportedly does NOT resolve synchronously despite this file's own prior assumption that it did - live-
+    // reported on 26.1 as the reticle/zoom-readout overlay still baked into the captured photo. If the
+    // overlay's own suppressPhoneRendering check (see CrazyPhoneCaptureMode#drawOverlay) goes false before
+    // the real pixel copy runs, a frame can render (and get captured) with the overlay back on.
     //? if <1.21.10 {
     private static void captureBothResolutions(BiConsumer<byte[], byte[]> callback) {
         Minecraft mc = Minecraft.getInstance();
         try (NativeImage full = Screenshot.takeScreenshot(mc.getMainRenderTarget())) {
+            suppressPhoneRendering = false;
             try (NativeImage fullScaled = downscale(full, Config.photoFullMaxDimension)) {
                 byte[] fullBytes = fullScaled.asByteArray();
                 int targetHeight = Config.photoThumbnailPixelHeight;
@@ -132,20 +143,24 @@ public final class FabricPictureCapture {
                 }
             }
         } catch (IOException e) {
+            suppressPhoneRendering = false;
             org.slf4j.LoggerFactory.getLogger("crazyphone-capture-debug").warn("Screenshot capture failed", e);
             callback.accept(null, null);
         }
     }
     //? } else {
-    /*// 1.21.10 reworked Screenshot.takeScreenshot into a callback-based API (still fires synchronously off
-    // the GPU buffer-copy call, same as the old direct-return version) and dropped NativeImage#asByteArray()
-    // entirely - the only remaining way to get PNG bytes out of a NativeImage is writeToFile(Path), so
-    // toPngBytes() round-trips through a throwaway temp file instead. Same "fail closed to (null, null)" shape
-    // as the <1.21.10 branch on any error.
+    /*// 1.21.10 reworked Screenshot.takeScreenshot into a callback-based API and dropped
+    // NativeImage#asByteArray() entirely - the only remaining way to get PNG bytes out of a NativeImage is
+    // writeToFile(Path), so toPngBytes() round-trips through a throwaway temp file instead. Same "fail
+    // closed to (null, null)" shape as the <1.21.10 branch on any error.
     private static void captureBothResolutions(BiConsumer<byte[], byte[]> callback) {
         Minecraft mc = Minecraft.getInstance();
         try {
             Screenshot.takeScreenshot(mc.getMainRenderTarget(), full -> {
+                // The first thing done with the real captured pixels, before any further processing that
+                // could itself take long enough for another frame to render - see this method's own doc
+                // comment on why this can't be reset any earlier.
+                suppressPhoneRendering = false;
                 try (NativeImage fullImg = full; NativeImage fullScaled = downscale(fullImg, Config.photoFullMaxDimension)) {
                     byte[] fullBytes = toPngBytes(fullScaled);
                     int targetHeight = Config.photoThumbnailPixelHeight;
@@ -162,6 +177,7 @@ public final class FabricPictureCapture {
                 }
             });
         } catch (RuntimeException e) {
+            suppressPhoneRendering = false;
             org.slf4j.LoggerFactory.getLogger("crazyphone-capture-debug").warn("Screenshot capture failed", e);
             callback.accept(null, null);
         }
