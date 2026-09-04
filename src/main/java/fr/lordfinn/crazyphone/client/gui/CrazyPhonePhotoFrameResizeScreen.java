@@ -357,19 +357,28 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
     // and V comes from col instead (a floor/ceiling rotated an odd number of quarter turns). signU/signV are
     // +1 or -1, applied to whichever screen axis feeds that server axis.
     //
-    // WALLS (north/south/east/west): "up" on screen always grows the photo UP in the world (V = -row,
-    // gravity gives every wall the same vertical reference) - but "right" on screen only grows the photo
-    // toward world +X or +Z depending on which way the VIEWER is actually facing that specific wall, which
-    // flips between opposite walls. Critical detail an earlier version of this got backwards ("sur les murs
-    // gauche et droite sont inversé" - live request): attachFace() is which face of the BLOCK the frame sits
-    // on, i.e. the direction the frame's own visible side points TOWARD - a NORTH-attached frame points
-    // north, so the viewer looking at it is standing to the north and facing SOUTH, back at the wall, the
-    // OPPOSITE of attachFace() itself. Standing in front of a wall and facing it: facing north, east is your
-    // right; facing south, west is your right; facing east, south is your right; facing west, north is your
-    // right (ordinary compass facts) - applied to face.getOpposite() (the viewer's actual facing), not face
-    // itself, then cross-referenced against CrazyPhonePhotoFrameEntity#computeBoundingBox's own fixed
-    // U=+X/V=+Y (north/south) or U=+Z/V=+Y (east/west) axis assignment: south and west already agree with
-    // "posU = viewer's right" as computeBoundingBox defines it, north and east don't (need signU=-1).
+    // NORTH/SOUTH: "up" on screen grows the photo UP in the world (V = +row here - an earlier version had
+    // this at -row, live-reported inverted: "north & south, up and down are inverted" - live request) -
+    // "right" on screen only grows the photo toward world +X depending on which way the VIEWER is actually
+    // facing that specific wall, which flips between opposite walls. Critical detail an earlier version of
+    // this got backwards ("sur les murs gauche et droite sont inversé" - live request): attachFace() is
+    // which face of the BLOCK the frame sits on, i.e. the direction the frame's own visible side points
+    // TOWARD - a NORTH-attached frame points north, so the viewer looking at it is standing to the north
+    // and facing SOUTH, back at the wall, the OPPOSITE of attachFace() itself. Standing in front of a wall
+    // and facing it: facing north, east is your right; facing south, west is your right (ordinary compass
+    // facts) - applied to face.getOpposite() (the viewer's actual facing), not face itself, then
+    // cross-referenced against CrazyPhonePhotoFrameEntity#computeBoundingBox's own fixed U=+X/V=+Y axis
+    // assignment: south already agrees with "posU = viewer's right" as computeBoundingBox defines it, north
+    // doesn't (needs signU=-1).
+    //
+    // WEST/EAST: SWAPPED (screen row feeds server U, screen col feeds server V) - unlike north/south, which
+    // don't swap at all. "west : up on the grid extend on right in the world... right extend up" / "east:
+    // same as west but inverted (up in grid -> left in the world)" (live request) - confirmed live against
+    // the actual 3D render, not just the grid preview. Both faces take the SAME {swap,signU,signV} values
+    // below; the "inverted" difference the live report describes between them falls straight out of
+    // computeBoundingBox's own U=+Z convention meaning the OPPOSITE compass direction (viewer's right vs
+    // left) for these two opposite-facing walls, the same way "posU = viewer's right" already flips between
+    // north and south above without signU itself needing a different value for every individual face.
     //
     // FLOOR/CEILING: FIXED, like the walls - NOT dependent on CrazyPhonePhotoFrameEntity#rotation() at all.
     // An earlier version made this depend on rotation, on the theory that "up" in the grid should track
@@ -392,8 +401,10 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
             return new int[]{0, 1, -1};
         if (face == Direction.DOWN)
             return new int[]{0, 1, 1};
-        int signU = (face == Direction.NORTH || face == Direction.EAST) ? -1 : 1;
-        return new int[]{0, signU, -1};
+        if (face == Direction.WEST || face == Direction.EAST)
+            return new int[]{1, -1, 1};
+        int signU = (face == Direction.NORTH) ? -1 : 1;
+        return new int[]{0, signU, 1};
     }
 
     private static int[] applySign(int neg, int pos, int sign) {
