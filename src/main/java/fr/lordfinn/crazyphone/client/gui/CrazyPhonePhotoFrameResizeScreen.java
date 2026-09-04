@@ -374,32 +374,27 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
     // you didn't change anything for images placed on walls it was working before" / "the bugs was towards
     // images placed on floor" - live request) - reverted back to exactly this.
     //
-    // CEILING: FIXED (NOT dependent on CrazyPhonePhotoFrameEntity#rotation()), confirmed live ("les images
-    // placées au plafond ça marche" - live request, at whatever single rotation was tested there).
-    //
-    // FLOOR: unlike ceiling, this DOES depend on rotation() - "for a floor-placed photo... the grid tracks
-    // whichever way the photo currently faces after rotating" was the explicitly requested behavior (live
-    // request), even though CrazyPhonePhotoFrameRenderer's own doc comment is clear that rotation never
-    // changes the physical SLOT (only the pixel content drawn inside it spins) - i.e. the grid intentionally
-    // tracks the DISPLAYED picture's own current "up" edge, not the (rotation-invariant) slot geometry
-    // itself. Derived from CrazyPhonePhotoFrameRenderer#uvForCorner (which screen corner shows the texture's
-    // own top edge, per rotation step) composed with the DOWN face's own pose-stack rotation (which world
-    // axis that screen-local direction actually lands on) - cross-checked against UP's independently
-    // live-confirmed mapping above (same underlying local-to-world relationship, opposite face) rather than
-    // trusted on raw rotation-matrix math alone, since that math got the handedness backwards once already
-    // in this exact spot. Every one of these 4 values is the SAME as an earlier, live-reported-wrong
-    // rotation table with only signV flipped in every case - consistent with that earlier table having had
-    // exactly this one systematic handedness error throughout, not four independent mistakes.
-    private static final int[][] DOWN_ROTATION_TRANSFORM = {
-            {0, 1, 1}, {1, 1, -1}, {0, -1, -1}, {1, -1, 1}
-    };
-
+    // FLOOR/CEILING: FIXED, NOT dependent on CrazyPhonePhotoFrameEntity#rotation() at all, and both use the
+    // EXACT SAME transform - a genuinely different conclusion from an earlier round of this same comment,
+    // worth spelling out why. Rotation only ever feeds CrazyPhonePhotoFrameRenderer#uvForCorner, which
+    // decides which TEXTURE pixel lands at which SCREEN corner of the slot - it never touches the slot's own
+    // local x/y extents (drawImageQuad's w/h, straight from widthBlocks()/heightBlocks(), i.e. straight from
+    // U/V) or the face's own pose-stack rotation that maps those local extents onto world X/Z. That's
+    // exactly what the renderer's own doc comment already says ("rotation... is NOT a swap of which world
+    // axis width/height bind to") - U is always local-X/world-X-ish and V is always local-Y/world-Z-ish for
+    // both DOWN and UP, for every rotation value, full stop. An earlier round tried making this grid track
+    // rotation anyway (on the theory that "up in the grid" should follow "up in the currently-displayed
+    // picture"), live-confirmed as the explicitly wanted behavior at the time - but two live floor tests at
+    // DIFFERENT placement-facings (seeding genuinely different rotation() values through tryPlace) then
+    // showed the IDENTICAL up/down/left/right symptom pattern regardless of rotation, which is exactly what
+    // you'd see if U/V truly can't be made to track rotation this way - confirming the renderer's own
+    // documented design over the original intuition. What actually needed fixing was simpler than a
+    // per-rotation table: just V's own sign, the same one flip that also happens to make DOWN identical to
+    // UP's own already-confirmed value instead of its deliberately-mirrored opposite.
     private int[] axisTransform() {
         Direction face = menu.attachFace();
-        if (face == Direction.UP)
+        if (face == Direction.UP || face == Direction.DOWN)
             return new int[]{0, 1, -1};
-        if (face == Direction.DOWN)
-            return DOWN_ROTATION_TRANSFORM[Math.floorMod(menu.rotation(), 4)];
         int signU = (face == Direction.NORTH || face == Direction.EAST) ? -1 : 1;
         return new int[]{0, signU, -1};
     }
