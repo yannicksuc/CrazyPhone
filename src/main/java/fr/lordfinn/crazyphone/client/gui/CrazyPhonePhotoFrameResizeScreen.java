@@ -411,18 +411,11 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
     // in-plane axis (Z, which becomes V) between the two, since a +θ and a -θ rotation of the same plane are
     // mirror images of each other.
     //
-    // EAST/WEST's own signV needed a further flip beyond the plain compass-derived pattern - confirmed live:
-    // facing east, dragging right (your own right hand, which should mean south) was instead extending the
-    // photo north; fixed by flipping EAST/WEST's signV, confirmed live as fixed. NORTH/SOUTH's up/down was
-    // ALSO independently confirmed still wrong under this same viewer-relative code even though the exact
-    // same {0,1,1}/{0,-1,-1} values had separately checked out end to end against real test data under the
-    // OLDER, hardcoded-always-north version of this method (before #viewerFacing existed at all) - i.e. that
-    // older confirmation validated the FORMULA in isolation, never that #viewerFacing itself resolves to
-    // NORTH/SOUTH correctly when the player is actually facing that way, which the EAST/WEST bug suggests
-    // may be a separate, real problem of its own. Flipped NORTH/SOUTH's signV the same way as EAST/WEST's
-    // pending live confirmation - see #titleWithDebugFacing, which shows what this code currently believes
-    // your facing is, to help tell a remaining facing-DETECTION bug apart from a remaining formula bug if
-    // this still isn't right.
+    // Every one of the 4 signV values below needed flipping from what a plain compass-derived pattern would
+    // suggest - confirmed live, one direction at a time (east/west first, then north/south) - which only
+    // showed up once #viewerFacing existed at all: the values that checked out under the OLDER, hardcoded-
+    // always-north version of this method validated the FORMULA in isolation, never that #viewerFacing
+    // itself resolves correctly when the player is actually facing that way. All 4 confirmed working now.
     private static int[] floorCeilingTransform(Direction viewerFacing, boolean isDown) {
         int[] transform = switch (viewerFacing) {
             case NORTH -> new int[]{0, 1, -1};
@@ -865,18 +858,6 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
         return Component.translatable("gui.crazyphone.photo_frame_resize.size", formatHalfBlocks(widthHalf), formatHalfBlocks(heightHalf));
     }
 
-    // TEMPORARY diagnostic - appends the computed #viewerFacing to the title, floor/ceiling only, so a live
-    // tester can directly report "it says facing X but I'm actually facing Y" instead of me having to guess
-    // whether a wrong-direction report means the facing itself was mis-detected or the per-facing formula
-    // was wrong - exactly the ambiguity that made the last couple of fixes hard to pin down blind. Remove
-    // once floor/ceiling's viewer-relative behavior is fully confirmed correct.
-    private Component titleWithDebugFacing() {
-        Direction face = menu.attachFace();
-        if (face != Direction.UP && face != Direction.DOWN)
-            return this.title;
-        return this.title.copy().append(Component.literal(" [facing " + viewerFacing + "]"));
-    }
-
     // Renders the grid: the anchor cell (0,0) is always a single solid blue square (both its halves are
     // always selected by construction, so splitting it would show nothing new). Every other cell is drawn as
     // an independent 2x2 quarter grid - each quarter (qc,qr in {0,1}, left/right and top/bottom half) is
@@ -922,7 +903,7 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
         syncFromMenuIfIdle();
         updateCursor(mouseX, mouseY);
         guiGraphics.fill(leftPos, topPos, leftPos + imageWidth, topPos + imageHeight, 0xE0101010);
-        guiGraphics.centeredText(this.font, titleWithDebugFacing(), leftPos + imageWidth / 2, topPos + 8, 0xA0A0A0);
+        guiGraphics.centeredText(this.font, this.title, leftPos + imageWidth / 2, topPos + 8, 0xA0A0A0);
         guiGraphics.centeredText(this.font, sizeLabel(), leftPos + imageWidth / 2, topPos + imageHeight - 16, 0xFFFFFF);
         drawGrid(guiGraphics);
         for (Button button : ownButtons)
@@ -936,7 +917,7 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
         updateCursor(mouseX, mouseY);
         this./*$ gui_render_transparent_background {*/renderTransparentBackground/*$}*/(guiGraphics);
         guiGraphics.fill(leftPos, topPos, leftPos + imageWidth, topPos + imageHeight, 0xE0101010);
-        guiGraphics.drawCenteredString(this.font, titleWithDebugFacing(), leftPos + imageWidth / 2, topPos + 8, 0xA0A0A0);
+        guiGraphics.drawCenteredString(this.font, this.title, leftPos + imageWidth / 2, topPos + 8, 0xA0A0A0);
         guiGraphics.drawCenteredString(this.font, sizeLabel(), leftPos + imageWidth / 2, topPos + imageHeight - 16, 0xFFFFFF);
         drawGrid(guiGraphics);
         for (Button button : ownButtons)
