@@ -12,21 +12,24 @@ import java.nio.ByteBuffer;
  * it runs on GLFW under the hood, mods can swap the OS cursor icon directly. Widgets call
  * {@link #requestPointerCursor()} (generic hand, for buttons) or {@link #requestZoomCursor()} (a
  * procedurally-drawn magnifying glass, for hoverable images - GLFW's standard cursor set has no
- * magnifying-glass shape, so this builds one as a small custom cursor bitmap the first time it's needed)
- * during their render pass; the owning screen calls {@link #endFrame()} once, after everything has
- * rendered, to actually apply whichever was requested (zoom takes priority over the generic pointer if
- * both were requested in the same frame) or restore the default arrow if nothing requested one.
- * Centralizing the apply avoids flicker/redundant GLFW calls if multiple widgets each independently
- * tried to set the cursor.
+ * magnifying-glass shape, so this builds one as a small custom cursor bitmap the first time it's needed),
+ * or {@link #requestResizeCursor()} (a plain crosshair, for anything that resizes rather than just moves -
+ * e.g. CrazyPhonePhotoFrameResizeScreen's own corner handles and area-drag) during their render pass; the
+ * owning screen calls {@link #endFrame()} once, after everything has rendered, to actually apply whichever
+ * was requested (priority ZOOM > RESIZE > POINTER if more than one was requested in the same frame - not
+ * expected to co-occur within a single screen today, but kept consistent) or restore the default arrow if
+ * nothing requested one. Centralizing the apply avoids flicker/redundant GLFW calls if multiple widgets
+ * each independently tried to set the cursor.
  */
 public final class CursorEffects {
     private static final int ZOOM_CURSOR_SIZE = 32;
 
-    private enum Cursor {NONE, POINTER, ZOOM}
+    private enum Cursor {NONE, POINTER, RESIZE, ZOOM}
 
     private static Cursor requestedThisFrame = Cursor.NONE;
     private static Cursor currentlyActive = Cursor.NONE;
     private static long handCursor = 0L;
+    private static long resizeCursor = 0L;
     private static long zoomCursor = 0L;
 
     private CursorEffects() {
@@ -35,6 +38,11 @@ public final class CursorEffects {
     public static void requestPointerCursor() {
         if (requestedThisFrame == Cursor.NONE)
             requestedThisFrame = Cursor.POINTER;
+    }
+
+    public static void requestResizeCursor() {
+        if (requestedThisFrame != Cursor.ZOOM)
+            requestedThisFrame = Cursor.RESIZE;
     }
 
     public static void requestZoomCursor() {
@@ -55,6 +63,11 @@ public final class CursorEffects {
                     if (zoomCursor == 0L)
                         zoomCursor = createZoomCursor();
                     GLFW.glfwSetCursor(window, zoomCursor);
+                }
+                case RESIZE -> {
+                    if (resizeCursor == 0L)
+                        resizeCursor = GLFW.glfwCreateStandardCursor(GLFW.GLFW_CROSSHAIR_CURSOR);
+                    GLFW.glfwSetCursor(window, resizeCursor);
                 }
                 case POINTER -> {
                     if (handCursor == 0L)

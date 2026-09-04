@@ -122,7 +122,7 @@ public class Config {
 
     private static final ModConfigSpec.IntValue MAX_PHOTO_FRAME_SIZE_BLOCKS = BUILDER
             .comment("Maximum size, in blocks on a side, a placed photo frame can be resized up to via its own right-click resize dialog.")
-            .defineInRange("maxPhotoFrameSizeBlocks", 8, 1, 32);
+            .defineInRange("maxPhotoFrameSizeBlocks", 32, 1, 32);
 
     static final ModConfigSpec SPEC = BUILDER.build();
 
@@ -229,7 +229,7 @@ public class Config {
     public static boolean soulboundEnchantmentEnabled = true;
     public static boolean phoneSoulboundByDefault = false;
     public static boolean crazyPhoneCraftingEnabled = true;
-    public static int maxPhotoFrameSizeBlocks = 8;
+    public static int maxPhotoFrameSizeBlocks = 32;
 
     public static void setMayorElectionFeatureEnabled(boolean enabled) {
         mayorElectionFeatureEnabled = enabled;

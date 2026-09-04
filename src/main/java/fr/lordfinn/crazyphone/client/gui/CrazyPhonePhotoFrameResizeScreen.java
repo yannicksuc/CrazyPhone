@@ -6,25 +6,34 @@ package fr.lordfinn.crazyphone.client.gui;
  * physically where the frame is stuck to the world), and dragging from anywhere OUTSIDE the current
  * selection selects a free rectangle around it - the anchor can end up anywhere within that rectangle (a
  * corner, an edge, dead center), matching how {@link CrazyPhonePhotoFrameEntity#setExtents} lets the slot
- * sit off-center. Dragging from INSIDE the current selection instead SHIFTS it (see #beginGesture/
- * #updateShift) - same size, different position relative to the anchor, since the anchor itself can never
- * move (it's the real block the frame is attached to) - "the center should be movable in the gui... the
- * center is still the same block but selection around it move accordingly" (live request). Releasing
- * either gesture commits the size; the grid always opens pre-selected to the frame's CURRENT actual size,
- * so re-opening it shows what's already there rather than resetting. A Rotate button spins the photo 90° -
- * see CrazyPhonePhotoFrameRenderer's own doc comment for what "rotation" actually changes (a visual spin
- * in place, not a width/height axis swap).
+ * sit off-center. Dragging from INSIDE the current selection - the blue anchor square included - instead
+ * SHIFTS it (see #beginGesture/#updateShift) - same size, different position relative to the anchor, since
+ * the anchor itself can never move (it's the real block the frame is attached to) - "the center should be
+ * movable in the gui... the center is still the same block but selection around it move accordingly" (live
+ * request). Shifting is HALF-block resolution, same as the two corner handles below - an earlier version
+ * only gave half-block precision to a click specifically ON the anchor square and kept the general
+ * click-anywhere-inside-selection shift whole-block, but that split just made the anchor square's own hit
+ * area get stolen by the neighboring corner handles ("je peux pas bouger le centre de l'image... à cause
+ * sûrement de la sélection qui trigger avant" - live request) without even giving the general case what was
+ * wanted ("la sélection ne se déplace que sur des full cube pas des entre cube quand je la déplace" - live
+ * request), so there is now exactly ONE shift mode, used identically no matter which cell inside the
+ * selection is grabbed. Releasing either gesture commits the size; the grid always opens pre-selected to the
+ * frame's CURRENT actual size, so re-opening it shows what's already there rather than resetting. A Rotate
+ * button spins the photo 90° - see CrazyPhonePhotoFrameRenderer's own doc comment for what "rotation"
+ * actually changes (a visual spin in place, not a width/height axis swap).
  *
- * Grid selection precision is HALF a block, not the whole-block granularity this screen used to be limited
- * to, nor the entity's own finer 1/8-block unit storage (a plain drag gesture over dozens of tiny sub-block
- * cells would still be far fussier to use than it's worth, so the ordinary area-drag - click anywhere that
- * isn't the current selection or a corner handle - still snaps to whole blocks). The two named corner
- * handles (see #tryBeginCornerDrag/#updateCornerDrag) are the one exception: "also want top left and bottom
- * left corners to be dragable also in mid positioning" (live request), each a small square centered exactly
- * on its corner point at half a normal cell's size - "red and yellow corner handle are squares centered on
- * corner with half the size" (live request, red = top-left, yellow = the diagonally OPPOSITE corner,
- * bottom-right - "yellow corner should be at the opposite of red", live request) - offering half-block
- * resolution specifically there. Because a selection edge can now land mid-cell, plain whole-cell shading
+ * Grid selection precision is HALF a block for both the corner handles AND the shift, not the whole-block
+ * granularity this screen used to be limited to entirely, nor the entity's own finer 1/8-block unit storage
+ * (a plain drag gesture over dozens of tiny sub-block cells would still be far fussier to use than it's
+ * worth, so only STARTING a fresh selection - clicking outside the current one entirely - still snaps to
+ * whole blocks). The two named corner handles (see #tryBeginCornerDrag/#updateCornerDrag) are a distinct
+ * resize gesture from the shift: "also want top left and bottom left corners to be dragable also in mid
+ * positioning" (live request), each a small square centered exactly on its corner point at half a normal
+ * cell's size - "red and yellow corner handle are squares centered on corner with half the size" (live
+ * request, red = top-left, yellow = the diagonally OPPOSITE corner, bottom-right - "yellow corner should be
+ * at the opposite of red", live request), with a hit-test margin beyond that visual size so grabbing one
+ * doesn't need to be pixel-perfect (see #HANDLE_HIT_MARGIN, live request). Because a selection edge can now
+ * land mid-cell, plain whole-cell shading
  * would lie about what's actually selected, so every non-anchor cell renders as two independently-colored
  * halves along whichever axis a handle can move - "the gray square can be divided in quarters for
  * independent coloration based on selection" (live request) - each surviving cell corner-carved on both
@@ -59,6 +68,7 @@ package fr.lordfinn.crazyphone.client.gui;
  * established "skip Screen#render's default background pass" pattern (see that class's own doc comment).
  */
 import net.minecraft.client.Minecraft;
+import fr.lordfinn.crazyphone.client.CursorEffects;
 import net.minecraft.client.gui./*$ gui_graphics_type {*/GuiGraphics/*$}*/;
 //? if >=26 {
 /*import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -113,30 +123,26 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
     private int previewNegCol, previewPosCol, previewNegRow, previewPosRow;
     private boolean dragging;
     private int dragStartCol, dragStartRow;
-    // A second drag mode: clicking INSIDE the current selection (rather than anywhere else in the grid)
-    // shifts that whole selection, keeping its own SIZE fixed, instead of resizing it - the anchor (0,0)
-    // stays exactly where the frame is physically attached in the world (that never moves), but which part
-    // of the selection it sits under can - "the center should be movable... the center is still the same
-    // block but selection around it move accordingly" (live request). See #updateShift for the clamping
-    // that keeps the anchor inside the shifted selection at all times. Still whole-block, not half-block -
-    // shifting only moves position, never touches size, so any existing half-block fraction rides along
-    // unchanged regardless of the step granularity used to move it.
+    // A second drag mode: clicking INSIDE the current selection (rather than anywhere else in the grid,
+    // including right on the blue anchor square itself) shifts that whole selection, keeping its own SIZE
+    // fixed, instead of resizing it - the anchor (0,0) stays exactly where the frame is physically attached
+    // in the world (that never moves), but which part of the selection it sits under can - "the center
+    // should be movable... the center is still the same block but selection around it move accordingly"
+    // (live request). See #updateShift for the clamping that keeps the anchor inside the shifted selection
+    // at all times. HALF-block resolution, using raw mouse position (#halfColAt/#halfRowAt) rather than a
+    // block index - an earlier version of this was whole-block-only and dispatched to a DIFFERENT half-block
+    // mode specifically when the anchor square itself was grabbed, but that split made the anchor square
+    // itself nearly unclickable in practice (its own hit-test lost out to the corner handles' - "je peux pas
+    // bouger le centre de l'image... à cause sûrement de la sélection qui trigger avant" - live request) and
+    // didn't even give the ordinary case what was actually wanted ("la sélection ne se déplace que sur des
+    // full cube pas des entre cube quand je la déplace" - live request) - so this is now the ONE shift mode,
+    // used identically regardless of which cell inside the selection you grab.
     private boolean shifting;
-    private int shiftStartCol, shiftStartRow;
+    private int shiftStartHalfCol, shiftStartHalfRow;
     private int shiftBaseNegCol, shiftBasePosCol, shiftBaseNegRow, shiftBasePosRow;
     // A third drag mode: grabbing one of the two corner handles (see this class's own doc comment) resizes
     // at half-block resolution instead of whole-block, moving only the two edges that meet at that corner.
     private int cornerDrag = CORNER_NONE;
-    // A fourth drag mode: grabbing the blue anchor square itself (rather than some other cell inside the
-    // selection) shifts the WHOLE selection exactly like #shifting does, but at half-block resolution
-    // instead of whole-block - "je voudrais que le carré bleu au centre soit aussi déplaçable... comme les
-    // autres handle il faudrait que [ça] puisse se déplacer au milieu des carrés" (live request). The plain
-    // "click anywhere else inside the selection" whole-block shift stays exactly as it was ("tout en gardant
-    // la feature pour déplacer la sélection en cliquant dessus" - live request) - this is a THIRD, more
-    // precise way to do the same kind of move, not a replacement for it. Shares shiftBaseNegCol/etc with
-    // #shifting since both ultimately move the same four numbers, just at a different step size.
-    private boolean shiftingHalf;
-    private int shiftStartHalfCol, shiftStartHalfRow;
 
     private static int computeMaxBlocks(CrazyPhonePhotoFrameResizeMenu menu) {
         return Math.max(1, menu.maxUnits() / UNITS_PER_BLOCK);
@@ -314,10 +320,11 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
     }
 
     // Half-block equivalents of #colAt/#rowAt - drive the two corner handles (see #updateCornerDrag) and
-    // the blue anchor-square shift handle (see #updateShiftHalf), since plain area-dragging and the
-    // click-anywhere-inside shift both still snap to whole blocks. signedHalfCol=0/1 are the anchor cell's
-    // own two halves (its left/neg and right/pos half respectively), matching how previewNegCol/
-    // previewPosCol already exclude the anchor's own implicit halves - see this class's own doc comment.
+    // the whole-selection shift (see #updateShift), both half-block resolution; only plain area-dragging to
+    // START a fresh selection (see #updatePreview) still snaps to whole blocks. signedHalfCol=0/1 are the
+    // anchor cell's own two halves (its left/neg and right/pos half respectively), matching how
+    // previewNegCol/previewPosCol already exclude the anchor's own implicit halves - see this class's own
+    // doc comment.
     private int halfColAt(double mouseX) {
         return (int) Math.floor((mouseX - gridLeft) / halfCellPx) - maxHalf;
     }
@@ -376,30 +383,10 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
     // negRow+posRow both stay constant, even if that size is half-block-fractional from a corner-handle
     // drag) - the anchor (grid cell 0,0, where the frame is actually attached in the world) can never leave
     // the selection, so each axis is clamped to the range that keeps BOTH sides simultaneously within
-    // [0, maxHalf] for that axis's own (fixed) total width. col/row are still whole-block indices (from
-    // #colAt/#rowAt) - shifting only moves position, never touches size, so it stays whole-block-stepped
-    // like the ordinary area-drag; the delta is doubled into half-block units to match previewNegCol/etc.
-    private void updateShift(int col, int row) {
-        int clampedCol = Math.max(-maxBlocks, Math.min(maxBlocks, col));
-        int clampedRow = Math.max(-maxBlocks, Math.min(maxBlocks, row));
-        int dCol = (clampedCol - shiftStartCol) * 2;
-        int dRow = (clampedRow - shiftStartRow) * 2;
-        int width = shiftBaseNegCol + shiftBasePosCol;
-        int height = shiftBaseNegRow + shiftBasePosRow;
-        int negCol = Math.max(Math.max(0, width - maxHalf), Math.min(Math.min(width, maxHalf), shiftBaseNegCol - dCol));
-        int negRow = Math.max(Math.max(0, height - maxHalf), Math.min(Math.min(height, maxHalf), shiftBaseNegRow - dRow));
-        previewNegCol = negCol;
-        previewPosCol = width - negCol;
-        previewNegRow = negRow;
-        previewPosRow = height - negRow;
-    }
-
-    // Same move as #updateShift - whole selection, size fixed - but stepped at half-block resolution
-    // instead of whole-block, using raw mouse position (#halfColAt/#halfRowAt) rather than a block index -
-    // this is what grabbing the blue anchor square itself does, distinct from the plain click-anywhere-else
-    // -inside-the-selection shift which stays whole-block (see #beginGesture and this class's own doc
-    // comment).
-    private void updateShiftHalf(double mouseX, double mouseY) {
+    // [0, maxHalf] for that axis's own (fixed) total width. HALF-block resolution throughout (see this
+    // class's own field-level doc comment on #shifting for why) - uses raw mouse position (#halfColAt/
+    // #halfRowAt) rather than a block index.
+    private void updateShift(double mouseX, double mouseY) {
         int hc = clampHalf(halfColAt(mouseX));
         int hr = clampHalf(halfRowAt(mouseY));
         int dCol = hc - shiftStartHalfCol;
@@ -455,19 +442,65 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
         return mouseX >= box[0] && mouseX < box[2] && mouseY >= box[1] && mouseY < box[3];
     }
 
+    // Extra pixels added on every side of a handle's own VISUAL box (see #topLeftHandleBox/
+    // #bottomRightHandleBox) for hit-testing only - the drawn square stays its own small half-cell size, but
+    // grabbing it doesn't need to be pixel-perfect ("add arround the red and yellow handle a small margin
+    // so it's not pixel perfect when you grab them" - live request).
+    private static final int HANDLE_HIT_MARGIN = 3;
+
+    private static boolean hitBoxWithMargin(int[] box, double mouseX, double mouseY) {
+        return mouseX >= box[0] - HANDLE_HIT_MARGIN && mouseX < box[2] + HANDLE_HIT_MARGIN
+                && mouseY >= box[1] - HANDLE_HIT_MARGIN && mouseY < box[3] + HANDLE_HIT_MARGIN;
+    }
+
     // Checked BEFORE the ordinary shift-vs-resize dispatch (#beginGesture) in both mouseClicked bodies below
     // - the handles sit on top of the grid and take priority over whatever whole-block cell happens to be
     // underneath them.
     private boolean tryBeginCornerDrag(double mouseX, double mouseY) {
-        if (hitBox(topLeftHandleBox(), mouseX, mouseY)) {
+        if (hitBoxWithMargin(topLeftHandleBox(), mouseX, mouseY)) {
             cornerDrag = CORNER_TOP_LEFT;
             return true;
         }
-        if (hitBox(bottomRightHandleBox(), mouseX, mouseY)) {
+        if (hitBoxWithMargin(bottomRightHandleBox(), mouseX, mouseY)) {
             cornerDrag = CORNER_BOTTOM_RIGHT;
             return true;
         }
         return false;
+    }
+
+    // Which cursor should be shown for whatever's currently under the mouse - CROSSHAIR (via
+    // CursorEffects#requestResizeCursor) for anything that resizes (an active corner drag, hovering a
+    // corner handle, or hovering outside the current selection where a click would start a fresh resize),
+    // HAND (CursorEffects#requestPointerCursor) for anything that just moves the existing selection around
+    // (an active shift, or hovering inside the current selection) - "i would like also the cursor to change
+    // depending on the action possible" (live request). This screen isn't a PhoneScreen (it's a plain
+    // right-click-in-world container dialog, not part of the phone's own screen stack), so
+    // PhoneClickableCursorHandler's global per-frame CursorEffects#endFrame() call never reaches it - this
+    // screen calls it directly at the end of its own render pass instead (see render()/extractRenderState()
+    // below), which is safe precisely because it's never open at the same time as a PhoneScreen fighting
+    // over the same per-frame state.
+    private void updateCursor(double mouseX, double mouseY) {
+        boolean resizeIntent = cornerDrag != CORNER_NONE
+                || hitBoxWithMargin(topLeftHandleBox(), mouseX, mouseY)
+                || hitBoxWithMargin(bottomRightHandleBox(), mouseX, mouseY);
+        if (!resizeIntent && !shifting && insideGrid(mouseX, mouseY)) {
+            int col = Math.max(-maxBlocks, Math.min(maxBlocks, colAt(mouseX)));
+            int row = Math.max(-maxBlocks, Math.min(maxBlocks, rowAt(mouseY)));
+            resizeIntent = !insideSelection(col, row);
+        }
+        if (resizeIntent)
+            CursorEffects.requestResizeCursor();
+        else if (shifting || insideGrid(mouseX, mouseY))
+            CursorEffects.requestPointerCursor();
+    }
+
+    // Nothing requests a cursor after this screen closes, so without an explicit reset here the last
+    // hand/crosshair cursor #updateCursor set would keep showing over the rest of the game indefinitely -
+    // calling #endFrame() with no request pending applies its own default (plain arrow).
+    @Override
+    public void onClose() {
+        CursorEffects.endFrame();
+        super.onClose();
     }
 
     // previewNegCol/posCol/negRow/posRow count EXTRA half-blocks beyond the anchor's own (0 each = just the
@@ -509,16 +542,12 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
             updateCornerDrag(mouseX, mouseY);
             return true;
         }
-        if (shiftingHalf) {
-            updateShiftHalf(mouseX, mouseY);
-            return true;
-        }
         if (dragging) {
             updatePreview(colAt(mouseX), rowAt(mouseY));
             return true;
         }
         if (shifting) {
-            updateShift(colAt(mouseX), rowAt(mouseY));
+            updateShift(mouseX, mouseY);
             return true;
         }
         return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
@@ -526,10 +555,9 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
 
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
-        if (dragging || shifting || shiftingHalf || cornerDrag != CORNER_NONE) {
+        if (dragging || shifting || cornerDrag != CORNER_NONE) {
             dragging = false;
             shifting = false;
-            shiftingHalf = false;
             cornerDrag = CORNER_NONE;
             commitSize();
             return true;
@@ -555,16 +583,12 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
             updateCornerDrag(event.x(), event.y());
             return true;
         }
-        if (shiftingHalf) {
-            updateShiftHalf(event.x(), event.y());
-            return true;
-        }
         if (dragging) {
             updatePreview(colAt(event.x()), rowAt(event.y()));
             return true;
         }
         if (shifting) {
-            updateShift(colAt(event.x()), rowAt(event.y()));
+            updateShift(event.x(), event.y());
             return true;
         }
         return super.mouseDragged(event, dragX, dragY);
@@ -572,10 +596,9 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
 
     @Override
     public boolean mouseReleased(net.minecraft.client.input.MouseButtonEvent event) {
-        if (dragging || shifting || shiftingHalf || cornerDrag != CORNER_NONE) {
+        if (dragging || shifting || cornerDrag != CORNER_NONE) {
             dragging = false;
             shifting = false;
-            shiftingHalf = false;
             cornerDrag = CORNER_NONE;
             commitSize();
             return true;
@@ -584,28 +607,18 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
     }
     *///?}
 
-    // Three ways to click inside the grid, in priority order (after #tryBeginCornerDrag has already had
-    // first refusal on the two corner handles): grabbing the blue ANCHOR square itself starts a half-block
-    // -precision shift (#updateShiftHalf - "je voudrais que le carré bleu au centre soit aussi déplaçable...
-    // comme les autres handle" - live request); clicking anywhere ELSE inside the current selection starts
-    // the ordinary whole-block shift (#updateShift, unchanged - "tout en gardant la feature pour déplacer la
-    // sélection en cliquant dessus" - live request); clicking outside the selection entirely starts a fresh
-    // resize drag (#updatePreview). Not version-split itself, called from both mouseClicked bodies above.
+    // Two ways to click inside the grid (after #tryBeginCornerDrag has already had first refusal on the two
+    // corner handles): clicking anywhere inside the current selection - the blue anchor square included -
+    // starts a half-block-precision shift of the whole selection (#updateShift); clicking outside the
+    // selection entirely starts a fresh resize drag (#updatePreview). Not version-split itself, called from
+    // both mouseClicked bodies above.
     private void beginGesture(double mouseX, double mouseY) {
         int col = Math.max(-maxBlocks, Math.min(maxBlocks, colAt(mouseX)));
         int row = Math.max(-maxBlocks, Math.min(maxBlocks, rowAt(mouseY)));
-        if (col == 0 && row == 0) {
-            shiftingHalf = true;
+        if (insideSelection(col, row)) {
+            shifting = true;
             shiftStartHalfCol = clampHalf(halfColAt(mouseX));
             shiftStartHalfRow = clampHalf(halfRowAt(mouseY));
-            shiftBaseNegCol = previewNegCol;
-            shiftBasePosCol = previewPosCol;
-            shiftBaseNegRow = previewNegRow;
-            shiftBasePosRow = previewPosRow;
-        } else if (insideSelection(col, row)) {
-            shifting = true;
-            shiftStartCol = col;
-            shiftStartRow = row;
             shiftBaseNegCol = previewNegCol;
             shiftBasePosCol = previewPosCol;
             shiftBaseNegRow = previewNegRow;
@@ -626,7 +639,7 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
     // rendered after that sync packet lands self-corrects automatically, and also keeps satisfying "Grid
     // should keep in memory the size and display it by default" if the size changes from elsewhere.
     private void syncFromMenuIfIdle() {
-        if (dragging || shifting || shiftingHalf || cornerDrag != CORNER_NONE)
+        if (dragging || shifting || cornerDrag != CORNER_NONE)
             return;
         screenToPreview();
     }
@@ -689,17 +702,20 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
     /*@Override
     public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
         syncFromMenuIfIdle();
+        updateCursor(mouseX, mouseY);
         guiGraphics.fill(leftPos, topPos, leftPos + imageWidth, topPos + imageHeight, 0xE0101010);
         guiGraphics.centeredText(this.font, this.title, leftPos + imageWidth / 2, topPos + 8, 0xA0A0A0);
         guiGraphics.centeredText(this.font, sizeLabel(), leftPos + imageWidth / 2, topPos + imageHeight - 16, 0xFFFFFF);
         drawGrid(guiGraphics);
         for (Button button : ownButtons)
             button.extractRenderState(guiGraphics, mouseX, mouseY, partialTick);
+        CursorEffects.endFrame();
     }
     *///? } else {
     @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         syncFromMenuIfIdle();
+        updateCursor(mouseX, mouseY);
         this./*$ gui_render_transparent_background {*/renderTransparentBackground/*$}*/(guiGraphics);
         guiGraphics.fill(leftPos, topPos, leftPos + imageWidth, topPos + imageHeight, 0xE0101010);
         guiGraphics.drawCenteredString(this.font, this.title, leftPos + imageWidth / 2, topPos + 8, 0xA0A0A0);
@@ -707,6 +723,7 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
         drawGrid(guiGraphics);
         for (Button button : ownButtons)
             button.render(guiGraphics, mouseX, mouseY, partialTick);
+        CursorEffects.endFrame();
     }
     //?}
 }
