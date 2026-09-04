@@ -374,19 +374,32 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
     // you didn't change anything for images placed on walls it was working before" / "the bugs was towards
     // images placed on floor" - live request) - reverted back to exactly this.
     //
-    // FLOOR/CEILING: FIXED (NOT dependent on CrazyPhonePhotoFrameEntity#rotation()) - CrazyPhonePhotoFrame-
-    // Renderer's own doc comment is explicit that rotation is a pure visual spin of the picture's PIXEL
-    // CONTENT within its existing slot rectangle, never a change to which world axis width/height bind to -
-    // the physical slot (what this grid actually edits) never rotates, only the texture drawn inside it
-    // does. UP's value is confirmed live ("les images placées au plafond ça marche" - live request). DOWN's
-    // own value is still being actively worked out against live floor-specific reports - do not assume it's
-    // settled without checking the current live conversation first.
+    // CEILING: FIXED (NOT dependent on CrazyPhonePhotoFrameEntity#rotation()), confirmed live ("les images
+    // placées au plafond ça marche" - live request, at whatever single rotation was tested there).
+    //
+    // FLOOR: unlike ceiling, this DOES depend on rotation() - "for a floor-placed photo... the grid tracks
+    // whichever way the photo currently faces after rotating" was the explicitly requested behavior (live
+    // request), even though CrazyPhonePhotoFrameRenderer's own doc comment is clear that rotation never
+    // changes the physical SLOT (only the pixel content drawn inside it spins) - i.e. the grid intentionally
+    // tracks the DISPLAYED picture's own current "up" edge, not the (rotation-invariant) slot geometry
+    // itself. Derived from CrazyPhonePhotoFrameRenderer#uvForCorner (which screen corner shows the texture's
+    // own top edge, per rotation step) composed with the DOWN face's own pose-stack rotation (which world
+    // axis that screen-local direction actually lands on) - cross-checked against UP's independently
+    // live-confirmed mapping above (same underlying local-to-world relationship, opposite face) rather than
+    // trusted on raw rotation-matrix math alone, since that math got the handedness backwards once already
+    // in this exact spot. Every one of these 4 values is the SAME as an earlier, live-reported-wrong
+    // rotation table with only signV flipped in every case - consistent with that earlier table having had
+    // exactly this one systematic handedness error throughout, not four independent mistakes.
+    private static final int[][] DOWN_ROTATION_TRANSFORM = {
+            {0, 1, 1}, {1, 1, -1}, {0, -1, -1}, {1, -1, 1}
+    };
+
     private int[] axisTransform() {
         Direction face = menu.attachFace();
         if (face == Direction.UP)
             return new int[]{0, 1, -1};
         if (face == Direction.DOWN)
-            return new int[]{0, 1, 1};
+            return DOWN_ROTATION_TRANSFORM[Math.floorMod(menu.rotation(), 4)];
         int signU = (face == Direction.NORTH || face == Direction.EAST) ? -1 : 1;
         return new int[]{0, signU, -1};
     }
