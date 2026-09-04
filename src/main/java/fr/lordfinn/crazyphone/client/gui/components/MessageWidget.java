@@ -506,7 +506,10 @@ public class MessageWidget extends AbstractWidget {
         fr.lordfinn.crazyphone.client.picture.FabricPictureCache.CachedTexture texture =
                 fr.lordfinn.crazyphone.client.picture.FabricPictureCache.getOrRequest(fabricImageId,
                         fr.lordfinn.crazyphone.ClientConfig.phonePhotoListPixelated ? fr.lordfinn.crazyphone.utils.PhotoResolution.THUMBNAIL : fr.lordfinn.crazyphone.utils.PhotoResolution.FULL);
-        if (texture == null) return;
+        if (texture == null) {
+            PhotoLoadingPlaceholder.draw(guiGraphics, wrappedText.getX(), wrappedText.getY(), imageWidth, imageHeight);
+            return;
+        }
 
         int x = wrappedText.getX();
         int y = wrappedText.getY();

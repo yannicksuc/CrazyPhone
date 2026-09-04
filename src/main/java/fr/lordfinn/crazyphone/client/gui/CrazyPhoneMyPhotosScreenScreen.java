@@ -5,6 +5,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 //?}
 
 import fr.lordfinn.crazyphone.client.gui.components.CrazyPhoneColors;
+import fr.lordfinn.crazyphone.client.gui.components.PhotoLoadingPlaceholder;
 import fr.lordfinn.crazyphone.client.picture.FabricPictureCache;
 import fr.lordfinn.crazyphone.init.ModItems;
 import fr.lordfinn.crazyphone.network.CrazyPhoneMyPhotosActionMessage;
@@ -159,14 +160,17 @@ public class CrazyPhoneMyPhotosScreenScreen extends CrazyPhoneDefaultScreenScree
         for (int index = firstIndex; index < lastIndex; index++) {
             UUID photoId = menu.photoIds.get(index);
             FabricPictureCache.CachedTexture texture = FabricPictureCache.getOrRequest(photoId, resolution);
-            if (texture == null)
-                continue;
 
             int rel = index - firstIndex;
             int col = rel % GRID_COLUMNS;
             int row = topRow + rel / GRID_COLUMNS;
             int x = gridLeft + col * THUMB_PITCH;
             int y = gridTop + row * THUMB_PITCH - scrollPosition;
+
+            if (texture == null) {
+                PhotoLoadingPlaceholder.draw(guiGraphics, x, y, THUMB_SIZE, THUMB_SIZE);
+                continue;
+            }
 
             boolean selected = selectedPhotoIds.contains(photoId);
             if (selected) {

@@ -18,6 +18,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvents;
 
+import fr.lordfinn.crazyphone.client.gui.components.PhotoLoadingPlaceholder;
 import fr.lordfinn.crazyphone.client.picture.FabricPictureCache;
 import fr.lordfinn.crazyphone.network.CrazyPhoneGivePhotoItemPacket;
 import fr.lordfinn.crazyphone.utils.GuiCompat;
@@ -103,6 +104,8 @@ public class CrazyPhonePhotoViewerScreen extends Screen implements PhoneScreen {
         FabricPictureCache.CachedTexture texture = FabricPictureCache.getOrRequest(photoId, PhotoResolution.FULL);
         if (texture != null)
             drawFitted(guiGraphics, texture);
+        else
+            drawLoadingPlaceholder(guiGraphics);
         for (Button button : ownButtons)
             button.extractRenderState(guiGraphics, mouseX, mouseY, partialTick);
     }
@@ -113,6 +116,8 @@ public class CrazyPhonePhotoViewerScreen extends Screen implements PhoneScreen {
         FabricPictureCache.CachedTexture texture = FabricPictureCache.getOrRequest(photoId, PhotoResolution.FULL);
         if (texture != null)
             drawFitted(guiGraphics, texture);
+        else
+            drawLoadingPlaceholder(guiGraphics);
         for (Button button : ownButtons)
             button.render(guiGraphics, mouseX, mouseY, partialTick);
     }
@@ -131,6 +136,17 @@ public class CrazyPhonePhotoViewerScreen extends Screen implements PhoneScreen {
     // side rather than skewed toward one corner.
     private static final int[] SHADOW_LAYER_SPREAD = {0, 3, 7, 12};
     private static final int[] SHADOW_LAYER_ALPHA = {0x50, 0x30, 0x18, 0x0A};
+
+    // Same 80%-of-window box drawFitted would eventually fill once the real texture arrives - shown as a
+    // plain gray card with no shadow/tilt/border treatment (those all depend on real image dimensions this
+    // screen doesn't have yet) so the loading state doesn't jump around once the actual photo replaces it.
+    private void drawLoadingPlaceholder(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics) {
+        int boxWidth = (int) (width * 0.8f);
+        int boxHeight = (int) (height * 0.8f);
+        int x = (width - boxWidth) / 2;
+        int y = (height - boxHeight) / 2;
+        PhotoLoadingPlaceholder.draw(guiGraphics, x, y, boxWidth, boxHeight);
+    }
 
     // Fits the image within an 80%-of-window box, preserving aspect ratio and centering it - same box
     // proportions the old CrazyPhoneImageScreen used, just computed from the real cached dimensions now

@@ -199,6 +199,7 @@ sourceSets.main {
         "fr/lordfinn/crazyphone/client/gui/components/PasswordEditBox.java",
         "fr/lordfinn/crazyphone/client/gui/components/SmallTextEditBox.java",
         "fr/lordfinn/crazyphone/client/gui/components/MessageWidget.java",
+        "fr/lordfinn/crazyphone/client/gui/components/PhotoLoadingPlaceholder.java",
         "fr/lordfinn/crazyphone/world/inventory/CrazyPhoneDefaultScreenMenu.java",
         "fr/lordfinn/crazyphone/init/ModMenus.java",
         "fr/lordfinn/crazyphone/init/ModScreens.java",
