@@ -87,6 +87,14 @@ public class CrazyPhoneItemInInventoryTickProcedure {
 								Component.literal(PHOTO_DATE_FORMATTER.format(Instant.ofEpochSecond(data.createdMinutes() * 60L)))
 										.withStyle(net.minecraft.ChatFormatting.AQUA))
 						.withStyle(net.minecraft.ChatFormatting.GRAY));
+				// Only the vanilla item frame (FIXED display context) actually renders the pixel-art THUMBNAIL
+				// by default (see CrazyPhonePhotoItemRenderer#renderFramedCard and ClientConfig#itemPreviewPixelated) -
+				// the custom block-face frame (CrazyPhonePhotoFrameEntity, placed via right-click on a block)
+				// deliberately always renders FULL resolution instead, since it's resizable up to 32 blocks and
+				// a large mural at thumbnail resolution would just look like a blurry blown-up mess. Worded to
+				// not overclaim the block-face frame's own look, matching that real difference.
+				tooltip.add(Component.translatable("item.crazyphone.crazy_phone_photo.lore_display_hint")
+						.withStyle(net.minecraft.ChatFormatting.GRAY, net.minecraft.ChatFormatting.ITALIC));
 			}
 		}
 	}

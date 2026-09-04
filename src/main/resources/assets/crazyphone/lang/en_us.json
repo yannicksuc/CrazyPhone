@@ -24,6 +24,7 @@
   "item.crazyphone.lore_owner": "Owner: %s",
   "item.crazyphone.crazy_phone_photo.lore_author": "Taken by: %s",
   "item.crazyphone.crazy_phone_photo.lore_date": "Taken on: %s",
+  "item.crazyphone.crazy_phone_photo.lore_display_hint": "Place against a block, or in an item frame, for a pixel-art painting look",
 
   "message.crazyphone.phone_locked_no_photo": "Unlock this phone before taking a photo.",
   "message.crazyphone.unknown_contact": "Unknown",
