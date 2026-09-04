@@ -255,8 +255,15 @@ public final class CrazyPhoneCaptureMode {
     }
 
     public static void drawOverlay(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics) {
-        if (!active || FabricPictureCapture.suppressPhoneRendering)
+        if (!active)
             return;
+        if (FabricPictureCapture.suppressPhoneRendering) {
+            // This frame is confirmed to have rendered with the screen hidden - see
+            // FabricPictureCapture#suppressedFramesRendered's own doc comment for why onClientTick needs
+            // this signal instead of just assuming a tick implies a frame rendered in between.
+            FabricPictureCapture.onSuppressedFrameRendered();
+            return;
+        }
         drawReticle(guiGraphics);
         drawZoomReadout(guiGraphics);
     }

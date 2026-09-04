@@ -88,25 +88,45 @@ public final class FabricPictureCapture {
         CrazyPhoneCaptureMode.tick();
     }
 
+    // Set true the instant requestCapture() is called, incremented once per rendered frame that actually
+    // observed suppressPhoneRendering==true (see onSuppressedFrameRendered) - onClientTick only fires the
+    // real capture once this has reached at least 1, instead of assuming "ticks run at 20Hz, well below any
+    // normal framerate" guarantees a frame rendered in between. That assumption held on <1.21.10 in
+    // practice, but a heavy shader pack (Sodium+Iris, live-reported as the exact reproduction case) can push
+    // frame time PAST a tick's own ~50ms budget, so a tick can genuinely fire with zero new frames rendered
+    // since suppression started - the overlay's own last-rendered frame (from before requestCapture()) is
+    // still what's sitting in the render target, and that's what got captured.
+    private static volatile int suppressedFramesRendered = 0;
+
     // Hides the phone screen for a moment, captures a clean shot of the world once that's actually taken
     // effect, then hands (thumbnailPng, fullPng) - either both non-null or both null on failure - to
-    // onCaptured and restores rendering. A client tick always follows several rendered frames (ticks run at
-    // a fixed 20 Hz, well below any normal framerate), so by the time onClientTick fires, the screen has
-    // genuinely been absent from at least one fully rendered frame - unlike calling captureBothResolutions()
-    // synchronously from the button click itself, which would just photograph the still-visible phone screen.
+    // onCaptured and restores rendering. onClientTick defers firing the real capture until a rendered frame
+    // has actually confirmed the screen absent (see suppressedFramesRendered's own doc comment) - unlike
+    // calling captureBothResolutions() synchronously from the button click itself, which would just
+    // photograph the still-visible phone screen.
     public static void requestCapture(BiConsumer<byte[], byte[]> onCaptured) {
         suppressPhoneRendering = true;
+        suppressedFramesRendered = 0;
         pendingCallback = onCaptured;
     }
 
-    // Called every client tick (see CrazyphoneFabricClient / the NeoForge client tick handler) - a no-op
-    // except on the tick right after requestCapture() leaves a callback pending. suppressPhoneRendering
-    // itself is deliberately NOT reset here - see captureBothResolutions's own doc comment on why it stays
-    // true until the actual pixel copy has genuinely happened, not just been requested.
+    // Called from CrazyPhoneCaptureMode#drawOverlay every time a frame actually renders while suppressed -
+    // the one reliable "a real frame came and went with the screen hidden" signal, independent of tick rate
+    // or how slow/fast frames are currently coming in.
+    public static void onSuppressedFrameRendered() {
+        suppressedFramesRendered++;
+    }
+
+    // Called every client tick (see CrazyphoneFabricClient / the NeoForge client tick handler) - fires the
+    // pending capture once at least one frame has confirmed rendering with the screen suppressed (see
+    // suppressedFramesRendered), otherwise leaves pendingCallback in place and just waits for a later tick
+    // to check again. suppressPhoneRendering itself is deliberately NOT reset here - see
+    // captureBothResolutions's own doc comment on why it stays true until the actual pixel copy has
+    // genuinely happened, not just been requested.
     public static void onClientTick() {
-        BiConsumer<byte[], byte[]> callback = pendingCallback;
-        if (callback == null)
+        if (pendingCallback == null || suppressedFramesRendered < 1)
             return;
+        BiConsumer<byte[], byte[]> callback = pendingCallback;
         pendingCallback = null;
         captureBothResolutions(callback);
     }
