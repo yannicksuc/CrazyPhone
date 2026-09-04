@@ -147,6 +147,10 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
     private static final int DISPLAY_MAX_BLOCKS_CAP = 8;
 
     private final List<Button> ownButtons = new ArrayList<>();
+    // Only meaningful for floor/ceiling (see #axisTransform's own doc comment) - which compass direction
+    // the player was facing when this screen opened, snapped to the nearest of the 4 cardinal directions.
+    // Null for walls, which use attachFace() as their own reference instead and never read this field.
+    private Direction viewerFacing;
     // DISPLAY bound - drives every pixel/layout computation (cell count, cell size, gridLeft/Top,
     // colAt/rowAt/halfColAt/halfRowAt's own coordinate origin, drawGrid's loop range). See this class's own
     // field-level doc comment above for why this is capped independently of the real selection limit.
@@ -275,6 +279,15 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
     @Override
     protected void init() {
         super.init();
+        // Floor/ceiling have no wall-like attachFace() to derive a compass reference from, and unlike a
+        // wall (which more or less forces the viewer to stand in front of it), a floor/ceiling photo can be
+        // inspected from any angle - a FIXED compass mapping (up in the grid = always true north) was
+        // confirmed CORRECT down to the exact math, but still looked wrong to whoever was testing it because
+        // north doesn't generally line up with "away from you" in your own current view. Captured once here,
+        // not re-read per frame - the mouse is captured by this screen's own cursor while it's open, so the
+        // player physically cannot change their look direction until it closes ("relative to your current
+        // view" - live request, chosen over the fixed-compass alternative).
+        viewerFacing = Direction.fromYRot(this.minecraft.player.getYRot());
         maxBlocks = computeDisplayMaxBlocks(menu);
         maxHalf = maxBlocks * 2;
         limitHalf = computeLimitMaxBlocks(menu) * 2;
@@ -374,34 +387,45 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
     // you didn't change anything for images placed on walls it was working before" / "the bugs was towards
     // images placed on floor" - live request) - reverted back to exactly this.
     //
-    // FLOOR/CEILING: FIXED, NOT dependent on CrazyPhonePhotoFrameEntity#rotation() at all - rotation only
-    // ever feeds CrazyPhonePhotoFrameRenderer#uvForCorner, which decides which TEXTURE pixel lands at which
-    // SCREEN corner of the slot; it never touches the slot's own local x/y extents (drawImageQuad's w/h,
-    // straight from widthBlocks()/heightBlocks(), i.e. straight from U/V) or the face's own pose-stack
-    // rotation that maps those local extents onto world X/Z - exactly what the renderer's own doc comment
-    // already says ("rotation... is NOT a swap of which world axis width/height bind to"). Confirmed live,
-    // twice, by two floor tests at genuinely different placement-facings (different seeded rotation()
-    // values via tryPlace) showing the IDENTICAL up/down/left/right symptom pattern regardless of rotation -
-    // exactly what you'd see if U/V structurally can't track rotation, which is why this stays fixed rather
-    // than a per-rotation table (an earlier round tried the latter, live-requested at the time, before this
-    // rotation-independence was confirmed).
+    // FLOOR/CEILING: NOT dependent on CrazyPhonePhotoFrameEntity#rotation() (rotation only ever feeds
+    // CrazyPhonePhotoFrameRenderer#uvForCorner, which decides which TEXTURE pixel lands where - it never
+    // touches the slot's own local x/y extents or the face's own pose-stack rotation that maps those onto
+    // world X/Z, exactly as the renderer's own doc comment says: "NOT a swap of which world axis width/
+    // height bind to"). This was independently re-derived and confirmed correct end to end against a FIXED
+    // compass reference (up in the grid = always true north) - "quand j'augmente vers le haut... ça va vers
+    // le sud... ce n'est pas bon" turned out to still be reported even once every step of that fixed mapping
+    // checked out, because a floor/ceiling photo (unlike a wall, which more or less forces you to stand in
+    // front of it) can be inspected from any angle, and true north doesn't generally line up with "away from
+    // you" in whatever direction you currently happen to be facing. So instead of a fixed compass reference,
+    // #viewerFacing (the player's own facing when this screen opened, see #init) stands in for what
+    // attachFace().getOpposite() is for walls below - "up in the grid" always means "away from you, in
+    // whichever direction you're currently facing" ("relative to your current view" - live request), and
+    // "right in the grid" means your own right hand, using the SAME compass facts as the wall table (facing
+    // north, east is your right; facing south, west is your right; facing east, south is your right; facing
+    // west, north is your right).
     //
-    // DOWN and UP take OPPOSITE signV (not the same value - an earlier round briefly unified them after
-    // misreading stale test data, which was wrong: "quand j'augmente vers le haut... ça va vers le bas,
-    // donc vers le sud... ce n'est pas bon" - live request, confirmed live against the CURRENT code, twice,
-    // at two different rotations, forcing floor's V back to the opposite of ceiling's own independently
-    // -confirmed value). This actually has a clean explanation: DOWN's pose-stack rotation is Axis.XP(+90),
-    // UP's is Axis.XP(-90) - opposite angles about the SAME axis (X) leave that axis (which becomes U)
-    // unaffected in both cases, but flip the OTHER in-plane axis (Z, which becomes V) between the two,
-    // since a +θ and a -θ rotation of the same plane are mirror images of each other. U staying identical
-    // while only V flips isn't a coincidence, it's exactly what opposite-signed rotations about a shared
-    // axis are expected to do.
+    // DOWN and UP need OPPOSITE signV for the SAME #viewerFacing (not identical - confirmed live, twice, at
+    // two different frame placements, that a value shared between them was wrong for floor). This has a
+    // clean explanation: DOWN's pose-stack rotation is Axis.XP(+90), UP's is Axis.XP(-90) - opposite angles
+    // about the SAME axis (X) leave that axis (which becomes U) unaffected in both cases, but flip the OTHER
+    // in-plane axis (Z, which becomes V) between the two, since a +θ and a -θ rotation of the same plane are
+    // mirror images of each other.
+    private static int[] floorCeilingTransform(Direction viewerFacing, boolean isDown) {
+        int[] transform = switch (viewerFacing) {
+            case NORTH -> new int[]{0, 1, 1};
+            case SOUTH -> new int[]{0, -1, -1};
+            case EAST -> new int[]{1, -1, 1};
+            default -> new int[]{1, 1, -1}; // WEST
+        };
+        return isDown ? transform : new int[]{transform[0], transform[1], -transform[2]};
+    }
+
     private int[] axisTransform() {
         Direction face = menu.attachFace();
         if (face == Direction.UP)
-            return new int[]{0, 1, -1};
+            return floorCeilingTransform(viewerFacing, false);
         if (face == Direction.DOWN)
-            return new int[]{0, 1, 1};
+            return floorCeilingTransform(viewerFacing, true);
         int signU = (face == Direction.NORTH || face == Direction.EAST) ? -1 : 1;
         return new int[]{0, signU, -1};
     }
