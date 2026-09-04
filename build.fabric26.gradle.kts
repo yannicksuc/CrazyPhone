@@ -276,6 +276,7 @@ sourceSets.main {
         "fr/lordfinn/crazyphone/client/render/CrazyPhonePhotoItemRenderer.java",
         "fr/lordfinn/crazyphone/client/picture/FabricPictureCapture.java",
         "fr/lordfinn/crazyphone/client/picture/FabricPictureCache.java",
+        "fr/lordfinn/crazyphone/client/picture/PixelArtDownscaler.java",
         "fr/lordfinn/crazyphone/client/CrazyPhoneCaptureMode.java",
         "fr/lordfinn/crazyphone/mixin/CrazyPhoneCaptureFovMixin.java",
         "fr/lordfinn/crazyphone/mixin/CrazyPhoneCaptureHandMixin.java",

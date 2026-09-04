@@ -233,15 +233,11 @@ public final class FabricPictureCapture {
     // longer side" - Config#photoThumbnailPixelHeight is specified in target height precisely so a low
     // value gives a consistently chunky, pixel-art-like preview regardless of the source photo's aspect
     // ratio. Callers must only pass a targetHeight smaller than source's own height (see
-    // captureBothResolutions - a photo is never upscaled for its preview).
+    // captureBothResolutions - a photo is never upscaled for its preview). Delegates to PixelArtDownscaler,
+    // which only actually runs the pixel-art pipeline (palette + dither) at/below its own
+    // PIXEL_ART_MAX_HEIGHT threshold - above that a plain resize stays the better fit (see its own doc
+    // comment), same as this method did on its own before.
     private static NativeImage downscaleToHeight(NativeImage source, int targetHeight) {
-        int width = source.getWidth();
-        int height = source.getHeight();
-        double scale = (double) targetHeight / height;
-        int targetWidth = Math.max(1, (int) Math.round(width * scale));
-
-        NativeImage target = new NativeImage(targetWidth, targetHeight, false);
-        source.resizeSubRectTo(0, 0, width, height, target);
-        return target;
+        return PixelArtDownscaler.downscaleToHeight(source, targetHeight);
     }
 }

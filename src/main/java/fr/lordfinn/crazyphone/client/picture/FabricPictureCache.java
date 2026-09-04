@@ -286,20 +286,15 @@ public final class FabricPictureCache {
         }
     }
 
-    // Nearest-neighbor downscale to an exact target height, mirroring FabricPictureCapture#downscaleToHeight
-    // (capture-time derivation of the same two resolutions from one screenshot) - kept as a separate copy
-    // rather than a shared utility since the two call sites operate on different NativeImage lifetimes
+    // Downscale to an exact target height, mirroring FabricPictureCapture#downscaleToHeight (capture-time
+    // derivation of the same two resolutions from one screenshot) - both now delegate to the same
+    // PixelArtDownscaler, which is safe to share despite the two call sites' different NativeImage lifetimes
     // (capture's source is closed by its own try-with-resources right after; this one must NOT close
-    // fullImage, which the caller (decodeAndRegister) still owns via its DynamicTexture).
+    // fullImage, which the caller (decodeAndRegister) still owns via its DynamicTexture) since
+    // PixelArtDownscaler only ever reads from source, never closes it, and returns a fresh NativeImage this
+    // method's own caller owns exactly as before.
     private static NativeImage downscaleForThumbnail(NativeImage source, int targetHeight) {
-        int width = source.getWidth();
-        int height = source.getHeight();
-        double scale = (double) targetHeight / height;
-        int targetWidth = Math.max(1, (int) Math.round(width * scale));
-
-        NativeImage target = new NativeImage(targetWidth, targetHeight, false);
-        source.resizeSubRectTo(0, 0, width, height, target);
-        return target;
+        return PixelArtDownscaler.downscaleToHeight(source, targetHeight);
     }
 
     // Wraps image in a DynamicTexture and registers it with TextureManager under a name unique to this key -

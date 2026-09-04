@@ -306,6 +306,7 @@ sourceSets.main {
             "fr/lordfinn/crazyphone/client/render/CrazyPhonePhotoItemRenderer.java",
             "fr/lordfinn/crazyphone/client/picture/FabricPictureCapture.java",
             "fr/lordfinn/crazyphone/client/picture/FabricPictureCache.java",
+            "fr/lordfinn/crazyphone/client/picture/PixelArtDownscaler.java",
             // CrazyPhoneCaptureMode's core (enter/exit/tick/triggerCapture/drawOverlay) is loader-neutral;
             // the old Screen-based CrazyPhoneCaptureOverlayScreen/CrazyPhoneZoomController it replaced here
             // are gone entirely (that design couldn't keep the mouse grabbed while framing a shot - a real
