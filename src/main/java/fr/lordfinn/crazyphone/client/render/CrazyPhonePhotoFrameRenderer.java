@@ -82,6 +82,11 @@ public class CrazyPhonePhotoFrameRenderer extends EntityRenderer<CrazyPhonePhoto
 
     @Override
     public void render(CrazyPhonePhotoFrameEntity entity, float entityYaw, float partialTicks, PoseStack poseStack, MultiBufferSource buffer, int packedLight) {
+        // "ajoute un bouton toggle... pour activer/désactiver le calcul de la lumière... afficher l'image en
+        // fullbright" (live request) - overrides whatever light level was actually computed (including the
+        // corrected #getLightProbePosition) with maximum block+sky light.
+        if (entity.fullbright())
+            packedLight = net.minecraft.client.renderer.LightTexture.FULL_BRIGHT;
         poseStack.pushPose();
         applyFaceTransform(entity, poseStack);
 
@@ -367,6 +372,11 @@ public class CrazyPhonePhotoFrameRenderer extends EntityRenderer<CrazyPhonePhoto
     @Override
     public void extractRenderState(CrazyPhonePhotoFrameEntity entity, State state, float partialTick) {
         super.extractRenderState(entity, state, partialTick);
+        // See the <26 branch's own comment on this same override for why - LightTexture.FULL_BRIGHT moved
+        // to LightCoordsUtil.FULL_BRIGHT on >=26 (same value, 0xF000F0/15728880, confirmed via the real
+        // decompiled LightCoordsUtil.java, not guessed).
+        if (entity.fullbright())
+            state.lightCoords = net.minecraft.util.LightCoordsUtil.FULL_BRIGHT;
         state.face = entity.attachFace();
         state.faceOffset = entity.computeFaceOffset(entity.level());
         state.width = entity.widthBlocks();

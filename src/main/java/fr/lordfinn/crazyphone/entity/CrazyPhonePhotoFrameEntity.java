@@ -84,6 +84,13 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
     // tryPlace's own comment.
     private static final EntityDataAccessor<Integer> DATA_ROTATION =
             SynchedEntityData.defineId(CrazyPhonePhotoFrameEntity.class, EntityDataSerializers.INT);
+    // When true, the photo renders at full brightness regardless of the actual block/sky light at its own
+    // position - "ajoute un bouton toggle... pour activer/désactiver le calcul de la lumière... et afficher
+    // l'image en fullbright" (live request), a deliberate escape hatch for a placement where the corrected
+    // #getLightProbePosition still isn't lit the way the player wants (e.g. a dim room they'd rather the
+    // photo ignore).
+    private static final EntityDataAccessor<Boolean> DATA_FULLBRIGHT =
+            SynchedEntityData.defineId(CrazyPhonePhotoFrameEntity.class, EntityDataSerializers.BOOLEAN);
 
     // Not synced - every client already has this block loaded locally (see class doc comment). Set once in
     // the placement constructor / re-derived from DATA_FACE + this entity's own blockPosition() elsewhere
@@ -319,6 +326,15 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
         setRotation(rotation() + 1);
     }
 
+    /** See {@link #DATA_FULLBRIGHT}'s own field comment. */
+    public boolean fullbright() {
+        return this.entityData.get(DATA_FULLBRIGHT);
+    }
+
+    public void toggleFullbright() {
+        this.entityData.set(DATA_FULLBRIGHT, !fullbright());
+    }
+
     // True for the two horizontal-face cases (floor/ceiling) - the ground-placed "1px deep, brown border
     // and background" visual treatment from the live request applies to these, not to wall-mounted frames.
     public boolean isFloorOrCeiling() {
@@ -398,6 +414,7 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
         builder.define(DATA_POS_V, DEFAULT_SIZE_UNITS - DEFAULT_SIZE_UNITS / 2);
         builder.define(DATA_FACE, Direction.NORTH.get3DDataValue());
         builder.define(DATA_ROTATION, 0);
+        builder.define(DATA_FULLBRIGHT, false);
     }
 
     // Vanilla's own Entity#onSyncedDataUpdated(EntityDataAccessor) is how Entity itself keeps its bounding
@@ -671,6 +688,7 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
         this.entityData.set(DATA_NEG_V, fr.lordfinn.crazyphone.utils.NbtCompat.getInt(tag, "NegV", DEFAULT_SIZE_UNITS / 2));
         this.entityData.set(DATA_POS_V, fr.lordfinn.crazyphone.utils.NbtCompat.getInt(tag, "PosV", DEFAULT_SIZE_UNITS / 2));
         this.entityData.set(DATA_ROTATION, fr.lordfinn.crazyphone.utils.NbtCompat.getInt(tag, "Rotation", 0));
+        this.entityData.set(DATA_FULLBRIGHT, fr.lordfinn.crazyphone.utils.NbtCompat.getBoolean(tag, "Fullbright", false));
         this.refreshDimensions();
     }
 
@@ -687,6 +705,7 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
         tag.putInt("NegV", this.entityData.get(DATA_NEG_V));
         tag.putInt("PosV", this.entityData.get(DATA_POS_V));
         tag.putInt("Rotation", this.entityData.get(DATA_ROTATION));
+        tag.putBoolean("Fullbright", this.entityData.get(DATA_FULLBRIGHT));
     }
     //?}
     //? if >=26 {
@@ -701,6 +720,7 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
         this.entityData.set(DATA_NEG_V, input.getIntOr("NegV", DEFAULT_SIZE_UNITS / 2));
         this.entityData.set(DATA_POS_V, input.getIntOr("PosV", DEFAULT_SIZE_UNITS / 2));
         this.entityData.set(DATA_ROTATION, input.getIntOr("Rotation", 0));
+        this.entityData.set(DATA_FULLBRIGHT, input.getBooleanOr("Fullbright", false));
         this.refreshDimensions();
     }
 
@@ -717,6 +737,7 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
         output.putInt("NegV", this.entityData.get(DATA_NEG_V));
         output.putInt("PosV", this.entityData.get(DATA_POS_V));
         output.putInt("Rotation", this.entityData.get(DATA_ROTATION));
+        output.putBoolean("Fullbright", this.entityData.get(DATA_FULLBRIGHT));
     }
     *///?}
 

@@ -300,25 +300,37 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
 
         screenToPreview();
 
-        // A row of small square icon buttons below the grid, currently just Rotate - "I would prefere a
-        // hotbar bellow with different square buttons, icons... and a tooltip on hover" (live request).
-        // Centered under the grid; a second button would just need HOTBAR_BUTTON_SIZE+HOTBAR_BUTTON_GAP
-        // added per slot, same row.
+        // A row of small square icon buttons below the grid - "I would prefere a hotbar bellow with
+        // different square buttons, icons... and a tooltip on hover" (live request). Centered under the
+        // grid as a group; a third button would just need the row's own total width recomputed the same way.
         ownButtons.clear();
         int hotbarY = gridTop + gridPx + 4;
-        int hotbarX = this.leftPos + this.imageWidth / 2 - HOTBAR_BUTTON_SIZE / 2;
-        Button rotate = createSquareIconButton(hotbarX, hotbarY, ROTATE_ICON, b ->
+        int rowWidth = HOTBAR_BUTTON_SIZE * 2 + HOTBAR_BUTTON_GAP;
+        int rowLeft = this.leftPos + this.imageWidth / 2 - rowWidth / 2;
+        Button rotate = createSquareIconButton(rowLeft, hotbarY, ROTATE_ICON, b ->
                 this.minecraft.gameMode.handleInventoryButtonClick(menu.containerId, CrazyPhonePhotoFrameResizeMenu.ROTATE_BUTTON_ID));
         rotate.setTooltip(Tooltip.create(Component.translatable("gui.crazyphone.photo_frame_resize.rotate")));
         addRenderableWidget(rotate);
         ownButtons.add(rotate);
+
+        Button fullbright = createSquareIconButton(rowLeft + HOTBAR_BUTTON_SIZE + HOTBAR_BUTTON_GAP, hotbarY, FULLBRIGHT_ICON, b ->
+                this.minecraft.gameMode.handleInventoryButtonClick(menu.containerId, CrazyPhonePhotoFrameResizeMenu.FULLBRIGHT_BUTTON_ID));
+        fullbright.setTooltip(Tooltip.create(Component.translatable("gui.crazyphone.photo_frame_resize.fullbright")));
+        addRenderableWidget(fullbright);
+        ownButtons.add(fullbright);
     }
 
     // A "counterclockwise arrows" emoji (U+1F504, ":arrows_counterclockwise:") from the bundled Pixel
     // Twemoji font (assets/minecraft/font/default.json) - "a colored text icon using the new resource pack
     // we added" (live request) - drawn as plain Component text via #createSquareIconButton, no image blit.
     private static final Component ROTATE_ICON = Component.literal("🔄");
+    // A "high brightness" emoji (U+1F506, ":high_brightness:") - toggles CrazyPhonePhotoFrameEntity#
+    // fullbright(), same icon regardless of current state (the tooltip and the render's own visual result
+    // are the feedback) - "ajoute un bouton toggle... pour activer/désactiver le calcul de la lumière...
+    // afficher l'image en fullbright" (live request).
+    private static final Component FULLBRIGHT_ICON = Component.literal("🔆");
     private static final int HOTBAR_BUTTON_SIZE = 14;
+    private static final int HOTBAR_BUTTON_GAP = 4;
 
     // A small SQUARE Button showing a single centered icon glyph, using the real vanilla button background
     // (hover/press/disabled all keep working normally) - same technique as CrazyPhoneContactsScreenScreen's

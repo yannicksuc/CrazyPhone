@@ -13,10 +13,11 @@ import fr.lordfinn.crazyphone.entity.CrazyPhonePhotoFrameEntity;
 import fr.lordfinn.crazyphone.init.ModMenus;
 
 /**
- * Resize/rotate dialog opened by right-clicking a placed {@link CrazyPhonePhotoFrameEntity}. No custom
- * networking at all - {@link ContainerData} (5 ints: the slot's own negU/posU/negV/posV extents in
+ * Resize/rotate/edit dialog opened by right-clicking a placed {@link CrazyPhonePhotoFrameEntity}. No custom
+ * networking at all - {@link ContainerData} (7 ints: the slot's own negU/posU/negV/posV extents in
  * {@link CrazyPhonePhotoFrameEntity#UNITS_PER_BLOCK} units - see {@link CrazyPhonePhotoFrameEntity#setExtents}
- * for what those mean - plus rotation) is vanilla's own built-in "sync a few numbers to an open menu"
+ * for what those mean - plus rotation, attachFace, and the fullbright toggle) is vanilla's own built-in
+ * "sync a few numbers to an open menu"
  * mechanism (what furnaces/enchanting tables use), and every action rides vanilla's own
  * {@code ServerboundContainerButtonClickPacket} / {@link #clickMenuButton} - the same RPC an enchanting
  * table's slot-click uses. This is why registering this menu needs no extra "opening data" payload the way
@@ -34,8 +35,9 @@ import fr.lordfinn.crazyphone.init.ModMenus;
  */
 public class CrazyPhonePhotoFrameResizeMenu extends AbstractContainerMenu {
     public static final int ROTATE_BUTTON_ID = 4;
-    // Comfortably separated from each other and from ROTATE_BUTTON_ID, so decoding a button id is an
-    // unambiguous single range check.
+    public static final int FULLBRIGHT_BUTTON_ID = 7;
+    // Comfortably separated from each other and from ROTATE_BUTTON_ID/FULLBRIGHT_BUTTON_ID, so decoding a
+    // button id is an unambiguous single range check.
     private static final int AXIS_U_BASE = 1_000_000;
     private static final int AXIS_V_BASE = 2_000_000;
 
@@ -50,7 +52,7 @@ public class CrazyPhonePhotoFrameResizeMenu extends AbstractContainerMenu {
     public CrazyPhonePhotoFrameResizeMenu(int id, Inventory inventory, CrazyPhonePhotoFrameEntity entity) {
         super(ModMenus.CRAZY_PHONE_PHOTO_FRAME_RESIZE.get(), id);
         this.entity = entity;
-        this.data = new SimpleContainerData(6);
+        this.data = new SimpleContainerData(7);
         this.data.set(0, entity.negUUnits());
         this.data.set(1, entity.posUUnits());
         this.data.set(2, entity.negVUnits());
@@ -60,6 +62,7 @@ public class CrazyPhonePhotoFrameResizeMenu extends AbstractContainerMenu {
         // negU/posU/negV/posV the entity expects for THIS specific face - see
         // CrazyPhonePhotoFrameResizeScreen#screenToServerDelta's own doc comment.
         this.data.set(5, entity.attachFace().get3DDataValue());
+        this.data.set(6, entity.fullbright() ? 1 : 0);
         addDataSlots(data);
     }
 
@@ -68,7 +71,7 @@ public class CrazyPhonePhotoFrameResizeMenu extends AbstractContainerMenu {
     public CrazyPhonePhotoFrameResizeMenu(int id, Inventory inventory, FriendlyByteBuf buf) {
         super(ModMenus.CRAZY_PHONE_PHOTO_FRAME_RESIZE.get(), id);
         this.entity = null;
-        this.data = new SimpleContainerData(6);
+        this.data = new SimpleContainerData(7);
         addDataSlots(data);
     }
 
@@ -96,6 +99,10 @@ public class CrazyPhonePhotoFrameResizeMenu extends AbstractContainerMenu {
         return net.minecraft.core.Direction.from3DDataValue(data.get(5));
     }
 
+    public boolean fullbright() {
+        return data.get(6) != 0;
+    }
+
     public int maxUnits() {
         return Config.maxPhotoFrameSizeBlocks * CrazyPhonePhotoFrameEntity.UNITS_PER_BLOCK;
     }
@@ -117,6 +124,11 @@ public class CrazyPhonePhotoFrameResizeMenu extends AbstractContainerMenu {
         if (id == ROTATE_BUTTON_ID) {
             entity.rotate();
             data.set(4, entity.rotation());
+            return true;
+        }
+        if (id == FULLBRIGHT_BUTTON_ID) {
+            entity.toggleFullbright();
+            data.set(6, entity.fullbright() ? 1 : 0);
             return true;
         }
         if (id >= AXIS_V_BASE) {
