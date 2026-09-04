@@ -61,6 +61,17 @@ public final class GuiCompat {
         *///?}
     }
 
+    /** Rotates the current pose about the Z axis (screen-plane rotation), in degrees. Pre-1.21.10 goes
+     *  through the full 3D {@code PoseStack}'s {@code mulPose}; 1.21.10's 2D-only {@code Matrix3x2fStack}
+     *  has a direct {@code rotate(radians)} instead. */
+    public static void rotateDegrees(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, float degrees) {
+        //? if <1.21.10 {
+        guiGraphics.pose().mulPose(com.mojang.math.Axis.ZP.rotationDegrees(degrees));
+        //? } else {
+        /*guiGraphics.pose().rotate((float) Math.toRadians(degrees));
+        *///?}
+    }
+
     /** Single choke point for the {@code GuiGraphics.blit(ResourceLocation, ...)} overload that draws a
      *  texture 1:1 (sampling the whole file, no atlas) at (x,y): pre-1.21.10 that overload took the texture
      *  as its first argument directly, plus a now-gone z-depth {@code blitOffset}; 1.21.10 instead takes a

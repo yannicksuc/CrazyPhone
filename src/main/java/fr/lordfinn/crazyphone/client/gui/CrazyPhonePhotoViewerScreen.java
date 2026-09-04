@@ -37,6 +37,9 @@ public class CrazyPhonePhotoViewerScreen extends Screen implements PhoneScreen {
     // buttons directly, since it never has more than that and render() must skip Screen's own widget-render
     // loop anyway (see render()'s own doc comment on why super.render() can't be called here).
     private final List<Button> ownButtons = new ArrayList<>();
+    // Rolled once per screen instance (not per frame) so the tilt stays fixed while this preview is open,
+    // and re-rolls the next time a photo is opened - a fresh little "polaroid dropped on a table" touch.
+    private final float tiltDegrees;
 
     public CrazyPhonePhotoViewerScreen(UUID photoId) {
         this(photoId, false);
@@ -47,6 +50,7 @@ public class CrazyPhonePhotoViewerScreen extends Screen implements PhoneScreen {
         this.photoId = photoId;
         this.openedFromInventory = openedFromInventory;
         this.previousScreen = Minecraft.getInstance()./*$ mc_get_screen {*/screen/*$}*/;
+        this.tiltDegrees = (java.util.concurrent.ThreadLocalRandom.current().nextFloat() * 10f) - 5f;
     }
 
     @Override
@@ -120,6 +124,16 @@ public class CrazyPhonePhotoViewerScreen extends Screen implements PhoneScreen {
     // image itself covers the middle so only the border ring stays visible.
     private static final int BORDER_PX = 6;
 
+    // Material-Design-style elevation shadow behind the photo card: several progressively larger, fainter
+    // rects stacked behind the card (not one hard-edged rect) to fake a soft drop shadow without a real blur
+    // pass - GuiGraphics has no blur primitive available here (renderTransparentBackground's blur is a
+    // whole-screen post-process, not something you can scope to one rect). Offset down-and-right, matching
+    // the usual "light from the upper-left" convention.
+    private static final int SHADOW_OFFSET_X = 4;
+    private static final int SHADOW_OFFSET_Y = 6;
+    private static final int[] SHADOW_LAYER_SPREAD = {0, 3, 7, 12};
+    private static final int[] SHADOW_LAYER_ALPHA = {0x50, 0x30, 0x18, 0x0A};
+
     // Fits the image within an 80%-of-window box, preserving aspect ratio and centering it - same box
     // proportions the old CrazyPhoneImageScreen used, just computed from the real cached dimensions now
     // (that screen's Camera-mod-derived image data didn't reliably expose real width/height either).
@@ -131,6 +145,25 @@ public class CrazyPhonePhotoViewerScreen extends Screen implements PhoneScreen {
         int drawHeight = (int) Math.round(texture.height() * scale);
         int x = (width - drawWidth) / 2;
         int y = (height - drawHeight) / 2;
+
+        // Rotated about the card's own center so the shadow and border tilt along with the photo, like a
+        // real polaroid dropped at a slight angle - not just the image texture skewed inside a straight box.
+        int centerX = x + drawWidth / 2;
+        int centerY = y + drawHeight / 2;
+        GuiCompat.pushPose(guiGraphics);
+        GuiCompat.translate(guiGraphics, centerX, centerY);
+        GuiCompat.rotateDegrees(guiGraphics, tiltDegrees);
+        GuiCompat.translate(guiGraphics, -centerX, -centerY);
+
+        for (int i = SHADOW_LAYER_SPREAD.length - 1; i >= 0; i--) {
+            int spread = SHADOW_LAYER_SPREAD[i];
+            int argb = (SHADOW_LAYER_ALPHA[i] << 24);
+            guiGraphics.fill(
+                    x - BORDER_PX - spread + SHADOW_OFFSET_X, y - BORDER_PX - spread + SHADOW_OFFSET_Y,
+                    x + drawWidth + BORDER_PX + spread + SHADOW_OFFSET_X, y + drawHeight + BORDER_PX + spread + SHADOW_OFFSET_Y,
+                    argb);
+        }
+
         guiGraphics.fill(x - BORDER_PX, y - BORDER_PX, x + drawWidth + BORDER_PX, y + drawHeight + BORDER_PX, 0xFFFFFFFF);
         // GuiGraphics#blit (a batched call) is what lost to the background here - checked against the real
         // Camera mod jar's own ImageScreen#drawImage (de.maxhenkel.camera.gui.ImageScreen, javap'd from
@@ -141,6 +174,8 @@ public class CrazyPhonePhotoViewerScreen extends Screen implements PhoneScreen {
         // GuiCompat#drawTexturedQuad is that exact same technique, already used (and working) for
         // CrazyPhoneMyPhotosScreenScreen's gallery thumbnails.
         GuiCompat.drawTexturedQuad(guiGraphics, texture.location(), x, y, x + drawWidth, y + drawHeight, 0f, 0f, 1f, 1f);
+
+        GuiCompat.popPose(guiGraphics);
     }
 
     @Override
