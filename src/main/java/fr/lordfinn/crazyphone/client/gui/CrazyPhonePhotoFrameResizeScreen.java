@@ -357,53 +357,38 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
     // and V comes from col instead (a floor/ceiling rotated an odd number of quarter turns). signU/signV are
     // +1 or -1, applied to whichever screen axis feeds that server axis.
     //
-    // WALLS: every one of the 4 faces below is now tuned from its OWN individually-reported live bug rather
-    // than derived once and assumed to generalize - the compass-theory approach ("posU = viewer's right,
-    // which flips between opposite walls the same way for both axes") keeps getting contradicted by what's
-    // actually observed in the 3D render, so this class no longer tries to explain WHY each face needs what
-    // it needs, only records what's been reported and reacted to, face by face:
-    //   - NORTH: left/right was inverted under the old signU=-1 ("when placed looking north: left and right
-    //     are inverted" - live request) -> signU=+1. Up/down (signV=+1) was already fixed by an earlier
-    //     round and hasn't been re-reported since, so it's untouched here.
-    //   - SOUTH: up/down was inverted after an earlier round flipped signV to +1 for BOTH north and south
-    //     together ("when placed looking south: up and down are inverted" - live request) -> reverted SOUTH
-    //     specifically back to signV=-1, since apparently only north needed that flip. Left/right (signU=+1)
-    //     was never reported broken and stays as it always was.
-    //   - WEST/EAST: an earlier round tried a genuine axis SWAP (screen row feeding server U) based on a
-    //     detailed live description of the actual 3D render growing "sideways" when dragging "up" - that
-    //     made things WORSE, not better ("west and east still do the same strange inversion but... west is
-    //     doing what east was doing" - live request), so it's reverted back to the older, simpler
-    //     non-swapped model (screen col feeds U, same shape as north/south) with each face's own signU kept
-    //     exactly as it was before that swap attempt. The original underlying render bug this was trying to
-    //     fix for west/east may still be real - given the swap didn't fix it, it's more likely a renderer
-    //     issue than a GUI axis-mapping one, worth investigating separately rather than guessing a further
-    //     GUI-side sign change blind.
+    // WALLS: "up" on screen always grows the photo UP in the world (V = -row, gravity gives every wall the
+    // same vertical reference) - "right" on screen only grows the photo toward world +X or +Z depending on
+    // which way the VIEWER is actually facing that specific wall, which flips between opposite walls.
+    // attachFace() is which face of the BLOCK the frame sits on, i.e. the direction the frame's own visible
+    // side points TOWARD - a NORTH-attached frame points north, so the viewer looking at it is standing to
+    // the north and facing SOUTH, back at the wall, the OPPOSITE of attachFace() itself. Standing in front
+    // of a wall and facing it: facing north, east is your right; facing south, west is your right; facing
+    // east, south is your right; facing west, north is your right (ordinary compass facts) - applied to
+    // face.getOpposite() (the viewer's actual facing), not face itself, then cross-referenced against
+    // CrazyPhonePhotoFrameEntity#computeBoundingBox's own fixed U=+X/V=+Y (north/south) or U=+Z/V=+Y
+    // (east/west) axis assignment: south and west already agree with "posU = viewer's right" as
+    // computeBoundingBox defines it, north and east don't (need signU=-1). This is the ORIGINAL, long-
+    // confirmed-good wall table - a later session briefly "fixed" this several times over based on live
+    // reports that turned out to actually be describing FLOOR placements the whole time, not walls ("i hope
+    // you didn't change anything for images placed on walls it was working before" / "the bugs was towards
+    // images placed on floor" - live request) - reverted back to exactly this.
     //
-    // FLOOR/CEILING: FIXED, like the walls - NOT dependent on CrazyPhonePhotoFrameEntity#rotation() at all.
-    // An earlier version made this depend on rotation, on the theory that "up" in the grid should track
-    // "up" in the currently-displayed (rotated) picture - but CrazyPhonePhotoFrameRenderer's own doc comment
-    // is explicit that rotation is a pure visual spin of the picture's PIXEL CONTENT within its existing
-    // slot rectangle, "NOT a swap of which world axis width/height bind to" - the physical slot (what this
-    // grid actually edits) never rotates, only the texture drawn inside it does, so tying the grid's own
-    // axis mapping to rotation was mixing up two genuinely independent things. That mistake is exactly what
-    // produced the reported bug: half the rotation states (whichever ones happened to share this fixed
-    // mapping's own signs) worked, the other half didn't - "quand l'image est placée au sol... seulement si
-    // l'image est orienté vers north ou sud [c'est haut/bas qui sont inversés]... sur west et est c'est
-    // gauche et droite qui sont inversés" (live request). UP's value below is the one already confirmed
-    // live ("les images placées au plafond ça marche" - live request, at whatever rotation was tested);
-    // DOWN mirrors it with V flipped, matching how opposite WALLS also flip exactly one sign between them
-    // (see the comment above) - floor and ceiling face fully opposite directions the same way north/south
-    // or east/west do.
+    // FLOOR/CEILING: FIXED (NOT dependent on CrazyPhonePhotoFrameEntity#rotation()) - CrazyPhonePhotoFrame-
+    // Renderer's own doc comment is explicit that rotation is a pure visual spin of the picture's PIXEL
+    // CONTENT within its existing slot rectangle, never a change to which world axis width/height bind to -
+    // the physical slot (what this grid actually edits) never rotates, only the texture drawn inside it
+    // does. UP's value is confirmed live ("les images placées au plafond ça marche" - live request). DOWN's
+    // own value is still being actively worked out against live floor-specific reports - do not assume it's
+    // settled without checking the current live conversation first.
     private int[] axisTransform() {
         Direction face = menu.attachFace();
-        return switch (face) {
-            case UP -> new int[]{0, 1, -1};
-            case DOWN -> new int[]{0, 1, 1};
-            case NORTH -> new int[]{0, 1, 1};
-            case SOUTH -> new int[]{0, 1, -1};
-            case WEST -> new int[]{0, 1, -1};
-            case EAST -> new int[]{0, -1, -1};
-        };
+        if (face == Direction.UP)
+            return new int[]{0, 1, -1};
+        if (face == Direction.DOWN)
+            return new int[]{0, 1, 1};
+        int signU = (face == Direction.NORTH || face == Direction.EAST) ? -1 : 1;
+        return new int[]{0, signU, -1};
     }
 
     private static int[] applySign(int neg, int pos, int sign) {
