@@ -315,6 +315,36 @@ public class CrazyPhoneHelper {
         }
     }
 
+    /** Backing logic for clicking a physical Photo item onto/with a phone in any inventory screen (or the
+     * reverse order - see {@link fr.lordfinn.crazyphone.item.CrazyPhoneItem#overrideStackedOnOther} and
+     * {@link fr.lordfinn.crazyphone.item.CrazyPhonePhotoItem#overrideStackedOnOther}, both of which call
+     * straight into this): links the photo into the holding phone's own gallery and consumes one copy of
+     * the item, like physically feeding a printed photo into the phone to have it scanned in. Always
+     * returns true (the click is consumed either way, including failure cases - swapping these two
+     * completely unrelated custom items via the normal pickup/place fallback would never make sense here).
+     *
+     * Called from {@code Item#overrideStackedOnOther}, which runs identically on the client's own locally-
+     * predicted menu click AND the server's authoritative one - only the server actually owns
+     * {@link fr.lordfinn.crazyphone.data.PhotoSavedData}, so the real work is skipped client-side and just
+     * lets the next inventory-sync packet correct the client's view once the server's own click finishes. */
+    public static boolean importPhotoIntoPhone(ItemStack phoneStack, ItemStack photoStack, Player player, Runnable consumePhoto) {
+        if (player.level().isClientSide())
+            return true;
+        PhotoItemData photoData = PhotoItemData.fromStack(photoStack);
+        if (photoData == null)
+            return true;
+        String owner = GetCrazyPhoneNumberProcedure.execute(phoneStack, player.level());
+        if (owner.isEmpty())
+            return true;
+        fr.lordfinn.crazyphone.data.PhotoSavedData data = fr.lordfinn.crazyphone.data.PhotoSavedData.get(player.level());
+        if (data.getPhoto(photoData.photoId()) == null)
+            return true;
+        data.linkPhotoToOwner(owner, photoData.photoId());
+        consumePhoto.run();
+        playNotifySound(player, net.minecraft.sounds.SoundEvents.ITEM_PICKUP, net.minecraft.sounds.SoundSource.PLAYERS, 1f, 1f);
+        return true;
+    }
+
     /** The timecode of the most recent message in a conversation, or 0 if it has none yet - used to sort
      * the contacts/groups grid by recency (most recently active conversation first). */
     public static int getLastMessageTimecode(LevelAccessor world, String conversationId) {

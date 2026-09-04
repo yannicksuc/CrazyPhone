@@ -217,6 +217,27 @@ public class PhotoSavedData extends SavedData {
         }
     }
 
+    /** Links an already-stored photo (its bytes/entry already exist under {@link #photos}) into another
+     * owner's own gallery list - e.g. clicking a physical Photo item onto/with a phone to import it, when
+     * the item may have started life belonging to a different owner (given, traded, dropped and picked back
+     * up). A no-op if this owner's list already has it. Deliberately does NOT touch {@link #photos} itself
+     * or the entry's own "owner" field - multiple owners' lists can end up pointing at the same shared
+     * entry this way, same trade-off {@link #storePhoto}'s own dedup already accepts for a single owner
+     * (see this class's own doc comment); eviction here only ever drops the id from THIS owner's list, never
+     * the shared entry, so it can't delete bytes another owner's list still references. */
+    public void linkPhotoToOwner(String owner, UUID photoId) {
+        ListTag ownerList = photosByOwner.get(owner) instanceof ListTag t ? t : new ListTag();
+        String idString = photoId.toString();
+        for (Tag t : ownerList)
+            if (idString.equals(NbtCompat.asString(t)))
+                return;
+        ownerList.add(StringTag.valueOf(idString));
+        if (ownerList.size() > Config.maxPhotosStoredPerOwner)
+            ownerList.remove(0);
+        photosByOwner.put(owner, ownerList);
+        setDirty();
+    }
+
     public static PhotoSavedData get(LevelAccessor world) {
         if (world instanceof ServerLevelAccessor serverLevelAcc) {
             return serverLevelAcc.getLevel().getServer().overworld().getDataStorage()

@@ -11,11 +11,15 @@ import net.minecraft.world.InteractionResultHolder;
 /*import net.minecraft.world.InteractionResult;
 *///?}
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.ClickAction;
+import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 
+import fr.lordfinn.crazyphone.init.ModItems;
+import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
 import fr.lordfinn.crazyphone.utils.PhotoFrameData;
 import fr.lordfinn.crazyphone.utils.PhotoItemData;
 
@@ -64,6 +68,20 @@ public class CrazyPhonePhotoItem extends Item {
         return InteractionResult.SUCCESS;
     }
     *///?}
+
+    // Clicking a carried photo item onto a phone in any inventory screen (survival inventory, a chest, the
+    // creative menu's own inventory tab, ...) imports it into that phone's own gallery instead of the
+    // normal cursor/slot swap - see CrazyPhoneHelper#importPhotoIntoPhone's own doc comment for why this,
+    // together with CrazyPhoneItem's matching override for the reverse click order, is the whole
+    // implementation (vanilla's own AbstractContainerMenu#doClick checks this hook before any swap logic
+    // runs at all, for every PICKUP-type click - confirmed against the real decompiled AbstractContainerMenu
+    // source, not guessed - so no menu/screen-specific code is needed on either loader).
+    @Override
+    public boolean overrideStackedOnOther(ItemStack stack, Slot slot, ClickAction action, Player player) {
+        if (slot.getItem().getItem() != ModItems.CRAZY_PHONE.get())
+            return false;
+        return CrazyPhoneHelper.importPhotoIntoPhone(slot.getItem(), stack, player, () -> stack.shrink(1));
+    }
 
     // >=1.20.5 only - see ModEntities.java's own doc comment for the whole photo-frame feature's floor.
     // Right-clicking a block face with a photo places it as a CrazyPhonePhotoFrameEntity instead of opening
