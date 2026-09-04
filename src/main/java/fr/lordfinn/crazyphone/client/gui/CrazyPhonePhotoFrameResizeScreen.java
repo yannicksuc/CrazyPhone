@@ -410,12 +410,17 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
     // about the SAME axis (X) leave that axis (which becomes U) unaffected in both cases, but flip the OTHER
     // in-plane axis (Z, which becomes V) between the two, since a +θ and a -θ rotation of the same plane are
     // mirror images of each other.
+    //
+    // EAST/WEST's own signV needed a further flip beyond the NORTH/SOUTH-derived pattern - confirmed live:
+    // facing east, dragging right (your own right hand, which should mean south) was instead extending the
+    // photo north. NORTH/SOUTH's values are the ones already independently re-verified end to end against
+    // real test data (see above) and are left exactly as they were; only EAST/WEST's signV changed here.
     private static int[] floorCeilingTransform(Direction viewerFacing, boolean isDown) {
         int[] transform = switch (viewerFacing) {
             case NORTH -> new int[]{0, 1, 1};
             case SOUTH -> new int[]{0, -1, -1};
-            case EAST -> new int[]{1, -1, 1};
-            default -> new int[]{1, 1, -1}; // WEST
+            case EAST -> new int[]{1, -1, -1};
+            default -> new int[]{1, 1, 1}; // WEST
         };
         return isDown ? transform : new int[]{transform[0], transform[1], -transform[2]};
     }
