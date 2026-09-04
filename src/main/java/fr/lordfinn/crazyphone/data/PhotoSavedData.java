@@ -100,13 +100,29 @@ public class PhotoSavedData extends SavedData {
      * low-quality preview to offer (photoThumbnailPixelHeight disabled, or the source was already shorter
      * than the configured target - see FabricPictureCapture#captureBothResolutions), thumbnailPng and
      * fullPng are the exact same bytes - stored once, not twice (see the "thumbnail" tag omission below and
-     * getPhoto's matching fallback). */
+     * getPhoto's matching fallback).
+     *
+     * Deduplicates by content hash first: if this owner already has a stored photo with the exact same full-
+     * image bytes under the exact same conversationId, its existing id is reused instead of minting (and
+     * storing the bytes of) a new one - a real, if uncommon, case whenever the same screenshot gets sent
+     * more than once into the same conversation (e.g. a Send-from-gallery re-share of a photo already
+     * posted there). Deliberately scoped to same-owner AND same-conversationId, not a global content index -
+     * {@link fr.lordfinn.crazyphone.network.CrazyPhoneGivePhotoItemPacket}'s own authorization check trusts a
+     * photo's stored conversationId to decide who may fetch it, so reusing one id across two different
+     * owners or conversations would silently let a photo taken/shared in one conversation become readable
+     * from another it was never actually sent to. */
     public UUID storePhoto(String owner, String conversationId, byte[] thumbnailPng, byte[] fullPng, int createdMinutes) {
+        String hash = sha256Hex(fullPng);
+        UUID duplicate = findDuplicate(owner, conversationId, hash);
+        if (duplicate != null)
+            return duplicate;
+
         UUID photoId = UUID.randomUUID();
         CompoundTag entry = new CompoundTag();
         entry.putString("owner", owner);
         entry.putString("conversationId", conversationId);
         entry.putInt("created", createdMinutes);
+        entry.putString("hash", hash);
         if (!Arrays.equals(thumbnailPng, fullPng))
             entry.put("thumbnail", new ByteArrayTag(thumbnailPng));
         entry.put("full", new ByteArrayTag(fullPng));
@@ -122,6 +138,33 @@ public class PhotoSavedData extends SavedData {
         photosByOwner.put(owner, ownerList);
         setDirty();
         return photoId;
+    }
+
+    private @Nullable UUID findDuplicate(String owner, String conversationId, String hash) {
+        if (!(photosByOwner.get(owner) instanceof ListTag ownerList))
+            return null;
+        for (Tag t : ownerList) {
+            String idString = NbtCompat.asString(t);
+            if (photos.get(idString) instanceof CompoundTag entry
+                    && hash.equals(NbtCompat.getString(entry, "hash"))
+                    && conversationId.equals(NbtCompat.getString(entry, "conversationId")))
+                return UUID.fromString(idString);
+        }
+        return null;
+    }
+
+    private static String sha256Hex(byte[] bytes) {
+        try {
+            byte[] digest = java.security.MessageDigest.getInstance("SHA-256").digest(bytes);
+            StringBuilder hex = new StringBuilder(digest.length * 2);
+            for (byte b : digest)
+                hex.append(Character.forDigit((b >> 4) & 0xF, 16)).append(Character.forDigit(b & 0xF, 16));
+            return hex.toString();
+        } catch (java.security.NoSuchAlgorithmException e) {
+            // SHA-256 is a mandatory JCA algorithm on every real JVM - this is unreachable outside a broken
+            // installation, and there's no sane per-call fallback that preserves dedup correctness.
+            throw new IllegalStateException(e);
+        }
     }
 
     /** Null if the id doesn't exist (evicted, or never existed) - callers must not trust a client-supplied

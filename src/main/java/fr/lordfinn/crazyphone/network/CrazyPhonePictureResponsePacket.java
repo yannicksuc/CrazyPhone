@@ -28,10 +28,16 @@ import fr.lordfinn.crazyphone.Crazyphone;
 import fr.lordfinn.crazyphone.client.picture.FabricPictureCache;
 import fr.lordfinn.crazyphone.utils.PhotoResolution;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
-/** Server -> client: one photo's PNG bytes at one resolution, in response to {@link CrazyPhonePictureRequestPacket}. */
-public record CrazyPhonePictureResponsePacket(UUID photoId, PhotoResolution resolution, byte[] pngBytes) implements CustomPacketPayload {
+/** Server -> client: a batch of photos' PNG bytes (one entry per (photoId, resolution) that was asked for),
+ * in response to {@link CrazyPhonePictureRequestPacket}. */
+public record CrazyPhonePictureResponsePacket(List<Entry> entries) implements CustomPacketPayload {
+
+    public record Entry(UUID photoId, PhotoResolution resolution, byte[] pngBytes) {
+    }
 
     //? if >=1.20.5 {
     /*public static final Type<CrazyPhonePictureResponsePacket> TYPE = new Type<>(
@@ -41,15 +47,14 @@ public record CrazyPhonePictureResponsePacket(UUID photoId, PhotoResolution reso
     public static final StreamCodec<RegistryFriendlyByteBuf, CrazyPhonePictureResponsePacket> STREAM_CODEC =
             StreamCodec.of(
                     (RegistryFriendlyByteBuf buffer, CrazyPhonePictureResponsePacket message) -> {
-                        buffer.writeUUID(message.photoId);
-                        buffer.writeByte(message.resolution.ordinal());
-                        buffer.writeByteArray(message.pngBytes);
+                        buffer.writeVarInt(message.entries.size());
+                        for (Entry entry : message.entries) {
+                            buffer.writeUUID(entry.photoId());
+                            buffer.writeByte(entry.resolution().ordinal());
+                            buffer.writeByteArray(entry.pngBytes());
+                        }
                     },
-                    (RegistryFriendlyByteBuf buffer) -> new CrazyPhonePictureResponsePacket(
-                            buffer.readUUID(),
-                            PhotoResolution.values()[buffer.readByte()],
-                            buffer.readByteArray()
-                    )
+                    (RegistryFriendlyByteBuf buffer) -> new CrazyPhonePictureResponsePacket(readEntries(buffer))
             );
 
     @Override
@@ -60,13 +65,16 @@ public record CrazyPhonePictureResponsePacket(UUID photoId, PhotoResolution reso
     public static final /*$ res_loc {*/ResourceLocation/*$}*/ ID = Crazyphone.resource("picture_response");
 
     public CrazyPhonePictureResponsePacket(FriendlyByteBuf buffer) {
-        this(buffer.readUUID(), PhotoResolution.values()[buffer.readByte()], buffer.readByteArray());
+        this(readEntries(buffer));
     }
 
     public void write(FriendlyByteBuf buffer) {
-        buffer.writeUUID(photoId);
-        buffer.writeByte(resolution.ordinal());
-        buffer.writeByteArray(pngBytes);
+        buffer.writeVarInt(entries.size());
+        for (Entry entry : entries) {
+            buffer.writeUUID(entry.photoId());
+            buffer.writeByte(entry.resolution().ordinal());
+            buffer.writeByteArray(entry.pngBytes());
+        }
     }
 
     @Override
@@ -75,24 +83,36 @@ public record CrazyPhonePictureResponsePacket(UUID photoId, PhotoResolution reso
     }
     //?}
 
+    //? if >=1.20.5 {
+    /*private static List<Entry> readEntries(RegistryFriendlyByteBuf buffer) {
+    *///? } else {
+    private static List<Entry> readEntries(FriendlyByteBuf buffer) {
+    //?}
+        int size = buffer.readVarInt();
+        List<Entry> entries = new ArrayList<>(Math.max(0, size));
+        for (int i = 0; i < size; i++)
+            entries.add(new Entry(buffer.readUUID(), PhotoResolution.values()[buffer.readByte()], buffer.readByteArray()));
+        return entries;
+    }
+
     //? if neoforge {
     //? if >=1.20.5 {
     /*public static void handleData(final CrazyPhonePictureResponsePacket message, final IPayloadContext context) {
         if (context.flow() != PacketFlow.CLIENTBOUND)
             return;
-        context.enqueueWork(() -> FabricPictureCache.onBytesReceived(message.photoId, message.resolution, message.pngBytes));
+        context.enqueueWork(() -> FabricPictureCache.onBatchReceived(message.entries));
     }
     *///? } else {
     public static void handleData(final CrazyPhonePictureResponsePacket message, final PlayPayloadContext context) {
         if (context.flow() != PacketFlow.CLIENTBOUND)
             return;
-        context.workHandler().submitAsync(() -> FabricPictureCache.onBytesReceived(message.photoId, message.resolution, message.pngBytes));
+        context.workHandler().submitAsync(() -> FabricPictureCache.onBatchReceived(message.entries));
     }
     //?}
     //?}
     //? if fabric && >=1.20.5 {
     /*public static void handleDataFabric(CrazyPhonePictureResponsePacket message, net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.Context context) {
-        FabricPictureCache.onBytesReceived(message.photoId, message.resolution, message.pngBytes);
+        FabricPictureCache.onBatchReceived(message.entries);
     }
 
     public static void registerFabricType() {

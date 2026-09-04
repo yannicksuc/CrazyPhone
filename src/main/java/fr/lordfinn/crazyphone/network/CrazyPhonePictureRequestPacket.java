@@ -35,18 +35,32 @@ import fr.lordfinn.crazyphone.utils.PhotoResolution;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Client -> server: "send me the PNG bytes for this photo, at this resolution" - lazy fetch, sent only when
- * the recipient's client actually needs to render a given image bubble or open the full-size viewer
- * (mirrors VoiceMessageAudioRequestPacket's "only fetch on demand" shape). Response:
- * {@link CrazyPhonePictureResponsePacket}.
+ * Client -> server: "send me the PNG bytes for these photos" - lazy fetch, sent only when the recipient's
+ * client actually needs to render given image bubbles or open the full-size viewer (mirrors
+ * VoiceMessageAudioRequestPacket's "only fetch on demand" shape). Carries a whole batch of (photoId,
+ * resolution) entries in one packet rather than one packet per photo - {@link
+ * fr.lordfinn.crazyphone.client.picture.FabricPictureCache#prefetch} is the main producer of multi-entry
+ * requests (e.g. every thumbnail visible in a gallery page or conversation view at once), cutting packet
+ * count and per-packet overhead versus firing one request per image; {@code getOrRequest}'s own single-photo
+ * fetch just sends a one-entry list, so this replaces the old single-item packet everywhere without a second
+ * packet type. Response: {@link CrazyPhonePictureResponsePacket}.
  */
-public record CrazyPhonePictureRequestPacket(UUID photoId, PhotoResolution resolution) implements CustomPacketPayload {
-    // Temporary diagnostic logging for the "viewer shows nothing" investigation - remove once confirmed fixed
-    // live (see FabricPictureCache's matching client-side logging).
-    private static final Logger DEBUG_LOGGER = LoggerFactory.getLogger("crazyphone-picture-debug");
+public record CrazyPhonePictureRequestPacket(List<Entry> entries) implements CustomPacketPayload {
+    private static final Logger LOGGER = LoggerFactory.getLogger("crazyphone");
+
+    public record Entry(UUID photoId, PhotoResolution resolution) {
+    }
+
+    // Defense in depth against a modified/malicious client sending one giant batch - a legitimate client
+    // never needs more than a screen's worth of photos in one request.
+    private static final int MAX_ENTRIES_PER_REQUEST = 128;
 
     //? if >=1.20.5 {
     /*public static final Type<CrazyPhonePictureRequestPacket> TYPE = new Type<>(
@@ -56,13 +70,13 @@ public record CrazyPhonePictureRequestPacket(UUID photoId, PhotoResolution resol
     public static final StreamCodec<RegistryFriendlyByteBuf, CrazyPhonePictureRequestPacket> STREAM_CODEC =
             StreamCodec.of(
                     (RegistryFriendlyByteBuf buffer, CrazyPhonePictureRequestPacket message) -> {
-                        buffer.writeUUID(message.photoId);
-                        buffer.writeByte(message.resolution.ordinal());
+                        buffer.writeVarInt(message.entries.size());
+                        for (Entry entry : message.entries) {
+                            buffer.writeUUID(entry.photoId());
+                            buffer.writeByte(entry.resolution().ordinal());
+                        }
                     },
-                    (RegistryFriendlyByteBuf buffer) -> new CrazyPhonePictureRequestPacket(
-                            buffer.readUUID(),
-                            PhotoResolution.values()[buffer.readByte()]
-                    )
+                    (RegistryFriendlyByteBuf buffer) -> new CrazyPhonePictureRequestPacket(readEntries(buffer))
             );
 
     @Override
@@ -73,12 +87,15 @@ public record CrazyPhonePictureRequestPacket(UUID photoId, PhotoResolution resol
     public static final /*$ res_loc {*/ResourceLocation/*$}*/ ID = Crazyphone.resource("picture_request");
 
     public CrazyPhonePictureRequestPacket(FriendlyByteBuf buffer) {
-        this(buffer.readUUID(), PhotoResolution.values()[buffer.readByte()]);
+        this(readEntries(buffer));
     }
 
     public void write(FriendlyByteBuf buffer) {
-        buffer.writeUUID(photoId);
-        buffer.writeByte(resolution.ordinal());
+        buffer.writeVarInt(entries.size());
+        for (Entry entry : entries) {
+            buffer.writeUUID(entry.photoId());
+            buffer.writeByte(entry.resolution().ordinal());
+        }
     }
 
     @Override
@@ -87,30 +104,70 @@ public record CrazyPhonePictureRequestPacket(UUID photoId, PhotoResolution resol
     }
     //?}
 
-    private static void handle(ServerPlayer player, UUID photoId, PhotoResolution resolution) {
-        Level world = player.level();
-        PhotoSavedData.PhotoEntry entry = PhotoSavedData.get(world).getPhoto(photoId);
-        DEBUG_LOGGER.info("{} request from {} for photo {}: entry={}", resolution, player.getScoreboardName(), photoId,
-                entry == null ? "MISSING" : "owner=" + entry.owner() + " conv=" + entry.conversationId()
-                        + " thumbBytes=" + entry.thumbnail().length + " fullBytes=" + entry.full().length);
-        if (entry == null) {
-            // Empty bytes, not silence - FabricPictureCache marks a request FAILED (so it stops retrying and
-            // the caller can fall back to a placeholder) only once it actually gets a response; not
-            // responding at all leaves it stuck IN_FLIGHT forever with no error anywhere to explain why.
-            NetworkAccess.sendToPlayer(player, new CrazyPhonePictureResponsePacket(photoId, resolution, new byte[0]));
+    //? if >=1.20.5 {
+    /*private static List<Entry> readEntries(RegistryFriendlyByteBuf buffer) {
+    *///? } else {
+    private static List<Entry> readEntries(FriendlyByteBuf buffer) {
+    //?}
+        int size = buffer.readVarInt();
+        List<Entry> entries = new ArrayList<>(Math.max(0, Math.min(size, MAX_ENTRIES_PER_REQUEST)));
+        for (int i = 0; i < size; i++)
+            entries.add(new Entry(buffer.readUUID(), PhotoResolution.values()[buffer.readByte()]));
+        return entries;
+    }
+
+    // Per-player token bucket, one packet's worth of state per online player - a malicious/broken client
+    // sending huge or rapid-fire batches gets silently throttled rather than hammering PhotoSavedData reads
+    // or saturating the connection; a legitimate client under normal use (batched per screen open/scroll,
+    // not per photo) never gets close to this ceiling.
+    private static final Map<UUID, long[]> RATE_LIMIT = new ConcurrentHashMap<>();
+    private static final long RATE_LIMIT_WINDOW_MILLIS = 1000;
+    private static final int RATE_LIMIT_MAX_ENTRIES_PER_WINDOW = 256;
+
+    private static boolean allowRequest(UUID playerId, int entryCount) {
+        long now = System.currentTimeMillis();
+        long[] state = RATE_LIMIT.computeIfAbsent(playerId, k -> new long[]{now, 0});
+        synchronized (state) {
+            if (now - state[0] > RATE_LIMIT_WINDOW_MILLIS) {
+                state[0] = now;
+                state[1] = 0;
+            }
+            state[1] += entryCount;
+            return state[1] <= RATE_LIMIT_MAX_ENTRIES_PER_WINDOW;
+        }
+    }
+
+    private static void handle(ServerPlayer player, List<Entry> entries) {
+        if (entries.isEmpty())
+            return;
+        if (entries.size() > MAX_ENTRIES_PER_REQUEST) {
+            LOGGER.warn("Picture request from {} rejected: {} entries exceeds max {}",
+                    player.getScoreboardName(), entries.size(), MAX_ENTRIES_PER_REQUEST);
+            return;
+        }
+        if (!allowRequest(player.getUUID(), entries.size())) {
+            LOGGER.warn("Picture request from {} rate-limited ({} entries)", player.getScoreboardName(), entries.size());
             return;
         }
 
-        // Viewing a photo only requires knowing its id (the item's own in-hand/GUI/ground renderer and the
-        // full-size viewer all fetch by photoId, never by conversation) - there's no legitimate way to end up
-        // with a photoId you shouldn't be able to look at, and gating this on "which phone number is
-        // currently in your main hand" produced real false negatives (a player who owns/registered multiple
-        // phones sees their OWN earlier photos go blank the moment a different phone is in hand). Capturing
-        // a NEW photo is still gated elsewhere (an unlocked phone is required to take one at all) - this is
-        // purely about reading bytes for a photo that already exists.
-        byte[] bytes = resolution == PhotoResolution.THUMBNAIL ? entry.thumbnail() : entry.full();
-        DEBUG_LOGGER.info("Sending {} bytes for {} photo {} to {}", bytes.length, resolution, photoId, player.getScoreboardName());
-        NetworkAccess.sendToPlayer(player, new CrazyPhonePictureResponsePacket(photoId, resolution, bytes));
+        Level world = player.level();
+        PhotoSavedData data = PhotoSavedData.get(world);
+        List<CrazyPhonePictureResponsePacket.Entry> response = new ArrayList<>(entries.size());
+        for (Entry request : entries) {
+            PhotoSavedData.PhotoEntry entry = data.getPhoto(request.photoId());
+            // Viewing a photo only requires knowing its id (the item's own in-hand/GUI/ground renderer and
+            // the full-size viewer all fetch by photoId, never by conversation) - there's no legitimate way
+            // to end up with a photoId you shouldn't be able to look at, so reads carry no ownership/
+            // conversation check. Capturing a NEW photo is still gated elsewhere (an unlocked phone is
+            // required to take one at all) - this is purely about reading bytes for a photo that already
+            // exists. A missing entry sends empty bytes, not silence - FabricPictureCache marks that
+            // (photoId, resolution) FAILED (so it stops retrying) only once it actually gets a response; not
+            // responding at all leaves it stuck IN_FLIGHT forever with no error anywhere to explain why.
+            byte[] bytes = entry == null ? new byte[0]
+                    : request.resolution() == PhotoResolution.THUMBNAIL ? entry.thumbnail() : entry.full();
+            response.add(new CrazyPhonePictureResponsePacket.Entry(request.photoId(), request.resolution(), bytes));
+        }
+        NetworkAccess.sendToPlayer(player, new CrazyPhonePictureResponsePacket(response));
     }
 
     //? if neoforge {
@@ -121,7 +178,7 @@ public record CrazyPhonePictureRequestPacket(UUID photoId, PhotoResolution resol
         context.enqueueWork(() -> {
             if (!(context.player() instanceof ServerPlayer player))
                 return;
-            handle(player, message.photoId, message.resolution);
+            handle(player, message.entries);
         }).exceptionally(e -> {
             context.connection().disconnect(Component.literal(e.getMessage()));
             return null;
@@ -134,7 +191,7 @@ public record CrazyPhonePictureRequestPacket(UUID photoId, PhotoResolution resol
         context.workHandler().submitAsync(() -> {
             if (!(context.player().orElse(null) instanceof ServerPlayer player))
                 return;
-            handle(player, message.photoId, message.resolution);
+            handle(player, message.entries);
         }).exceptionally(e -> {
             context.packetHandler().disconnect(Component.literal(e.getMessage()));
             return null;
@@ -144,7 +201,7 @@ public record CrazyPhonePictureRequestPacket(UUID photoId, PhotoResolution resol
     //?}
     //? if fabric && >=1.20.5 {
     /*public static void handleDataFabric(CrazyPhonePictureRequestPacket message, net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.Context context) {
-        handle(context.player(), message.photoId, message.resolution);
+        handle(context.player(), message.entries);
     }
 
     public static void registerFabricType() {

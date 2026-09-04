@@ -13,12 +13,18 @@ package fr.lordfinn.crazyphone.client.picture;
  * but a disk hit skips the network round trip entirely. Safe to cache indefinitely: a photoId always refers
  * to the exact same immutable bytes once captured (CrazyPhone never edits a photo in place), so there's no
  * staleness/invalidation concern the way there would be for mutable server data.
+ *
+ * RESOLVED is a bounded LRU (see MAX_RESOLVED_TEXTURES) rather than an unbounded map - a long session that
+ * scrolls through many conversations/galleries would otherwise accumulate GPU textures forever. Eviction and
+ * reset() both release the evicted/cleared DynamicTexture's GPU resources through TextureManager, not just
+ * drop the map entry - textures don't free themselves.
  */
 import com.mojang.blaze3d.platform.NativeImage;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/;
 
+import fr.lordfinn.crazyphone.Config;
 import fr.lordfinn.crazyphone.network.CrazyPhonePictureRequestPacket;
 import fr.lordfinn.crazyphone.utils.NetworkAccess;
 import fr.lordfinn.crazyphone.utils.PhotoResolution;
@@ -29,6 +35,12 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -38,18 +50,31 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
 public final class FabricPictureCache {
-    // Temporary diagnostic logging for the "viewer shows nothing" investigation - the fetch/decode path has
-    // no other visibility (no exceptions get thrown on a clean auth-rejection or an empty response), so
-    // there's no way to tell request-never-sent / no-response / decode-failure apart without this. Remove
-    // once the viewer bug is confirmed fixed live.
-    private static final Logger LOGGER = LoggerFactory.getLogger("crazyphone-picture-debug");
+    private static final Logger LOGGER = LoggerFactory.getLogger("crazyphone");
+
     public record CachedTexture(/*$ res_loc {*/ResourceLocation/*$}*/ location, int width, int height, boolean hasTransparency) {
     }
 
     private record Key(UUID photoId, PhotoResolution resolution) {
     }
 
-    private static final Map<Key, CachedTexture> RESOLVED = new ConcurrentHashMap<>();
+    // Capped, access-ordered (true below) so the least-recently-used entry is evicted first once the cap is
+    // hit - a gallery/conversation-heavy session naturally keeps recently-viewed photos resident and lets old
+    // ones' GPU textures go. Wrapped in synchronizedMap since removeEldestEntry (and every other mutation)
+    // can run from either the network-response path or the disk-cache-hit path, both of which hop back onto
+    // the client thread via different routes (see decodeAndRegister's own doc comment) - LinkedHashMap itself
+    // isn't thread-safe even for same-thread-eventually callers racing each other.
+    private static final int MAX_RESOLVED_TEXTURES = 400;
+    private static final Map<Key, CachedTexture> RESOLVED = Collections.synchronizedMap(
+            new LinkedHashMap<>(64, 0.75f, true) {
+                @Override
+                protected boolean removeEldestEntry(Map.Entry<Key, CachedTexture> eldest) {
+                    if (size() <= MAX_RESOLVED_TEXTURES)
+                        return false;
+                    Minecraft.getInstance().getTextureManager().release(eldest.getValue().location());
+                    return true;
+                }
+            });
     private static final Set<Key> IN_FLIGHT = ConcurrentHashMap.newKeySet();
     // A failed decode (corrupt/truncated bytes) shouldn't retry every single frame the image is on screen -
     // remembered so the caller can fall back to a placeholder instead of hammering the server.
@@ -77,34 +102,58 @@ public final class FabricPictureCache {
             return cached;
         if (FAILED.contains(key))
             return null;
-        if (IN_FLIGHT.add(key)) {
-            Path diskFile = cacheFile(key);
-            if (Files.isRegularFile(diskFile)) {
-                LOGGER.info("Loading {} for photo {} from disk cache", resolution, photoId);
-                CompletableFuture.supplyAsync(() -> {
-                    try {
-                        return Files.readAllBytes(diskFile);
-                    } catch (IOException e) {
-                        LOGGER.warn("Failed to read disk-cached {} photo {} - falling back to server", resolution, photoId, e);
-                        return null;
-                    }
-                }, DISK_IO).thenAcceptAsync(bytes -> {
-                    if (bytes == null || bytes.length == 0) {
-                        // Corrupt/unreadable cache file - clear the IN_FLIGHT marker so the normal network
-                        // fetch path below still runs (onBytesReceived itself is never called from here in
-                        // this case, so nothing else would ever un-stick it).
-                        IN_FLIGHT.remove(key);
-                        NetworkAccess.sendToServer(new CrazyPhonePictureRequestPacket(photoId, resolution));
-                        return;
-                    }
-                    decodeAndRegister(key, bytes, false);
-                }, Minecraft.getInstance());
+        if (IN_FLIGHT.add(key) && !tryLoadFromDisk(key))
+            NetworkAccess.sendToServer(new CrazyPhonePictureRequestPacket(
+                    List.of(new CrazyPhonePictureRequestPacket.Entry(photoId, resolution))));
+        return null;
+    }
+
+    // Warms the cache for a whole batch of photos at once (a gallery page, the visible range of a
+    // conversation's message list) - skips anything already resolved/failed/in flight, then issues at most
+    // ONE network request covering every remaining disk-cache miss, instead of letting each photo's first
+    // render trigger its own separate getOrRequest fetch as it scrolls into view. Callers don't need the
+    // result here; they still poll getOrRequest (or read RESOLVED indirectly through it) once rendering the
+    // actual widget, by which point prefetch has usually already resolved or at least started the fetch.
+    public static void prefetch(Collection<UUID> photoIds, PhotoResolution resolution) {
+        List<CrazyPhonePictureRequestPacket.Entry> misses = new ArrayList<>();
+        for (UUID photoId : photoIds) {
+            Key key = new Key(photoId, resolution);
+            if (RESOLVED.containsKey(key) || FAILED.contains(key) || !IN_FLIGHT.add(key))
+                continue;
+            if (!tryLoadFromDisk(key))
+                misses.add(new CrazyPhonePictureRequestPacket.Entry(photoId, resolution));
+        }
+        if (!misses.isEmpty())
+            NetworkAccess.sendToServer(new CrazyPhonePictureRequestPacket(misses));
+    }
+
+    // Shared by getOrRequest and prefetch - key must already be in IN_FLIGHT. Returns true if a disk file
+    // exists (an async read+decode has been kicked off, still resolving the same as before), false if the
+    // caller still needs to go fetch this key from the network.
+    private static boolean tryLoadFromDisk(Key key) {
+        Path diskFile = cacheFile(key);
+        if (!Files.isRegularFile(diskFile))
+            return false;
+        CompletableFuture.supplyAsync(() -> {
+            try {
+                return Files.readAllBytes(diskFile);
+            } catch (IOException e) {
+                LOGGER.warn("Failed to read disk-cached {} photo {} - falling back to server", key.resolution(), key.photoId(), e);
                 return null;
             }
-            LOGGER.info("Requesting {} for photo {}", resolution, photoId);
-            NetworkAccess.sendToServer(new CrazyPhonePictureRequestPacket(photoId, resolution));
-        }
-        return null;
+        }, DISK_IO).thenAcceptAsync(bytes -> {
+            if (bytes == null || bytes.length == 0) {
+                // Corrupt/unreadable cache file - clear the IN_FLIGHT marker so a normal network fetch still
+                // runs (onBytesReceived is never called from here in this case, so nothing else would ever
+                // un-stick it).
+                IN_FLIGHT.remove(key);
+                NetworkAccess.sendToServer(new CrazyPhonePictureRequestPacket(
+                        List.of(new CrazyPhonePictureRequestPacket.Entry(key.photoId(), key.resolution()))));
+                return;
+            }
+            decodeAndRegister(key, bytes, false);
+        }, Minecraft.getInstance());
+        return true;
     }
 
     // Called on (re)connecting to a server - RESOLVED/IN_FLIGHT/FAILED are static, so they otherwise persist
@@ -116,20 +165,33 @@ public final class FabricPictureCache {
     // own DynamicTextures may also have been invalidated by the disconnect/world-unload, and FAILED entries
     // deserve a fresh attempt against the new connection regardless).
     //
+    // Every RESOLVED texture is explicitly released through TextureManager first - clearing the map alone
+    // drops CrazyPhone's own reference but leaves the texture registered and resident on the GPU forever
+    // (TextureManager has no other owner to eventually reclaim it), a real per-reconnect leak on any session
+    // that reconnects more than once.
+    //
     // The disk cache is deliberately NOT touched here - it's keyed by photoId, which is globally unique and
     // immutable regardless of which server/world it was first seen on, so a photo cached from one server is
     // perfectly valid to reuse when reconnecting to (or joining a different) server that references the same
     // photoId. Only the in-memory bookkeeping above needs resetting.
     public static void reset() {
-        RESOLVED.clear();
+        synchronized (RESOLVED) {
+            for (CachedTexture texture : RESOLVED.values())
+                Minecraft.getInstance().getTextureManager().release(texture.location());
+            RESOLVED.clear();
+        }
         IN_FLIGHT.clear();
         FAILED.clear();
     }
 
-    public static void onBytesReceived(UUID photoId, PhotoResolution resolution, byte[] pngBytes) {
+    public static void onBatchReceived(List<fr.lordfinn.crazyphone.network.CrazyPhonePictureResponsePacket.Entry> entries) {
+        for (fr.lordfinn.crazyphone.network.CrazyPhonePictureResponsePacket.Entry entry : entries)
+            onBytesReceived(entry.photoId(), entry.resolution(), entry.pngBytes());
+    }
+
+    private static void onBytesReceived(UUID photoId, PhotoResolution resolution, byte[] pngBytes) {
         Key key = new Key(photoId, resolution);
         IN_FLIGHT.remove(key);
-        LOGGER.info("Received {} bytes for {} photo {}", pngBytes.length, resolution, photoId);
         if (pngBytes.length == 0) {
             FAILED.add(key);
             return;
@@ -137,13 +199,14 @@ public final class FabricPictureCache {
         decodeAndRegister(key, pngBytes, true);
     }
 
-    // Shared by both the network-fetch path (onBytesReceived) and the disk-cache-hit path (getOrRequest) -
-    // decoding/texture upload must run on the render thread either way (DynamicTexture registration touches
-    // the GL context), so this itself makes no thread assumption; callers are responsible for getting here
-    // on the right thread (onBytesReceived already runs there via the packet handler, the disk path hops
-    // back via Minecraft.getInstance() as an Executor above).
+    // Shared by both the network-fetch path (onBytesReceived) and the disk-cache-hit path (getOrRequest/
+    // prefetch) - decoding/texture upload must run on the render thread either way (DynamicTexture
+    // registration touches the GL context), so this itself makes no thread assumption; callers are
+    // responsible for getting here on the right thread (onBytesReceived already runs there via the packet
+    // handler, the disk path hops back via Minecraft.getInstance() as an Executor above).
     private static void decodeAndRegister(Key key, byte[] pngBytes, boolean persistToDisk) {
-        //? if <1.21.10 {
+        NativeImage image;
+        CachedTexture texture;
         try {
             // NativeImage.read(byte[]) stack-allocates a native buffer sized to the WHOLE input via LWJGL's
             // small per-thread MemoryStack (a few tens of KB by default) - fine for a ~10KB thumbnail, but a
@@ -152,39 +215,84 @@ public final class FabricPictureCache {
             // viewer tried to open one). The InputStream overload reads through STBImage's own heap-backed
             // path instead, the same one vanilla itself relies on for arbitrarily large resource pack/skin
             // images - no size ceiling tied to the native stack at all.
-            NativeImage image = NativeImage.read(new java.io.ByteArrayInputStream(pngBytes));
-            DynamicTexture texture = new DynamicTexture(image);
-            /*$ res_loc {*/ResourceLocation/*$}*/ id = Minecraft.getInstance().getTextureManager().register(
-                    "crazyphone-picture-" + key.resolution().name().toLowerCase(java.util.Locale.ROOT) + "-" + key.photoId(), texture);
-            RESOLVED.put(key, new CachedTexture(id, image.getWidth(), image.getHeight(), hasTransparency(image)));
-            LOGGER.info("Decoded {} photo {} as {}x{}", key.resolution(), key.photoId(), image.getWidth(), image.getHeight());
+            image = NativeImage.read(new java.io.ByteArrayInputStream(pngBytes));
+            texture = registerTexture(key, image, "");
         } catch (Exception e) {
             LOGGER.warn("Failed to decode {} photo {}", key.resolution(), key.photoId(), e);
             FAILED.add(key);
             return;
         }
-        //? } else {
-        /*try {
-            // 1.21.10 changed DynamicTexture's constructor (now takes a name Supplier and uploads itself) and
-            // TextureManager#register's key type (Identifier, not a plain String) - implemented against the
-            // real API instead of the plain-String id the <1.21.10 branch uses, since Identifier paths need
-            // the same lowercase [a-z0-9/._-] validation as everywhere else (a UUID's hex+hyphens already
-            // satisfies this, so the id shape itself is unchanged, just wrapped through Crazyphone.resource()).
-            NativeImage image = NativeImage.read(new java.io.ByteArrayInputStream(pngBytes));
-            net.minecraft.resources./^$ res_loc {^/ResourceLocation/^$}^/ id = fr.lordfinn.crazyphone.Crazyphone.resource(
-                    "crazyphone-picture-" + key.resolution().name().toLowerCase(java.util.Locale.ROOT) + "-" + key.photoId());
-            DynamicTexture texture = new DynamicTexture(id::toString, image);
-            Minecraft.getInstance().getTextureManager().register(id, texture);
-            RESOLVED.put(key, new CachedTexture(id, image.getWidth(), image.getHeight(), hasTransparency(image)));
-            LOGGER.info("Decoded {} photo {} as {}x{}", key.resolution(), key.photoId(), image.getWidth(), image.getHeight());
-        } catch (Exception e) {
-            LOGGER.warn("Failed to decode {} photo {}", key.resolution(), key.photoId(), e);
-            FAILED.add(key);
-            return;
-        }
-        *///?}
+        RESOLVED.put(key, texture);
         if (persistToDisk)
             writeToDiskAsync(key, pngBytes);
+        if (key.resolution() == PhotoResolution.FULL)
+            deriveThumbnailFromFull(key.photoId(), image);
+    }
+
+    // Skips a real network/disk round trip for the THUMBNAIL resolution entirely when a FULL decode of the
+    // same photo just happened to run first (e.g. opening the full-size viewer, or a photo frame/held item
+    // rendering FULL directly) - downscaling an already-decoded NativeImage is essentially free next to a
+    // request-response round trip. Only fires when THUMBNAIL isn't already resolved/in flight/failed, so it
+    // never fights a fetch that's already in progress or duplicates a texture that already exists. RAM-only
+    // (not written to the disk cache) - the FULL bytes are already on disk if persistToDisk was true, and
+    // re-deriving the thumbnail from that FULL file on a later session costs the same few milliseconds this
+    // does here, not worth the extra disk write/space to persist a second copy.
+    private static void deriveThumbnailFromFull(UUID photoId, NativeImage fullImage) {
+        Key thumbKey = new Key(photoId, PhotoResolution.THUMBNAIL);
+        if (RESOLVED.containsKey(thumbKey) || IN_FLIGHT.contains(thumbKey) || FAILED.contains(thumbKey))
+            return;
+        int targetHeight = Config.photoThumbnailPixelHeight;
+        // Mirrors FabricPictureCapture's own capture-time skip: 0 means "no separate preview configured",
+        // and a target at/above the full image's own height would only ever upscale it - in both cases the
+        // server-side storePhoto already reused the same bytes for both resolutions (see PhotoSavedData's
+        // own doc), so a real THUMBNAIL fetch/decode will just get identical pixels; deriving one here would
+        // be pure waste.
+        if (targetHeight <= 0 || targetHeight >= fullImage.getHeight())
+            return;
+        try (NativeImage thumbnail = downscaleForThumbnail(fullImage, targetHeight)) {
+            RESOLVED.put(thumbKey, registerTexture(thumbKey, thumbnail, "-derived"));
+        } catch (Exception e) {
+            // Not marked FAILED - a genuine fetch (network or disk) for THUMBNAIL is still perfectly able to
+            // succeed later; this was purely a local optimization attempt.
+            LOGGER.warn("Failed to derive thumbnail for photo {} from its full image", photoId, e);
+        }
+    }
+
+    // Nearest-neighbor downscale to an exact target height, mirroring FabricPictureCapture#downscaleToHeight
+    // (capture-time derivation of the same two resolutions from one screenshot) - kept as a separate copy
+    // rather than a shared utility since the two call sites operate on different NativeImage lifetimes
+    // (capture's source is closed by its own try-with-resources right after; this one must NOT close
+    // fullImage, which the caller (decodeAndRegister) still owns via its DynamicTexture).
+    private static NativeImage downscaleForThumbnail(NativeImage source, int targetHeight) {
+        int width = source.getWidth();
+        int height = source.getHeight();
+        double scale = (double) targetHeight / height;
+        int targetWidth = Math.max(1, (int) Math.round(width * scale));
+
+        NativeImage target = new NativeImage(targetWidth, targetHeight, false);
+        source.resizeSubRectTo(0, 0, width, height, target);
+        return target;
+    }
+
+    // Wraps image in a DynamicTexture and registers it with TextureManager under a name unique to this key -
+    // nameSuffix only exists so the locally-derived thumbnail (see deriveThumbnailFromFull) can't collide
+    // with a texture name a real network fetch of the same key would also use, in the (currently impossible,
+    // but cheap to guard against) case both paths ever raced to register the same key.
+    private static CachedTexture registerTexture(Key key, NativeImage image, String nameSuffix) {
+        String name = "crazyphone-picture-" + key.resolution().name().toLowerCase(Locale.ROOT) + "-" + key.photoId() + nameSuffix;
+        //? if <1.21.10 {
+        DynamicTexture texture = new DynamicTexture(image);
+        /*$ res_loc {*/ResourceLocation/*$}*/ id = Minecraft.getInstance().getTextureManager().register(name, texture);
+        //? } else {
+        /*// 1.21.10 changed DynamicTexture's constructor (now takes a name Supplier and uploads itself) and
+        // TextureManager#register's key type (ResourceLocation, not a plain String) - Identifier paths need
+        // the same lowercase [a-z0-9/._-] validation as everywhere else (a UUID's hex+hyphens already
+        // satisfies this, so the id shape itself is unchanged, just wrapped through Crazyphone.resource()).
+        net.minecraft.resources./^$ res_loc {^/ResourceLocation/^$}^/ id = fr.lordfinn.crazyphone.Crazyphone.resource(name);
+        DynamicTexture texture = new DynamicTexture(id::toString, image);
+        Minecraft.getInstance().getTextureManager().register(id, texture);
+        *///?}
+        return new CachedTexture(id, image.getWidth(), image.getHeight(), hasTransparency(image));
     }
 
     // Fire-and-forget - a failed disk write just means this photo re-fetches from the server next session,
@@ -242,6 +350,6 @@ public final class FabricPictureCache {
     private static Path cacheFile(Key key) {
         return Minecraft.getInstance().gameDirectory.toPath()
                 .resolve("crazyphone").resolve("photocache")
-                .resolve(key.resolution().name().toLowerCase(java.util.Locale.ROOT) + "-" + key.photoId() + ".png");
+                .resolve(key.resolution().name().toLowerCase(Locale.ROOT) + "-" + key.photoId() + ".png");
     }
 }
