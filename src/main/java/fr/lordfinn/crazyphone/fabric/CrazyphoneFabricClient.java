@@ -36,8 +36,8 @@ public class CrazyphoneFabricClient implements ClientModInitializer {
         // >=1.21.10: no explicit registration call needed here - CrazyPhoneItemModelRegistrationMixin
         // injects the equivalent registration straight into ItemModels#bootstrap() instead, matching how
         // NeoForge's own patched build fires RegisterItemModelsEvent from that exact same method.
-        CrazyPhonePhotoItem.clientViewerOpener = photoId ->
-                net.minecraft.client.Minecraft.getInstance()./^$ mc_set_screen {^/setScreen/^$}^/(new fr.lordfinn.crazyphone.client.gui.CrazyPhonePhotoViewerScreen(photoId, true));
+        CrazyPhonePhotoItem.clientViewerOpener = (photoId, borderRgb) ->
+                net.minecraft.client.Minecraft.getInstance()./^$ mc_set_screen {^/setScreen/^$}^/(new fr.lordfinn.crazyphone.client.gui.CrazyPhonePhotoViewerScreen(photoId, true, borderRgb));
         ClientTickEvents.END_CLIENT_TICK.register(client -> FabricPictureCapture.tickAll());
         // FabricPictureCache's maps are static and otherwise survive a disconnect - a request still
         // IN_FLIGHT the moment the connection drops never gets its response, permanently blocking that one

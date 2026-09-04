@@ -41,15 +41,22 @@ public class CrazyPhonePhotoViewerScreen extends Screen implements PhoneScreen {
     // Rolled once per screen instance (not per frame) so the tilt stays fixed while this preview is open,
     // and re-rolls the next time a photo is opened - a fresh little "polaroid dropped on a table" touch.
     private final float tiltDegrees;
+    // The border can only ever reflect a real item's own dye (see CrazyPhonePhotoItemRenderer#borderRgb) -
+    // white (0xFFFFFF, undyed) whenever this screen was reached without one (a chat bubble or the My Photos
+    // gallery both point straight at a server-side photoId, never a specific physical ItemStack, so there's
+    // no "this photo's color" to read in those cases at all - only opening the viewer from a held item,
+    // openedFromInventory's own case, has a real stack to read DYED_COLOR off of).
+    private final int borderRgb;
 
     public CrazyPhonePhotoViewerScreen(UUID photoId) {
-        this(photoId, false);
+        this(photoId, false, 0xFFFFFF);
     }
 
-    public CrazyPhonePhotoViewerScreen(UUID photoId, boolean openedFromInventory) {
+    public CrazyPhonePhotoViewerScreen(UUID photoId, boolean openedFromInventory, int borderRgb) {
         super(Component.translatable("gui.crazyphone.photo_viewer.title"));
         this.photoId = photoId;
         this.openedFromInventory = openedFromInventory;
+        this.borderRgb = borderRgb;
         this.previousScreen = Minecraft.getInstance()./*$ mc_get_screen {*/screen/*$}*/;
         this.tiltDegrees = (java.util.concurrent.ThreadLocalRandom.current().nextFloat() * 8f) - 4f;
     }
@@ -178,7 +185,7 @@ public class CrazyPhonePhotoViewerScreen extends Screen implements PhoneScreen {
                     argb);
         }
 
-        guiGraphics.fill(x - BORDER_PX, y - BORDER_PX, x + drawWidth + BORDER_PX, y + drawHeight + BORDER_PX, 0xFFFFFFFF);
+        guiGraphics.fill(x - BORDER_PX, y - BORDER_PX, x + drawWidth + BORDER_PX, y + drawHeight + BORDER_PX, 0xFF000000 | (borderRgb & 0xFFFFFF));
         // GuiGraphics#blit (a batched call) is what lost to the background here - checked against the real
         // Camera mod jar's own ImageScreen#drawImage (de.maxhenkel.camera.gui.ImageScreen, javap'd from
         // libs/camera-neoforge-1.21.1-1.0.21.jar) for how a screen showing a full-size in-memory image over a

@@ -46,8 +46,12 @@ public class CrazyPhonePhotoItem extends Item {
     // owns that wiring instead, since IT is never instantiated from common code the way this Item is).
     // clientViewerOpener is set once from each loader's own client-only entrypoint - a class the dedicated
     // server never loads at all - so the actual Minecraft/Screen reference only ever lives in that lambda's
-    // own compiled bytecode, never in this class's.
-    public static Consumer<UUID> clientViewerOpener = null;
+    // own compiled bytecode, never in this class's. Takes the dyed border color too (see
+    // CrazyPhonePhotoItemRenderer#borderRgb) - this is the one viewer-opening path that actually has a real
+    // ItemStack to read DYED_COLOR off of (a chat bubble or the My Photos gallery only ever have a bare
+    // server-side photoId, never a specific item - see CrazyPhonePhotoViewerScreen's own doc comment on its
+    // borderRgb field for why those two can't be dye-aware the same way).
+    public static java.util.function.BiConsumer<UUID, Integer> clientViewerOpener = null;
 
     public CrazyPhonePhotoItem(Properties properties) {
         super(properties);
@@ -117,8 +121,10 @@ public class CrazyPhonePhotoItem extends Item {
     private void openViewerOnClient(Level world, ItemStack stack) {
         if (world.isClientSide() && clientViewerOpener != null) {
             PhotoItemData data = PhotoItemData.fromStack(stack);
-            if (data != null)
-                clientViewerOpener.accept(data.photoId());
+            if (data != null) {
+                net.minecraft.world.item.component.DyedItemColor dyed = stack.get(net.minecraft.core.component.DataComponents.DYED_COLOR);
+                clientViewerOpener.accept(data.photoId(), dyed != null ? dyed.rgb() : 0xFFFFFF);
+            }
         }
     }
 
