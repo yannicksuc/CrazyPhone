@@ -357,28 +357,27 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
     // and V comes from col instead (a floor/ceiling rotated an odd number of quarter turns). signU/signV are
     // +1 or -1, applied to whichever screen axis feeds that server axis.
     //
-    // NORTH/SOUTH: "up" on screen grows the photo UP in the world (V = +row here - an earlier version had
-    // this at -row, live-reported inverted: "north & south, up and down are inverted" - live request) -
-    // "right" on screen only grows the photo toward world +X depending on which way the VIEWER is actually
-    // facing that specific wall, which flips between opposite walls. Critical detail an earlier version of
-    // this got backwards ("sur les murs gauche et droite sont inversé" - live request): attachFace() is
-    // which face of the BLOCK the frame sits on, i.e. the direction the frame's own visible side points
-    // TOWARD - a NORTH-attached frame points north, so the viewer looking at it is standing to the north
-    // and facing SOUTH, back at the wall, the OPPOSITE of attachFace() itself. Standing in front of a wall
-    // and facing it: facing north, east is your right; facing south, west is your right (ordinary compass
-    // facts) - applied to face.getOpposite() (the viewer's actual facing), not face itself, then
-    // cross-referenced against CrazyPhonePhotoFrameEntity#computeBoundingBox's own fixed U=+X/V=+Y axis
-    // assignment: south already agrees with "posU = viewer's right" as computeBoundingBox defines it, north
-    // doesn't (needs signU=-1).
-    //
-    // WEST/EAST: SWAPPED (screen row feeds server U, screen col feeds server V) - unlike north/south, which
-    // don't swap at all. "west : up on the grid extend on right in the world... right extend up" / "east:
-    // same as west but inverted (up in grid -> left in the world)" (live request) - confirmed live against
-    // the actual 3D render, not just the grid preview. Both faces take the SAME {swap,signU,signV} values
-    // below; the "inverted" difference the live report describes between them falls straight out of
-    // computeBoundingBox's own U=+Z convention meaning the OPPOSITE compass direction (viewer's right vs
-    // left) for these two opposite-facing walls, the same way "posU = viewer's right" already flips between
-    // north and south above without signU itself needing a different value for every individual face.
+    // WALLS: every one of the 4 faces below is now tuned from its OWN individually-reported live bug rather
+    // than derived once and assumed to generalize - the compass-theory approach ("posU = viewer's right,
+    // which flips between opposite walls the same way for both axes") keeps getting contradicted by what's
+    // actually observed in the 3D render, so this class no longer tries to explain WHY each face needs what
+    // it needs, only records what's been reported and reacted to, face by face:
+    //   - NORTH: left/right was inverted under the old signU=-1 ("when placed looking north: left and right
+    //     are inverted" - live request) -> signU=+1. Up/down (signV=+1) was already fixed by an earlier
+    //     round and hasn't been re-reported since, so it's untouched here.
+    //   - SOUTH: up/down was inverted after an earlier round flipped signV to +1 for BOTH north and south
+    //     together ("when placed looking south: up and down are inverted" - live request) -> reverted SOUTH
+    //     specifically back to signV=-1, since apparently only north needed that flip. Left/right (signU=+1)
+    //     was never reported broken and stays as it always was.
+    //   - WEST/EAST: an earlier round tried a genuine axis SWAP (screen row feeding server U) based on a
+    //     detailed live description of the actual 3D render growing "sideways" when dragging "up" - that
+    //     made things WORSE, not better ("west and east still do the same strange inversion but... west is
+    //     doing what east was doing" - live request), so it's reverted back to the older, simpler
+    //     non-swapped model (screen col feeds U, same shape as north/south) with each face's own signU kept
+    //     exactly as it was before that swap attempt. The original underlying render bug this was trying to
+    //     fix for west/east may still be real - given the swap didn't fix it, it's more likely a renderer
+    //     issue than a GUI axis-mapping one, worth investigating separately rather than guessing a further
+    //     GUI-side sign change blind.
     //
     // FLOOR/CEILING: FIXED, like the walls - NOT dependent on CrazyPhonePhotoFrameEntity#rotation() at all.
     // An earlier version made this depend on rotation, on the theory that "up" in the grid should track
@@ -397,14 +396,14 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
     // or east/west do.
     private int[] axisTransform() {
         Direction face = menu.attachFace();
-        if (face == Direction.UP)
-            return new int[]{0, 1, -1};
-        if (face == Direction.DOWN)
-            return new int[]{0, 1, 1};
-        if (face == Direction.WEST || face == Direction.EAST)
-            return new int[]{1, -1, 1};
-        int signU = (face == Direction.NORTH) ? -1 : 1;
-        return new int[]{0, signU, 1};
+        return switch (face) {
+            case UP -> new int[]{0, 1, -1};
+            case DOWN -> new int[]{0, 1, 1};
+            case NORTH -> new int[]{0, 1, 1};
+            case SOUTH -> new int[]{0, 1, -1};
+            case WEST -> new int[]{0, 1, -1};
+            case EAST -> new int[]{0, -1, -1};
+        };
     }
 
     private static int[] applySign(int neg, int pos, int sign) {
