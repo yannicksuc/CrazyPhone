@@ -19,6 +19,7 @@ import net.minecraft.world.entity.player.Inventory;
 
 import fr.lordfinn.crazyphone.data.PhoneRegistrySavedData;
 import fr.lordfinn.crazyphone.network.CrazyphoneHomeScreenButtonMessage;
+import fr.lordfinn.crazyphone.procedures.GetCrazyPhoneNumberFromMainHandProcedure;
 import fr.lordfinn.crazyphone.world.inventory.CrazyphoneHomeScreenMenu;
 
 import java.util.HashMap;
@@ -37,14 +38,24 @@ public class CrazyphoneHomeScreenScreen extends CrazyPhoneDefaultScreenScreen<Cr
     //? if >=26 {
     /*@Override
     protected void extractLabels(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
-        // Optional: add static labels if necessary
+        drawPhoneNumber(guiGraphics);
     }
     *///? } else {
     @Override
     protected void renderLabels(GuiGraphics guiGraphics, int mouseX, int mouseY) {
-        // Optional: add static labels if necessary
+        drawPhoneNumber(guiGraphics);
     }
     //?}
+
+    // Own number, so a player can read/share it without closing the phone to hover the item's tooltip.
+    // Called from renderLabels/extractLabels (see above), which AbstractContainerScreen's own extractContents
+    // already translates by (leftPos, topPos) before invoking - coordinates here are local to the panel, not
+    // absolute screen coordinates (unlike renderHeader, which this screen never calls, since the home screen
+    // has no title banner and this text lives in that same otherwise-empty top strip instead).
+    private void drawPhoneNumber(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics) {
+        String number = GetCrazyPhoneNumberFromMainHandProcedure.execute(entity, guistate);
+        guiGraphics./*$ gui_draw_centered_string {*/drawCenteredString/*$}*/(this.font, number, this.imageWidth / 2, 12, 0xFF0000AA);
+    }
 
     @Override
     public void init() {
