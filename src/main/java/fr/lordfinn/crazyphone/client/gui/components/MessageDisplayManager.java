@@ -46,7 +46,7 @@ public class MessageDisplayManager {
     private final List<DateSeparator> dateSeparators = new ArrayList<>();
     /** Reserved vertical space for one divider - a little taller than its own text (see
      * DATE_SEPARATOR_SCALE) so it reads as a distinct row rather than crowding its neighbors. */
-    private static final int DATE_SEPARATOR_HEIGHT = 10;
+    private static final int DATE_SEPARATOR_HEIGHT = 11;
     /** Same text size as a standard row in CrazyPhoneContactsScreenScreen's own contact list (that screen's
      * SECTION_TITLE_SCALE) - the only other place in this mod that draws a plain text line in a contact/
      * conversation list, reused here so the two stay visually consistent. Always full-alpha white

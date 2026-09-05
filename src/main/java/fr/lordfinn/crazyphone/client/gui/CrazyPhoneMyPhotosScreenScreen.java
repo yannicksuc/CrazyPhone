@@ -48,7 +48,6 @@ import java.util.UUID;
 public class CrazyPhoneMyPhotosScreenScreen extends CrazyPhoneDefaultScreenScreen<CrazyPhoneMyPhotosScreenMenu> {
     private static final HashMap<String, Object> guistate = new HashMap<>();
     private static final int GRID_COLUMNS = 3;
-    private static final int VISIBLE_ROWS = 3;
     private static final int THUMB_SIZE = 34;
     private static final int THUMB_PITCH = 36;
     // Matches CrazyPhoneConversationScreen's own message crop zone top (topPos+27), same as GRID_HEIGHT below.
@@ -58,6 +57,14 @@ public class CrazyPhoneMyPhotosScreenScreen extends CrazyPhoneDefaultScreenScree
     // spans topPos+27 to topPos+158, 131px) - the grid already scrolls in continuous pixels, not snapped
     // rows, so a partial row peeking in at the crop edge is consistent with how it already behaves.
     private static final int GRID_HEIGHT = 131;
+    // How many rows must actually be drawn/fetched to cover the crop window at ANY scroll offset - continuous
+    // pixel scrolling (not row-snapped) means the window's top can land mid-row, so ceil(height/pitch) rows
+    // fit at a row-aligned scroll position alone isn't enough; +1 covers the partial row that peeks in at
+    // the bottom (or top) at every OTHER scroll position. Was VISIBLE_ROWS-based (assumed exactly 3 rows fit
+    // the crop), which under-rendered once GRID_HEIGHT grew past an exact multiple of THUMB_PITCH - the
+    // bottom-most row scrolling into view got skipped by this loop entirely instead of merely scissor-cropped
+    // ("les images disparaissent trop tot en bas" - live report).
+    private static final int RENDER_ROWS = (GRID_HEIGHT + THUMB_PITCH - 1) / THUMB_PITCH + 1;
     private static final int SELECTED_BORDER_COLOR = CrazyPhoneColors.ACCENT_YELLOW;
     private static final int SELECTED_INSET = 2;
     // Matches CrazyPhoneConversationScreen's own message-feed scroll step - continuous pixel scrolling
@@ -149,7 +156,7 @@ public class CrazyPhoneMyPhotosScreenScreen extends CrazyPhoneDefaultScreenScree
     // first asks for it. Called once up front from init() and again on every scroll tick.
     private void prefetchVisible() {
         int firstIndex = topVisibleRow() * GRID_COLUMNS;
-        int lastIndex = Math.min(menu.photoIds.size(), firstIndex + GRID_COLUMNS * (VISIBLE_ROWS + 2));
+        int lastIndex = Math.min(menu.photoIds.size(), firstIndex + GRID_COLUMNS * (RENDER_ROWS + 1));
         if (firstIndex >= lastIndex)
             return;
         PhotoResolution resolution = fr.lordfinn.crazyphone.ClientConfig.phonePhotoListPixelated ? PhotoResolution.THUMBNAIL : PhotoResolution.FULL;
@@ -206,7 +213,7 @@ public class CrazyPhoneMyPhotosScreenScreen extends CrazyPhoneDefaultScreenScree
 
         int topRow = topVisibleRow();
         int firstIndex = topRow * GRID_COLUMNS;
-        int lastIndex = Math.min(menu.photoIds.size(), firstIndex + GRID_COLUMNS * (VISIBLE_ROWS + 1));
+        int lastIndex = Math.min(menu.photoIds.size(), firstIndex + GRID_COLUMNS * RENDER_ROWS);
         PhotoResolution resolution = fr.lordfinn.crazyphone.ClientConfig.phonePhotoListPixelated ? PhotoResolution.THUMBNAIL : PhotoResolution.FULL;
         for (int index = firstIndex; index < lastIndex; index++) {
             UUID photoId = menu.photoIds.get(index);
@@ -283,7 +290,7 @@ public class CrazyPhoneMyPhotosScreenScreen extends CrazyPhoneDefaultScreenScree
         int gridLeft = gridLeft(), gridTop = gridTop();
         int topRow = topVisibleRow();
         int firstIndex = topRow * GRID_COLUMNS;
-        int lastIndex = Math.min(menu.photoIds.size(), firstIndex + GRID_COLUMNS * (VISIBLE_ROWS + 1));
+        int lastIndex = Math.min(menu.photoIds.size(), firstIndex + GRID_COLUMNS * RENDER_ROWS);
         for (int index = firstIndex; index < lastIndex; index++) {
             int rel = index - firstIndex;
             int col = rel % GRID_COLUMNS;
