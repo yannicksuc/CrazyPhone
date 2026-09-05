@@ -267,6 +267,7 @@ sourceSets.main {
             "fr/lordfinn/crazyphone/network/ConversationRequestPacket.java",
             "fr/lordfinn/crazyphone/network/ConversationResponsePacket.java",
             "fr/lordfinn/crazyphone/network/CrazyPhoneCallActionMessage.java",
+            "fr/lordfinn/crazyphone/network/CrazyPhoneMuteConversationMessage.java",
             "fr/lordfinn/crazyphone/network/VoiceMessageUploadPacket.java",
             "fr/lordfinn/crazyphone/network/VoiceMessageAudioRequestPacket.java",
             "fr/lordfinn/crazyphone/network/VoiceMessageStopPacket.java",

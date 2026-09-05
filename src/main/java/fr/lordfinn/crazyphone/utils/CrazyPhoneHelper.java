@@ -376,6 +376,36 @@ public class CrazyPhoneHelper {
         return result;
     }
 
+    /** Toggles whether {@code owner} has muted {@code conversationId} - same CompoundTag-of-ListTag
+     * structure as {@link #toggleFavorite}, just keyed by conversationId instead of contact number. A
+     * muted conversation still raises its unread-notification badge normally (see
+     * {@link #addNotificationBadge}) - only the sound/toast normally triggered on arrival is suppressed
+     * for the muting player (see {@link #notifyContacts}/{@link #notifySystemMessage}). Marks the registry
+     * dirty but does not sync; callers are expected to sync the mutating player's own client afterward
+     * (see CrazyPhoneMuteConversationMessage). */
+    public static void toggleMutedConversation(LevelAccessor world, String owner, String conversationId) {
+        PhoneRegistrySavedData registry = PhoneRegistrySavedData.get(world);
+        ListTag ids = registry.mutedConversations.get(owner) instanceof ListTag list ? list.copy() : new ListTag();
+        boolean removed = ids.removeIf(t -> t instanceof StringTag s && NbtCompat.asString(s).equals(conversationId));
+        if (!removed)
+            ids.add(StringTag.valueOf(conversationId));
+        registry.mutedConversations.put(owner, ids);
+        registry.setDirty();
+    }
+
+    /** Whether {@code owner} has muted {@code conversationId} - read server-side when deciding whether to
+     * trigger the new-message sound/toast for a given receiver (see {@link #notifyContacts}/
+     * {@link #notifySystemMessage}), and client-side by the conversation screen's mute icon to reflect
+     * current state. */
+    public static boolean isConversationMuted(LevelAccessor world, String owner, String conversationId) {
+        if (PhoneRegistrySavedData.get(world).mutedConversations.get(owner) instanceof ListTag list) {
+            for (Tag t : list)
+                if (t instanceof StringTag s && NbtCompat.asString(s).equals(conversationId))
+                    return true;
+        }
+        return false;
+    }
+
     /**
      * Appends a system event (rename / icon change / member excluded / admin reassigned) to the
      * conversation feed - not sent by anyone, so it carries no sender contact head, just an optional
@@ -481,7 +511,8 @@ public class CrazyPhoneHelper {
                 continue;
             ServerPlayer receiverPlayer = server.getPlayerList().getPlayer(UUID.fromString(receiver.getUuid()));
             if (receiverPlayer != null) {
-                NetworkAccess.sendToPlayer(receiverPlayer, new CrazyPhoneNewMessageNotificationPacket(messageTag, ""));
+                boolean muted = isConversationMuted(world, number, conversationId);
+                NetworkAccess.sendToPlayer(receiverPlayer, new CrazyPhoneNewMessageNotificationPacket(messageTag, "", muted));
             }
             addNotificationBadge(registry, number, conversationId, receiverPlayer);
         }
@@ -544,7 +575,8 @@ public class CrazyPhoneHelper {
 
             ServerPlayer receiverPlayer = server.getPlayerList().getPlayer(UUID.fromString(receiver.getUuid()));
             if (receiverPlayer != null) {
-                NetworkAccess.sendToPlayer(receiverPlayer, new CrazyPhoneNewMessageNotificationPacket(messageTag, sender.getName()));
+                boolean muted = isConversationMuted(world, receiverNumber, conversationId);
+                NetworkAccess.sendToPlayer(receiverPlayer, new CrazyPhoneNewMessageNotificationPacket(messageTag, sender.getName(), muted));
             }
 
             addNotificationBadge(registry, receiverNumber, conversationId, receiverPlayer);

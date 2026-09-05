@@ -53,7 +53,11 @@ import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
 //?}
 public record CrazyPhoneNewMessageNotificationPacket(
     CompoundTag messageTag,
-    String senderName
+    String senderName,
+    // Computed server-side, per receiver, from CrazyPhoneHelper#isConversationMuted (see notifyContacts/
+    // notifySystemMessage) - true suppresses just the sound/toast below for THIS specific receiver; the
+    // unread-notification badge (a separate mechanism, see addNotificationBadge) is never touched by this.
+    boolean muted
 ) implements CustomPacketPayload {
 
     //? if >=1.20.5 {
@@ -66,10 +70,12 @@ public record CrazyPhoneNewMessageNotificationPacket(
             (RegistryFriendlyByteBuf buffer, CrazyPhoneNewMessageNotificationPacket message) -> {
                 buffer.writeNbt(message.messageTag != null ? message.messageTag : new CompoundTag());
                 buffer.writeUtf(message.senderName);
+                buffer.writeBoolean(message.muted);
             },
             (RegistryFriendlyByteBuf buffer) -> new CrazyPhoneNewMessageNotificationPacket(
                 buffer.readNbt(),
-                buffer.readUtf()
+                buffer.readUtf(),
+                buffer.readBoolean()
             )
         );
 
@@ -81,12 +87,13 @@ public record CrazyPhoneNewMessageNotificationPacket(
     public static final /*$ res_loc {*/ResourceLocation/*$}*/ ID = new /*$ res_loc {*/ResourceLocation/*$}*/(Crazyphone.MODID, "new_message_notification");
 
     public CrazyPhoneNewMessageNotificationPacket(FriendlyByteBuf buffer) {
-        this(buffer.readNbt(), buffer.readUtf());
+        this(buffer.readNbt(), buffer.readUtf(), buffer.readBoolean());
     }
 
     public void write(FriendlyByteBuf buffer) {
         buffer.writeNbt(messageTag != null ? messageTag : new CompoundTag());
         buffer.writeUtf(senderName);
+        buffer.writeBoolean(muted);
     }
 
     @Override
@@ -117,7 +124,10 @@ public record CrazyPhoneNewMessageNotificationPacket(
 
             // System events (group renamed/icon changed/member excluded/admin reassigned) aren't
             // "a message received from someone" - they get their own in-feed entry, not this toast.
-            if (!message.isSystem()) {
+            // messagePacket.muted() is the receiving player's own per-conversation mute state, computed
+            // server-side (see CrazyPhoneHelper#notifyContacts/#notifySystemMessage) - the unread-notification
+            // badge is a separate mechanism (addNotificationBadge) and keeps working regardless of this.
+            if (!message.isSystem() && !messagePacket.muted()) {
                 Component senderName = Component.literal(messagePacket.senderName)
                         .withStyle(style -> style.withBold(true).withColor(0x00FF55));
                 Component notifText = Component.translatable("message.crazyphone.new_message_received", senderName)

@@ -175,6 +175,10 @@
   "gui.crazyphone.crazy_phone_conversation.tooltip_send_voice_message_disabled": "Les messages vocaux sont désactivés sur ce serveur",
   "gui.crazyphone.crazy_phone_conversation.button_voice_trash": "🗑",
   "gui.crazyphone.crazy_phone_conversation.button_voice_pause": "⏸",
+  "gui.crazyphone.crazy_phone_conversation.date_today": "Aujourd'hui",
+  "gui.crazyphone.crazy_phone_conversation.date_yesterday": "Hier",
+  "gui.crazyphone.crazy_phone_conversation.tooltip_mute": "Mettre cette conversation en sourdine",
+  "gui.crazyphone.crazy_phone_conversation.tooltip_unmute": "Réactiver le son de cette conversation",
 
   "gui.crazyphone.crazy_phone_calling_screen.title": "Appel en cours...",
   "gui.crazyphone.crazy_phone_calling_screen.button_cancel": "Annuler",

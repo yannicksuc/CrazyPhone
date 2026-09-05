@@ -33,6 +33,7 @@ import fr.lordfinn.crazyphone.client.gui.components.MessageDisplayManager.Messag
 import fr.lordfinn.crazyphone.client.gui.components.SmallTextEditBox;
 import fr.lordfinn.crazyphone.network.ConversationRequestPacket;
 import fr.lordfinn.crazyphone.network.CrazyPhoneConversationButtonMessage;
+import fr.lordfinn.crazyphone.network.CrazyPhoneMuteConversationMessage;
 //? if fabric && >=1.20.5 {
 /*import fr.lordfinn.crazyphone.network.CrazyPhoneUploadPicturePacket;
 *///?}
@@ -83,20 +84,25 @@ import org.lwjgl.glfw.GLFW;
  */
 public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<CrazyPhoneConversationMenu> {
     private final static HashMap<String, Object> guistate = CrazyPhoneConversationMenu.guistate;
-    /** Top-right corner of the header banner, same position/size convention as the contacts screen's
-     * add-contact icon - only shown for group conversations. */
-    private static final int GROUP_SETTINGS_ICON_X = 99;
+    /** Second-from-right slot of the header banner's icon row, same position/size convention as the
+     * contacts screen's add-contact icon - only shown for group conversations. Shifted one 16px slot left
+     * of its old position (99) to make room for the always-shown mute icon at {@link #MUTE_ICON_X}. */
+    private static final int GROUP_SETTINGS_ICON_X = 83;
     private static final int GROUP_SETTINGS_ICON_Y = 9;
     private final ItemStack groupSettingsIcon = CrazyPhoneConversationMenu.createGroupSettingsIcon();
     private final Component groupSettingsTooltip = Component.translatable("gui.crazyphone.crazy_phone_conversation.tooltip_group_settings")
             .withStyle(style -> style.withColor(ChatFormatting.GOLD).withBold(true));
     /** Sits immediately left of the group-settings icon when both are shown (group conversations, flush
-     * against it - no gap between the two buttons), or in that same slot when there's no group icon to
-     * share it with (1:1 conversations). */
+     * against it - no gap between the two buttons), or immediately left of the mute icon when there's no
+     * group icon to share a slot with (1:1 conversations). */
     private static final int CALL_ICON_Y = 9;
     private int callIconX() {
-        return this.leftPos + (menu.isGroup() ? GROUP_SETTINGS_ICON_X - 16 : GROUP_SETTINGS_ICON_X);
+        return this.leftPos + (menu.isGroup() ? GROUP_SETTINGS_ICON_X - 16 : MUTE_ICON_X - 16);
     }
+    /** Rightmost slot of the header banner's icon row - unlike the group-settings/call icons above, this
+     * one is ALWAYS shown regardless of conversation type, since muting applies to any conversation. */
+    private static final int MUTE_ICON_X = 99;
+    private static final int MUTE_ICON_Y = 9;
     private EditBox message;
     private Button button_envoyer;
     /** "Take and send image" - opens the capture overlay, then uploads and posts the shot into this
@@ -198,6 +204,7 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
             renderGroupSettingsIcon(guiGraphics, mouseX, mouseY);
         if (VoicechatIntegration.isAvailable())
             renderCallIcon(guiGraphics, mouseX, mouseY);
+        renderMuteIcon(guiGraphics, mouseX, mouseY);
         renderMessageWidget(guiGraphics, mouseX, mouseY, partialTicks);
         // Tooltip only, deferred until after the message feed: the feed's own (opaque) content renders
         // right after the icon in normal flow and, since the tooltip pops up below the cursor, overlapped
@@ -211,6 +218,9 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
         }
         if (VoicechatIntegration.isAvailable() && isHoveringCallIcon(mouseX, mouseY)) {
             guiGraphics.setComponentTooltipForNextFrame(this.font, List.of(callIconTooltip()), mouseX, mouseY);
+        }
+        if (isHoveringMuteIcon(mouseX, mouseY)) {
+            guiGraphics.setComponentTooltipForNextFrame(this.font, List.of(muteIconTooltip()), mouseX, mouseY);
         }
         // Drawn again here, after the message feed: button_envoyer/imagebutton_crazyphoneaddimage sit at
         // the bottom-right corner of the message crop zone (y 144-173, crop ends at 158) as a deliberate
@@ -267,6 +277,7 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
             renderGroupSettingsIcon(guiGraphics, mouseX, mouseY);
         if (VoicechatIntegration.isAvailable())
             renderCallIcon(guiGraphics, mouseX, mouseY);
+        renderMuteIcon(guiGraphics, mouseX, mouseY);
         renderMessageWidget(guiGraphics, mouseX, mouseY, partialTicks);
         // Tooltip only, deferred until after the message feed: the feed's own (opaque) content renders
         // right after the icon in normal flow and, since the tooltip pops up below the cursor, overlapped
@@ -284,6 +295,13 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
             guiGraphics.renderComponentTooltip(this.font, List.of(callIconTooltip()), mouseX, mouseY);
             //? } else {
             /*guiGraphics.setComponentTooltipForNextFrame(this.font, List.of(callIconTooltip()), mouseX, mouseY);
+            *///?}
+        }
+        if (isHoveringMuteIcon(mouseX, mouseY)) {
+            //? if <1.21.10 {
+            guiGraphics.renderComponentTooltip(this.font, List.of(muteIconTooltip()), mouseX, mouseY);
+            //? } else {
+            /*guiGraphics.setComponentTooltipForNextFrame(this.font, List.of(muteIconTooltip()), mouseX, mouseY);
             *///?}
         }
         // Drawn again here, after the message feed: button_envoyer/imagebutton_crazyphoneaddimage sit at
@@ -478,6 +496,54 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
         /*NetworkAccess.sendToServer(new CrazyPhoneCallActionMessage(action, menu.getConversationId()));
         *///? } else {
         PacketDistributor.SERVER.noArg().send(new CrazyPhoneCallActionMessage(action, menu.getConversationId()));
+        //?}
+    }
+
+    /** Always shown (unlike the group-settings/call icons above), regardless of conversation type - mutes
+     * just THIS player's own sound/toast for THIS specific conversation (see
+     * CrazyPhoneHelper#toggleMutedConversation); the unread-notification badge is a separate mechanism and
+     * keeps appearing normally either way. Bell/no-bell glyph mirrors CrazyPhonePhotoFrameResizeScreen's
+     * Fullbright hotbar button - same "icon + tooltip both re-read current state every frame" technique. */
+    private void renderMuteIcon(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int mouseX, int mouseY) {
+        int iconX = this.leftPos + MUTE_ICON_X;
+        int iconY = this.topPos + MUTE_ICON_Y;
+        boolean hovered = isHoveringMuteIcon(mouseX, mouseY);
+        if (hovered) {
+            CursorEffects.requestPointerCursor();
+            guiGraphics.fill(iconX, iconY, iconX + 16, iconY + 16, 0x80FFFFFF);
+        }
+        String glyph = isConversationMuted() ? "🔕" : "🔔";
+        guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(this.font, glyph, iconX + 4, iconY + 4, 0xFFFFFFFF, true);
+    }
+
+    private boolean isHoveringMuteIcon(double mouseX, double mouseY) {
+        int iconX = this.leftPos + MUTE_ICON_X;
+        int iconY = this.topPos + MUTE_ICON_Y;
+        return mouseX >= iconX && mouseX < iconX + 16 && mouseY >= iconY && mouseY < iconY + 16;
+    }
+
+    /** The current player's own phone is guaranteed to be in their main hand while this screen is open
+     * (same assumption every other ownerNumber lookup in this class already makes - see renderBanner,
+     * sendCurrentMessage, addMessage...), so the fast main-hand lookup is fine here too. */
+    private boolean isConversationMuted() {
+        String ownerNumber = GetCrazyPhoneNumberFromMainHandProcedure.execute(this.menu.entity, null);
+        if (ownerNumber.isEmpty())
+            return false;
+        return CrazyPhoneHelper.isConversationMuted(this.menu.entity.level(), ownerNumber, this.menu.getConversationId());
+    }
+
+    private Component muteIconTooltip() {
+        return Component.translatable(isConversationMuted()
+                ? "gui.crazyphone.crazy_phone_conversation.tooltip_unmute"
+                : "gui.crazyphone.crazy_phone_conversation.tooltip_mute")
+            .withStyle(style -> style.withColor(ChatFormatting.GRAY).withBold(true));
+    }
+
+    private void onMuteIconClicked() {
+        //? if >=1.20.5 {
+        /*NetworkAccess.sendToServer(new CrazyPhoneMuteConversationMessage(menu.getConversationId()));
+        *///? } else {
+        PacketDistributor.SERVER.noArg().send(new CrazyPhoneMuteConversationMessage(menu.getConversationId()));
         //?}
     }
 
@@ -1188,6 +1254,11 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
 
         if (button == 0 && VoicechatIntegration.isAvailable() && isHoveringCallIcon(mouseX, mouseY)) {
             onCallIconClicked();
+            return true;
+        }
+
+        if (button == 0 && isHoveringMuteIcon(mouseX, mouseY)) {
+            onMuteIconClicked();
             return true;
         }
 

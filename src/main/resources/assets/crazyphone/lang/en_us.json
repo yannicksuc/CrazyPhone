@@ -175,6 +175,10 @@
   "gui.crazyphone.crazy_phone_conversation.tooltip_send_voice_message_disabled": "Voice messages are disabled on this server",
   "gui.crazyphone.crazy_phone_conversation.button_voice_trash": "🗑",
   "gui.crazyphone.crazy_phone_conversation.button_voice_pause": "⏸",
+  "gui.crazyphone.crazy_phone_conversation.date_today": "Today",
+  "gui.crazyphone.crazy_phone_conversation.date_yesterday": "Yesterday",
+  "gui.crazyphone.crazy_phone_conversation.tooltip_mute": "Mute this conversation",
+  "gui.crazyphone.crazy_phone_conversation.tooltip_unmute": "Unmute this conversation",
 
   "gui.crazyphone.crazy_phone_calling_screen.title": "Calling...",
   "gui.crazyphone.crazy_phone_calling_screen.button_cancel": "Cancel",

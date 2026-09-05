@@ -57,6 +57,12 @@ public class PhoneRegistrySavedData extends SavedData {
      * of that owner's {@code contacts} list, shown pinned in their own section above the rest of the
      * contacts grid. Bounded by contact count, so it's safe alongside the rest of this always-synced registry. */
     public CompoundTag favorites = new CompoundTag();
+    /** Muted conversations, keyed by owner phone number -> ListTag of conversationIds - same shape as
+     * {@link #favorites}, just keyed by conversationId instead of contact number. Muting suppresses only
+     * the sound/toast normally triggered for that owner when a new message arrives (see
+     * CrazyPhoneHelper#notifyContacts/#notifySystemMessage) - the unread-notification badge is untouched.
+     * Bounded by conversation count, so it's safe alongside the rest of this always-synced registry. */
+    public CompoundTag mutedConversations = new CompoundTag();
 
     //? if <1.20.5 {
     public static PhoneRegistrySavedData load(CompoundTag tag) {
@@ -100,6 +106,7 @@ public class PhoneRegistrySavedData extends SavedData {
         this.isMayorElectionOn = NbtCompat.getBoolean(nbt, "isMayorElectionOn");
         this.groupMeta = nbt.get("groupMeta") instanceof CompoundTag t ? t : new CompoundTag();
         this.favorites = nbt.get("favorites") instanceof CompoundTag t ? t : new CompoundTag();
+        this.mutedConversations = nbt.get("mutedConversations") instanceof CompoundTag t ? t : new CompoundTag();
     }
 
     //? if <1.20.5 {
@@ -133,6 +140,7 @@ public class PhoneRegistrySavedData extends SavedData {
         nbt.putBoolean("isMayorElectionOn", isMayorElectionOn);
         nbt.put("groupMeta", this.groupMeta);
         nbt.put("favorites", this.favorites);
+        nbt.put("mutedConversations", this.mutedConversations);
         return nbt;
     }
 
