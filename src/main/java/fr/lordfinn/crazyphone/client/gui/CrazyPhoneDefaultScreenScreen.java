@@ -145,10 +145,21 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 	 *                     are shown) so the title scrolls under it, not behind or past it. Defaults to the
 	 *                     header banner's own right edge when a screen has no such icon. */
 	protected void renderHeader(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, ItemStack icon, Component title, int rightBoundX) {
+		renderHeader(guiGraphics, icon, title, rightBoundX, true);
+	}
+
+	/** @param showIcon false skips the item icon entirely and starts the title where the icon would have
+	 *                  sat instead (HEADER_ICON_X), reclaiming that space - e.g. My Photos, whose own header
+	 *                  icon was redundant next to the photo count already shown on the same row. */
+	protected void renderHeader(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, ItemStack icon, Component title, int rightBoundX, boolean showIcon) {
 		fr.lordfinn.crazyphone.utils.GuiCompat.blit(guiGraphics, HEADER_BANNER_IMAGE, this.leftPos + 4, this.topPos + 9, 0, 114, 18);
-		guiGraphics./*$ gui_render_item {*/renderItem/*$}*/(icon, this.leftPos + HEADER_ICON_X, this.topPos + 9);
-		int availableWidth = Math.max(0, rightBoundX - HEADER_TITLE_RIGHT_GAP - HEADER_TITLE_X);
-		ScrollingText.render(guiGraphics, this.font, title, this.leftPos + HEADER_TITLE_X, this.topPos + 14, availableWidth, 0xFF404040);
+		int titleX = HEADER_TITLE_X;
+		if (showIcon)
+			guiGraphics./*$ gui_render_item {*/renderItem/*$}*/(icon, this.leftPos + HEADER_ICON_X, this.topPos + 9);
+		else
+			titleX = HEADER_ICON_X;
+		int availableWidth = Math.max(0, rightBoundX - HEADER_TITLE_RIGHT_GAP - titleX);
+		ScrollingText.render(guiGraphics, this.font, title, this.leftPos + titleX, this.topPos + 14, availableWidth, 0xFF404040);
 	}
 
 	public static HashMap<String, String> getEditBoxAndCheckBoxValues() {

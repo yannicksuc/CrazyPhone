@@ -51,7 +51,8 @@ public class CrazyPhoneMyPhotosScreenScreen extends CrazyPhoneDefaultScreenScree
     private static final int VISIBLE_ROWS = 3;
     private static final int THUMB_SIZE = 34;
     private static final int THUMB_PITCH = 36;
-    private static final int GRID_TOP_Y = 30;
+    // Matches CrazyPhoneConversationScreen's own message crop zone top (topPos+27), same as GRID_HEIGHT below.
+    private static final int GRID_TOP_Y = 27;
     private static final int GRID_WIDTH = GRID_COLUMNS * THUMB_PITCH;
     // Matches CrazyPhoneConversationScreen's own message crop zone height exactly (its enableScissor call
     // spans topPos+27 to topPos+158, 131px) - the grid already scrolls in continuous pixels, not snapped
@@ -101,7 +102,7 @@ public class CrazyPhoneMyPhotosScreenScreen extends CrazyPhoneDefaultScreenScree
     public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTicks) {
         super.extractRenderState(guiGraphics, mouseX, mouseY, partialTicks);
         renderHeader(guiGraphics, new ItemStack(ModItems.CRAZY_PHONE_PHOTO.get()),
-                Component.translatable("gui.crazyphone.crazy_phone_my_photos_screen.title"));
+                Component.translatable("gui.crazyphone.crazy_phone_my_photos_screen.title"), HEADER_BANNER_RIGHT_X, false);
         renderPhotoCountInfo(guiGraphics);
     }
     *///? } else {
@@ -109,7 +110,7 @@ public class CrazyPhoneMyPhotosScreenScreen extends CrazyPhoneDefaultScreenScree
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
         super.render(guiGraphics, mouseX, mouseY, partialTicks);
         renderHeader(guiGraphics, new ItemStack(ModItems.CRAZY_PHONE_PHOTO.get()),
-                Component.translatable("gui.crazyphone.crazy_phone_my_photos_screen.title"));
+                Component.translatable("gui.crazyphone.crazy_phone_my_photos_screen.title"), HEADER_BANNER_RIGHT_X, false);
         renderPhotoCountInfo(guiGraphics);
     }
     //?}

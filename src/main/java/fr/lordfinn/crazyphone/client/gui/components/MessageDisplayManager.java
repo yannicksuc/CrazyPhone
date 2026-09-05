@@ -114,7 +114,7 @@ public class MessageDisplayManager {
         for (DateSeparator separator : dateSeparators) {
             int textWidth = Math.round(font.width(separator.label()) * DATE_SEPARATOR_SCALE);
             int drawX = x + Math.max(0, (fullWidth - textWidth) / 2);
-            int drawY = separator.y() + Math.max(0, (DATE_SEPARATOR_HEIGHT - lineHeight) / 2);
+            int drawY = separator.y() + 1 + Math.max(0, (DATE_SEPARATOR_HEIGHT - lineHeight) / 2);
             GuiCompat.pushPose(guiGraphics);
             GuiCompat.translate(guiGraphics, drawX, drawY);
             GuiCompat.scale(guiGraphics, DATE_SEPARATOR_SCALE, DATE_SEPARATOR_SCALE);
