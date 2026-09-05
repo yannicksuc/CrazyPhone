@@ -5,6 +5,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 //?}
 import fr.lordfinn.crazyphone.utils.NetworkAccess;
 
+import net.minecraft.ChatFormatting;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.network.chat.Component;
 import net.minecraft.client.gui.components.EditBox;
@@ -16,12 +17,15 @@ import net.minecraft.client.gui./*$ gui_graphics_type {*/GuiGraphics/*$}*/;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.item.ItemStack;
 
+import fr.lordfinn.crazyphone.client.CursorEffects;
+import fr.lordfinn.crazyphone.network.CrazyphoneHomeScreenButtonMessage;
 import fr.lordfinn.crazyphone.procedures.IsPhonePasswordSetProcedure;
 import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneSignInScreenMenu;
 import fr.lordfinn.crazyphone.client.gui.components.PasswordEditBox;
 import fr.lordfinn.crazyphone.network.CrazyPhoneSignInScreenButtonMessage;
 import java.util.HashMap;
+import java.util.List;
 
 public class CrazyPhoneSignInScreenScreen extends CrazyPhoneDefaultScreenScreen<CrazyPhoneSignInScreenMenu> {
 	private final static HashMap<String, Object> guistate = CrazyPhoneSignInScreenMenu.guistate;
@@ -50,8 +54,11 @@ public class CrazyPhoneSignInScreenScreen extends CrazyPhoneDefaultScreenScreen<
 	public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTicks) {
 		super.extractRenderState(guiGraphics, mouseX, mouseY, partialTicks);
 		renderHeader(guiGraphics, new ItemStack(fr.lordfinn.crazyphone.init.ModItems.CRAZY_PHONE.get()),
-				Component.translatable("gui.crazyphone.crazy_phone_sign_in_screen.label_connexion"));
+				Component.translatable("gui.crazyphone.crazy_phone_sign_in_screen.label_connexion"), AUTO_LOCK_ICON_X);
+		renderAutoLockIcon(guiGraphics, mouseX, mouseY);
 		password.extractRenderState(guiGraphics, mouseX, mouseY, partialTicks);
+		if (isHoveringAutoLockIcon(mouseX, mouseY))
+			guiGraphics.setComponentTooltipForNextFrame(this.font, autoLockIconTooltip(), mouseX, mouseY);
 		this.extractTooltip(guiGraphics, mouseX, mouseY);
 	}
 	*///? } else {
@@ -59,8 +66,11 @@ public class CrazyPhoneSignInScreenScreen extends CrazyPhoneDefaultScreenScreen<
 	public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
 		super.render(guiGraphics, mouseX, mouseY, partialTicks);
 		renderHeader(guiGraphics, new ItemStack(fr.lordfinn.crazyphone.init.ModItems.CRAZY_PHONE.get()),
-				Component.translatable("gui.crazyphone.crazy_phone_sign_in_screen.label_connexion"));
+				Component.translatable("gui.crazyphone.crazy_phone_sign_in_screen.label_connexion"), AUTO_LOCK_ICON_X);
+		renderAutoLockIcon(guiGraphics, mouseX, mouseY);
 		password.render(guiGraphics, mouseX, mouseY, partialTicks);
+		if (isHoveringAutoLockIcon(mouseX, mouseY))
+			guiGraphics.renderComponentTooltip(this.font, autoLockIconTooltip(), mouseX, mouseY);
 		this.renderTooltip(guiGraphics, mouseX, mouseY);
 	}
 	//?}
@@ -161,4 +171,80 @@ public class CrazyPhoneSignInScreenScreen extends CrazyPhoneDefaultScreenScreen<
 		guistate.put("button:button_deverrouiller", button_deverrouiller);
 		this.addRenderableWidget(button_deverrouiller);
 	}
+
+	// Per-phone, opt-in (default off) preference: auto-lock THIS specific phone on disconnect if it's still
+	// unlocked at that point - see CrazyPhoneHelper#applyAutoLockOnDisconnect for the actual disconnect-time
+	// sweep. Lives here (rather than the home screen) so it sits right where a player is already looking at
+	// this exact phone's lock state - "dans la page Login... dans la barre en haut jaune" (live request).
+	// Drawn as a plain icon overlay on the header banner (renderHeader, always shown on this screen) using
+	// the SAME technique CrazyPhoneConversationScreen's own header-row icons (call/mute/group settings)
+	// already use - a hand-drawn glyph plus manual hit-test/tooltip/click, not a real Button widget, since
+	// that's the established system for icons living directly on a phone screen's header banner.
+	private static final int AUTO_LOCK_ICON_X = 99;
+	private static final int AUTO_LOCK_ICON_Y = 9;
+	private static final int AUTO_LOCK_ICON_SIZE = 16;
+	private static final int AUTO_LOCK_TOGGLE_BUTTON_ID = 4;
+	// "locked" (U+1F512) while auto-lock is ON, "unlocked" (U+1F513) while it's OFF - same bundled Pixel
+	// Twemoji font as every other emoji icon already used across this mod's phone screens.
+	private static final Component AUTO_LOCK_ICON_ON = Component.literal("🔒");
+	private static final Component AUTO_LOCK_ICON_OFF = Component.literal("🔓");
+
+	private boolean isAutoLockEnabled() {
+		return CrazyPhoneHelper.isPhoneAutoLockEnabled(CrazyPhoneHelper.getMainHandItemOrEmpty(entity));
+	}
+
+	private void renderAutoLockIcon(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int mouseX, int mouseY) {
+		int iconX = this.leftPos + AUTO_LOCK_ICON_X;
+		int iconY = this.topPos + AUTO_LOCK_ICON_Y;
+		if (isHoveringAutoLockIcon(mouseX, mouseY)) {
+			CursorEffects.requestPointerCursor();
+			guiGraphics.fill(iconX, iconY, iconX + AUTO_LOCK_ICON_SIZE, iconY + AUTO_LOCK_ICON_SIZE, 0x80FFFFFF);
+		}
+		Component glyph = isAutoLockEnabled() ? AUTO_LOCK_ICON_ON : AUTO_LOCK_ICON_OFF;
+		guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(this.font, glyph, iconX + 4, iconY + 4, 0xFFFFFFFF, true);
+	}
+
+	private boolean isHoveringAutoLockIcon(double mouseX, double mouseY) {
+		int iconX = this.leftPos + AUTO_LOCK_ICON_X;
+		int iconY = this.topPos + AUTO_LOCK_ICON_Y;
+		return mouseX >= iconX && mouseX < iconX + AUTO_LOCK_ICON_SIZE && mouseY >= iconY && mouseY < iconY + AUTO_LOCK_ICON_SIZE;
+	}
+
+	private List<Component> autoLockIconTooltip() {
+		boolean enabled = isAutoLockEnabled();
+		String titleKey = enabled ? "gui.crazyphone.crazy_phone_sign_in_screen.tooltip_auto_lock_on" : "gui.crazyphone.crazy_phone_sign_in_screen.tooltip_auto_lock_off";
+		String loreKey = enabled ? "gui.crazyphone.crazy_phone_sign_in_screen.tooltip_auto_lock_on.lore" : "gui.crazyphone.crazy_phone_sign_in_screen.tooltip_auto_lock_off.lore";
+		return List.of(Component.translatable(titleKey), Component.translatable(loreKey).withStyle(ChatFormatting.GRAY));
+	}
+
+	private void onAutoLockIconClicked() {
+		var values = getEditBoxAndCheckBoxValues();
+		//? if >=1.20.5 {
+		/*NetworkAccess.sendToServer(new CrazyphoneHomeScreenButtonMessage(AUTO_LOCK_TOGGLE_BUTTON_ID, x, y, z, values));
+		*///? } else {
+		PacketDistributor.SERVER.noArg().send(new CrazyphoneHomeScreenButtonMessage(AUTO_LOCK_TOGGLE_BUTTON_ID, x, y, z, values));
+		//?}
+		CrazyphoneHomeScreenButtonMessage.handleButtonAction(entity, AUTO_LOCK_TOGGLE_BUTTON_ID, x, y, z, values);
+	}
+
+	//? if <26 {
+	@Override
+	public boolean mouseClicked(double mouseX, double mouseY, int button) {
+		if (button == 0 && isHoveringAutoLockIcon(mouseX, mouseY)) {
+			onAutoLockIconClicked();
+			return true;
+		}
+		return super.mouseClicked(mouseX, mouseY, button);
+	}
+	//?}
+	//? if >=26 {
+	/*@Override
+	public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent event, boolean doubleClick) {
+		if (event.button() == 0 && isHoveringAutoLockIcon(event.x(), event.y())) {
+			onAutoLockIconClicked();
+			return true;
+		}
+		return super.mouseClicked(event, doubleClick);
+	}
+	*///?}
 }
