@@ -59,6 +59,14 @@ import fr.lordfinn.crazyphone.utils.PhotoResolution;
 public class CrazyPhonePhotoFrameRenderer extends EntityRenderer<CrazyPhonePhotoFrameEntity> {
     private static final /*$ res_loc {*/ResourceLocation/*$}*/ GROUND_BACKING_TEXTURE =
             Crazyphone.parseId("crazyphone:textures/entity/photo_frame_ground_backing.png");
+    // Same near-white texture CrazyPhonePhotoItemRenderer already tints for the held/dropped item's own
+    // frame - reused as-is rather than a new asset (confirmed pixel-compatible: both this and
+    // GROUND_BACKING_TEXTURE are 16x16, sampled the same full-0..1-UV way by every box/backing quad below).
+    // Swapped in for the border/backing quads ONLY when the frame is actually dyed (see #frameColor) -
+    // multiplying a color tint onto GROUND_BACKING_TEXTURE's own brown pixels would look muddy and wrong,
+    // exactly like tinting leather armor's texture instead of its own near-white one would.
+    private static final /*$ res_loc {*/ResourceLocation/*$}*/ FRAME_TEXTURE =
+            Crazyphone.parseId("crazyphone:textures/item/crazy_phone_photo_frame.png");
     private static final float DEPTH = (float) CrazyPhonePhotoFrameEntity.DEPTH;
     // The side walls sit FLUSH against the photo's own edge, zero gap - an earlier version added a small
     // margin here, which (since the top face is the photo alone, no background quad under it anymore) left
@@ -77,7 +85,14 @@ public class CrazyPhonePhotoFrameRenderer extends EntityRenderer<CrazyPhonePhoto
 
     @Override
     public /*$ res_loc {*/ResourceLocation/*$}*/ getTextureLocation(CrazyPhonePhotoFrameEntity entity) {
-        return GROUND_BACKING_TEXTURE;
+        return frameTexture(entity.borderRgb());
+    }
+
+    // Undyed (default 0xFFFFFF) keeps today's exact look: the brown backing texture, untinted. Dyed picks
+    // the near-white FRAME_TEXTURE instead and unpacks the color for the vertex tint - see this class's own
+    // field comment on FRAME_TEXTURE for why the two can't share one texture.
+    private static /*$ res_loc {*/ResourceLocation/*$}*/ frameTexture(int borderRgb) {
+        return borderRgb != 0xFFFFFF ? FRAME_TEXTURE : GROUND_BACKING_TEXTURE;
     }
 
     @Override
@@ -110,8 +125,11 @@ public class CrazyPhonePhotoFrameRenderer extends EntityRenderer<CrazyPhonePhoto
         boolean mirrored = isMirroredFace(face);
 
         if (boxed) {
-            drawBoxSides(poseStack, buffer, packedLight, drawW, drawH, depthSign, mirrored);
-            drawBacking(poseStack, buffer, packedLight, drawW, drawH, mirrored);
+            int borderRgb = entity.borderRgb();
+            /*$ res_loc {*/ResourceLocation/*$}*/ frameTexture = frameTexture(borderRgb);
+            int r = (borderRgb >> 16) & 0xFF, g = (borderRgb >> 8) & 0xFF, b = borderRgb & 0xFF;
+            drawBoxSides(poseStack, buffer, packedLight, drawW, drawH, depthSign, mirrored, frameTexture, r, g, b);
+            drawBacking(poseStack, buffer, packedLight, drawW, drawH, mirrored, frameTexture, r, g, b);
         }
         if (texture != null) {
             float z = depthSign * (boxed ? DEPTH : (transparent ? TRANSPARENT_FLOAT_GAP : DEPTH));
@@ -230,29 +248,29 @@ public class CrazyPhonePhotoFrameRenderer extends EntityRenderer<CrazyPhonePhoto
     // edge; the brown only shows from an angle, on these 4 side walls. Sized to the photo's own actual
     // footprint plus a 1-pixel margin ("1 pixel margin on the front face" - live request) so the walls read
     // as a thin lip around the photo rather than starting exactly at its edge.
-    private void drawBoxSides(PoseStack poseStack, MultiBufferSource buffer, int light, float w, float h, float depthSign, boolean mirrored) {
-        VertexConsumer consumer = buffer.getBuffer(RenderType.entityCutout(GROUND_BACKING_TEXTURE));
+    private void drawBoxSides(PoseStack poseStack, MultiBufferSource buffer, int light, float w, float h, float depthSign, boolean mirrored, /*$ res_loc {*/ResourceLocation/*$}*/ texture, int r, int g, int b) {
+        VertexConsumer consumer = buffer.getBuffer(RenderType.entityCutout(texture));
         var pose = poseStack.last();
         float x0 = -w / 2f - BORDER_MARGIN, x1 = w / 2f + BORDER_MARGIN;
         float y0 = -h / 2f - BORDER_MARGIN, y1 = h / 2f + BORDER_MARGIN;
-        sideQuad(consumer, pose, x0, y0, x1, y0, depthSign, mirrored, light); // "south" edge of the box footprint
-        sideQuad(consumer, pose, x1, y0, x1, y1, depthSign, mirrored, light); // "east"
-        sideQuad(consumer, pose, x1, y1, x0, y1, depthSign, mirrored, light); // "north"
-        sideQuad(consumer, pose, x0, y1, x0, y0, depthSign, mirrored, light); // "west"
+        sideQuad(consumer, pose, x0, y0, x1, y0, depthSign, mirrored, light, r, g, b); // "south" edge of the box footprint
+        sideQuad(consumer, pose, x1, y0, x1, y1, depthSign, mirrored, light, r, g, b); // "east"
+        sideQuad(consumer, pose, x1, y1, x0, y1, depthSign, mirrored, light, r, g, b); // "north"
+        sideQuad(consumer, pose, x0, y1, x0, y0, depthSign, mirrored, light, r, g, b); // "west"
     }
 
-    private void sideQuad(VertexConsumer consumer, PoseStack.Pose pose, float xa, float ya, float xb, float yb, float depthSign, boolean mirrored, int light) {
+    private void sideQuad(VertexConsumer consumer, PoseStack.Pose pose, float xa, float ya, float xb, float yb, float depthSign, boolean mirrored, int light, int r, int g, int b) {
         float outZ = depthSign * DEPTH;
         if (!mirrored) {
-            vertex(consumer, pose, xa, ya, outZ, 0f, 0f, light);
-            vertex(consumer, pose, xa, ya, 0f, 0f, 1f, light);
-            vertex(consumer, pose, xb, yb, 0f, 1f, 1f, light);
-            vertex(consumer, pose, xb, yb, outZ, 1f, 0f, light);
+            vertex(consumer, pose, xa, ya, outZ, 0f, 0f, light, r, g, b);
+            vertex(consumer, pose, xa, ya, 0f, 0f, 1f, light, r, g, b);
+            vertex(consumer, pose, xb, yb, 0f, 1f, 1f, light, r, g, b);
+            vertex(consumer, pose, xb, yb, outZ, 1f, 0f, light, r, g, b);
         } else {
-            vertex(consumer, pose, xa, ya, outZ, 0f, 0f, light);
-            vertex(consumer, pose, xb, yb, outZ, 1f, 0f, light);
-            vertex(consumer, pose, xb, yb, 0f, 1f, 1f, light);
-            vertex(consumer, pose, xa, ya, 0f, 0f, 1f, light);
+            vertex(consumer, pose, xa, ya, outZ, 0f, 0f, light, r, g, b);
+            vertex(consumer, pose, xb, yb, outZ, 1f, 0f, light, r, g, b);
+            vertex(consumer, pose, xb, yb, 0f, 1f, 1f, light, r, g, b);
+            vertex(consumer, pose, xa, ya, 0f, 0f, 1f, light, r, g, b);
         }
     }
 
@@ -287,20 +305,20 @@ public class CrazyPhonePhotoFrameRenderer extends EntityRenderer<CrazyPhonePhoto
     // toujours rendu dans le mauvais sens" - live request: this had copied the SAME winding as the outward-
     // facing photo instead of the opposite one, so it faced the wrong way on every face, not just
     // north/south).
-    private void drawBacking(PoseStack poseStack, MultiBufferSource buffer, int light, float w, float h, boolean mirrored) {
-        VertexConsumer consumer = buffer.getBuffer(RenderType.entityCutout(GROUND_BACKING_TEXTURE));
+    private void drawBacking(PoseStack poseStack, MultiBufferSource buffer, int light, float w, float h, boolean mirrored, /*$ res_loc {*/ResourceLocation/*$}*/ texture, int r, int g, int b) {
+        VertexConsumer consumer = buffer.getBuffer(RenderType.entityCutout(texture));
         var pose = poseStack.last();
         float x0 = -w / 2f, x1 = w / 2f, y0 = -h / 2f, y1 = h / 2f;
         if (mirrored) {
-            vertex(consumer, pose, x0, y1, 0f, 0f, 0f, light);
-            vertex(consumer, pose, x0, y0, 0f, 0f, 1f, light);
-            vertex(consumer, pose, x1, y0, 0f, 1f, 1f, light);
-            vertex(consumer, pose, x1, y1, 0f, 1f, 0f, light);
+            vertex(consumer, pose, x0, y1, 0f, 0f, 0f, light, r, g, b);
+            vertex(consumer, pose, x0, y0, 0f, 0f, 1f, light, r, g, b);
+            vertex(consumer, pose, x1, y0, 0f, 1f, 1f, light, r, g, b);
+            vertex(consumer, pose, x1, y1, 0f, 1f, 0f, light, r, g, b);
         } else {
-            vertex(consumer, pose, x0, y1, 0f, 0f, 0f, light);
-            vertex(consumer, pose, x1, y1, 0f, 1f, 0f, light);
-            vertex(consumer, pose, x1, y0, 0f, 1f, 1f, light);
-            vertex(consumer, pose, x0, y0, 0f, 0f, 1f, light);
+            vertex(consumer, pose, x0, y1, 0f, 0f, 0f, light, r, g, b);
+            vertex(consumer, pose, x1, y1, 0f, 1f, 0f, light, r, g, b);
+            vertex(consumer, pose, x1, y0, 0f, 1f, 1f, light, r, g, b);
+            vertex(consumer, pose, x0, y0, 0f, 0f, 1f, light, r, g, b);
         }
     }
 
@@ -313,9 +331,15 @@ public class CrazyPhonePhotoFrameRenderer extends EntityRenderer<CrazyPhonePhoto
         return base[Math.floorMod(corner - rotation, 4)];
     }
 
+    // Untinted - used only by drawImageQuad (the photo image itself), which must always render in its true
+    // color regardless of any frame dye.
     private void vertex(VertexConsumer consumer, PoseStack.Pose pose, float x, float y, float z, float u, float v, int light) {
+        vertex(consumer, pose, x, y, z, u, v, light, 255, 255, 255);
+    }
+
+    private void vertex(VertexConsumer consumer, PoseStack.Pose pose, float x, float y, float z, float u, float v, int light, int r, int g, int b) {
         consumer.addVertex(pose, x, y, z)
-                .setColor(255, 255, 255, 255)
+                .setColor(r, g, b, 255)
                 .setUv(u, v)
                 .setOverlay(net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY)
                 .setLight(light)
@@ -343,6 +367,10 @@ import fr.lordfinn.crazyphone.utils.PhotoResolution;
 public class CrazyPhonePhotoFrameRenderer extends EntityRenderer<CrazyPhonePhotoFrameEntity, CrazyPhonePhotoFrameRenderer.State> {
     private static final Identifier GROUND_BACKING_TEXTURE =
             Crazyphone.parseId("crazyphone:textures/entity/photo_frame_ground_backing.png");
+    // See the <26 branch's own comment on this same pair of constants - reused as-is from the item's frame
+    // texture, swapped in for the border/backing quads only when the frame is actually dyed.
+    private static final Identifier FRAME_TEXTURE =
+            Crazyphone.parseId("crazyphone:textures/item/crazy_phone_photo_frame.png");
     private static final float DEPTH = (float) CrazyPhonePhotoFrameEntity.DEPTH;
     // Flush against the photo's own edge, zero gap - see the <26 branch's own comment on this same constant.
     private static final float BORDER_MARGIN = 0f;
@@ -362,6 +390,11 @@ public class CrazyPhonePhotoFrameRenderer extends EntityRenderer<CrazyPhonePhoto
         public double centerU, centerV;
         public int rotation;
         public java.util.UUID photoId;
+        public int borderRgb = 0xFFFFFF;
+    }
+
+    private static Identifier frameTexture(int borderRgb) {
+        return borderRgb != 0xFFFFFF ? FRAME_TEXTURE : GROUND_BACKING_TEXTURE;
     }
 
     @Override
@@ -389,6 +422,7 @@ public class CrazyPhonePhotoFrameRenderer extends EntityRenderer<CrazyPhonePhoto
         state.centerV = (posV - negV) / 2.0;
         state.rotation = entity.rotation();
         state.photoId = entity.photoId();
+        state.borderRgb = entity.borderRgb();
     }
 
     @Override
@@ -413,10 +447,12 @@ public class CrazyPhonePhotoFrameRenderer extends EntityRenderer<CrazyPhonePhoto
 
         if (boxed) {
             float finalW = drawW, finalH = drawH;
-            collector.submitCustomGeometry(poseStack, /^$ render_type_import {^/RenderType/^$}^/.entityCutout(GROUND_BACKING_TEXTURE),
-                    (pose, consumer) -> drawBoxSides(consumer, pose, finalW, finalH, depthSign, mirrored, state.lightCoords));
-            collector.submitCustomGeometry(poseStack, /^$ render_type_import {^/RenderType/^$}^/.entityCutout(GROUND_BACKING_TEXTURE),
-                    (pose, consumer) -> drawBacking(consumer, pose, finalW, finalH, mirrored, state.lightCoords));
+            Identifier frameTexture = frameTexture(state.borderRgb);
+            int r = (state.borderRgb >> 16) & 0xFF, g = (state.borderRgb >> 8) & 0xFF, b = state.borderRgb & 0xFF;
+            collector.submitCustomGeometry(poseStack, /^$ render_type_import {^/RenderType/^$}^/.entityCutout(frameTexture),
+                    (pose, consumer) -> drawBoxSides(consumer, pose, finalW, finalH, depthSign, mirrored, state.lightCoords, r, g, b));
+            collector.submitCustomGeometry(poseStack, /^$ render_type_import {^/RenderType/^$}^/.entityCutout(frameTexture),
+                    (pose, consumer) -> drawBacking(consumer, pose, finalW, finalH, mirrored, state.lightCoords, r, g, b));
         }
         if (texture != null) {
             float z = depthSign * (boxed ? DEPTH : (transparent ? TRANSPARENT_FLOAT_GAP : DEPTH));
@@ -489,27 +525,27 @@ public class CrazyPhonePhotoFrameRenderer extends EntityRenderer<CrazyPhonePhoto
         return new float[]{h * aspect, h};
     }
 
-    private static void drawBoxSides(VertexConsumer consumer, PoseStack.Pose pose, float w, float h, float depthSign, boolean mirrored, int light) {
+    private static void drawBoxSides(VertexConsumer consumer, PoseStack.Pose pose, float w, float h, float depthSign, boolean mirrored, int light, int r, int g, int b) {
         float x0 = -w / 2f - BORDER_MARGIN, x1 = w / 2f + BORDER_MARGIN;
         float y0 = -h / 2f - BORDER_MARGIN, y1 = h / 2f + BORDER_MARGIN;
-        sideQuad(consumer, pose, x0, y0, x1, y0, depthSign, mirrored, light);
-        sideQuad(consumer, pose, x1, y0, x1, y1, depthSign, mirrored, light);
-        sideQuad(consumer, pose, x1, y1, x0, y1, depthSign, mirrored, light);
-        sideQuad(consumer, pose, x0, y1, x0, y0, depthSign, mirrored, light);
+        sideQuad(consumer, pose, x0, y0, x1, y0, depthSign, mirrored, light, r, g, b);
+        sideQuad(consumer, pose, x1, y0, x1, y1, depthSign, mirrored, light, r, g, b);
+        sideQuad(consumer, pose, x1, y1, x0, y1, depthSign, mirrored, light, r, g, b);
+        sideQuad(consumer, pose, x0, y1, x0, y0, depthSign, mirrored, light, r, g, b);
     }
 
-    private static void sideQuad(VertexConsumer consumer, PoseStack.Pose pose, float xa, float ya, float xb, float yb, float depthSign, boolean mirrored, int light) {
+    private static void sideQuad(VertexConsumer consumer, PoseStack.Pose pose, float xa, float ya, float xb, float yb, float depthSign, boolean mirrored, int light, int r, int g, int b) {
         float outZ = depthSign * DEPTH;
         if (!mirrored) {
-            vertex(consumer, pose, xa, ya, outZ, 0f, 0f, light);
-            vertex(consumer, pose, xa, ya, 0f, 0f, 1f, light);
-            vertex(consumer, pose, xb, yb, 0f, 1f, 1f, light);
-            vertex(consumer, pose, xb, yb, outZ, 1f, 0f, light);
+            vertex(consumer, pose, xa, ya, outZ, 0f, 0f, light, r, g, b);
+            vertex(consumer, pose, xa, ya, 0f, 0f, 1f, light, r, g, b);
+            vertex(consumer, pose, xb, yb, 0f, 1f, 1f, light, r, g, b);
+            vertex(consumer, pose, xb, yb, outZ, 1f, 0f, light, r, g, b);
         } else {
-            vertex(consumer, pose, xa, ya, outZ, 0f, 0f, light);
-            vertex(consumer, pose, xb, yb, outZ, 1f, 0f, light);
-            vertex(consumer, pose, xb, yb, 0f, 1f, 1f, light);
-            vertex(consumer, pose, xa, ya, 0f, 0f, 1f, light);
+            vertex(consumer, pose, xa, ya, outZ, 0f, 0f, light, r, g, b);
+            vertex(consumer, pose, xb, yb, outZ, 1f, 0f, light, r, g, b);
+            vertex(consumer, pose, xb, yb, 0f, 1f, 1f, light, r, g, b);
+            vertex(consumer, pose, xa, ya, 0f, 0f, 1f, light, r, g, b);
         }
     }
 
@@ -533,18 +569,18 @@ public class CrazyPhonePhotoFrameRenderer extends EntityRenderer<CrazyPhonePhoto
 
     // The plain brown "backing" at the block-flush side (z=0) of a boxed frame - see the <26 branch's own
     // comment on this same method for why `mirrored` is inverted relative to drawImageQuad/drawBoxSides.
-    private static void drawBacking(VertexConsumer consumer, PoseStack.Pose pose, float w, float h, boolean mirrored, int light) {
+    private static void drawBacking(VertexConsumer consumer, PoseStack.Pose pose, float w, float h, boolean mirrored, int light, int r, int g, int b) {
         float x0 = -w / 2f, x1 = w / 2f, y0 = -h / 2f, y1 = h / 2f;
         if (mirrored) {
-            vertex(consumer, pose, x0, y1, 0f, 0f, 0f, light);
-            vertex(consumer, pose, x0, y0, 0f, 0f, 1f, light);
-            vertex(consumer, pose, x1, y0, 0f, 1f, 1f, light);
-            vertex(consumer, pose, x1, y1, 0f, 1f, 0f, light);
+            vertex(consumer, pose, x0, y1, 0f, 0f, 0f, light, r, g, b);
+            vertex(consumer, pose, x0, y0, 0f, 0f, 1f, light, r, g, b);
+            vertex(consumer, pose, x1, y0, 0f, 1f, 1f, light, r, g, b);
+            vertex(consumer, pose, x1, y1, 0f, 1f, 0f, light, r, g, b);
         } else {
-            vertex(consumer, pose, x0, y1, 0f, 0f, 0f, light);
-            vertex(consumer, pose, x1, y1, 0f, 1f, 0f, light);
-            vertex(consumer, pose, x1, y0, 0f, 1f, 1f, light);
-            vertex(consumer, pose, x0, y0, 0f, 0f, 1f, light);
+            vertex(consumer, pose, x0, y1, 0f, 0f, 0f, light, r, g, b);
+            vertex(consumer, pose, x1, y1, 0f, 1f, 0f, light, r, g, b);
+            vertex(consumer, pose, x1, y0, 0f, 1f, 1f, light, r, g, b);
+            vertex(consumer, pose, x0, y0, 0f, 0f, 1f, light, r, g, b);
         }
     }
 
@@ -553,9 +589,15 @@ public class CrazyPhonePhotoFrameRenderer extends EntityRenderer<CrazyPhonePhoto
         return base[Math.floorMod(corner - rotation, 4)];
     }
 
+    // Untinted - used only by drawImageQuad (the photo image itself), which must always render in its true
+    // color regardless of any frame dye.
     private static void vertex(VertexConsumer consumer, PoseStack.Pose pose, float x, float y, float z, float u, float v, int light) {
+        vertex(consumer, pose, x, y, z, u, v, light, 255, 255, 255);
+    }
+
+    private static void vertex(VertexConsumer consumer, PoseStack.Pose pose, float x, float y, float z, float u, float v, int light, int r, int g, int b) {
         consumer.addVertex(pose, x, y, z)
-                .setColor(255, 255, 255, 255)
+                .setColor(r, g, b, 255)
                 .setUv(u, v)
                 .setOverlay(net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY)
                 .setLight(light)

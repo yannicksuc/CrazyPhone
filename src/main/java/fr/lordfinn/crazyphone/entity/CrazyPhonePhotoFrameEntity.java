@@ -91,6 +91,13 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
     // photo ignore).
     private static final EntityDataAccessor<Boolean> DATA_FULLBRIGHT =
             SynchedEntityData.defineId(CrazyPhonePhotoFrameEntity.class, EntityDataSerializers.BOOLEAN);
+    // Synced mirror of the #borderRgb field below (0xFFFFFF = undyed) - the field itself stays server-only
+    // (NBT persistence, drop reconstruction), this accessor is what actually lets CrazyPhonePhotoFrameRenderer
+    // read the color client-side. Kept as two separate stores rather than replacing the field outright so
+    // every existing NBT/dropStack() call site keeps working unchanged; every site that sets the field also
+    // pushes the same value in here right after (see #tryPlace and both readAdditionalSaveData overloads).
+    private static final EntityDataAccessor<Integer> DATA_BORDER_RGB =
+            SynchedEntityData.defineId(CrazyPhonePhotoFrameEntity.class, EntityDataSerializers.INT);
 
     // Not synced - every client already has this block loaded locally (see class doc comment). Set once in
     // the placement constructor / re-derived from DATA_FACE + this entity's own blockPosition() elsewhere
@@ -234,6 +241,7 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
         entity.entityData.set(DATA_OWNER, photoData.owner());
         entity.createdMinutes = photoData.createdMinutes();
         entity.borderRgb = borderRgb;
+        entity.entityData.set(DATA_BORDER_RGB, borderRgb);
         entity.setExtentsRaw(frameData.widthUnits() / 2, frameData.widthUnits() - frameData.widthUnits() / 2,
                 frameData.heightUnits() / 2, frameData.heightUnits() - frameData.heightUnits() / 2);
         entity.setPos(clickedPos.getX() + 0.5, clickedPos.getY() + 0.5, clickedPos.getZ() + 0.5);
@@ -353,6 +361,11 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
         this.entityData.set(DATA_FULLBRIGHT, !fullbright());
     }
 
+    /** See {@link #DATA_BORDER_RGB}'s own field comment - the client-readable mirror of {@link #borderRgb}. */
+    public int borderRgb() {
+        return this.entityData.get(DATA_BORDER_RGB);
+    }
+
     // True for the two horizontal-face cases (floor/ceiling) - the ground-placed "1px deep, brown border
     // and background" visual treatment from the live request applies to these, not to wall-mounted frames.
     public boolean isFloorOrCeiling() {
@@ -433,6 +446,7 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
         builder.define(DATA_FACE, Direction.NORTH.get3DDataValue());
         builder.define(DATA_ROTATION, 0);
         builder.define(DATA_FULLBRIGHT, false);
+        builder.define(DATA_BORDER_RGB, 0xFFFFFF);
     }
 
     // Vanilla's own Entity#onSyncedDataUpdated(EntityDataAccessor) is how Entity itself keeps its bounding
@@ -714,6 +728,7 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
         this.entityData.set(DATA_OWNER, fr.lordfinn.crazyphone.utils.NbtCompat.getString(tag, "Owner"));
         createdMinutes = fr.lordfinn.crazyphone.utils.NbtCompat.getInt(tag, "Created", 0);
         borderRgb = fr.lordfinn.crazyphone.utils.NbtCompat.getInt(tag, "BorderRgb", 0xFFFFFF);
+        this.entityData.set(DATA_BORDER_RGB, borderRgb);
         this.entityData.set(DATA_NEG_U, fr.lordfinn.crazyphone.utils.NbtCompat.getInt(tag, "NegU", DEFAULT_SIZE_UNITS / 2));
         this.entityData.set(DATA_POS_U, fr.lordfinn.crazyphone.utils.NbtCompat.getInt(tag, "PosU", DEFAULT_SIZE_UNITS / 2));
         this.entityData.set(DATA_NEG_V, fr.lordfinn.crazyphone.utils.NbtCompat.getInt(tag, "NegV", DEFAULT_SIZE_UNITS / 2));
@@ -750,6 +765,7 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
         this.entityData.set(DATA_OWNER, input.getStringOr("Owner", ""));
         createdMinutes = input.getIntOr("Created", 0);
         borderRgb = input.getIntOr("BorderRgb", 0xFFFFFF);
+        this.entityData.set(DATA_BORDER_RGB, borderRgb);
         this.entityData.set(DATA_NEG_U, input.getIntOr("NegU", DEFAULT_SIZE_UNITS / 2));
         this.entityData.set(DATA_POS_U, input.getIntOr("PosU", DEFAULT_SIZE_UNITS / 2));
         this.entityData.set(DATA_NEG_V, input.getIntOr("NegV", DEFAULT_SIZE_UNITS / 2));
