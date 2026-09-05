@@ -1,5 +1,6 @@
 package fr.lordfinn.crazyphone.network;
 
+//? if neoforge {
 //? if >=1.20.5 {
 /*import net.neoforged.neoforge.network.handling.IPayloadContext;
 *///? } else {
@@ -14,6 +15,7 @@ import net.neoforged.fml.common.Mod.EventBusSubscriber;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.api.distmarker.Dist;
+//?}
 
 import net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -119,6 +121,7 @@ public record CrazyPhoneIncomingCallNotificationPacket(String conversationId, St
         }
     }
 
+    //? if neoforge {
     //? if >=1.20.5 {
     /*public static void handleData(final CrazyPhoneIncomingCallNotificationPacket messagePacket, final IPayloadContext context) {
         if (context.flow() != PacketFlow.CLIENTBOUND)
@@ -138,7 +141,9 @@ public record CrazyPhoneIncomingCallNotificationPacket(String conversationId, St
         });
     }
     //?}
+    //?}
 
+    //? if neoforge {
     //? if <1.20.5 {
     @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
     //?} else {
@@ -154,4 +159,18 @@ public record CrazyPhoneIncomingCallNotificationPacket(String conversationId, St
             //?}
         }
     }
+    //?}
+    //? if fabric && >=1.20.5 {
+    /*public static void handleDataFabric(CrazyPhoneIncomingCallNotificationPacket message, net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.Context context) {
+        ClientHandler.showToast(message);
+    }
+
+    public static void registerFabricType() {
+        fr.lordfinn.crazyphone.fabric.FabricNetworking.registerS2CType(TYPE, STREAM_CODEC);
+    }
+
+    public static void registerFabricClientReceiver() {
+        fr.lordfinn.crazyphone.fabric.FabricNetworking.registerClientReceiver(TYPE, CrazyPhoneIncomingCallNotificationPacket::handleDataFabric);
+    }
+    *///?}
 }

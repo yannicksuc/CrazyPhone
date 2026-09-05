@@ -2,6 +2,7 @@ package fr.lordfinn.crazyphone.voicechat;
 
 import fr.lordfinn.crazyphone.Crazyphone;
 
+//? if neoforge {
 import net.neoforged.neoforge.event.entity.item.ItemTossEvent;
 //? if >=1.20.5 {
 /*import net.neoforged.neoforge.event.tick.ServerTickEvent;
@@ -11,6 +12,10 @@ import net.neoforged.neoforge.event.TickEvent;
 import net.neoforged.fml.common.Mod.EventBusSubscriber;
 //?}
 import net.neoforged.bus.api.SubscribeEvent;
+//?}
+//? if fabric {
+/*import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+*///?}
 
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
@@ -43,17 +48,28 @@ import java.util.UUID;
  * ItemStack instance across inventory moves, so calls are bound to the PLAYER instead: "do they still
  * possess a phone anywhere" is re-checked periodically rather than trying to hook every possible
  * container-click path individually.
+ *
+ * {@link #onItemDropped} (a precise timestamp seed for the instant a phone is actually tossed) is NeoForge-
+ * only - Fabric has no built-in equivalent of NeoForge's {@code ItemTossEvent} to hook here. On Fabric the
+ * periodic sweep alone covers it: {@link #sweepInventoryPossession}'s own {@code computeIfAbsent} already
+ * seeds the same map from the sweep's own current tick the first time it notices the phone gone, so the only
+ * difference is up to one sweep interval (1s) of extra precision on the grace-period start, not a correctness
+ * gap.
  */
+//? if neoforge {
 @EventBusSubscriber
+//?}
 public class CallTerminationListener {
     private static final int SWEEP_INTERVAL_TICKS = 20;
     private static final Logger LOGGER = LoggerFactory.getLogger("crazyphone");
     /** Game time each currently-phoneless in-call player was first noticed without their phone - absent
      * entirely while they still have one. Seeded by {@link #onItemDropped} for a precise start time (rather
-     * than waiting for the next periodic sweep tick), read and ultimately acted on by {@link
-     * #sweepInventoryPossession}, which is also what clears an entry the moment the phone comes back. */
+     * than waiting for the next periodic sweep tick) on NeoForge, read and ultimately acted on by {@link
+     * #sweepInventoryPossession} on every loader, which is also what clears an entry the moment the phone
+     * comes back. */
     private static final Map<UUID, Long> phonelessSinceGameTime = new HashMap<>();
 
+    //? if neoforge {
     /** Just seeds {@link #phonelessSinceGameTime} with a precise timestamp - does NOT end the call itself
      * (see the class javadoc for why: the periodic sweep owns that decision, after the grace period). */
     @SubscribeEvent
@@ -66,29 +82,36 @@ public class CallTerminationListener {
                 phonelessSinceGameTime.putIfAbsent(serverPlayer.getUUID(), server.overworld().getGameTime());
         }
     }
+    //?}
 
+    //? if neoforge {
     //? if >=1.20.5 {
     /*@SubscribeEvent
     public static void onServerTick(ServerTickEvent.Post event) {
-        MinecraftServer server = event.getServer();
-        if (server.getTickCount() % SWEEP_INTERVAL_TICKS != 0)
-            return;
-        sweepInventoryPossession(server);
-        sweepAloneParticipants(server);
-        sweepRingTimeouts(server);
+        tick(event.getServer());
     }
     *///? } else {
     @SubscribeEvent
     public static void onServerTick(TickEvent.ServerTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
-        MinecraftServer server = event.getServer();
+        tick(event.getServer());
+    }
+    //?}
+    //?}
+    //? if fabric {
+    /*// Called from CrazyphoneFabric#onInitialize.
+    public static void register() {
+        ServerTickEvents.END_SERVER_TICK.register(CallTerminationListener::tick);
+    }
+    *///?}
+
+    private static void tick(MinecraftServer server) {
         if (server.getTickCount() % SWEEP_INTERVAL_TICKS != 0)
             return;
         sweepInventoryPossession(server);
         sweepAloneParticipants(server);
         sweepRingTimeouts(server);
     }
-    //?}
 
     private static void sweepInventoryPossession(MinecraftServer server) {
         long currentGameTime = server.overworld().getGameTime();

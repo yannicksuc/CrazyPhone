@@ -1,5 +1,6 @@
 package fr.lordfinn.crazyphone.network;
 
+//? if neoforge {
 //? if >=1.20.5 {
 /*import net.neoforged.neoforge.network.handling.IPayloadContext;
 *///? } else {
@@ -12,6 +13,7 @@ import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.fml.common.Mod.EventBusSubscriber;
 //?}
 import net.neoforged.bus.api.SubscribeEvent;
+//?}
 
 import net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -116,6 +118,7 @@ public record CallParticipantHeadRotationSyncPacket(String conversationId, List<
     }
     //?}
 
+    //? if neoforge {
     //? if >=1.20.5 {
     /*public static void handleData(final CallParticipantHeadRotationSyncPacket message, final IPayloadContext context) {
         if (context.flow() != PacketFlow.CLIENTBOUND)
@@ -145,7 +148,9 @@ public record CallParticipantHeadRotationSyncPacket(String conversationId, List<
         });
     }
     //?}
+    //?}
 
+    //? if neoforge {
     //? if <1.20.5 {
     @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
     //?} else {
@@ -161,4 +166,21 @@ public record CallParticipantHeadRotationSyncPacket(String conversationId, List<
             //?}
         }
     }
+    //?}
+    //? if fabric && >=1.20.5 {
+    /*public static void handleDataFabric(CallParticipantHeadRotationSyncPacket message, net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.Context context) {
+        for (int i = 0; i < message.playerIds.size(); i++)
+            ClientCallState.setLiveState(message.playerIds.get(i), message.headYawDeltas.get(i), message.pitches.get(i),
+                    message.poseOrdinals.get(i), message.crouching.get(i), message.sprinting.get(i),
+                    message.swimming.get(i), message.walkAnimationSpeeds.get(i));
+    }
+
+    public static void registerFabricType() {
+        fr.lordfinn.crazyphone.fabric.FabricNetworking.registerS2CType(TYPE, STREAM_CODEC);
+    }
+
+    public static void registerFabricClientReceiver() {
+        fr.lordfinn.crazyphone.fabric.FabricNetworking.registerClientReceiver(TYPE, CallParticipantHeadRotationSyncPacket::handleDataFabric);
+    }
+    *///?}
 }

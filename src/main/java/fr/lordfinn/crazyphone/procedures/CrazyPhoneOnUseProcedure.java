@@ -4,9 +4,7 @@ import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.entity.player.Player;
 import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
-//? if neoforge {
 import fr.lordfinn.crazyphone.voicechat.CallRegistry;
-//?}
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import fr.lordfinn.crazyphone.utils.ScreenMenuUtils;
@@ -34,14 +32,10 @@ public class CrazyPhoneOnUseProcedure {
 		// can physically hold several registered phones. Without the isHeldPhoneInThisCall check below,
 		// using ANY of them while the player has an active call anywhere redirected to that call's screen,
 		// even for a completely unrelated number that was never part of it.
-		//? if neoforge {
 		if (entity instanceof ServerPlayer serverPlayer && isHeldPhoneInThisCall(serverPlayer, world)) {
 			ScreenMenuUtils.openCallScreenForPlayer(serverPlayer);
 			return;
 		}
-		//?}
-		// TODO: calls aren't routed on Fabric yet (voicechat.CallRegistry not ported this pass), so there's
-		// no in-call state to redirect to here.
 		// IsPhoneSetupProcedure only trusts the item's OWN cached "name" tag, which can desync from the
 		// registry (the actual source of truth) if an earlier write to the item was ever interrupted -
 		// resyncing here whenever the registry disagrees means the item self-heals on its very next open
@@ -72,7 +66,6 @@ public class CrazyPhoneOnUseProcedure {
 	 * is one Simple Voice Chat connection per player, but a phone's number lives in that specific item's own
 	 * NBT, and a player can hold several registered phones at once; without this check, using ANY of them
 	 * while any one of them was mid-call redirected to that call's screen. */
-	//? if neoforge {
 	private static boolean isHeldPhoneInThisCall(ServerPlayer player, LevelAccessor world) {
 		CallRegistry.CallSession session = CallRegistry.getSessionFor(player.getUUID()).orElse(null);
 		if (session == null)
@@ -80,5 +73,4 @@ public class CrazyPhoneOnUseProcedure {
 		String heldNumber = GetCrazyPhoneNumberFromMainHandProcedure.execute(player, null);
 		return !heldNumber.isEmpty() && CrazyPhoneHelper.getGroupMembers(world, session.conversationId).contains(heldNumber);
 	}
-	//?}
 }

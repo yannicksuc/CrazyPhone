@@ -28,14 +28,12 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
 
 import fr.lordfinn.crazyphone.Crazyphone;
-//? if neoforge {
 import fr.lordfinn.crazyphone.FeatureFlag;
 import fr.lordfinn.crazyphone.procedures.GetCrazyPhoneNumberFromMainHandProcedure;
 import fr.lordfinn.crazyphone.utils.Contact;
 import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
 import fr.lordfinn.crazyphone.utils.ScreenMenuUtils;
 import fr.lordfinn.crazyphone.voicechat.CallRegistry;
-//?}
 import fr.lordfinn.crazyphone.voicechat.VoicechatIntegration;
 
 import java.util.ArrayList;
@@ -116,7 +114,9 @@ public record CrazyPhoneCallActionMessage(int action, String conversationId) imp
         });
     }
     //?}
+    //?}
 
+    // Shared by every loader - NeoForge's handleData and Fabric's handleDataFabric both funnel into this.
     public static void handleAction(ServerPlayer player, int action, String conversationId) {
         if (!VoicechatIntegration.isAvailable())
             return;
@@ -168,14 +168,7 @@ public record CrazyPhoneCallActionMessage(int action, String conversationId) imp
         if (session != null)
             ScreenMenuUtils.openCallScreenForPlayer(player);
     }
-    //?}
-    //? if fabric {
-    /*// Calls aren't routed on Fabric yet (voicechat.CallRegistry/SvcCallBridge not ported this pass - see
-    // build.fabric.gradle.kts's note) - VoicechatIntegration.isAvailable() may still report true if SVC-Fabric
-    // is installed, but every action here is a deliberate no-op rather than a half-wired call.
-    public static void handleAction(ServerPlayer player, int action, String conversationId) {
-    }
-    *///?}
+
     //? if fabric && >=1.20.5 {
     /*public static void handleDataFabric(CrazyPhoneCallActionMessage message, net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.Context context) {
         handleAction(context.player(), message.action, message.conversationId);

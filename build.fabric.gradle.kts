@@ -22,6 +22,8 @@ tasks.withType<JavaCompile>().configureEach {
 
 repositories {
     mavenLocal()
+    // Simple Voice Chat addon API - same repo as the NeoForge side (build.gradle.kts).
+    maven("https://maven.maxhenkel.de/repository/public")
 }
 
 base {
@@ -64,6 +66,9 @@ dependencies {
     // NeoForge pulls this in transitively; a plain Fabric Loom project doesn't, so every @Nullable
     // annotation across the shared src/main/java tree (there are many) needs it declared explicitly here.
     compileOnly("com.google.code.findbugs:jsr305:3.0.2")
+    // Simple Voice Chat addon API - compile-time only, same coordinate/version as the NeoForge side
+    // (build.gradle.kts) - see fr.lordfinn.crazyphone.voicechat package.
+    compileOnly("de.maxhenkel.voicechat:voicechat-api:${property("voicechat_api_version")}")
 }
 
 // A plain literal, not a "run-$minecraftVersion-..." interpolation: Loom's RunConfigSettings.runDir setter
@@ -181,9 +186,9 @@ sourceSets.main {
             "fr/lordfinn/crazyphone/client/gui/CrazyPhoneGroupSettingsScreenScreen.java",
             "fr/lordfinn/crazyphone/client/gui/CrazyPhonePasswordScreenScreen.java",
             "fr/lordfinn/crazyphone/client/gui/CrazyPhoneMayorsCandidatesListScreen.java",
-            // Calling/InCall/IncomingCall screens excluded here (need CrazyPhoneCallActionMessage ->
-            // voicechat.CallRegistry -> SvcCallBridge, not ported this pass) - their MENU classes stay in
-            // scope below since nothing tries to open them on Fabric (see ModScreens.java's own note).
+            "fr/lordfinn/crazyphone/client/gui/CrazyPhoneCallingScreenScreen.java",
+            "fr/lordfinn/crazyphone/client/gui/CrazyPhoneInCallScreenScreen.java",
+            "fr/lordfinn/crazyphone/client/gui/CrazyPhoneIncomingCallScreenScreen.java",
             "fr/lordfinn/crazyphone/client/gui/CrazyPhoneSignInScreenScreen.java",
             "fr/lordfinn/crazyphone/client/gui/CrazyphoneHomeScreenScreen.java",
             "fr/lordfinn/crazyphone/client/gui/CrazyPhoneContactInfoScreenScreen.java",
@@ -246,15 +251,23 @@ sourceSets.main {
             "fr/lordfinn/crazyphone/client/MojangProfileLookup.java",
             "fr/lordfinn/crazyphone/client/ClientMessageDraft.java",
             "fr/lordfinn/crazyphone/client/ConversationClientCache.java",
-            // isAvailable() is now dual-loader (FabricLoader.isModLoaded on Fabric) - everything else in
-            // this package (CallRegistry, SvcCallBridge, ...) stays NeoForge-only for this pass, so on
-            // Fabric this can report "available" while nothing actually wires up a call/voice packet yet.
             "fr/lordfinn/crazyphone/voicechat/VoicechatIntegration.java",
             // Fully loader-agnostic already - only the local mic-capture/OGG-encoding path, no networking.
             "fr/lordfinn/crazyphone/voicechat/VoiceMessageRecorder.java",
-            // Remaining C2S button-message packets + voice/call packets (task #166 tail) - each gated
-            // NeoForge-only where it touches CallRegistry/SvcCallBridge/Camera, matching CrazyPhoneHelper's
-            // own partial-degradation pattern.
+            // Real call routing (task #166 tail, completed) - SvcCallBridge only touches the cross-loader
+            // voicechat-api, never a loader-specific type; CrazyPhoneVoicechatPlugin is discovered via the
+            // "voicechat" entrypoint declared in fabric.mod.json (Fabric's SVC plugin loader doesn't scan for
+            // @ForgeVoicechatPlugin the way NeoForge's does - see FabricCommonCompatibilityManager); the two
+            // tick listeners register themselves via ServerTickEvents from CrazyphoneFabric#onInitialize.
+            "fr/lordfinn/crazyphone/voicechat/CrazyPhoneVoicechatPlugin.java",
+            "fr/lordfinn/crazyphone/voicechat/SvcCallBridge.java",
+            "fr/lordfinn/crazyphone/voicechat/CallRegistry.java",
+            "fr/lordfinn/crazyphone/voicechat/CallHeadRotationSync.java",
+            "fr/lordfinn/crazyphone/voicechat/CallTerminationListener.java",
+            "fr/lordfinn/crazyphone/network/CrazyPhoneIncomingCallNotificationPacket.java",
+            "fr/lordfinn/crazyphone/network/CallParticipantHeadRotationSyncPacket.java",
+            // Remaining C2S button-message packets + voice/call packets - each gated NeoForge-only only
+            // where it touches Camera, matching CrazyPhoneHelper's own partial-degradation pattern.
             "fr/lordfinn/crazyphone/network/UpdateContactInfoMessage.java",
             "fr/lordfinn/crazyphone/network/CrazyPhoneDefaultScreenButtonMessage.java",
             "fr/lordfinn/crazyphone/network/CrazyphoneHomeScreenButtonMessage.java",

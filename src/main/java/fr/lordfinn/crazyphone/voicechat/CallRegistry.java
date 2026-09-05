@@ -4,11 +4,10 @@ import javax.annotation.Nullable;
 
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
-import net.neoforged.neoforge.network.PacketDistributor;
-
 import fr.lordfinn.crazyphone.network.CrazyPhoneCallStateSyncPacket;
 import fr.lordfinn.crazyphone.network.CrazyPhoneIncomingCallNotificationPacket;
 import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
+import fr.lordfinn.crazyphone.utils.NetworkAccess;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -152,13 +151,8 @@ public final class CallRegistry {
             session.ringing.add(callee.getUUID());
             PLAYER_TO_CALL.put(callee.getUUID(), callId);
             notifySafe(callee, session, CrazyPhoneCallStateSyncPacket.State.RINGING);
-            //? if >=1.20.5 {
-            /*PacketDistributor.sendToPlayer(callee,
+            NetworkAccess.sendToPlayer(callee,
                     new CrazyPhoneIncomingCallNotificationPacket(conversationId, fr.lordfinn.crazyphone.utils.GameProfileCompat.name(initiator.getGameProfile()), callId));
-            *///? } else {
-            PacketDistributor.PLAYER.with(callee).send(
-                    new CrazyPhoneIncomingCallNotificationPacket(conversationId, fr.lordfinn.crazyphone.utils.GameProfileCompat.name(initiator.getGameProfile()), callId));
-            //?}
         }
         return session;
     }
@@ -360,11 +354,7 @@ public final class CallRegistry {
                 ? List.of()
                 : session.participants.stream().filter(id -> !id.equals(target.getUUID())).toList();
         List<String> participantNames = participantIds.stream().map(id -> resolvePlayerName(target, id)).toList();
-        //? if >=1.20.5 {
-        /*PacketDistributor.sendToPlayer(target, new CrazyPhoneCallStateSyncPacket(session.conversationId, session.callId, state, callNumbers, participantIds, participantNames));
-        *///? } else {
-        PacketDistributor.PLAYER.with(target).send(new CrazyPhoneCallStateSyncPacket(session.conversationId, session.callId, state, callNumbers, participantIds, participantNames));
-        //?}
+        NetworkAccess.sendToPlayer(target, new CrazyPhoneCallStateSyncPacket(session.conversationId, session.callId, state, callNumbers, participantIds, participantNames));
         // Also written into the actual held phone's own item data, not just this targeted packet - vanilla's
         // equipment sync then carries it to nearby bystanders for free (see CrazyPhoneHelper), which the
         // packet above (sent only to this one player) never would.

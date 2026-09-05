@@ -1,5 +1,6 @@
 package fr.lordfinn.crazyphone.voicechat;
 
+//? if neoforge {
 //? if >=1.20.5 {
 /*import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -8,7 +9,10 @@ import net.neoforged.neoforge.event.TickEvent;
 import net.neoforged.fml.common.Mod.EventBusSubscriber;
 //?}
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.neoforge.network.PacketDistributor;
+//?}
+//? if fabric {
+/*import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+*///?}
 
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
@@ -16,6 +20,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 
 import fr.lordfinn.crazyphone.network.CallParticipantHeadRotationSyncPacket;
+import fr.lordfinn.crazyphone.utils.NetworkAccess;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,8 +39,14 @@ import java.util.concurrent.ConcurrentHashMap;
  * CrazyPhoneInCallScreenScreen.renderBust) while keeping the bust's body fixed facing the camera. Deliberately
  * a separate, higher-frequency tick listener from CallTerminationListener's 20-tick cleanup sweep - this needs
  * to update several times a second to look smooth, cleanup does not.
+ *
+ * {@link #tick} is the actual loader-agnostic body - both loaders' tick hooks (NeoForge's event-bus listener,
+ * Fabric's {@code ServerTickEvents.END_SERVER_TICK}) just call straight into it, same idiom as
+ * {@link CallTerminationListener}.
  */
+//? if neoforge {
 @EventBusSubscriber
+//?}
 public class CallHeadRotationSync {
     private static final int SYNC_INTERVAL_TICKS = 2;
     private static final Logger LOGGER = LoggerFactory.getLogger("crazyphone");
@@ -46,20 +57,30 @@ public class CallHeadRotationSync {
      * UUID no longer in any call is harmless and the set of ever-synced players stays small. */
     private static final Map<UUID, Vec3> lastPositions = new ConcurrentHashMap<>();
 
+    //? if neoforge {
     //? if >=1.20.5 {
     /*@SubscribeEvent
     public static void onServerTick(ServerTickEvent.Post event) {
-        MinecraftServer server = event.getServer();
-        if (server.getTickCount() % SYNC_INTERVAL_TICKS != 0)
-            return;
+        tick(event.getServer());
+    }
     *///? } else {
     @SubscribeEvent
     public static void onServerTick(TickEvent.ServerTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
-        MinecraftServer server = event.getServer();
+        tick(event.getServer());
+    }
+    //?}
+    //?}
+    //? if fabric {
+    /*// Called from CrazyphoneFabric#onInitialize.
+    public static void register() {
+        ServerTickEvents.END_SERVER_TICK.register(CallHeadRotationSync::tick);
+    }
+    *///?}
+
+    private static void tick(MinecraftServer server) {
         if (server.getTickCount() % SYNC_INTERVAL_TICKS != 0)
             return;
-    //?}
         for (CallRegistry.CallSession session : CallRegistry.getActiveSessions()) {
             try {
                 syncSession(server, session);
@@ -123,15 +144,9 @@ public class CallHeadRotationSync {
                 otherSwimming.add(swimming.get(i));
                 otherWalkSpeeds.add(walkAnimationSpeeds.get(i));
             }
-            //? if >=1.20.5 {
-            /*PacketDistributor.sendToPlayer(target,
+            NetworkAccess.sendToPlayer(target,
                     new CallParticipantHeadRotationSyncPacket(session.conversationId, otherIds, otherYawDeltas, otherPitches,
                             otherPoses, otherCrouching, otherSprinting, otherSwimming, otherWalkSpeeds));
-            *///? } else {
-            PacketDistributor.PLAYER.with(target).send(
-                    new CallParticipantHeadRotationSyncPacket(session.conversationId, otherIds, otherYawDeltas, otherPitches,
-                            otherPoses, otherCrouching, otherSprinting, otherSwimming, otherWalkSpeeds));
-            //?}
         }
     }
 

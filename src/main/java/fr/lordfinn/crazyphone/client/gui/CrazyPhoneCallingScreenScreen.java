@@ -1,8 +1,5 @@
 package fr.lordfinn.crazyphone.client.gui;
 
-//? if neoforge {
-import net.neoforged.neoforge.network.PacketDistributor;
-//?}
 import fr.lordfinn.crazyphone.utils.NetworkAccess;
 
 import net.minecraft.world.entity.player.Inventory;
@@ -64,7 +61,7 @@ public class CrazyPhoneCallingScreenScreen extends CrazyPhoneDefaultScreenScreen
             //? if >=1.20.5 {
             /*NetworkAccess.sendToServer(new CrazyPhoneCallActionMessage(CrazyPhoneCallActionMessage.HANGUP, menu.getConversationId()));
             *///? } else {
-            PacketDistributor.SERVER.noArg().send(new CrazyPhoneCallActionMessage(CrazyPhoneCallActionMessage.HANGUP, menu.getConversationId()));
+            NetworkAccess.sendToServer(new CrazyPhoneCallActionMessage(CrazyPhoneCallActionMessage.HANGUP, menu.getConversationId()));
             //?}
         }).bounds(this.leftPos + 8, this.topPos + 158, 106, 14).build();
         this.addRenderableWidget(button_cancel);
@@ -85,7 +82,7 @@ public class CrazyPhoneCallingScreenScreen extends CrazyPhoneDefaultScreenScreen
             //? if >=1.20.5 {
             /*NetworkAccess.sendToServer(new CrazyPhoneCallActionMessage(CrazyPhoneCallActionMessage.OPEN_CALL_SCREEN, menu.getConversationId()));
             *///? } else {
-            PacketDistributor.SERVER.noArg().send(new CrazyPhoneCallActionMessage(CrazyPhoneCallActionMessage.OPEN_CALL_SCREEN, menu.getConversationId()));
+            NetworkAccess.sendToServer(new CrazyPhoneCallActionMessage(CrazyPhoneCallActionMessage.OPEN_CALL_SCREEN, menu.getConversationId()));
             //?}
         } else if (packet.state() == CrazyPhoneCallStateSyncPacket.State.ENDED) {
             if (this.minecraft != null && this.minecraft.player != null)

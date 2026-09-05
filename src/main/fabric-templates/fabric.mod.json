@@ -9,7 +9,8 @@
   "environment": "*",
   "entrypoints": {
     "main": ["fr.lordfinn.crazyphone.fabric.CrazyphoneFabric"],
-    "client": ["fr.lordfinn.crazyphone.fabric.CrazyphoneFabricClient"]
+    "client": ["fr.lordfinn.crazyphone.fabric.CrazyphoneFabricClient"],
+    "voicechat": ["fr.lordfinn.crazyphone.voicechat.CrazyPhoneVoicechatPlugin"]
   },
   "mixins": ["crazyphone.fabric.mixins.json"],
   "depends": {

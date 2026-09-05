@@ -22,9 +22,7 @@ import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneGroupSettingsScreenMenu;
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneCallingScreenMenu;
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneIncomingCallScreenMenu;
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneInCallScreenMenu;
-//? if neoforge {
 import fr.lordfinn.crazyphone.voicechat.CallRegistry;
-//?}
 import java.util.UUID;
 //? if neoforge {
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneMayorCandidateScreenMenu;
@@ -888,7 +886,6 @@ public class ScreenMenuUtils {
      * reopening an active call, the Calling screen asking to be swapped for the InCall screen once answered,
      * and the Incoming Call screen's own Accept button.
      */
-    //? if neoforge {
     public static void openCallScreenForPlayer(ServerPlayer player) {
         CallRegistry.CallSession session = CallRegistry.getSessionFor(player.getUUID()).orElse(null);
         if (session == null)
@@ -931,6 +928,10 @@ public class ScreenMenuUtils {
 
     private static void openCallingMenu(Player player, String conversationId, UUID callId, String displayTitle, Set<UUID> participantIds) {
         if (player instanceof ServerPlayer) {
+            //? if fabric && >=1.20.5 {
+            /*RegistryAccess registryAccess = player.registryAccess();
+            *///?}
+            //? if neoforge {
             player.openMenu(new MenuProvider() {
                 @Override
                 public Component getDisplayName() {
@@ -948,11 +949,42 @@ public class ScreenMenuUtils {
                     }
                 }
             }, buf -> populateCallScreenBuffer(buf, player, conversationId, callId, displayTitle, participantIds));
+            //?}
+            //? if fabric && >=1.20.5 {
+            /*player.openMenu(new /^$ fabric_ext_menu_provider {^/net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory/^$}^/<RegistryFriendlyByteBuf>() {
+                @Override
+                public Component getDisplayName() {
+                    return Component.translatable("item.crazyphone.crazy_phone");
+                }
+
+                @Override
+                public AbstractContainerMenu createMenu(int id, Inventory inventory, Player player) {
+                    RegistryFriendlyByteBuf packetBuffer = new RegistryFriendlyByteBuf(Unpooled.buffer(), registryAccess);
+                    populateCallScreenBuffer(packetBuffer, player, conversationId, callId, displayTitle, participantIds);
+                    try {
+                        return new CrazyPhoneCallingScreenMenu(id, inventory, packetBuffer);
+                    } catch (Exception e) {
+                        throw new RuntimeException("Failed to create menu instance", e);
+                    }
+                }
+
+                @Override
+                public RegistryFriendlyByteBuf getScreenOpeningData(ServerPlayer serverPlayer) {
+                    RegistryFriendlyByteBuf packetBuffer = new RegistryFriendlyByteBuf(Unpooled.buffer(), registryAccess);
+                    populateCallScreenBuffer(packetBuffer, player, conversationId, callId, displayTitle, participantIds);
+                    return packetBuffer;
+                }
+            });
+            *///?}
         }
     }
 
     private static void openIncomingCallMenu(Player player, String conversationId, UUID callId, String displayTitle, Set<UUID> participantIds) {
         if (player instanceof ServerPlayer) {
+            //? if fabric && >=1.20.5 {
+            /*RegistryAccess registryAccess = player.registryAccess();
+            *///?}
+            //? if neoforge {
             player.openMenu(new MenuProvider() {
                 @Override
                 public Component getDisplayName() {
@@ -970,11 +1002,42 @@ public class ScreenMenuUtils {
                     }
                 }
             }, buf -> populateCallScreenBuffer(buf, player, conversationId, callId, displayTitle, participantIds));
+            //?}
+            //? if fabric && >=1.20.5 {
+            /*player.openMenu(new /^$ fabric_ext_menu_provider {^/net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory/^$}^/<RegistryFriendlyByteBuf>() {
+                @Override
+                public Component getDisplayName() {
+                    return Component.translatable("item.crazyphone.crazy_phone");
+                }
+
+                @Override
+                public AbstractContainerMenu createMenu(int id, Inventory inventory, Player player) {
+                    RegistryFriendlyByteBuf packetBuffer = new RegistryFriendlyByteBuf(Unpooled.buffer(), registryAccess);
+                    populateCallScreenBuffer(packetBuffer, player, conversationId, callId, displayTitle, participantIds);
+                    try {
+                        return new CrazyPhoneIncomingCallScreenMenu(id, inventory, packetBuffer);
+                    } catch (Exception e) {
+                        throw new RuntimeException("Failed to create menu instance", e);
+                    }
+                }
+
+                @Override
+                public RegistryFriendlyByteBuf getScreenOpeningData(ServerPlayer serverPlayer) {
+                    RegistryFriendlyByteBuf packetBuffer = new RegistryFriendlyByteBuf(Unpooled.buffer(), registryAccess);
+                    populateCallScreenBuffer(packetBuffer, player, conversationId, callId, displayTitle, participantIds);
+                    return packetBuffer;
+                }
+            });
+            *///?}
         }
     }
 
     private static void openInCallMenu(Player player, String conversationId, UUID callId, String displayTitle, Set<UUID> participantIds) {
         if (player instanceof ServerPlayer) {
+            //? if fabric && >=1.20.5 {
+            /*RegistryAccess registryAccess = player.registryAccess();
+            *///?}
+            //? if neoforge {
             player.openMenu(new MenuProvider() {
                 @Override
                 public Component getDisplayName() {
@@ -992,6 +1055,33 @@ public class ScreenMenuUtils {
                     }
                 }
             }, buf -> populateCallScreenBuffer(buf, player, conversationId, callId, displayTitle, participantIds));
+            //?}
+            //? if fabric && >=1.20.5 {
+            /*player.openMenu(new /^$ fabric_ext_menu_provider {^/net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory/^$}^/<RegistryFriendlyByteBuf>() {
+                @Override
+                public Component getDisplayName() {
+                    return Component.translatable("item.crazyphone.crazy_phone");
+                }
+
+                @Override
+                public AbstractContainerMenu createMenu(int id, Inventory inventory, Player player) {
+                    RegistryFriendlyByteBuf packetBuffer = new RegistryFriendlyByteBuf(Unpooled.buffer(), registryAccess);
+                    populateCallScreenBuffer(packetBuffer, player, conversationId, callId, displayTitle, participantIds);
+                    try {
+                        return new CrazyPhoneInCallScreenMenu(id, inventory, packetBuffer);
+                    } catch (Exception e) {
+                        throw new RuntimeException("Failed to create menu instance", e);
+                    }
+                }
+
+                @Override
+                public RegistryFriendlyByteBuf getScreenOpeningData(ServerPlayer serverPlayer) {
+                    RegistryFriendlyByteBuf packetBuffer = new RegistryFriendlyByteBuf(Unpooled.buffer(), registryAccess);
+                    populateCallScreenBuffer(packetBuffer, player, conversationId, callId, displayTitle, participantIds);
+                    return packetBuffer;
+                }
+            });
+            *///?}
         }
     }
 
@@ -1023,5 +1113,4 @@ public class ScreenMenuUtils {
             }
         }
     }
-    //?}
 }

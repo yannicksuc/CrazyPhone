@@ -35,6 +35,8 @@ tasks.withType<JavaCompile>().configureEach {
 
 repositories {
     mavenLocal()
+    // Simple Voice Chat addon API - same repo as the NeoForge side (build.gradle.kts).
+    maven("https://maven.maxhenkel.de/repository/public")
 }
 
 base {
@@ -69,6 +71,9 @@ dependencies {
     // NeoForge pulls this in transitively; a plain Fabric Loom project doesn't, so every @Nullable
     // annotation across the shared src/main/java tree (there are many) needs it declared explicitly here.
     compileOnly("com.google.code.findbugs:jsr305:3.0.2")
+    // Simple Voice Chat addon API - compile-time only, same coordinate/version as the NeoForge side
+    // (build.gradle.kts) - see fr.lordfinn.crazyphone.voicechat package.
+    compileOnly("de.maxhenkel.voicechat:voicechat-api:${property("voicechat_api_version")}")
 }
 
 // See build.fabric.gradle.kts's own doc comment on why runDir is a plain literal, not an interpolation.
@@ -177,6 +182,9 @@ sourceSets.main {
         "fr/lordfinn/crazyphone/client/gui/CrazyPhoneGroupSettingsScreenScreen.java",
         "fr/lordfinn/crazyphone/client/gui/CrazyPhonePasswordScreenScreen.java",
         "fr/lordfinn/crazyphone/client/gui/CrazyPhoneMayorsCandidatesListScreen.java",
+        "fr/lordfinn/crazyphone/client/gui/CrazyPhoneCallingScreenScreen.java",
+        "fr/lordfinn/crazyphone/client/gui/CrazyPhoneInCallScreenScreen.java",
+        "fr/lordfinn/crazyphone/client/gui/CrazyPhoneIncomingCallScreenScreen.java",
         "fr/lordfinn/crazyphone/client/gui/CrazyPhoneSignInScreenScreen.java",
         "fr/lordfinn/crazyphone/client/gui/CrazyphoneHomeScreenScreen.java",
         "fr/lordfinn/crazyphone/client/gui/CrazyPhoneContactInfoScreenScreen.java",
@@ -232,6 +240,13 @@ sourceSets.main {
         "fr/lordfinn/crazyphone/client/ConversationClientCache.java",
         "fr/lordfinn/crazyphone/voicechat/VoicechatIntegration.java",
         "fr/lordfinn/crazyphone/voicechat/VoiceMessageRecorder.java",
+        "fr/lordfinn/crazyphone/voicechat/CrazyPhoneVoicechatPlugin.java",
+        "fr/lordfinn/crazyphone/voicechat/SvcCallBridge.java",
+        "fr/lordfinn/crazyphone/voicechat/CallRegistry.java",
+        "fr/lordfinn/crazyphone/voicechat/CallHeadRotationSync.java",
+        "fr/lordfinn/crazyphone/voicechat/CallTerminationListener.java",
+        "fr/lordfinn/crazyphone/network/CrazyPhoneIncomingCallNotificationPacket.java",
+        "fr/lordfinn/crazyphone/network/CallParticipantHeadRotationSyncPacket.java",
         "fr/lordfinn/crazyphone/network/UpdateContactInfoMessage.java",
         "fr/lordfinn/crazyphone/network/CrazyPhoneDefaultScreenButtonMessage.java",
         "fr/lordfinn/crazyphone/network/CrazyphoneHomeScreenButtonMessage.java",
