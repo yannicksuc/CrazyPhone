@@ -175,7 +175,7 @@ public class CrazyPhoneMyPhotosScreenScreen extends CrazyPhoneDefaultScreenScree
         int max = fr.lordfinn.crazyphone.Config.maxPhotosStoredPerOwner;
         int count = menu.photoIds.size();
         Component counterText = Component.translatable("gui.crazyphone.crazy_phone_my_photos_screen.photo_count", count, max);
-        int counterX = this.leftPos + HEADER_BANNER_RIGHT_X - this.font.width(counterText);
+        int counterX = this.leftPos + HEADER_BANNER_RIGHT_X - this.font.width(counterText) - 2;
         // Explicit alpha byte (0xFF......) - on >=26, GuiGraphicsExtractor#text silently drops any call
         // whose color has a zero alpha byte instead of treating it as opaque like pre-26's drawString did.
         guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(this.font, counterText, counterX, this.topPos + HEADER_TITLE_Y, COUNTER_TEXT_COLOR, false);
