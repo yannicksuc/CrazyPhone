@@ -52,7 +52,10 @@ public class MessageDisplayManager {
      * conversation list, reused here so the two stay visually consistent. Always full-alpha white
      * (0xFFFFFFFF, not 0xFFFFFF) - drawString silently drops a zero-alpha color on >=26. */
     private static final float DATE_SEPARATOR_SCALE = 0.85f;
-    private static final int DATE_SEPARATOR_COLOR = 0xFFFFFFFF;
+    // Same blue as CrazyPhoneContactsScreenScreen's own section titles (SECTION_TITLE_COLOR).
+    private static final int DATE_SEPARATOR_COLOR = 0xFF6C8EBF;
+    // Gap between the label and each side line, same spacing as that screen's own title-to-line gap.
+    private static final int DATE_SEPARATOR_LINE_GAP = 2;
     private static final DateTimeFormatter DATE_SEPARATOR_FORMAT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     public MessageDisplayManager(int x, int y, int width, float scale, List<Contact> contacts, String ownerNumber) {
@@ -101,8 +104,10 @@ public class MessageDisplayManager {
     }
 
     /** Draws every divider computed by the last {@link #resetPositions()} call, centered across the feed's
-     * full width - each one already has its own reserved, non-overlapping band, so draw order relative to
-     * the message widgets above doesn't matter. No background (this is a plain text line, not a bubble). */
+     * full width, with a 1px separator line on each side reaching the feed's own edges (same line technique
+     * as CrazyPhoneContactsScreenScreen's own section titles, just symmetric on both sides here instead of
+     * flush-left-then-one-line-right) - each one already has its own reserved, non-overlapping band, so draw
+     * order relative to the message widgets above doesn't matter. */
     private void renderDateSeparators(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics) {
         var font = Minecraft.getInstance().font;
         int lineHeight = Math.round(font.lineHeight * DATE_SEPARATOR_SCALE);
@@ -115,6 +120,14 @@ public class MessageDisplayManager {
             GuiCompat.scale(guiGraphics, DATE_SEPARATOR_SCALE, DATE_SEPARATOR_SCALE);
             guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(font, separator.label(), 0, 0, DATE_SEPARATOR_COLOR, false);
             GuiCompat.popPose(guiGraphics);
+
+            int lineY = drawY + lineHeight / 2;
+            int leftLineEnd = drawX - DATE_SEPARATOR_LINE_GAP;
+            int rightLineStart = drawX + textWidth + DATE_SEPARATOR_LINE_GAP;
+            if (leftLineEnd > x)
+                guiGraphics.fill(x, lineY, leftLineEnd, lineY + 1, DATE_SEPARATOR_COLOR);
+            if (x + fullWidth > rightLineStart)
+                guiGraphics.fill(rightLineStart, lineY, x + fullWidth, lineY + 1, DATE_SEPARATOR_COLOR);
         }
     }
 
