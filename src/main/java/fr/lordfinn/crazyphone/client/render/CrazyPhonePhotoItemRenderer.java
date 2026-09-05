@@ -879,6 +879,13 @@ public final class CrazyPhonePhotoItemRenderer {
                 PhotoResolution identityResolution = isHand ? PhotoResolution.FULL
                         : (fr.lordfinn.crazyphone.ClientConfig.itemPreviewPixelated ? PhotoResolution.THUMBNAIL : PhotoResolution.FULL);
                 output.appendModelIdentityElement(FabricPictureCache.getOrRequest(data.photoId(), identityResolution));
+                // The dye color wasn't part of this identity, so two stacks of the SAME photo with different
+                // DYED_COLOR (or one stack re-dyed/washed after its GUI render state was already cached) kept
+                // showing whichever color happened to render the first time this photoId's identity was seen
+                // in that slot - "sometimes dyed photos are not colored in gui, but are in other contexts"
+                // (live report). Hand/ground/frame rendering never cached like this (see this method's own
+                // comment above on TrackingItemStackRenderState being GUI-only), so they were never affected.
+                output.appendModelIdentityElement(borderRgb(item));
             }
             net.minecraft.client.renderer.item.ItemStackRenderState.LayerRenderState layer = output.newLayer();
             layer.setLocalTransform(poseStack.last().pose());
