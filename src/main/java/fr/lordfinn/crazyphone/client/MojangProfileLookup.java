@@ -6,6 +6,9 @@ import com.mojang.authlib.ProfileLookupCallback;
 import com.mojang.authlib.yggdrasil.YggdrasilAuthenticationService;
 
 import /*$ util_pkg {*/net.minecraft.Util/*$}*/;
+import net.minecraft.client.Minecraft;
+
+import fr.lordfinn.crazyphone.utils.GameProfileCompat;
 
 import java.net.Proxy;
 import java.util.Map;
@@ -66,7 +69,35 @@ public final class MojangProfileLookup {
                     // the caller falling back to a synthetic (default-skin) profile.
                 }
             });
-            return result[0];
+            return result[0] == null ? null : withTextures(result[0]);
         }, Util.backgroundExecutor()));
+    }
+
+    /** The name lookup above only ever yields id+name - Mojang's profile-by-name endpoint carries no skin data
+     * at all (on either callback shape). SkinManager#getOrLoad then reads the profile's own "textures" property
+     * and, finding none, hands back the DEFAULT skin - confirmed live: every remote participant rendered as a
+     * default Steve/Alex, 3D bust and 2D face alike, read as "missing its outer layer". Filling the profile from
+     * the session server - the very same call vanilla's own server makes for a joining player - is what actually
+     * attaches the skin. {@code requireSecure=false}: the client can't verify the signature of a profile it
+     * fetched itself, and an unsigned skin is exactly as good for a portrait. Still on the background executor
+     * (this is a blocking HTTP call), and any failure just yields the id+name profile as before. */
+    private static GameProfile withTextures(GameProfile profile) {
+        try {
+            // Minecraft#getMinecraftSessionService() is gone on 26 - the session service now hangs off the
+            // client's Services record (Minecraft#services(), confirmed against the real 26.1.2 jar).
+            //? if >=26 {
+            /*com.mojang.authlib.minecraft.MinecraftSessionService sessionService = Minecraft.getInstance().services().sessionService();
+            *///? } else {
+            com.mojang.authlib.minecraft.MinecraftSessionService sessionService = Minecraft.getInstance().getMinecraftSessionService();
+            //?}
+            //? if >=1.20.2 {
+            com.mojang.authlib.yggdrasil.ProfileResult fetched = sessionService.fetchProfile(GameProfileCompat.id(profile), false);
+            return fetched != null && fetched.profile() != null ? fetched.profile() : profile;
+            //? } else {
+            /*return sessionService.fillProfileProperties(profile, false);
+            *///?}
+        } catch (Exception e) {
+            return profile;
+        }
     }
 }

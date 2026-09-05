@@ -92,12 +92,29 @@ public final class CallBustPreview {
             return;
         MojangProfileLookup.lookup(name).thenAccept(realProfile -> {
             GameProfile profile = realProfile != null ? realProfile : new GameProfile(id, name);
+            // The fake entity is never in the connection's own player list (its UUID is the REAL account's, not
+            // whatever id this server assigned the participant - see MojangProfileLookup), so vanilla's own
+            // AbstractClientPlayer#getSkin() would find no PlayerInfo for it and fall back to a default skin -
+            // confirmed live: every remote bust rendered as a default Steve/Alex, read as "missing its outer
+            // layer". Handing it the resolved skin directly is what makes it draw the real one.
             //? if <1.21.10 {
             mc.getSkinManager().getOrLoad(profile).thenAccept(skin -> {
+                RemotePlayer fake = new RemotePlayer(level, profile) {
+                    @Override
+                    public net.minecraft.client.resources.PlayerSkin getSkin() {
+                        return skin;
+                    }
+                };
             //? } else {
-            /*mc.getSkinManager().get(profile).thenAccept(skin -> {
+            /*mc.getSkinManager().get(profile).thenAccept(skinOptional -> {
+                net.minecraft.world.entity.player.PlayerSkin skin = skinOptional.orElse(null);
+                RemotePlayer fake = skin == null ? new RemotePlayer(level, profile) : new RemotePlayer(level, profile) {
+                    @Override
+                    public net.minecraft.world.entity.player.PlayerSkin getSkin() {
+                        return skin;
+                    }
+                };
             *///?}
-                RemotePlayer fake = new RemotePlayer(level, profile);
                 //? if neoforge {
                 fake.refreshDisplayName();
                 //?}

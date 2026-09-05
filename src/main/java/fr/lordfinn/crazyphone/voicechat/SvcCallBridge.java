@@ -13,6 +13,7 @@ import net.minecraft.server.level.ServerPlayer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Every direct call into the Simple Voice Chat API goes through here. This class references SVC types at
@@ -50,10 +51,33 @@ public final class SvcCallBridge {
         return clientApi;
     }
 
-    /** Live per-player talking indicator for the InCall screen's yellow "speaking" border - null-safe so it
-     * can be polled every frame without the caller worrying about client-API init timing. */
+    /** Client-side "currently audible" per OTHER player, stamped by {@link #markReceivedSound} from the
+     * ClientReceiveSoundEvents the plugin registers (see CrazyPhoneVoicechatPlugin#registerEvents). SVC's own
+     * {@code VoicechatClientApi#isTalking(UUID)} can't be used for this: in 2.6.22 it is a stub for any
+     * non-null id - it calls into SVC's internal TalkCache and then discards the result, returning false
+     * unconditionally (confirmed against the real jar's bytecode: {@code invokevirtual TalkCache.isTalking;
+     * pop; iconst_0; ireturn}) - which is exactly why the yellow border never showed for anyone. Same
+     * quarter-second hold after the last packet SVC's own HUD icon uses. */
+    private static final Map<UUID, Long> LAST_SOUND_MILLIS = new ConcurrentHashMap<>();
+    private static final long TALKING_HOLD_MILLIS = 250;
+
+    public static void markReceivedSound(UUID senderId) {
+        if (senderId != null)
+            LAST_SOUND_MILLIS.put(senderId, System.currentTimeMillis());
+    }
+
+    /** Live talking indicator for ANOTHER player (the InCall screen's yellow "speaking" border) - for the local
+     * player use {@link #isLocalTalking()}, their own voice never comes back as a received sound. */
     public static boolean isTalking(UUID playerId) {
-        return clientApi != null && clientApi.isTalking(playerId);
+        Long last = LAST_SOUND_MILLIS.get(playerId);
+        return last != null && System.currentTimeMillis() - last < TALKING_HOLD_MILLIS;
+    }
+
+    /** Whether the LOCAL player's own microphone is currently picking up speech - the no-arg
+     * {@code VoicechatClientApi#isTalking()} (mic thread), the one variant that actually works in 2.6.22.
+     * Null-safe so it can be polled every frame without the caller worrying about client-API init timing. */
+    public static boolean isLocalTalking() {
+        return clientApi != null && clientApi.isTalking();
     }
 
     /** Whether the LOCAL player has muted their own microphone in Simple Voice Chat's own settings -

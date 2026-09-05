@@ -54,10 +54,10 @@ public final class CallRegistry {
          * / #finalizeCallMessage, keyed by this session's own callId - one call, one chat entry). */
         public long connectedAtEpochMillis = -1;
         /** Participants who turned their "video" (the live 3D bust the OTHER participants' InCall grids show
-         * of them - a video-off participant is drawn as a flat 2D head instead) off for this call - see
-         * {@link #toggleVideo}. Empty = everyone on, the default. Session-scoped like everything else here:
-         * a fresh call starts with video on again. */
-        public final Set<UUID> videoDisabled = new HashSet<>();
+         * of them - everyone else is drawn as a flat 2D head) ON for this call - see {@link #toggleVideo}.
+         * Empty = everyone off, the default (live request: "la vidéo doit être off de base"). Session-scoped
+         * like everything else here: a fresh call starts with everyone's video off again. */
+        public final Set<UUID> videoEnabled = new HashSet<>();
 
         private CallSession(UUID callId, String conversationId, UUID initiator) {
             this.callId = callId;
@@ -206,10 +206,10 @@ public final class CallRegistry {
         }
     }
 
-    /** Whether {@code playerId}'s live 3D bust should be shown to the other participants - false once they've
-     * toggled it off for this call, or for everyone when the server has the whole feature switched off. */
+    /** Whether {@code playerId}'s live 3D bust should be shown to the other participants - only once they've
+     * toggled it on for this call, and never when the server has the whole feature switched off. */
     public static boolean isVideoEnabled(CallSession session, UUID playerId) {
-        return Config.callVideoEnabled && !session.videoDisabled.contains(playerId);
+        return Config.callVideoEnabled && session.videoEnabled.contains(playerId);
     }
 
     /** Whether this player currently has the InCall screen itself open - the ONLY consumer of the live
@@ -231,8 +231,8 @@ public final class CallRegistry {
         CallSession session = getSessionFor(player.getUUID()).orElse(null);
         if (session == null || !session.conversationId.equals(conversationId) || !session.participants.contains(player.getUUID()))
             return;
-        if (!session.videoDisabled.remove(player.getUUID()))
-            session.videoDisabled.add(player.getUUID());
+        if (!session.videoEnabled.remove(player.getUUID()))
+            session.videoEnabled.add(player.getUUID());
         for (UUID participantId : new HashSet<>(session.participants)) {
             ServerPlayer participant = findPlayer(player, participantId);
             if (participant != null && isViewingInCallScreen(participant))

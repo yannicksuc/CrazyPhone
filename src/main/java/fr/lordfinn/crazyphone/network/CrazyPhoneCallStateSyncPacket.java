@@ -45,7 +45,7 @@ import java.util.UUID;
  *
  * {@code participantIds}/{@code participantNames}/{@code participantVideoEnabled} (parallel lists, always the
  * same length, always excluding the recipient themselves) carry the OTHER players actually on the call right
- * now and whether each still has their "video" (live 3D bust, see CallRegistry.CallSession#videoDisabled) on -
+ * now and whether each has turned their "video" (live 3D bust, see CallRegistry.CallSession#videoEnabled) on -
  * the InCall screen's portrait grid reads this. {@code selfVideoEnabled} is the recipient's own flag, since
  * they're never in the lists. Piggybacking on the packet that's already resent to every affected player on
  * every join/leave/answer/video toggle (see CallRegistry) means the grid updates live with zero new sync

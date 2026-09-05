@@ -18,6 +18,14 @@ public final class GameProfileCompat {
         *///?}
     }
 
+    public static java.util.UUID id(GameProfile profile) {
+        //? if <1.21.10 {
+        return profile.getId();
+        //? } else {
+        /*return profile.id();
+        *///?}
+    }
+
     public static PropertyMap properties(GameProfile profile) {
         //? if <1.21.10 {
         return profile.getProperties();

@@ -8,7 +8,6 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.network.chat.Component;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.PlayerInfo;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui./*$ gui_graphics_type {*/GuiGraphics/*$}*/;
@@ -49,11 +48,11 @@ import java.util.stream.Collectors;
  * screen. Only the Lock button stays disabled, since locking mid-call has no meaningful effect here.
  *
  * Renders every participant - the local player included, as the first tile, so they can see and control
- * what the others see of them - in a grid that grows with the participant count. Each tile is either the
- * participant's "video" (a live full-body 3D bust, see CallBustPreview - the default) or, once they've turned
- * their video off (the 🎥 toggle in each tile's corner, only clickable on the local player's own tile) or when
- * the server has the whole feature off (Config.callVideoEnabled), a plain flat 2D head, the same face icon
- * vanilla's own tab list draws. A yellow border (the mod's usual accent) appears around a tile exactly while
+ * what the others see of them - in a grid that grows with the participant count. Each tile is by default a
+ * plain flat 2D head (the same face icon vanilla's own tab list draws); a participant who turns their "video"
+ * on (the 🎥 toggle in each tile's corner, only clickable on the local player's own tile) is shown as a live
+ * full-body 3D bust instead (see CallBustPreview) - unless the server has the whole feature off
+ * (Config.callVideoEnabled). A yellow border (the mod's usual accent) appears around a tile exactly while
  * SvcCallBridge.isTalking() reports that player as currently speaking, in either mode.
  */
 public class CrazyPhoneInCallScreenScreen extends CrazyPhoneDefaultScreenScreen<CrazyPhoneInCallScreenMenu> {
@@ -104,9 +103,16 @@ public class CrazyPhoneInCallScreenScreen extends CrazyPhoneDefaultScreenScreen<
 
     private final Consumer<CrazyPhoneCallStateSyncPacket> callStateListener = this::onCallStateChanged;
     private final CallBustPreview bustPreview = new CallBustPreview();
-    /** Backs the flat 2D head of each video-off tile: PlayerInfo resolves the skin itself (default Steve/Alex
-     * until loaded) - no fake entity needed, which is the whole point of that mode. */
-    private final Map<UUID, PlayerInfo> faceInfos = new ConcurrentHashMap<>();
+    /** Backs the flat 2D head of each video-off tile: the participant's resolved skin, straight from
+     * SkinManager - no fake entity needed, which is the whole point of that mode. NOT a PlayerInfo: PlayerInfo
+     * deliberately swaps in a default skin for any non-local player whose textures aren't server-signed, and a
+     * skin this client fetched itself (see MojangProfileLookup) never is - that's what made every remote face
+     * render as a default Steve/Alex while the local one was fine. */
+    //? if <1.21.10 {
+    private final Map<UUID, net.minecraft.client.resources.PlayerSkin> faceSkins = new ConcurrentHashMap<>();
+    //? } else {
+    /*private final Map<UUID, net.minecraft.world.entity.player.PlayerSkin> faceSkins = new ConcurrentHashMap<>();
+    *///?}
     private final List<CellLayout> lastLayout = new ArrayList<>();
     /** The OTHER participants, straight from the server (never includes the local player - see
      * ScreenMenuUtils#populateCallScreenBuffer). */
@@ -143,8 +149,8 @@ public class CrazyPhoneInCallScreenScreen extends CrazyPhoneDefaultScreenScreen<
     }
 
     /** The local player as a grid tile: real name, real UUID, a snapshot of what they're wearing right now
-     * (same one-time-snapshot semantics as the other participants' armor). Their skin comes from their own
-     * live PlayerInfo (already loaded - it's the local player) rather than a Mojang lookup. */
+     * (same one-time-snapshot semantics as the other participants' armor). Their skin is simply their own
+     * entity's (already loaded - it's the local player) rather than a Mojang lookup. */
     private void initSelfTile() {
         Minecraft mc = Minecraft.getInstance();
         LocalPlayer player = mc.player;
@@ -157,8 +163,7 @@ public class CrazyPhoneInCallScreenScreen extends CrazyPhoneDefaultScreenScreen<
         self = new CrazyPhoneInCallScreenMenu.CallParticipant(id, name,
                 player.getItemBySlot(EquipmentSlot.HEAD), player.getItemBySlot(EquipmentSlot.CHEST),
                 player.getItemBySlot(EquipmentSlot.LEGS), player.getItemBySlot(EquipmentSlot.FEET));
-        PlayerInfo own = mc.getConnection() != null ? mc.getConnection().getPlayerInfo(id) : null;
-        faceInfos.put(id, own != null ? own : new PlayerInfo(player.getGameProfile(), false));
+        faceSkins.put(id, player.getSkin());
         bustPreview.ensure(id, name, self.helmet(), self.chestplate(), self.leggings(), self.boots());
     }
 
@@ -167,7 +172,7 @@ public class CrazyPhoneInCallScreenScreen extends CrazyPhoneDefaultScreenScreen<
         super.onClose();
         ClientCallState.clearListener(callStateListener);
         bustPreview.discardAll();
-        faceInfos.clear();
+        faceSkins.clear();
     }
 
     private void onCallStateChanged(CrazyPhoneCallStateSyncPacket packet) {
@@ -208,7 +213,7 @@ public class CrazyPhoneInCallScreenScreen extends CrazyPhoneDefaultScreenScreen<
         if (self != null)
             currentIds.add(self.id());
         bustPreview.discardStale(currentIds);
-        faceInfos.keySet().retainAll(currentIds);
+        faceSkins.keySet().retainAll(currentIds);
         for (CrazyPhoneInCallScreenMenu.CallParticipant p : updated) {
             bustPreview.ensure(p.id(), p.name(), p.helmet(), p.chestplate(), p.leggings(), p.boots());
             ensureFace(p.id(), p.name());
@@ -216,14 +221,19 @@ public class CrazyPhoneInCallScreenScreen extends CrazyPhoneDefaultScreenScreen<
     }
 
     /** Same real-Mojang-profile-first lookup CallBustPreview#ensure does (so the face shows the participant's
-     * actual skin even on an offline/cracked dev server), minus the fake entity: a PlayerInfo is all the 2D
-     * face needs. No-op if already known or the name is empty. */
+     * actual skin even on an offline/cracked dev server), minus the fake entity: the resolved skin is all the
+     * 2D face needs. No-op if already known or the name is empty. */
     private void ensureFace(UUID id, String name) {
-        if (faceInfos.containsKey(id) || name.isEmpty())
+        if (faceSkins.containsKey(id) || name.isEmpty())
             return;
+        Minecraft mc = Minecraft.getInstance();
         MojangProfileLookup.lookup(name).thenAccept(realProfile -> {
             GameProfile profile = realProfile != null ? realProfile : new GameProfile(id, name);
-            faceInfos.put(id, new PlayerInfo(profile, false));
+            //? if <1.21.10 {
+            mc.getSkinManager().getOrLoad(profile).thenAccept(skin -> faceSkins.put(id, skin));
+            //? } else {
+            /*mc.getSkinManager().get(profile).thenAccept(skin -> skin.ifPresent(s -> faceSkins.put(id, s)));
+            *///?}
         });
     }
 
@@ -297,7 +307,9 @@ public class CrazyPhoneInCallScreenScreen extends CrazyPhoneDefaultScreenScreen<
             int cellY = startY + (i / columns) * (cellSize + CELL_GAP);
             lastLayout.add(new CellLayout(participant.id(), participant.name(), isSelf, cellX, cellY, cellSize));
 
-            boolean talking = SvcCallBridge.isTalking(participant.id());
+            // Two different SVC-side sources: the local player's own mic, everyone else's received audio (see
+            // SvcCallBridge - its isTalking(UUID) wrapper can't cover the local player and vice versa).
+            boolean talking = isSelf ? SvcCallBridge.isLocalTalking() : SvcCallBridge.isTalking(participant.id());
             if (talking) {
                 guiGraphics.fill(cellX, cellY, cellX + cellSize, cellY + cellSize, TALKING_BORDER_COLOR);
                 guiGraphics.fill(cellX + BORDER_INSET, cellY + BORDER_INSET, cellX + cellSize - BORDER_INSET, cellY + cellSize - BORDER_INSET, CELL_BACKGROUND_COLOR);
@@ -335,18 +347,18 @@ public class CrazyPhoneInCallScreenScreen extends CrazyPhoneDefaultScreenScreen<
     /** The flat "video off" representation: the participant's face (base layer + hat overlay, the same
      * 8x8 skin regions vanilla's tab list draws), centered in the tile with a little breathing room. */
     private void renderFace(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, UUID id, int x, int y, int size) {
-        PlayerInfo info = faceInfos.get(id);
-        if (info == null)
+        var skin = faceSkins.get(id);
+        if (skin == null)
             return;
         int pad = Math.max(2, size / 8);
         int faceSize = size - pad * 2;
         //? if <1.21.10 {
-        net.minecraft.client.gui.components.PlayerFaceRenderer.draw(guiGraphics, info.getSkin(), x + pad, y + pad, faceSize);
+        net.minecraft.client.gui.components.PlayerFaceRenderer.draw(guiGraphics, skin, x + pad, y + pad, faceSize);
         //?}
         // >=1.21.10 <26: nothing drawn - a frozen/unmaintained target (see CrazyPhoneCaptureMode's own note),
         // and its vanilla face-drawing helper sits between the two shapes below without being either.
         //? if >=26 {
-        /*net.minecraft.client.gui.components.PlayerFaceExtractor.extractRenderState(guiGraphics, info.getSkin(), x + pad, y + pad, faceSize);
+        /*net.minecraft.client.gui.components.PlayerFaceExtractor.extractRenderState(guiGraphics, skin, x + pad, y + pad, faceSize);
         *///?}
     }
 

@@ -47,12 +47,12 @@ public final class ClientCallState {
      * anymore is harmless, and the set of UUIDs in any one call is always small. */
     private static final java.util.Map<UUID, LiveState> liveStates = new ConcurrentHashMap<>();
     /** Per-participant "video" (live 3D bust in the InCall grid) on/off, refreshed from every
-     * CrazyPhoneCallStateSyncPacket - see CallRegistry.CallSession#videoDisabled. A participant absent from
-     * the map counts as video ON, the default. The local player's own flag travels separately in the packet
+     * CrazyPhoneCallStateSyncPacket - see CallRegistry.CallSession#videoEnabled. A participant absent from
+     * the map counts as video OFF, the default. The local player's own flag travels separately in the packet
      * (they're never in participantIds - the server excludes the recipient) and lands in {@link
      * #selfVideoEnabled}. */
     private static final java.util.Map<UUID, Boolean> videoEnabled = new ConcurrentHashMap<>();
-    private static volatile boolean selfVideoEnabled = true;
+    private static volatile boolean selfVideoEnabled = false;
     /** The SERVER's Config.callVideoEnabled - the client's own config file is irrelevant here, the server
      * decides whether the video toggle exists at all. */
     private static volatile boolean videoFeatureEnabled = true;
@@ -83,7 +83,7 @@ public final class ClientCallState {
     /** Whether ANOTHER participant currently has their "video" (live 3D bust) on - see {@link #videoEnabled}.
      * For the local player's own flag use {@link #isSelfVideoEnabled()}. */
     public static boolean isVideoEnabled(UUID participantId) {
-        return videoEnabled.getOrDefault(participantId, true);
+        return videoEnabled.getOrDefault(participantId, false);
     }
 
     public static boolean isSelfVideoEnabled() {
