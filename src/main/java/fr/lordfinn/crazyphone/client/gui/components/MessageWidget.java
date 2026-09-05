@@ -472,7 +472,8 @@ public class MessageWidget extends AbstractWidget {
     private void onImageClick(int button) {
         if (button != 0 || fabricImageId == null) return;
         net.minecraft.client.Minecraft.getInstance()./*$ mc_set_screen {*/setScreen/*$}*/(
-                new fr.lordfinn.crazyphone.client.gui.CrazyPhonePhotoViewerScreen(fabricImageId));
+                new fr.lordfinn.crazyphone.client.gui.CrazyPhonePhotoViewerScreen(fabricImageId,
+                        fr.lordfinn.crazyphone.client.gui.CrazyPhonePhotoViewerScreen.Origin.CONVERSATION, 0xFFFFFF));
     }
 
     @Override

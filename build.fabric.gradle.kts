@@ -302,6 +302,7 @@ sourceSets.main {
             "fr/lordfinn/crazyphone/network/CrazyPhonePictureResponsePacket.java",
             "fr/lordfinn/crazyphone/network/CrazyPhoneClearPictureCachePacket.java",
             "fr/lordfinn/crazyphone/network/CrazyPhoneGivePhotoItemPacket.java",
+            "fr/lordfinn/crazyphone/network/CrazyPhoneAddPhotoToMyPhotosPacket.java",
             "fr/lordfinn/crazyphone/network/CrazyPhoneMyPhotosActionMessage.java",
             "fr/lordfinn/crazyphone/world/inventory/CrazyPhoneMyPhotosScreenMenu.java",
             "fr/lordfinn/crazyphone/client/gui/CrazyPhoneMyPhotosScreenScreen.java",

@@ -3,9 +3,10 @@ package fr.lordfinn.crazyphone.client.gui;
 /**
  * Full-size photo viewer with contextual buttons - structurally modeled on the old CrazyPhoneImageScreen
  * (plain client Screen, remembered previousScreen, centered button row near the bottom) but 100% original
- * code with no Camera-mod inheritance and no album button (albums are gone). Two entry points: a chat
- * bubble click (MessageWidget#onImageClick) and a held Photo item's right-click use action - the latter
- * passes openedFromInventory=true to hide Back/Save (there's no prior screen to go "back" to, and the
+ * code with no Camera-mod inheritance and no album button (albums are gone). Three entry points, each with
+ * its own {@link Origin}: a chat bubble click (MessageWidget#onImageClick, CONVERSATION), the My Photos
+ * gallery (CrazyPhoneMyPhotosScreenScreen, GALLERY), and a held Photo item's right-click use action
+ * (HELD_ITEM) - the latter hides Back/Save entirely (there's no prior screen to go "back" to, and the
  * player already owns this exact item, so "save to inventory" would just make a redundant copy).
  */
 import net.minecraft.client.Minecraft;
@@ -20,6 +21,7 @@ import net.minecraft.sounds.SoundEvents;
 
 import fr.lordfinn.crazyphone.client.gui.components.PhotoLoadingPlaceholder;
 import fr.lordfinn.crazyphone.client.picture.FabricPictureCache;
+import fr.lordfinn.crazyphone.network.CrazyPhoneAddPhotoToMyPhotosPacket;
 import fr.lordfinn.crazyphone.network.CrazyPhoneGivePhotoItemPacket;
 import fr.lordfinn.crazyphone.utils.GuiCompat;
 import fr.lordfinn.crazyphone.utils.NetworkAccess;
@@ -30,8 +32,11 @@ import java.util.List;
 import java.util.UUID;
 
 public class CrazyPhonePhotoViewerScreen extends Screen implements PhoneScreen {
+    /** Where this viewer was opened from - drives which buttons show at the bottom. */
+    public enum Origin { HELD_ITEM, CONVERSATION, GALLERY }
+
     private final UUID photoId;
-    private final boolean openedFromInventory;
+    private final Origin origin;
     private final Screen previousScreen;
     // Screen's own `renderables` field is private under Fabric's Yarn mappings (public under NeoForge's
     // official ones) - rather than chase a mapping-safe accessor, this screen just tracks its own two
@@ -44,18 +49,14 @@ public class CrazyPhonePhotoViewerScreen extends Screen implements PhoneScreen {
     // The border can only ever reflect a real item's own dye (see CrazyPhonePhotoItemRenderer#borderRgb) -
     // white (0xFFFFFF, undyed) whenever this screen was reached without one (a chat bubble or the My Photos
     // gallery both point straight at a server-side photoId, never a specific physical ItemStack, so there's
-    // no "this photo's color" to read in those cases at all - only opening the viewer from a held item,
-    // openedFromInventory's own case, has a real stack to read DYED_COLOR off of).
+    // no "this photo's color" to read in those cases at all - only Origin.HELD_ITEM has a real stack to read
+    // DYED_COLOR off of).
     private final int borderRgb;
 
-    public CrazyPhonePhotoViewerScreen(UUID photoId) {
-        this(photoId, false, 0xFFFFFF);
-    }
-
-    public CrazyPhonePhotoViewerScreen(UUID photoId, boolean openedFromInventory, int borderRgb) {
+    public CrazyPhonePhotoViewerScreen(UUID photoId, Origin origin, int borderRgb) {
         super(Component.translatable("gui.crazyphone.photo_viewer.title"));
         this.photoId = photoId;
-        this.openedFromInventory = openedFromInventory;
+        this.origin = origin;
         this.borderRgb = borderRgb;
         this.previousScreen = Minecraft.getInstance()./*$ mc_get_screen {*/screen/*$}*/;
         this.tiltDegrees = (java.util.concurrent.ThreadLocalRandom.current().nextFloat() * 8f) - 4f;
@@ -73,10 +74,11 @@ public class CrazyPhonePhotoViewerScreen extends Screen implements PhoneScreen {
         // and stale-positioned render (ownButtons) both stuck around alongside the freshly-added ones,
         // showing as the same button doubled up and overlapping at two different positions.
         ownButtons.clear();
-        if (openedFromInventory)
+        if (origin == Origin.HELD_ITEM)
             return;
         int buttonWidth = 90, buttonHeight = 20, spacing = 5;
-        int totalWidth = buttonWidth * 2 + spacing;
+        int buttonCount = origin == Origin.CONVERSATION ? 3 : 2;
+        int totalWidth = buttonWidth * buttonCount + spacing * (buttonCount - 1);
         int startX = (this.width - totalWidth) / 2;
         int y = this.height - 30;
         // addRenderableWidget (not just addWidget) still matters here for its OTHER effect - registering the
@@ -92,6 +94,18 @@ public class CrazyPhonePhotoViewerScreen extends Screen implements PhoneScreen {
         addRenderableWidget(saveButton);
         ownButtons.add(backButton);
         ownButtons.add(saveButton);
+        // Only offered from a conversation - the gallery's own photos are already in this exact list by
+        // definition, and a held item has no server-side photoId round trip worth making here.
+        // PhotoSavedData#linkPhotoToOwner is idempotent, so no "already in my photos" check is needed first -
+        // clicking this when it's already there simply does nothing extra.
+        if (origin == Origin.CONVERSATION) {
+            Button addButton = Button.builder(Component.translatable("gui.crazyphone.photo_viewer.add_to_my_photos"), b -> {
+                NetworkAccess.sendToServer(new CrazyPhoneAddPhotoToMyPhotosPacket(photoId));
+                Minecraft.getInstance().player.playSound(SoundEvents.ITEM_PICKUP, 1f, 1f);
+            }).bounds(startX + (buttonWidth + spacing) * 2, y, buttonWidth, buttonHeight).build();
+            addRenderableWidget(addButton);
+            ownButtons.add(addButton);
+        }
     }
 
     // Deliberately NOT calling super.render()/super.extractRenderState() here - Screen's own default render body

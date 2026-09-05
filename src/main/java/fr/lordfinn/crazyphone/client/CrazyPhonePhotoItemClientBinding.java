@@ -38,7 +38,7 @@ public class CrazyPhonePhotoItemClientBinding {
     public static void onClientSetup(FMLClientSetupEvent event) {
         event.enqueueWork(() -> {
             CrazyPhonePhotoItem.clientViewerOpener = (photoId, borderRgb) ->
-                    net.minecraft.client.Minecraft.getInstance()./*$ mc_set_screen {*/setScreen/*$}*/(new fr.lordfinn.crazyphone.client.gui.CrazyPhonePhotoViewerScreen(photoId, true, borderRgb));
+                    net.minecraft.client.Minecraft.getInstance()./*$ mc_set_screen {*/setScreen/*$}*/(new fr.lordfinn.crazyphone.client.gui.CrazyPhonePhotoViewerScreen(photoId, fr.lordfinn.crazyphone.client.gui.CrazyPhonePhotoViewerScreen.Origin.HELD_ITEM, borderRgb));
             CrazyPhoneCaptureShortcut.clientOpenOverlay = () -> CrazyPhoneCaptureMode.enter("");
         });
     }

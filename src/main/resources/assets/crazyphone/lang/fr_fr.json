@@ -11,6 +11,7 @@
   "gui.crazyphone.photo_viewer.title": "Photo",
   "gui.crazyphone.photo_viewer.back": "Retour",
   "gui.crazyphone.photo_viewer.save": "Sauvegarder dans l'inventaire",
+  "gui.crazyphone.photo_viewer.add_to_my_photos": "Ajouter à Mes Photos",
   "gui.crazyphone.photo_frame_resize.title": "Modifier la photo",
   "gui.crazyphone.photo_frame_resize.size": "%s x %s blocs",
   "gui.crazyphone.photo_frame_resize.rotate": "Pivoter",

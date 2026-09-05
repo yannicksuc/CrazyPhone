@@ -53,7 +53,10 @@ public class CrazyPhoneMyPhotosScreenScreen extends CrazyPhoneDefaultScreenScree
     private static final int THUMB_PITCH = 36;
     private static final int GRID_TOP_Y = 30;
     private static final int GRID_WIDTH = GRID_COLUMNS * THUMB_PITCH;
-    private static final int GRID_HEIGHT = VISIBLE_ROWS * THUMB_PITCH;
+    // Matches CrazyPhoneConversationScreen's own message crop zone height exactly (its enableScissor call
+    // spans topPos+27 to topPos+158, 131px) - the grid already scrolls in continuous pixels, not snapped
+    // rows, so a partial row peeking in at the crop edge is consistent with how it already behaves.
+    private static final int GRID_HEIGHT = 131;
     private static final int SELECTED_BORDER_COLOR = CrazyPhoneColors.ACCENT_YELLOW;
     private static final int SELECTED_INSET = 2;
     // Matches CrazyPhoneConversationScreen's own message-feed scroll step - continuous pixel scrolling
@@ -296,7 +299,7 @@ public class CrazyPhoneMyPhotosScreenScreen extends CrazyPhoneDefaultScreenScree
                     selectedPhotoIds.remove(photoId);
                 updateActionButtonsState();
             } else {
-                Minecraft.getInstance()./*$ mc_set_screen {*/setScreen/*$}*/(new CrazyPhonePhotoViewerScreen(photoId));
+                Minecraft.getInstance()./*$ mc_set_screen {*/setScreen/*$}*/(new CrazyPhonePhotoViewerScreen(photoId, CrazyPhonePhotoViewerScreen.Origin.GALLERY, 0xFFFFFF));
             }
             return true;
         }
