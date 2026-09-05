@@ -43,13 +43,18 @@ import java.util.UUID;
  * anything else client-side gating on "is THIS phone in the call") could only check "is this player in a
  * call at all", lighting up every phone the player held rather than just the one actually on the call.
  *
- * {@code participantIds}/{@code participantNames} (parallel lists, always the same length, always excluding
- * the recipient themselves) carry the OTHER players actually on the call right now - the InCall screen's
- * bust-portrait grid reads this. Piggybacking on the packet that's already resent to every affected player on
- * every join/leave/answer (see CallRegistry) means the grid updates live with zero new sync call sites.
+ * {@code participantIds}/{@code participantNames}/{@code participantVideoEnabled} (parallel lists, always the
+ * same length, always excluding the recipient themselves) carry the OTHER players actually on the call right
+ * now and whether each still has their "video" (live 3D bust, see CallRegistry.CallSession#videoDisabled) on -
+ * the InCall screen's portrait grid reads this. {@code selfVideoEnabled} is the recipient's own flag, since
+ * they're never in the lists. Piggybacking on the packet that's already resent to every affected player on
+ * every join/leave/answer/video toggle (see CallRegistry) means the grid updates live with zero new sync
+ * call sites.
  */
 public record CrazyPhoneCallStateSyncPacket(String conversationId, UUID callId, State state, List<String> callNumbers,
-                                             List<UUID> participantIds, List<String> participantNames) implements CustomPacketPayload {
+                                             List<UUID> participantIds, List<String> participantNames,
+                                             List<Boolean> participantVideoEnabled, boolean selfVideoEnabled,
+                                             boolean videoFeatureEnabled) implements CustomPacketPayload {
 
     public enum State {
         CALLING, RINGING, ACTIVE, ENDED
@@ -69,6 +74,9 @@ public record CrazyPhoneCallStateSyncPacket(String conversationId, UUID callId, 
                         buffer.writeCollection(message.callNumbers, (buf, number) -> buf.writeUtf(number));
                         buffer.writeCollection(message.participantIds, (buf, id) -> buf.writeUUID(id));
                         buffer.writeCollection(message.participantNames, (buf, name) -> buf.writeUtf(name));
+                        buffer.writeCollection(message.participantVideoEnabled, (buf, enabled) -> buf.writeBoolean(enabled));
+                        buffer.writeBoolean(message.selfVideoEnabled);
+                        buffer.writeBoolean(message.videoFeatureEnabled);
                     },
                     (RegistryFriendlyByteBuf buffer) -> new CrazyPhoneCallStateSyncPacket(
                             buffer.readUtf(),
@@ -76,7 +84,10 @@ public record CrazyPhoneCallStateSyncPacket(String conversationId, UUID callId, 
                             buffer.readEnum(State.class),
                             buffer.readList(buf -> buf.readUtf()),
                             buffer.readList(buf -> buf.readUUID()),
-                            buffer.readList(buf -> buf.readUtf())
+                            buffer.readList(buf -> buf.readUtf()),
+                            buffer.readList(buf -> buf.readBoolean()),
+                            buffer.readBoolean(),
+                            buffer.readBoolean()
                     )
             );
 
@@ -94,7 +105,10 @@ public record CrazyPhoneCallStateSyncPacket(String conversationId, UUID callId, 
                 buffer.readEnum(State.class),
                 buffer.readList(buf -> buf.readUtf()),
                 buffer.readList(buf -> buf.readUUID()),
-                buffer.readList(buf -> buf.readUtf())
+                buffer.readList(buf -> buf.readUtf()),
+                buffer.readList(buf -> buf.readBoolean()),
+                buffer.readBoolean(),
+                buffer.readBoolean()
         );
     }
 
@@ -105,6 +119,9 @@ public record CrazyPhoneCallStateSyncPacket(String conversationId, UUID callId, 
         buffer.writeCollection(callNumbers, (buf, number) -> buf.writeUtf(number));
         buffer.writeCollection(participantIds, (buf, id) -> buf.writeUUID(id));
         buffer.writeCollection(participantNames, (buf, name) -> buf.writeUtf(name));
+        buffer.writeCollection(participantVideoEnabled, (buf, enabled) -> buf.writeBoolean(enabled));
+        buffer.writeBoolean(selfVideoEnabled);
+        buffer.writeBoolean(videoFeatureEnabled);
     }
 
     @Override

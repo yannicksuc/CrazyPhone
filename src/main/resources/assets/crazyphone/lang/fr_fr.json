@@ -192,6 +192,11 @@
 
   "gui.crazyphone.crazy_phone_in_call_screen.title": "En appel",
   "gui.crazyphone.crazy_phone_in_call_screen.button_hangup": "Raccrocher",
+  "gui.crazyphone.crazy_phone_in_call_screen.tooltip_video_on": "Vidéo activée",
+  "gui.crazyphone.crazy_phone_in_call_screen.tooltip_video_on.lore": "Les autres voient ton aperçu 3D en direct. Clique pour afficher une simple tête à la place.",
+  "gui.crazyphone.crazy_phone_in_call_screen.tooltip_video_off": "Vidéo désactivée",
+  "gui.crazyphone.crazy_phone_in_call_screen.tooltip_video_off.lore": "Les autres voient une simple tête. Clique pour réactiver ton aperçu 3D en direct.",
+  "gui.crazyphone.crazy_phone_in_call_screen.tooltip_other_video_off": "%s a désactivé sa vidéo",
 
   "gui.crazyphone.crazy_phone_incoming_call_screen.title": "Appel entrant",
   "gui.crazyphone.crazy_phone_incoming_call_screen.button_accept": "Accepter",

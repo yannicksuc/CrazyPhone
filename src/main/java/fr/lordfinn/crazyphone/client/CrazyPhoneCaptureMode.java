@@ -207,6 +207,16 @@ public final class CrazyPhoneCaptureMode {
     public static void tick() {
         if (!active)
             return;
+        // The phone this shot was being framed with left the player's hand (dropped, moved to another slot or
+        // inventory, taken, died...) - there's nothing to shoot with anymore, so leave capture mode the same
+        // way Escape would. Without reopening the screen enter() closed: that screen belonged to a phone the
+        // player no longer holds, so it would only get torn down again by the server a tick later.
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null || mc.player.getItemInHand(InteractionHand.MAIN_HAND).getItem() != ModItems.CRAZY_PHONE.get()) {
+            previousScreen = null;
+            exit();
+            return;
+        }
         currentZoom += (targetZoom - currentZoom) * LERP_SPEED;
         tickSelfiePoseSync();
     }

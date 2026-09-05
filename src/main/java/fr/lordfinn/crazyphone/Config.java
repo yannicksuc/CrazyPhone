@@ -92,6 +92,10 @@ public class Config {
             .comment("How long a player can be without their phone (dropped, or moved to another inventory) during a call before it actually ends - picking it back up within this window keeps the call going uninterrupted.")
             .defineInRange("phoneDropGraceSeconds", 5, 0, 60);
 
+    private static final ModConfigSpec.BooleanValue CALL_VIDEO_ENABLED = BUILDER
+            .comment("Whether the In Call screen's live 3D participant previews (\"video\") are available at all. When false, every participant is shown as a flat 2D head and the per-player video toggle is hidden.")
+            .define("callVideoEnabled", true);
+
     private static final ModConfigSpec.IntValue MAX_VOICE_MESSAGES_STORED_PER_CONVERSATION = BUILDER
             .comment("Maximum number of voice messages (with their audio) kept on disk per conversation - voice audio is the heaviest payload, capped separately from text/image messages.")
             .defineInRange("maxVoiceMessagesStoredPerConversation", 30, 5, 500);
@@ -150,6 +154,7 @@ public class Config {
     public static int callRingTimeoutSeconds;
     public static int aloneInCallKickSeconds;
     public static int phoneDropGraceSeconds;
+    public static boolean callVideoEnabled;
     public static int maxVoiceMessagesStoredPerConversation;
     public static int maxVoiceMessageRecordingSeconds;
     public static boolean soulboundEnchantmentEnabled;
@@ -175,6 +180,7 @@ public class Config {
         callRingTimeoutSeconds = CALL_RING_TIMEOUT_SECONDS.get();
         aloneInCallKickSeconds = ALONE_IN_CALL_KICK_SECONDS.get();
         phoneDropGraceSeconds = PHONE_DROP_GRACE_SECONDS.get();
+        callVideoEnabled = CALL_VIDEO_ENABLED.get();
         maxVoiceMessagesStoredPerConversation = MAX_VOICE_MESSAGES_STORED_PER_CONVERSATION.get();
         maxVoiceMessageRecordingSeconds = MAX_VOICE_MESSAGE_RECORDING_SECONDS.get();
         soulboundEnchantmentEnabled = SOULBOUND_ENCHANTMENT_ENABLED.get();
@@ -235,6 +241,7 @@ public class Config {
     public static int callRingTimeoutSeconds = 30;
     public static int aloneInCallKickSeconds = 5;
     public static int phoneDropGraceSeconds = 5;
+    public static boolean callVideoEnabled = true;
     public static int maxVoiceMessagesStoredPerConversation = 30;
     public static int maxVoiceMessageRecordingSeconds = 60;
     public static boolean soulboundEnchantmentEnabled = true;

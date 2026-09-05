@@ -51,6 +51,9 @@ public record CrazyPhoneCallActionMessage(int action, String conversationId) imp
     public static final int HANGUP = 1;
     public static final int OPEN_CALL_SCREEN = 2;
     public static final int ANSWER = 3;
+    /** Flips the sender's own "video" (live 3D bust shown to the other participants in the InCall grid) -
+     * see CallRegistry#toggleVideo. Server-gated by Config.callVideoEnabled. */
+    public static final int TOGGLE_VIDEO = 4;
 
     //? if >=1.20.5 {
     /*public static final Type<CrazyPhoneCallActionMessage> TYPE = new Type<>(
@@ -137,6 +140,7 @@ public record CrazyPhoneCallActionMessage(int action, String conversationId) imp
                 CallRegistry.answer(player);
                 ScreenMenuUtils.openCallScreenForPlayer(player);
             }
+            case TOGGLE_VIDEO -> CallRegistry.toggleVideo(player, conversationId);
             default -> {
             }
         }

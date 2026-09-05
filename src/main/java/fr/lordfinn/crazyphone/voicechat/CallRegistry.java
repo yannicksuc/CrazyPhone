@@ -4,10 +4,12 @@ import javax.annotation.Nullable;
 
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import fr.lordfinn.crazyphone.Config;
 import fr.lordfinn.crazyphone.network.CrazyPhoneCallStateSyncPacket;
 import fr.lordfinn.crazyphone.network.CrazyPhoneIncomingCallNotificationPacket;
 import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
 import fr.lordfinn.crazyphone.utils.NetworkAccess;
+import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneInCallScreenMenu;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,6 +53,11 @@ public final class CallRegistry {
          * log; only a call someone actually answered gets a chat entry (see CrazyPhoneHelper#addCallMessage
          * / #finalizeCallMessage, keyed by this session's own callId - one call, one chat entry). */
         public long connectedAtEpochMillis = -1;
+        /** Participants who turned their "video" (the live 3D bust the OTHER participants' InCall grids show
+         * of them - a video-off participant is drawn as a flat 2D head instead) off for this call - see
+         * {@link #toggleVideo}. Empty = everyone on, the default. Session-scoped like everything else here:
+         * a fresh call starts with video on again. */
+        public final Set<UUID> videoDisabled = new HashSet<>();
 
         private CallSession(UUID callId, String conversationId, UUID initiator) {
             this.callId = callId;
@@ -195,6 +202,40 @@ public final class CallRegistry {
         for (UUID participantId : new HashSet<>(session.participants)) {
             ServerPlayer participant = findPlayer(player, participantId);
             if (participant != null)
+                notifySafe(participant, session, CrazyPhoneCallStateSyncPacket.State.ACTIVE);
+        }
+    }
+
+    /** Whether {@code playerId}'s live 3D bust should be shown to the other participants - false once they've
+     * toggled it off for this call, or for everyone when the server has the whole feature switched off. */
+    public static boolean isVideoEnabled(CallSession session, UUID playerId) {
+        return Config.callVideoEnabled && !session.videoDisabled.contains(playerId);
+    }
+
+    /** Whether this player currently has the InCall screen itself open - the ONLY consumer of the live
+     * per-participant cosmetics (head-rotation sync, video toggles), so anything purely cosmetic is only ever
+     * sent to players this returns true for (live request: no useless packets when nobody is looking at the
+     * phone UI). The core lifecycle syncs (CALLING/RINGING/ACTIVE-on-join/ENDED) deliberately don't go
+     * through this: they also drive the held item's textures and the ring toast, which matter regardless of
+     * what screen (if any) is open. */
+    public static boolean isViewingInCallScreen(ServerPlayer player) {
+        return player.containerMenu instanceof CrazyPhoneInCallScreenMenu;
+    }
+
+    /** The InCall screen's per-player video toggle (CrazyPhoneCallActionMessage.TOGGLE_VIDEO) - flips the
+     * sender's own flag and resyncs every participant who is actually looking at the InCall screen right now
+     * so their grid swaps that tile between the 3D bust and the flat head. */
+    public static void toggleVideo(ServerPlayer player, String conversationId) {
+        if (!Config.callVideoEnabled)
+            return;
+        CallSession session = getSessionFor(player.getUUID()).orElse(null);
+        if (session == null || !session.conversationId.equals(conversationId) || !session.participants.contains(player.getUUID()))
+            return;
+        if (!session.videoDisabled.remove(player.getUUID()))
+            session.videoDisabled.add(player.getUUID());
+        for (UUID participantId : new HashSet<>(session.participants)) {
+            ServerPlayer participant = findPlayer(player, participantId);
+            if (participant != null && isViewingInCallScreen(participant))
                 notifySafe(participant, session, CrazyPhoneCallStateSyncPacket.State.ACTIVE);
         }
     }
@@ -354,7 +395,10 @@ public final class CallRegistry {
                 ? List.of()
                 : session.participants.stream().filter(id -> !id.equals(target.getUUID())).toList();
         List<String> participantNames = participantIds.stream().map(id -> resolvePlayerName(target, id)).toList();
-        NetworkAccess.sendToPlayer(target, new CrazyPhoneCallStateSyncPacket(session.conversationId, session.callId, state, callNumbers, participantIds, participantNames));
+        List<Boolean> participantVideoEnabled = participantIds.stream().map(id -> isVideoEnabled(session, id)).toList();
+        boolean selfVideoEnabled = state != CrazyPhoneCallStateSyncPacket.State.ENDED && isVideoEnabled(session, target.getUUID());
+        NetworkAccess.sendToPlayer(target, new CrazyPhoneCallStateSyncPacket(session.conversationId, session.callId, state, callNumbers,
+                participantIds, participantNames, participantVideoEnabled, selfVideoEnabled, Config.callVideoEnabled));
         // Also written into the actual held phone's own item data, not just this targeted packet - vanilla's
         // equipment sync then carries it to nearby bystanders for free (see CrazyPhoneHelper), which the
         // packet above (sent only to this one player) never would.

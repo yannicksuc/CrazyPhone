@@ -27,6 +27,8 @@ import fr.lordfinn.crazyphone.network.CrazyPhoneSignInScreenButtonMessage;
 import java.util.HashMap;
 import java.util.List;
 
+import org.lwjgl.glfw.GLFW;
+
 public class CrazyPhoneSignInScreenScreen extends CrazyPhoneDefaultScreenScreen<CrazyPhoneSignInScreenMenu> {
 	private final static HashMap<String, Object> guistate = CrazyPhoneSignInScreenMenu.guistate;
 	EditBox password;
@@ -157,19 +159,45 @@ public class CrazyPhoneSignInScreenScreen extends CrazyPhoneDefaultScreenScreen<
 		password.setSuggestion(Component.translatable("gui.crazyphone.crazy_phone_sign_in_screen.password").getString());
 		guistate.put("text:password", password);
 		this.addWidget(this.password);
-		button_deverrouiller = Button.builder(Component.translatable("gui.crazyphone.crazy_phone_sign_in_screen.button_deverrouiller"), e -> {
-			//? if >=1.20.5 {
-			/*NetworkAccess.sendToServer(new CrazyPhoneSignInScreenButtonMessage(0, x, y, z, getEditBoxAndCheckBoxValues()));
-			*///? } else {
-			PacketDistributor.SERVER.noArg().send(new CrazyPhoneSignInScreenButtonMessage(0, x, y, z, getEditBoxAndCheckBoxValues()));
-			//?}
-			CrazyPhoneSignInScreenButtonMessage.handleButtonAction(entity, 0, x, y, z, getEditBoxAndCheckBoxValues());
-		}).bounds(this.leftPos + 7, this.topPos + 100, 108, 20)
+		button_deverrouiller = Button.builder(Component.translatable("gui.crazyphone.crazy_phone_sign_in_screen.button_deverrouiller"), e -> submitPassword())
+				.bounds(this.leftPos + 7, this.topPos + 100, 108, 20)
 				.tooltip(net.minecraft.client.gui.components.Tooltip.create(
 						Component.translatable("gui.crazyphone.crazy_phone_sign_in_screen.tooltip_deverrouiller")))
 				.build();
 		guistate.put("button:button_deverrouiller", button_deverrouiller);
 		this.addRenderableWidget(button_deverrouiller);
+	}
+
+	private void submitPassword() {
+		//? if >=1.20.5 {
+		/*NetworkAccess.sendToServer(new CrazyPhoneSignInScreenButtonMessage(0, x, y, z, getEditBoxAndCheckBoxValues()));
+		*///? } else {
+		PacketDistributor.SERVER.noArg().send(new CrazyPhoneSignInScreenButtonMessage(0, x, y, z, getEditBoxAndCheckBoxValues()));
+		//?}
+		CrazyPhoneSignInScreenButtonMessage.handleButtonAction(entity, 0, x, y, z, getEditBoxAndCheckBoxValues());
+	}
+
+	//? if <1.21.10 {
+	@Override
+	public boolean keyPressed(int key, int scanCode, int modifiers) {
+		if (keyPressedImpl(key)) return true;
+		return super.keyPressed(key, scanCode, modifiers);
+	}
+	//?}
+	//? if >=1.21.10 {
+	/*@Override
+	public boolean keyPressed(net.minecraft.client.input.KeyEvent event) {
+		if (keyPressedImpl(event.key())) return true;
+		return super.keyPressed(event);
+	}
+	*///?}
+
+	private boolean keyPressedImpl(int key) {
+		if (password.isFocused() && (key == GLFW.GLFW_KEY_ENTER || key == GLFW.GLFW_KEY_KP_ENTER)) {
+			submitPassword();
+			return true;
+		}
+		return false;
 	}
 
 	// Per-phone, opt-in (default off) preference: auto-lock THIS specific phone on disconnect if it's still

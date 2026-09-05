@@ -46,6 +46,16 @@ public final class ClientCallState {
      * swimming, running...) in real time. Never actively cleared: a stale entry for a UUID nothing renders
      * anymore is harmless, and the set of UUIDs in any one call is always small. */
     private static final java.util.Map<UUID, LiveState> liveStates = new ConcurrentHashMap<>();
+    /** Per-participant "video" (live 3D bust in the InCall grid) on/off, refreshed from every
+     * CrazyPhoneCallStateSyncPacket - see CallRegistry.CallSession#videoDisabled. A participant absent from
+     * the map counts as video ON, the default. The local player's own flag travels separately in the packet
+     * (they're never in participantIds - the server excludes the recipient) and lands in {@link
+     * #selfVideoEnabled}. */
+    private static final java.util.Map<UUID, Boolean> videoEnabled = new ConcurrentHashMap<>();
+    private static volatile boolean selfVideoEnabled = true;
+    /** The SERVER's Config.callVideoEnabled - the client's own config file is irrelevant here, the server
+     * decides whether the video toggle exists at all. */
+    private static volatile boolean videoFeatureEnabled = true;
 
     /** @param headYawDelta head-vs-body yaw deviation in degrees, to reapply on top of the bust's fixed
      *                      camera-facing body (see CrazyPhoneInCallScreenScreen.renderBust)
@@ -70,11 +80,30 @@ public final class ClientCallState {
         return liveStates.get(playerId);
     }
 
+    /** Whether ANOTHER participant currently has their "video" (live 3D bust) on - see {@link #videoEnabled}.
+     * For the local player's own flag use {@link #isSelfVideoEnabled()}. */
+    public static boolean isVideoEnabled(UUID participantId) {
+        return videoEnabled.getOrDefault(participantId, true);
+    }
+
+    public static boolean isSelfVideoEnabled() {
+        return selfVideoEnabled;
+    }
+
+    public static boolean isVideoFeatureEnabled() {
+        return videoFeatureEnabled;
+    }
+
     public static void onPacket(CrazyPhoneCallStateSyncPacket packet) {
         state = packet.state();
         conversationId = packet.state() == State.ENDED ? null : packet.conversationId();
         callId = packet.state() == State.ENDED ? null : packet.callId();
         callNumbers = packet.callNumbers();
+        videoEnabled.clear();
+        for (int i = 0; i < packet.participantIds().size() && i < packet.participantVideoEnabled().size(); i++)
+            videoEnabled.put(packet.participantIds().get(i), packet.participantVideoEnabled().get(i));
+        selfVideoEnabled = packet.state() != State.ENDED && packet.selfVideoEnabled();
+        videoFeatureEnabled = packet.videoFeatureEnabled();
         if (packet.state() == State.ACTIVE) {
             // First ACTIVE sync for THIS call id starts the clock; a later resync of the same still-active
             // call (participant list refresh etc.) must not push the timestamp forward again.

@@ -19,6 +19,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 
+import fr.lordfinn.crazyphone.Config;
 import fr.lordfinn.crazyphone.network.CallParticipantHeadRotationSyncPacket;
 import fr.lordfinn.crazyphone.utils.NetworkAccess;
 
@@ -93,9 +94,24 @@ public class CallHeadRotationSync {
     }
 
     private static void syncSession(MinecraftServer server, CallRegistry.CallSession session) {
-        if (session.participants.size() < 2)
+        if (!Config.callVideoEnabled || session.participants.size() < 2)
             return;
 
+        // Pose data is only ever READ by the InCall screen itself, so it's only ever sent to participants who
+        // have that screen open right now (see CallRegistry#isViewingInCallScreen - live request: no useless
+        // packets when nobody is looking at the phone UI). Checked first: with no viewer there's nothing to
+        // compute either.
+        List<ServerPlayer> viewers = new ArrayList<>();
+        for (UUID id : session.participants) {
+            ServerPlayer player = server.getPlayerList().getPlayer(id);
+            if (player != null && CallRegistry.isViewingInCallScreen(player))
+                viewers.add(player);
+        }
+        if (viewers.isEmpty())
+            return;
+
+        // And only ever computed for participants whose video is on - a video-off participant is drawn as a
+        // flat 2D head that has no use for any of this.
         List<UUID> ids = new ArrayList<>();
         List<Float> headYawDeltas = new ArrayList<>();
         List<Float> pitches = new ArrayList<>();
@@ -105,6 +121,8 @@ public class CallHeadRotationSync {
         List<Boolean> swimming = new ArrayList<>();
         List<Float> walkAnimationSpeeds = new ArrayList<>();
         for (UUID id : session.participants) {
+            if (!CallRegistry.isVideoEnabled(session, id))
+                continue;
             ServerPlayer player = server.getPlayerList().getPlayer(id);
             if (player == null)
                 continue;
@@ -117,13 +135,10 @@ public class CallHeadRotationSync {
             swimming.add(player.isSwimming());
             walkAnimationSpeeds.add(computeWalkAnimationSpeed(id, player));
         }
-        if (ids.size() < 2)
+        if (ids.isEmpty())
             return;
 
-        for (int targetIndex = 0; targetIndex < ids.size(); targetIndex++) {
-            ServerPlayer target = server.getPlayerList().getPlayer(ids.get(targetIndex));
-            if (target == null)
-                continue;
+        for (ServerPlayer target : viewers) {
             List<UUID> otherIds = new ArrayList<>();
             List<Float> otherYawDeltas = new ArrayList<>();
             List<Float> otherPitches = new ArrayList<>();
@@ -133,7 +148,8 @@ public class CallHeadRotationSync {
             List<Boolean> otherSwimming = new ArrayList<>();
             List<Float> otherWalkSpeeds = new ArrayList<>();
             for (int i = 0; i < ids.size(); i++) {
-                if (i == targetIndex)
+                // The viewer's own tile animates from their own local entity client-side, never from this.
+                if (ids.get(i).equals(target.getUUID()))
                     continue;
                 otherIds.add(ids.get(i));
                 otherYawDeltas.add(headYawDeltas.get(i));
@@ -144,6 +160,8 @@ public class CallHeadRotationSync {
                 otherSwimming.add(swimming.get(i));
                 otherWalkSpeeds.add(walkAnimationSpeeds.get(i));
             }
+            if (otherIds.isEmpty())
+                continue;
             NetworkAccess.sendToPlayer(target,
                     new CallParticipantHeadRotationSyncPacket(session.conversationId, otherIds, otherYawDeltas, otherPitches,
                             otherPoses, otherCrouching, otherSprinting, otherSwimming, otherWalkSpeeds));

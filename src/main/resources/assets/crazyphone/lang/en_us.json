@@ -192,6 +192,11 @@
 
   "gui.crazyphone.crazy_phone_in_call_screen.title": "In call",
   "gui.crazyphone.crazy_phone_in_call_screen.button_hangup": "Hang up",
+  "gui.crazyphone.crazy_phone_in_call_screen.tooltip_video_on": "Video on",
+  "gui.crazyphone.crazy_phone_in_call_screen.tooltip_video_on.lore": "Others see your live 3D preview. Click to show a plain head instead.",
+  "gui.crazyphone.crazy_phone_in_call_screen.tooltip_video_off": "Video off",
+  "gui.crazyphone.crazy_phone_in_call_screen.tooltip_video_off.lore": "Others see a plain head. Click to turn your live 3D preview back on.",
+  "gui.crazyphone.crazy_phone_in_call_screen.tooltip_other_video_off": "%s has video off",
 
   "gui.crazyphone.crazy_phone_incoming_call_screen.title": "Incoming call",
   "gui.crazyphone.crazy_phone_incoming_call_screen.button_accept": "Accept",
