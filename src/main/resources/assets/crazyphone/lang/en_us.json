@@ -24,7 +24,6 @@
   "item.crazyphone.lore_owner": "Owner: %s",
   "item.crazyphone.crazy_phone_photo.lore_author": "Taken by: %s",
   "item.crazyphone.crazy_phone_photo.lore_date": "Taken on: %s",
-  "item.crazyphone.crazy_phone_photo.lore_display_hint": "Place against a block, or in an item frame, for a pixel-art painting look",
 
   "message.crazyphone.phone_locked_no_photo": "Unlock this phone before taking a photo.",
   "message.crazyphone.unknown_contact": "Unknown",
@@ -154,6 +153,8 @@
   "gui.crazyphone.crazy_phone_my_photos_screen.tooltip_delete_selected": "Delete the selected photos",
   "gui.crazyphone.crazy_phone_my_photos_screen.tooltip_take_selected": "Get the selected photos as items",
   "gui.crazyphone.crazy_phone_my_photos_screen.tooltip_send_selected": "Send the selected photos to this conversation",
+  "gui.crazyphone.crazy_phone_my_photos_screen.photo_count": "%s/%s",
+  "gui.crazyphone.crazy_phone_my_photos_screen.storage_warning": "Oldest photos will be deleted soon",
 
   "gui.crazyphone.crazy_phone_conversation.message": "Write a message...",
   "gui.crazyphone.crazy_phone_conversation.button_envoyer": ">",

@@ -6,6 +6,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 
 import fr.lordfinn.crazyphone.client.gui.components.CrazyPhoneColors;
 import fr.lordfinn.crazyphone.client.gui.components.PhotoLoadingPlaceholder;
+import fr.lordfinn.crazyphone.client.gui.components.ScrollingText;
 import fr.lordfinn.crazyphone.client.picture.FabricPictureCache;
 import fr.lordfinn.crazyphone.init.ModItems;
 import fr.lordfinn.crazyphone.network.CrazyPhoneMyPhotosActionMessage;
@@ -59,6 +60,24 @@ public class CrazyPhoneMyPhotosScreenScreen extends CrazyPhoneDefaultScreenScree
     // (scissor-cropped, see renderThumbnails) instead of snapping a whole row at a time per wheel tick.
     private static final int SCROLL_STEP = 10;
 
+    // Header banner's right edge and the title's own y, both relative to leftPos/topPos - mirror
+    // CrazyPhoneDefaultScreenScreen's own private HEADER_BANNER_RIGHT_X / title y (neither is exposed to
+    // subclasses) so the "247/300" counter lines up flush with the banner's right edge, on the exact same
+    // row as the title. Same technique CrazyPhoneConversationScreen uses to reserve header room for its
+    // call icon (see its renderHeader(..., rightBoundX) call).
+    private static final int HEADER_BANNER_RIGHT_X = 118;
+    private static final int HEADER_TITLE_Y = 14;
+    // Matches renderHeader's own title color.
+    private static final int COUNTER_TEXT_COLOR = 0xFF404040;
+    // Fraction of Config.maxPhotosStoredPerOwner at which the storage warning below the header kicks in -
+    // 90% gives a clear heads-up before the server's own silent FIFO eviction of the oldest photos (see
+    // Config.maxPhotosStoredPerOwner's own comment) actually starts discarding anything.
+    private static final double STORAGE_WARNING_THRESHOLD_FRACTION = 0.9;
+    private static final int STORAGE_WARNING_COLOR = CrazyPhoneColors.ACCENT_YELLOW;
+    // One line of text tall - reserved between the header and the grid only while the warning is showing
+    // (rather than always, since the grid has very little slack above the button row to spare otherwise).
+    private static final int STORAGE_WARNING_LINE_HEIGHT = 10;
+
     private final Set<UUID> selectedPhotoIds = new HashSet<>();
     private int scrollPosition = 0;
     private Button buttonDelete;
@@ -80,6 +99,7 @@ public class CrazyPhoneMyPhotosScreenScreen extends CrazyPhoneDefaultScreenScree
         super.extractRenderState(guiGraphics, mouseX, mouseY, partialTicks);
         renderHeader(guiGraphics, new ItemStack(ModItems.CRAZY_PHONE_PHOTO.get()),
                 Component.translatable("gui.crazyphone.crazy_phone_my_photos_screen.title"));
+        renderPhotoCountInfo(guiGraphics);
     }
     *///? } else {
     @Override
@@ -87,6 +107,7 @@ public class CrazyPhoneMyPhotosScreenScreen extends CrazyPhoneDefaultScreenScree
         super.render(guiGraphics, mouseX, mouseY, partialTicks);
         renderHeader(guiGraphics, new ItemStack(ModItems.CRAZY_PHONE_PHOTO.get()),
                 Component.translatable("gui.crazyphone.crazy_phone_my_photos_screen.title"));
+        renderPhotoCountInfo(guiGraphics);
     }
     //?}
 
@@ -136,7 +157,33 @@ public class CrazyPhoneMyPhotosScreenScreen extends CrazyPhoneDefaultScreenScree
     }
 
     private int gridTop() {
-        return this.topPos + GRID_TOP_Y;
+        return this.topPos + GRID_TOP_Y + (isNearStorageCap() ? STORAGE_WARNING_LINE_HEIGHT : 0);
+    }
+
+    private boolean isNearStorageCap() {
+        int max = fr.lordfinn.crazyphone.Config.maxPhotosStoredPerOwner;
+        return max > 0 && menu.photoIds.size() >= max * STORAGE_WARNING_THRESHOLD_FRACTION;
+    }
+
+    /** Draws the "247/300" photo counter flush against the header banner's right edge, on the title's own
+     * row (see the HEADER_BANNER_RIGHT_X/HEADER_TITLE_Y comment above), and - once the owner's photo count
+     * gets within STORAGE_WARNING_THRESHOLD_FRACTION of Config.maxPhotosStoredPerOwner - a short one-line
+     * warning just below the header that the oldest photos will soon be auto-evicted. The warning reuses
+     * ScrollingText (same as the title itself) so an overly long translation scrolls instead of overflowing
+     * past the phone's frame. */
+    private void renderPhotoCountInfo(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics) {
+        int max = fr.lordfinn.crazyphone.Config.maxPhotosStoredPerOwner;
+        int count = menu.photoIds.size();
+        Component counterText = Component.translatable("gui.crazyphone.crazy_phone_my_photos_screen.photo_count", count, max);
+        int counterX = this.leftPos + HEADER_BANNER_RIGHT_X - this.font.width(counterText);
+        // Explicit alpha byte (0xFF......) - on >=26, GuiGraphicsExtractor#text silently drops any call
+        // whose color has a zero alpha byte instead of treating it as opaque like pre-26's drawString did.
+        guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(this.font, counterText, counterX, this.topPos + HEADER_TITLE_Y, COUNTER_TEXT_COLOR, false);
+
+        if (isNearStorageCap()) {
+            Component warning = Component.translatable("gui.crazyphone.crazy_phone_my_photos_screen.storage_warning");
+            ScrollingText.render(guiGraphics, this.font, warning, gridLeft(), this.topPos + HEADER_HEIGHT, GRID_WIDTH, STORAGE_WARNING_COLOR);
+        }
     }
 
     private boolean isWithinGridCropZone(double mouseX, double mouseY) {

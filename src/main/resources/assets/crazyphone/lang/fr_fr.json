@@ -24,7 +24,6 @@
   "item.crazyphone.lore_owner": "Proprio : %s",
   "item.crazyphone.crazy_phone_photo.lore_author": "Prise par : %s",
   "item.crazyphone.crazy_phone_photo.lore_date": "Prise le : %s",
-  "item.crazyphone.crazy_phone_photo.lore_display_hint": "Posez-la contre un bloc, ou dans un cadre, pour un rendu façon peinture pixel art",
 
   "message.crazyphone.phone_locked_no_photo": "Déverrouille ce téléphone avant de prendre une photo.",
   "message.crazyphone.unknown_contact": "Inconnu",
@@ -154,6 +153,8 @@
   "gui.crazyphone.crazy_phone_my_photos_screen.tooltip_delete_selected": "Supprimer les photos sélectionnées",
   "gui.crazyphone.crazy_phone_my_photos_screen.tooltip_take_selected": "Récupérer les photos sélectionnées sous forme d'objets",
   "gui.crazyphone.crazy_phone_my_photos_screen.tooltip_send_selected": "Envoyer les photos sélectionnées dans cette conversation",
+  "gui.crazyphone.crazy_phone_my_photos_screen.photo_count": "%s/%s",
+  "gui.crazyphone.crazy_phone_my_photos_screen.storage_warning": "Les photos les plus anciennes seront bientôt supprimées",
 
   "gui.crazyphone.crazy_phone_conversation.message": "Ecrire un message...",
   "gui.crazyphone.crazy_phone_conversation.button_envoyer": ">",
