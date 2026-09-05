@@ -252,8 +252,14 @@ have to hand-manage `server.properties` port collisions or hunt `tasklist` for t
 .\scripts\dev-launch.ps1 status                  # what's actually running right now
 .\scripts\dev-launch.ps1 tail 26.1 client         # live-follow its log
 .\scripts\dev-launch.ps1 stop 26.1 client         # or "all" for both client+server
-.\scripts\dev-launch.ps1 port 1.20.4              # patch that version's server.properties/eula.txt
+.\scripts\dev-launch.ps1 port 1.20.4              # re-apply the dev-server defaults below without launching
 ```
+
+Every `server <version>` launch first (re)applies the same dev-server defaults to that node's `run-server/`:
+`eula=true`, its assigned port, **creative** (forced on join), **peaceful**, and a `world/datapacks/dev-defaults`
+datapack whose `#minecraft:load` function sets **eternal day** (`doDaylightCycle=false` + `time set day`),
+**eternal clear weather** (`doWeatherCycle=false` + `weather clear`) and **ops `LordFinn`** on every world load
+- so a fresh or leftover test world always comes up ready to test in, on every node and both loaders.
 
 Run `Get-Help .\scripts\dev-launch.ps1 -Full` for the complete command reference. Set
 `$env:CRAZYPHONE_JAVA_HOME` if your JDK 21 install isn't at the script's own default path.
