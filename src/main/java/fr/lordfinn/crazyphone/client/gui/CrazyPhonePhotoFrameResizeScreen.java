@@ -938,8 +938,8 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
         updateCursor(mouseX, mouseY);
         updateHotbarTooltips();
         guiGraphics.fill(leftPos, topPos, leftPos + imageWidth, topPos + imageHeight, 0xE0101010);
-        guiGraphics.centeredText(this.font, this.title, leftPos + imageWidth / 2, topPos + 8, 0xA0A0A0);
-        guiGraphics.centeredText(this.font, sizeLabel(), leftPos + imageWidth / 2, topPos + imageHeight - 16, 0xFFFFFF);
+        guiGraphics.centeredText(this.font, this.title, leftPos + imageWidth / 2, topPos + 8, 0xFFA0A0A0);
+        guiGraphics.centeredText(this.font, sizeLabel(), leftPos + imageWidth / 2, topPos + imageHeight - 16, 0xFFFFFFFF);
         drawGrid(guiGraphics);
         for (Button button : ownButtons)
             button.extractRenderState(guiGraphics, mouseX, mouseY, partialTick);
