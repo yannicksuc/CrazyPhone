@@ -180,7 +180,7 @@ public class CrazyPhoneSignInScreenScreen extends CrazyPhoneDefaultScreenScreen<
 	// the SAME technique CrazyPhoneConversationScreen's own header-row icons (call/mute/group settings)
 	// already use - a hand-drawn glyph plus manual hit-test/tooltip/click, not a real Button widget, since
 	// that's the established system for icons living directly on a phone screen's header banner.
-	private static final int AUTO_LOCK_ICON_X = 97;
+	private static final int AUTO_LOCK_ICON_X = 98;
 	private static final int AUTO_LOCK_ICON_Y = 9;
 	private static final int AUTO_LOCK_ICON_SIZE = 16;
 	private static final int AUTO_LOCK_TOGGLE_BUTTON_ID = 4;

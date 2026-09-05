@@ -283,7 +283,7 @@ public class MessageWidget extends AbstractWidget {
 
         int elapsedTicks = playing ? currentOriginalTick() : 0;
         String timeLabel = formatTicks(playing ? elapsedTicks : voiceDurationTicks);
-        int timeX = voicePlayIconX + Math.round(8 * textScale) + 1;
+        int timeX = voicePlayIconX + Math.round(10 * textScale) + 1;
         int timeWidth = Math.round(font.width(timeLabel) * textScale);
 
         String speedLabel = "x" + (VOICE_SPEEDS[voiceSpeedIndex] == (int) VOICE_SPEEDS[voiceSpeedIndex]
