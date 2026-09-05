@@ -333,18 +333,38 @@ public class CrazyPhoneHelper {
         if (player.level().isClientSide())
             return true;
         PhotoItemData photoData = PhotoItemData.fromStack(photoStack);
-        if (photoData == null)
+        if (photoData == null) {
+            playImportResultSound(player, false);
             return true;
+        }
         String owner = GetCrazyPhoneNumberProcedure.execute(phoneStack, player.level());
-        if (owner.isEmpty())
+        if (owner.isEmpty()) {
+            playImportResultSound(player, false);
             return true;
+        }
         fr.lordfinn.crazyphone.data.PhotoSavedData data = fr.lordfinn.crazyphone.data.PhotoSavedData.get(player.level());
-        if (data.getPhoto(photoData.photoId()) == null)
+        if (data.getPhoto(photoData.photoId()) == null) {
+            playImportResultSound(player, false);
             return true;
+        }
         data.linkPhotoToOwner(owner, photoData.photoId());
+        // Only shrinks the ONE unit the click acted on, even when the cursor/slot carries a whole stack of
+        // copies of the same photo (same photoId, so they're allowed to stack) - never the whole stack.
         consumePhoto.run();
-        playNotifySound(player, net.minecraft.sounds.SoundEvents.ITEM_PICKUP, net.minecraft.sounds.SoundSource.PLAYERS, 1f, 1f);
+        playImportResultSound(player, true);
         return true;
+    }
+
+    // player.level().playSound(player, ...) (what playNotifySound above does) broadcasts to every nearby
+    // player EXCEPT the "except" argument, per ServerLevel#playSeededSound's own decompiled source - passing
+    // the acting player there means THEY never hear their own sound, only bystanders. Deliberately not routed
+    // through playNotifySound here for that reason - null-except plays for everyone nearby, acting player
+    // included, which is what a "did my drag-and-drop work" cue actually needs. VILLAGER_NO on failure
+    // matches this codebase's own existing "action refused" convention (see
+    // CrazyPhoneConversationButtonMessage's own use of it).
+    private static void playImportResultSound(Player player, boolean success) {
+        net.minecraft.sounds.SoundEvent sound = success ? net.minecraft.sounds.SoundEvents.ITEM_PICKUP : net.minecraft.sounds.SoundEvents.VILLAGER_NO;
+        player.level().playSound(null, player.getX(), player.getY(), player.getZ(), sound, net.minecraft.sounds.SoundSource.PLAYERS, 1f, 1f);
     }
 
     /** The timecode of the most recent message in a conversation, or 0 if it has none yet - used to sort

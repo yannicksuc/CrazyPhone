@@ -137,11 +137,57 @@ public class PhotoSavedData extends SavedData {
         if (ownerList.size() > Config.maxPhotosStoredPerOwner) {
             String evictedId = NbtCompat.asString(ownerList.get(0));
             ownerList.remove(0);
-            photos.remove(evictedId);
+            photosByOwner.put(owner, ownerList);
+            eraseIfOrphaned(evictedId);
+        } else {
+            photosByOwner.put(owner, ownerList);
         }
-        photosByOwner.put(owner, ownerList);
         setDirty();
         return photoId;
+    }
+
+    /** Marks a photo as having a real, physical Photo item somewhere in the world - see this class's own
+     * doc comment on why that then blocks {@link #eraseIfOrphaned} forever, not just for the owner who took
+     * it out. Called once, the moment a physical copy is actually created (see
+     * {@link fr.lordfinn.crazyphone.network.CrazyPhoneGivePhotoItemPacket}'s own "Save to Inventory"/TAKE
+     * handling) - never unset, since a printed copy can outlive every phone/message that ever pointed at it
+     * and this class has no way to track where it ends up (dropped, traded, shulker-boxed, item-framed...). */
+    public void markPhysical(UUID photoId) {
+        if (photos.get(photoId.toString()) instanceof CompoundTag entry && !NbtCompat.getBoolean(entry, "physical")) {
+            entry.putBoolean("physical", true);
+            setDirty();
+        }
+    }
+
+    /** Whether any owner's gallery list still references this id - checked before actually erasing a shared
+     * entry's bytes, since {@link #linkPhotoToOwner} lets several owners' lists point at the same one (a
+     * photo you deleted from your own gallery may still be sitting in a group chat partner's). */
+    private boolean isReferencedByAnyOwner(String idString) {
+        for (String owner : NbtCompat.keySet(photosByOwner)) {
+            if (photosByOwner.get(owner) instanceof ListTag ownerList) {
+                for (Tag t : ownerList)
+                    if (idString.equals(NbtCompat.asString(t)))
+                        return true;
+            }
+        }
+        return false;
+    }
+
+    /** Erases a photo's actual bytes only if nothing still needs them: no owner's gallery list references
+     * it anymore (see {@link #isReferencedByAnyOwner}) AND no physical Photo item was ever taken out for it
+     * (see {@link #markPhysical}) - a real item already out in the world would otherwise silently turn into
+     * an unimportable, unviewable ghost the moment the last gallery reference to it disappeared (a photo
+     * printed once, then deleted from every phone that ever listed it, is still a real physical object
+     * sitting in someone's inventory or nailed to a wall as a frame). Safe to call on an id that's already
+     * gone, or still referenced/physical - just does nothing in that case. Callers are still responsible for
+     * removing the id from whichever owner list(s) they're actually acting on - this only ever touches the
+     * shared {@link #photos} entry. */
+    private void eraseIfOrphaned(String idString) {
+        if (isReferencedByAnyOwner(idString))
+            return;
+        if (photos.get(idString) instanceof CompoundTag entry && NbtCompat.getBoolean(entry, "physical"))
+            return;
+        photos.remove(idString);
     }
 
     private @Nullable UUID findDuplicate(String owner, String conversationId, String hash) {
@@ -198,9 +244,15 @@ public class PhotoSavedData extends SavedData {
         return result;
     }
 
-    /** Permanently removes the given photos from this owner's list (and their bytes). Ids not owned by
-     * {@code owner} (or already gone) are silently skipped - never trust a client-supplied id set as
-     * authoritative without this owner check. */
+    /** Removes the given photos from this owner's own gallery list - "delete" only ever means "make this
+     * phone forget it ever had this photo", never "erase it everywhere" (live request: "supprimer une photo
+     * d'un tel supprime son existence du tel c'est tout"). The underlying bytes only actually go away once
+     * {@link #eraseIfOrphaned} confirms nothing else still needs them - no other owner's list references the
+     * id, and no physical Photo item was ever taken out for it (see {@link #markPhysical}) - otherwise a
+     * photo someone else still has in their gallery, or that exists as a real item/photo frame somewhere in
+     * the world, would turn into an unviewable, unimportable ghost the moment this one owner deleted their
+     * own copy. Ids not owned by {@code owner} (or already gone) are silently skipped - never trust a
+     * client-supplied id set as authoritative without this owner check. */
     public void deletePhotos(String owner, Set<UUID> photoIds) {
         if (!(photosByOwner.get(owner) instanceof ListTag ownerList))
             return;
@@ -209,7 +261,6 @@ public class PhotoSavedData extends SavedData {
         for (Tag t : ownerList) {
             String idString = NbtCompat.asString(t);
             if (photoIds.contains(UUID.fromString(idString))) {
-                photos.remove(idString);
                 changed = true;
             } else {
                 updated.add(t);
@@ -217,6 +268,8 @@ public class PhotoSavedData extends SavedData {
         }
         if (changed) {
             photosByOwner.put(owner, updated);
+            for (UUID photoId : photoIds)
+                eraseIfOrphaned(photoId.toString());
             setDirty();
         }
     }
