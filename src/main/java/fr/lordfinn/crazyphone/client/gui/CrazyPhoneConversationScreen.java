@@ -513,7 +513,7 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
             guiGraphics.fill(iconX, iconY, iconX + 16, iconY + 16, 0x80FFFFFF);
         }
         String glyph = isConversationMuted() ? "🔕" : "🔔";
-        guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(this.font, glyph, iconX + 4, iconY + 4, 0xFFFFFFFF, true);
+        guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(this.font, glyph, iconX + 3, iconY + 4, 0xFFFFFFFF, true);
     }
 
     private boolean isHoveringMuteIcon(double mouseX, double mouseY) {
