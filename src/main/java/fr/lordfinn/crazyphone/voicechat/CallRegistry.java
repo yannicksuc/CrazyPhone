@@ -93,7 +93,11 @@ public final class CallRegistry {
     /**
      * Starts a call for {@code conversationId}: the initiator joins immediately, every callee starts
      * ringing. Callees who aren't reachable (SVC not installed/connected) are silently skipped - they just
-     * never ring, exactly like calling a phone number that's turned off.
+     * never ring, exactly like calling a phone number that's turned off. A callee already tied to a
+     * DIFFERENT active call (as participant or still ringing there) is skipped the same way - exactly like
+     * a busy signal - rather than being torn out of that other call and silently re-pointed at this one via
+     * an overwritten {@link #PLAYER_TO_CALL} entry, which used to leave them registered in two sessions at
+     * once (see {@link #getSessionFor}).
      */
     public static CallSession startCall(String conversationId, ServerPlayer initiator, List<ServerPlayer> callees) {
         // Loading SvcCallBridge's class at all - triggered by calling ANY of its static methods, even ones
@@ -137,7 +141,13 @@ public final class CallRegistry {
         CrazyPhoneHelper.broadcastConversationCallActivity(initiator.level(), conversationId, true);
 
         for (ServerPlayer callee : callees) {
-            if (callee.getUUID().equals(initiator.getUUID()) || !SvcCallBridge.isCallable(callee))
+            // Busy (already on another active call) is treated exactly like unreachable: skipped, never
+            // rung, no entry overwritten in PLAYER_TO_CALL. Without this check a callee already in another
+            // session would simply have their PLAYER_TO_CALL mapping clobbered here and end up attached to
+            // both calls at once - answering/leaving one would then act on whichever session PLAYER_TO_CALL
+            // happened to point at, silently corrupting the other.
+            if (callee.getUUID().equals(initiator.getUUID()) || !SvcCallBridge.isCallable(callee)
+                    || getSessionFor(callee.getUUID()).isPresent())
                 continue;
             session.ringing.add(callee.getUUID());
             PLAYER_TO_CALL.put(callee.getUUID(), callId);
