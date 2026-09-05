@@ -21,6 +21,13 @@ public final class ClientCallState {
     private static volatile State state = State.ENDED;
     private static volatile String conversationId = null;
     private static volatile UUID callId = null;
+    /** Wall-clock millis ({@link System#currentTimeMillis()}) at which {@link #activeSinceCallId} first
+     * reached ACTIVE on this client - backs {@link #getActiveSinceMillis()}, see that method's javadoc. */
+    private static volatile long activeSinceMillis = -1;
+    /** The call id {@link #activeSinceMillis} was recorded for, so a resync that re-sends ACTIVE for the
+     * SAME already-active call (e.g. a participant-list refresh - see CrazyPhoneInCallScreenScreen's own
+     * onCallStateChanged) doesn't reset the timestamp back to "now". */
+    private static volatile UUID activeSinceCallId = null;
     /** Phone numbers belonging to the active call's conversation - not every phone the player happens to be
      * holding is necessarily on the call, since a player can carry several registered phones at once (see
      * CrazyPhoneItemProperties's "in_call" texture predicate, the reason this is tracked at all). */
@@ -68,6 +75,17 @@ public final class ClientCallState {
         conversationId = packet.state() == State.ENDED ? null : packet.conversationId();
         callId = packet.state() == State.ENDED ? null : packet.callId();
         callNumbers = packet.callNumbers();
+        if (packet.state() == State.ACTIVE) {
+            // First ACTIVE sync for THIS call id starts the clock; a later resync of the same still-active
+            // call (participant list refresh etc.) must not push the timestamp forward again.
+            if (!packet.callId().equals(activeSinceCallId)) {
+                activeSinceCallId = packet.callId();
+                activeSinceMillis = System.currentTimeMillis();
+            }
+        } else if (packet.state() == State.ENDED) {
+            activeSinceCallId = null;
+            activeSinceMillis = -1;
+        }
         Consumer<CrazyPhoneCallStateSyncPacket> currentListener = listener;
         if (currentListener != null)
             currentListener.accept(packet);
@@ -130,5 +148,15 @@ public final class ClientCallState {
      * whether it's tracking THIS player's own currently-active call, to know when to freeze its live timer. */
     public static UUID getCallId() {
         return callId;
+    }
+
+    /** Wall-clock millis ({@link System#currentTimeMillis()}) at which the current call first reached ACTIVE
+     * on this client, or -1 while there's no active call. Recorded once per call id (see {@link #onPacket})
+     * rather than per screen instance, so a live mm:ss chronometer built from this (see
+     * CrazyPhoneInCallScreenScreen) keeps counting correctly even across the InCall screen being closed and
+     * reopened mid-call - it only ever reflects when the call itself actually connected, never how long
+     * it merely rang for beforehand. */
+    public static long getActiveSinceMillis() {
+        return isActiveCall() ? activeSinceMillis : -1;
     }
 }

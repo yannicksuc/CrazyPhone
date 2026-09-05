@@ -57,6 +57,21 @@ public class CrazyPhoneInCallScreenScreen extends CrazyPhoneDefaultScreenScreen<
     private static final int CELL_GAP = 3;
     private static final int MAX_CELL_SIZE = 48;
     private static final int MIN_CELL_SIZE = 16;
+    /** The empty strip between the header banner (ends at topPos+27, see CrazyPhoneDefaultScreenScreen's
+     * HEADER_HEIGHT) and the participant grid (GRID_TOP=44) - free real estate for the live call timer and
+     * mute warning below, neither of which overlaps the bust grid or the hangup button. */
+    private static final int STATUS_ROW_Y = 34;
+    private static final int TIMER_CENTER_X = 50;
+    private static final int MUTE_ICON_CENTER_X = 105;
+
+    // A "muted speaker" emoji (U+1F507, ":mute:") from the bundled Pixel Twemoji font (assets/minecraft/
+    // font/default.json) - same technique as CrazyPhonePhotoFrameResizeScreen.ROTATE_ICON. Simple Voice
+    // Chat's own mod ships a real mute HUD icon, but its texture lives in the full SVC client mod jar, not
+    // in the voicechat-api dependency this project actually compiles against (a compile-only API jar with
+    // no bundled assets - confirmed empty of any assets/ entries) - and the real SVC mod isn't present in
+    // this project to pull the genuine texture from. This emoji is a stand-in until a real SVC asset can be
+    // located and swapped in.
+    private static final Component MUTE_ICON = Component.literal("🔇");
 
     private final Consumer<CrazyPhoneCallStateSyncPacket> callStateListener = this::onCallStateChanged;
     private final CallBustPreview bustPreview = new CallBustPreview();
@@ -139,6 +154,8 @@ public class CrazyPhoneInCallScreenScreen extends CrazyPhoneDefaultScreenScreen<
         super.extractRenderState(guiGraphics, mouseX, mouseY, partialTicks);
         renderHeader(guiGraphics, new ItemStack(ModItems.CRAZY_PHONE.get()),
                 Component.translatable("gui.crazyphone.crazy_phone_in_call_screen.title"));
+        renderElapsedTimer(guiGraphics);
+        renderMuteWarning(guiGraphics);
         renderParticipantGrid(guiGraphics);
         this.extractTooltip(guiGraphics, mouseX, mouseY);
     }
@@ -148,6 +165,8 @@ public class CrazyPhoneInCallScreenScreen extends CrazyPhoneDefaultScreenScreen<
         super.render(guiGraphics, mouseX, mouseY, partialTicks);
         renderHeader(guiGraphics, new ItemStack(ModItems.CRAZY_PHONE.get()),
                 Component.translatable("gui.crazyphone.crazy_phone_in_call_screen.title"));
+        renderElapsedTimer(guiGraphics);
+        renderMuteWarning(guiGraphics);
         renderParticipantGrid(guiGraphics);
         this.renderTooltip(guiGraphics, mouseX, mouseY);
     }
@@ -196,5 +215,33 @@ public class CrazyPhoneInCallScreenScreen extends CrazyPhoneDefaultScreenScreen<
             bustPreview.render(guiGraphics, participant.id(), cellX + inset, cellY + inset, cellSize - inset * 2,
                     CallBustPreview.CropMode.FULL_BODY, true);
         }
+    }
+
+    /** Live mm:ss chronometer for how long the call has actually been connected - ticks from
+     * {@link ClientCallState#getActiveSinceMillis()}, which starts counting the moment THIS client first saw
+     * the call reach ACTIVE, never from when it started ringing. Recomputed fresh every frame straight from
+     * wall-clock time (no local tick/animation state to maintain), same technique as MessageWidget's own
+     * live call-duration text in the chat feed. Renders nothing before the call is actually answered, or if
+     * this screen is somehow open for a call that isn't this client's own current one. */
+    private void renderElapsedTimer(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics) {
+        if (!menu.getConversationId().equals(ClientCallState.getConversationId()))
+            return;
+        long activeSinceMillis = ClientCallState.getActiveSinceMillis();
+        if (activeSinceMillis < 0)
+            return;
+        long elapsedSeconds = Math.max(0, (System.currentTimeMillis() - activeSinceMillis) / 1000);
+        String text = String.format("%02d:%02d", elapsedSeconds / 60, elapsedSeconds % 60);
+        guiGraphics./*$ gui_draw_centered_string {*/drawCenteredString/*$}*/(this.font, Component.literal(text),
+                this.leftPos + TIMER_CENTER_X, this.topPos + STATUS_ROW_Y, 0xFFFFFFFF);
+    }
+
+    /** Small warning icon shown while the LOCAL player has muted their own microphone in Simple Voice Chat
+     * (see {@link SvcCallBridge#isMicMuted()} and {@link #MUTE_ICON}'s own javadoc for why this is a plain
+     * emoji glyph rather than a real SVC texture) - purely informational, nothing to click here. */
+    private void renderMuteWarning(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics) {
+        if (!SvcCallBridge.isMicMuted())
+            return;
+        guiGraphics./*$ gui_draw_centered_string {*/drawCenteredString/*$}*/(this.font, MUTE_ICON,
+                this.leftPos + MUTE_ICON_CENTER_X, this.topPos + STATUS_ROW_Y, 0xFFFFFFFF);
     }
 }

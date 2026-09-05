@@ -56,6 +56,15 @@ public final class SvcCallBridge {
         return clientApi != null && clientApi.isTalking(playerId);
     }
 
+    /** Whether the LOCAL player has muted their own microphone in Simple Voice Chat's own settings -
+     * {@code VoicechatClientApi#isMuted()} ("if the local voice chat is muted", no player-id parameter since
+     * it can only ever mean the local client), not to be confused with {@code isDisabled()} which reflects
+     * voice chat being turned off entirely rather than just muted. Null-safe like {@link #isTalking(UUID)},
+     * for the InCall screen's own "you're muted" warning icon. */
+    public static boolean isMicMuted() {
+        return clientApi != null && clientApi.isMuted();
+    }
+
     /** Creates a fresh, transient, hidden, isolated (no proximity leak either way) group for one call. */
     public static UUID createCallGroup(String name) {
         if (serverApi == null)
