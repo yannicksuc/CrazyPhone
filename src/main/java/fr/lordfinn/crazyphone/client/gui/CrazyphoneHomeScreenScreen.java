@@ -54,10 +54,14 @@ public class CrazyphoneHomeScreenScreen extends CrazyPhoneDefaultScreenScreen<Cr
     // already translates by (leftPos, topPos) before invoking - coordinates here are local to the panel, not
     // absolute screen coordinates (unlike renderHeader, which this screen never calls, since the home screen
     // has no title banner and this text lives in that same otherwise-empty top strip instead).
+    // Same blue as CrazyPhoneContactsScreenScreen's own section titles (SECTION_TITLE_COLOR), no drop
+    // shadow, matching that screen's exact rendering convention for this hue.
+    private static final int PHONE_NUMBER_COLOR = 0xFF6C8EBF;
+
     private void drawPhoneNumber(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics) {
         String number = GetCrazyPhoneNumberFromMainHandProcedure.execute(entity, guistate);
         int x = this.imageWidth / 2 - this.font.width(number) / 2;
-        guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(this.font, number, x, 12, 0xFFFFFFFF, false);
+        guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(this.font, number, x, 14, PHONE_NUMBER_COLOR, false);
     }
 
     @Override
