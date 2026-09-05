@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import fr.lordfinn.crazyphone.Crazyphone;
+import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
 import fr.lordfinn.crazyphone.utils.ScreenMenuUtils;
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneMayorsCandidatesListMenu;
 import fr.lordfinn.crazyphone.world.inventory.CrazyphoneHomeScreenMenu;
@@ -18,8 +19,10 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.PacketFlow;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 //? if neoforge {
 import net.neoforged.bus.api.SubscribeEvent;
@@ -144,6 +147,19 @@ public record CrazyphoneHomeScreenButtonMessage(int buttonID, int x, int y, int 
 		}
 		if (buttonID == 3) {
 			ScreenMenuUtils.openPhoneCustomMenu(entity, InteractionHand.MAIN_HAND, CrazyPhoneMayorsCandidatesListMenu.class);
+		}
+		// buttonID 4 (auto-lock toggle, CrazyphoneHomeScreenScreen's own top-right icon button): flips the
+		// PER-PHONE "autoLock" NBT preference on whichever CrazyPhone is currently in the player's main
+		// hand - strictly opt-in (default off), independent of every other phone the player might own. See
+		// CrazyPhoneHelper#applyAutoLockOnDisconnect for what actually happens once it's enabled.
+		if (buttonID == 4) {
+			ItemStack phone = CrazyPhoneHelper.getMainHandItemOrEmpty(entity);
+			CrazyPhoneHelper.setPhoneAutoLockEnabled(phone, !CrazyPhoneHelper.isPhoneAutoLockEnabled(phone));
+			// While this custom no-slots menu is open, vanilla's per-tick hotbar sync never looks at the
+			// mainhand slot (see CrazyPhoneInitialFormValidationButtonClickProcedure's own matching comment)
+			// - force it here too, or the icon this toggle just flipped never actually updates on screen.
+			if (entity instanceof ServerPlayer serverPlayer)
+				serverPlayer.inventoryMenu.broadcastChanges();
 		}
 	}
 

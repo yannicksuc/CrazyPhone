@@ -36,6 +36,8 @@ import fr.lordfinn.crazyphone.procedures.CrazyPhoneAddContactToPhoneProcedure;
 import fr.lordfinn.crazyphone.procedures.CrazyPhoneGetContactsProcedure;
 import fr.lordfinn.crazyphone.procedures.GetCrazyPhoneNumberFromMainHandProcedure;
 import fr.lordfinn.crazyphone.procedures.GetCrazyPhoneNumberProcedure;
+import fr.lordfinn.crazyphone.procedures.IsPhoneOpenProcedure;
+import fr.lordfinn.crazyphone.procedures.IsPhonePasswordSetProcedure;
 import net.minecraft.ChatFormatting;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -740,6 +742,48 @@ public class CrazyPhoneHelper {
 
     public static String getPhoneCallState(ItemStack phone) {
         return NbtCompat.getString(PhoneTagAccess.getTag(phone), TAG_CALL_STATE);
+    }
+
+    /** PER-PHONE (not per-player - a player can own several numbers), opt-in, default-off preference: see
+     * CrazyphoneHomeScreenScreen's own top-right toggle button and {@link #applyAutoLockOnDisconnect}, which
+     * is the only thing that actually reads this. */
+    private static final String TAG_AUTO_LOCK = "autoLock";
+
+    public static boolean isPhoneAutoLockEnabled(ItemStack phone) {
+        return NbtCompat.getBoolean(PhoneTagAccess.getTag(phone), TAG_AUTO_LOCK);
+    }
+
+    public static void setPhoneAutoLockEnabled(ItemStack phone, boolean enabled) {
+        PhoneTagAccess.updateTag(phone, tag -> {
+            if (enabled)
+                tag.putBoolean(TAG_AUTO_LOCK, true);
+            else
+                tag.remove(TAG_AUTO_LOCK);
+        });
+    }
+
+    /** Auto-locks every CrazyPhone in {@code player}'s inventory that opted into auto-lock AND is currently
+     * unlocked - called on disconnect (see AutoLockOnDisconnect, registered the same way on both loaders as
+     * OrphanedCallCleanup/CrazyPhonePictureCacheReset) so a player who turned the preference on for a given
+     * phone doesn't have to remember to lock it by hand before logging off. A phone that never opted in
+     * (every phone before this feature, and every phone since unless its own owner turns this on) is
+     * untouched - manual-only locking stays the unchanged default. Also skips a phone that has no password
+     * on file at all (Config#requirePhonePassword off at registration time) - such a phone can never
+     * actually be locked (see CrazyPhoneLockProcedure/IsPhonePasswordSetProcedure's own matching guard), so
+     * silently leaving it alone here is simpler than locking it and immediately needing
+     * CrazyPhoneSignInScreenScreen's own bounce-back-to-home edge-case handling the next time it's opened. */
+    public static void applyAutoLockOnDisconnect(ServerPlayer player) {
+        Inventory inventory = player.getInventory();
+        for (int i = 0; i < inventory.getContainerSize(); i++) {
+            ItemStack stack = inventory.getItem(i);
+            if (stack.getItem() != ModItems.CRAZY_PHONE.get())
+                continue;
+            if (!isPhoneAutoLockEnabled(stack) || !IsPhoneOpenProcedure.execute(stack))
+                continue;
+            if (!IsPhonePasswordSetProcedure.execute(player.level(), stack))
+                continue;
+            PhoneTagAccess.updateTag(stack, tag -> tag.putBoolean("isOpen", false));
+        }
     }
 
     /** Same "state lives on the stack, vanilla's own equipment sync does the rest" pattern as

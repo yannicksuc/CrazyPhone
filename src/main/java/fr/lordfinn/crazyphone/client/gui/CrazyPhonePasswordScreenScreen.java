@@ -22,6 +22,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 //?}
 import fr.lordfinn.crazyphone.utils.NetworkAccess;
 
+import fr.lordfinn.crazyphone.Config;
 import fr.lordfinn.crazyphone.client.gui.components.PasswordEditBox;
 import fr.lordfinn.crazyphone.network.CrazyPhonePasswordScreenButtonMessage;
 import fr.lordfinn.crazyphone.procedures.CrazyPhoneGetInitialFormValidationMessageProcedure;
@@ -177,7 +178,10 @@ public class CrazyPhonePasswordScreenScreen extends CrazyPhoneDefaultScreenScree
             Component warning = Component.translatable("gui.crazyphone.crazy_phone_password_screen.warning_admin_visible")
                     .copy().withStyle(ChatFormatting.BOLD, ChatFormatting.RED);
             guiGraphics./*$ gui_draw_word_wrap {*/drawWordWrap/*$}*/(font, warning, 8, 32, 106, 0xFFFF5555);
-            guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(font, Component.translatable("gui.crazyphone.crazy_phone_password_screen.label_mot_de_passe"), 8, 96, -12829636, false);
+            String passwordLabelKey = Config.requirePhonePassword
+                    ? "gui.crazyphone.crazy_phone_password_screen.label_mot_de_passe"
+                    : "gui.crazyphone.crazy_phone_password_screen.label_mot_de_passe_optionnel";
+            guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(font, Component.translatable(passwordLabelKey), 8, 96, -12829636, false);
             // guistate (CrazyPhonePasswordScreenMenu's static field) only gets "textin:*" entries written by
             // an actual button click - reusing it here would validate against whatever number/name/password
             // were submitted by the LAST click (possibly from an earlier, already-successful registration
@@ -262,6 +266,20 @@ public class CrazyPhonePasswordScreenScreen extends CrazyPhoneDefaultScreenScree
         addWidget(name);
     }
 
+    // "(optionnel)" ghosted placeholder when Config#requirePhonePassword is off, so a player isn't left
+    // guessing whether leaving this field blank is actually allowed - the field's own validation (see
+    // CrazyPhoneGetInitialFormValidationMessageProcedure) already accepts empty in that case, this is purely
+    // a UI hint on top of that. Reads Config directly the same way other client-side screens in this mod
+    // already do (e.g. CrazyPhoneConversationScreen/FabricPictureCapture) - on an integrated/singleplayer
+    // server this is always the real value; on a dedicated server a remote client's own local copy could be
+    // briefly stale if only Config's default was ever read, but this only affects the ghosted hint text
+    // itself, never the actual (server-authoritative) validation outcome.
+    private String passwordSuggestion() {
+        return Component.translatable(Config.requirePhonePassword
+                ? "gui.crazyphone.crazy_phone_password_screen.password"
+                : "gui.crazyphone.crazy_phone_password_screen.password_optional").getString();
+    }
+
     private void initPasswordField() {
         password = new PasswordEditBox(font, leftPos + 8, topPos + 107, 106, 18, Component.translatable("gui.crazyphone.crazy_phone_password_screen.password")) {
             @Override
@@ -277,11 +295,11 @@ public class CrazyPhonePasswordScreenScreen extends CrazyPhoneDefaultScreenScree
             }
 
             private void updateSuggestion() {
-                setSuggestion(getValue().isEmpty() ? Component.translatable("gui.crazyphone.crazy_phone_password_screen.password").getString() : null);
+                setSuggestion(getValue().isEmpty() ? passwordSuggestion() : null);
             }
         };
         password.setMaxLength(32767);
-        password.setSuggestion(Component.translatable("gui.crazyphone.crazy_phone_password_screen.password").getString());
+        password.setSuggestion(passwordSuggestion());
         guistate.put("text:password", password);
         addWidget(password);
     }

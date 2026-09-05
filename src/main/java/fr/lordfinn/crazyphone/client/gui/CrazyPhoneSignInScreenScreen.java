@@ -16,6 +16,8 @@ import net.minecraft.client.gui./*$ gui_graphics_type {*/GuiGraphics/*$}*/;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.item.ItemStack;
 
+import fr.lordfinn.crazyphone.procedures.IsPhonePasswordSetProcedure;
+import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneSignInScreenMenu;
 import fr.lordfinn.crazyphone.client.gui.components.PasswordEditBox;
 import fr.lordfinn.crazyphone.network.CrazyPhoneSignInScreenButtonMessage;
@@ -98,6 +100,27 @@ public class CrazyPhoneSignInScreenScreen extends CrazyPhoneDefaultScreenScreen<
 	@Override
 	public void init() {
 		super.init();
+		// Defensive backstop for a phone with no password on file (Config#requirePhonePassword was off at
+		// registration time) - such a phone can never actually be locked (see CrazyPhoneLockProcedure/
+		// CrazyPhoneOnUseProcedure's own matching guards, which normally keep this screen from ever opening
+		// for one in the first place), but a pre-existing isOpen=false state - or any other path that
+		// reopens this exact screen without going back through that dispatch, e.g. ScreenMenuUtils
+		// restoring the player's last-open screen on rejoin - could still land here. Rather than show a
+		// password prompt that could never be satisfied usefully, immediately replay the same successful
+		// empty-password login the "Se connecter" button itself performs (CrazyPhoneTrySignInProcedure
+		// accepts a submitted "" against a stored "" password) - it redirects to whatever a normal
+		// successful login opens (the home screen) via the exact same, already-tested code path.
+		if (!IsPhonePasswordSetProcedure.execute(world, CrazyPhoneHelper.getMainHandItemOrEmpty(entity))) {
+			HashMap<String, String> emptyPassword = new HashMap<>();
+			emptyPassword.put("textin:password", "");
+			//? if >=1.20.5 {
+			/*NetworkAccess.sendToServer(new CrazyPhoneSignInScreenButtonMessage(0, x, y, z, emptyPassword));
+			*///? } else {
+			PacketDistributor.SERVER.noArg().send(new CrazyPhoneSignInScreenButtonMessage(0, x, y, z, emptyPassword));
+			//?}
+			CrazyPhoneSignInScreenButtonMessage.handleButtonAction(entity, 0, x, y, z, emptyPassword);
+			return;
+		}
 		setBackButtonActive(false);
 		setHomeButtonActive(false);
 		setLockButtonActive(false);

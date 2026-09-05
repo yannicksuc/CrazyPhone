@@ -53,7 +53,14 @@ public class CrazyPhoneOnUseProcedure {
 		}
 		if (!IsPhoneSetupProcedure.execute(CrazyPhoneHelper.getMainHandItemOrEmpty(entity))) {
 			CrazyPhoneOpenPasswordScreenProcedure.execute(world, x, y, z, entity);
-		} else if (IsPhoneOpenProcedure.execute(CrazyPhoneHelper.getMainHandItemOrEmpty(entity))) {
+		// A phone with no password on file (Config#requirePhonePassword was off at registration time) can
+		// never actually be locked (see CrazyPhoneLockProcedure's own matching guard) - route straight past
+		// the sign-in screen the same way an already-unlocked phone would, regardless of its own isOpen
+		// tag. Covers both the normal case (such a phone's isOpen never actually goes false) and a
+		// pre-existing/edge-case isOpen=false on one (see CrazyPhoneSignInScreenScreen's own defensive
+		// redirect for the same edge case via any OTHER path that might reopen that screen directly).
+		} else if (IsPhoneOpenProcedure.execute(CrazyPhoneHelper.getMainHandItemOrEmpty(entity))
+				|| !IsPhonePasswordSetProcedure.execute(world, CrazyPhoneHelper.getMainHandItemOrEmpty(entity))) {
 			CrazyPhoneRightclickedProcedure.execute(world, x, y, z, entity);
 		} else {
 			CrazyPhoneOpenSignInScreenProcedure.execute(world, x, y, z, entity);

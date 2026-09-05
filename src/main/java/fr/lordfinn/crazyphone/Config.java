@@ -124,6 +124,15 @@ public class Config {
             .comment("Maximum size, in blocks on a side, a placed photo frame can be resized up to via its own right-click resize dialog.")
             .defineInRange("maxPhotoFrameSizeBlocks", 32, 1, 32);
 
+    // Whether registering a new phone requires a password at all. Default true keeps today's behavior
+    // unchanged (password mandatory). When an operator sets this false, CrazyPhoneGetInitialFormValidationMessageProcedure
+    // stops rejecting an empty password field, and a phone registered with one left empty can then never be
+    // locked at all (see IsPhonePasswordSetProcedure - the lock button is disabled and CrazyPhoneLockProcedure
+    // itself refuses to lock such a phone, since there would be no password left to unlock it with again).
+    private static final ModConfigSpec.BooleanValue REQUIRE_PHONE_PASSWORD = BUILDER
+            .comment("Whether registering a new phone requires setting a password. When false, the password step can be left empty - a phone registered without one can never be locked.")
+            .define("requirePhonePassword", true);
+
     static final ModConfigSpec SPEC = BUILDER.build();
 
     public static int maxStoredMessagesPerConversation;
@@ -147,6 +156,7 @@ public class Config {
     public static boolean phoneSoulboundByDefault;
     public static boolean crazyPhoneCraftingEnabled;
     public static int maxPhotoFrameSizeBlocks;
+    public static boolean requirePhonePassword;
 
     @SubscribeEvent
     static void onLoad(final ModConfigEvent event) {
@@ -171,6 +181,7 @@ public class Config {
         phoneSoulboundByDefault = PHONE_SOULBOUND_BY_DEFAULT.get();
         crazyPhoneCraftingEnabled = CRAZY_PHONE_CRAFTING_ENABLED.get();
         maxPhotoFrameSizeBlocks = MAX_PHOTO_FRAME_SIZE_BLOCKS.get();
+        requirePhonePassword = REQUIRE_PHONE_PASSWORD.get();
     }
 
     /** Setters for the toggleable features below, used by /crazyphone feature to change them at runtime
@@ -230,6 +241,7 @@ public class Config {
     public static boolean phoneSoulboundByDefault = false;
     public static boolean crazyPhoneCraftingEnabled = true;
     public static int maxPhotoFrameSizeBlocks = 32;
+    public static boolean requirePhonePassword = true;
 
     public static void setMayorElectionFeatureEnabled(boolean enabled) {
         mayorElectionFeatureEnabled = enabled;

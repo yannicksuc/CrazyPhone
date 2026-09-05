@@ -2,6 +2,7 @@ package fr.lordfinn.crazyphone.procedures;
 
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.network.chat.Component;
+import fr.lordfinn.crazyphone.Config;
 import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
 import net.minecraft.world.entity.Entity;
 
@@ -30,7 +31,11 @@ public class CrazyPhoneGetInitialFormValidationMessageProcedure {
 		// player's own Minecraft username (already shown as the field's ghosted placeholder).
 		} else if ((guistate.containsKey("textin:name") ? (String) guistate.get("textin:name") : "").length() > 25) {
 			return Component.translatable("message.crazyphone.form_name_too_long").getString();
-		} else if (!skipPasswordCheck && (guistate.containsKey("textin:password") ? (String) guistate.get("textin:password") : "").isEmpty()) {
+		// Config#requirePhonePassword (default true, unchanged behavior) makes this check optional - an
+		// operator who turns it off lets the password step be submitted empty (see
+		// CrazyPhonePasswordScreenScreen); RegisterNewPhoneFromFormProcedure already stores whatever was
+		// typed as-is, including empty, so no further change is needed there.
+		} else if (Config.requirePhonePassword && !skipPasswordCheck && (guistate.containsKey("textin:password") ? (String) guistate.get("textin:password") : "").isEmpty()) {
 			return Component.translatable("message.crazyphone.form_password_required").getString();
 		} else if (IsPhoneInUseProcedure.execute(world, guistate.containsKey("textin:number") ? (String) guistate.get("textin:number") : "")) {
 			// The item's OWN number tag is still empty at this point (checked above), so this is a
