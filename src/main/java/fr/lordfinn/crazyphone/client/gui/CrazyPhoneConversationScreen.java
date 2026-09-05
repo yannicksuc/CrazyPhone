@@ -1087,6 +1087,25 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
         message.setValue("");
     }
 
+    /** Optimistically appends a just-taken photo to THIS conversation's own feed the instant it's captured,
+     * same "don't wait for any response" reasoning as {@link #sendCurrentMessage()}/{@link #onPauseSendClicked()}
+     * - called by CrazyPhoneCaptureMode#triggerCapture, which already seeded FabricPictureCache with this
+     * exact photoId's bytes right before calling this, so the bubble renders immediately with no loading
+     * placeholder needed. A no-op if this screen isn't currently open for the exact conversation the photo
+     * was sent to (player navigated away mid-capture, or this was a standalone/gallery-bound shot with no
+     * conversation at all). Not addRenderableWidget'd, same reason as sendCurrentMessage's own optimistic
+     * entry - see onConversationPageReceived's own comment on why that overflows the crop area. */
+    public static void onLocalPhotoSent(String conversationId, UUID photoId) {
+        if (!(Minecraft.getInstance()./*$ mc_get_screen {*/screen/*$}*/ instanceof CrazyPhoneConversationScreen sc)
+                || !sc.menu.getConversationId().equals(conversationId))
+            return;
+        String ownerNumber = GetCrazyPhoneNumberFromMainHandProcedure.execute(sc.menu.entity, null);
+        int timestampInMinutes = (int) (Instant.now().getEpochSecond() / 60);
+        MessageData optimistic = MessageData.image(timestampInMinutes, ownerNumber, photoId);
+        sc.receivedMessages.add(optimistic);
+        sc.messageManager.addMessage(optimistic);
+    }
+
     private ImageButton createImageButton() {
         ImageButton button = new ImageButton(this.leftPos + 100, this.topPos + TAKE_AND_SEND_IMAGE_ICON_Y, 14, 15,
                 new WidgetSprites(Crazyphone.parseId("crazyphone:textures/screens/crazyphone-send-gallery.png"),

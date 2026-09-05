@@ -217,6 +217,18 @@ public final class FabricPictureCache {
             onBytesReceived(entry.photoId(), entry.resolution(), entry.pngBytes());
     }
 
+    /** Seeds this client's own cache directly from PNG bytes it already produced locally - the moment a
+     * screenshot is taken, the capturing client already holds both resolutions' exact final bytes, so there's
+     * no reason for it to wait on CrazyPhoneUploadPicturePacket's own round trip and then a normal
+     * CrazyPhonePictureRequestPacket fetch just to see its own just-taken photo render (see
+     * CrazyPhoneCaptureMode#triggerCapture, which calls this right before sending that upload packet). Must
+     * be called from the render thread, same as {@link #onBytesReceived} - texture registration touches the
+     * GL context. */
+    public static void seedFromLocalCapture(UUID photoId, byte[] thumbnailPng, byte[] fullPng) {
+        onBytesReceived(photoId, PhotoResolution.THUMBNAIL, thumbnailPng);
+        onBytesReceived(photoId, PhotoResolution.FULL, fullPng);
+    }
+
     private static void onBytesReceived(UUID photoId, PhotoResolution resolution, byte[] pngBytes) {
         Key key = new Key(photoId, resolution);
         IN_FLIGHT.remove(key);

@@ -44,8 +44,16 @@ import java.util.UUID;
  * message in the given conversation. Mirrors VoiceMessageUploadPacket's shape closely - same "receive
  * bytes, validate live membership, store, append a message" flow, just for PNG bytes ending up directly as
  * an image message instead of PCM ending up as a voice message.
+ *
+ * {@code photoId} is client-generated (see CrazyPhoneCaptureMode#triggerCapture), same reasoning as
+ * VoiceMessageUploadPacket's own voiceId: the sender optimistically seeds its own FabricPictureCache and
+ * appends the message locally the instant the shot is taken, without waiting on this packet's own round
+ * trip - a server-assigned id would mean briefly showing a message with nothing to actually display.
+ * PhotoSavedData#storePhoto still owns the FINAL id: this one is only used when no content-hash duplicate
+ * is found (see that method's own doc comment) - re-sending a byte-identical photo still correctly reuses
+ * whatever id it was already stored under, exactly as before this field existed.
  */
-public record CrazyPhoneUploadPicturePacket(String conversationId, byte[] thumbnailPng, byte[] fullPng) implements CustomPacketPayload {
+public record CrazyPhoneUploadPicturePacket(String conversationId, UUID photoId, byte[] thumbnailPng, byte[] fullPng) implements CustomPacketPayload {
     private static final Logger LOGGER = LoggerFactory.getLogger("crazyphone");
     // Generous but real ceilings - the client already downscales/compresses before sending (see
     // FabricPictureCapture), this is defense in depth against a modified client the same way
@@ -63,11 +71,13 @@ public record CrazyPhoneUploadPicturePacket(String conversationId, byte[] thumbn
             StreamCodec.of(
                     (RegistryFriendlyByteBuf buffer, CrazyPhoneUploadPicturePacket message) -> {
                         buffer.writeUtf(message.conversationId);
+                        buffer.writeUUID(message.photoId);
                         buffer.writeByteArray(message.thumbnailPng);
                         buffer.writeByteArray(message.fullPng);
                     },
                     (RegistryFriendlyByteBuf buffer) -> new CrazyPhoneUploadPicturePacket(
                             buffer.readUtf(),
+                            buffer.readUUID(),
                             buffer.readByteArray(),
                             buffer.readByteArray()
                     )
@@ -81,11 +91,12 @@ public record CrazyPhoneUploadPicturePacket(String conversationId, byte[] thumbn
     public static final /*$ res_loc {*/ResourceLocation/*$}*/ ID = Crazyphone.resource("upload_picture");
 
     public CrazyPhoneUploadPicturePacket(FriendlyByteBuf buffer) {
-        this(buffer.readUtf(), buffer.readByteArray(), buffer.readByteArray());
+        this(buffer.readUtf(), buffer.readUUID(), buffer.readByteArray(), buffer.readByteArray());
     }
 
     public void write(FriendlyByteBuf buffer) {
         buffer.writeUtf(conversationId);
+        buffer.writeUUID(photoId);
         buffer.writeByteArray(thumbnailPng);
         buffer.writeByteArray(fullPng);
     }
@@ -96,7 +107,7 @@ public record CrazyPhoneUploadPicturePacket(String conversationId, byte[] thumbn
     }
     //?}
 
-    private static void handle(ServerPlayer player, String conversationId, byte[] thumbnailPng, byte[] fullPng) {
+    private static void handle(ServerPlayer player, String conversationId, UUID clientPhotoId, byte[] thumbnailPng, byte[] fullPng) {
         if (thumbnailPng.length == 0 || thumbnailPng.length > THUMBNAIL_MAX_BYTES) {
             LOGGER.warn("Picture upload rejected: thumbnail {} bytes", thumbnailPng.length);
             return;
@@ -119,7 +130,7 @@ public record CrazyPhoneUploadPicturePacket(String conversationId, byte[] thumbn
             return;
 
         int timestampInMinutes = (int) (Instant.now().getEpochSecond() / 60);
-        UUID photoId = PhotoSavedData.get(world).storePhoto(senderNumber, conversationId, thumbnailPng, fullPng, timestampInMinutes);
+        UUID photoId = PhotoSavedData.get(world).storePhoto(senderNumber, conversationId, clientPhotoId, thumbnailPng, fullPng, timestampInMinutes);
         if (!standalone)
             CrazyPhoneHelper.addImageMessage(world, conversationId, senderNumber, photoId, timestampInMinutes);
     }
@@ -132,7 +143,7 @@ public record CrazyPhoneUploadPicturePacket(String conversationId, byte[] thumbn
         context.enqueueWork(() -> {
             if (!(context.player() instanceof ServerPlayer player))
                 return;
-            handle(player, message.conversationId, message.thumbnailPng, message.fullPng);
+            handle(player, message.conversationId, message.photoId, message.thumbnailPng, message.fullPng);
         }).exceptionally(e -> {
             context.connection().disconnect(Component.literal(e.getMessage()));
             return null;
@@ -145,7 +156,7 @@ public record CrazyPhoneUploadPicturePacket(String conversationId, byte[] thumbn
         context.workHandler().submitAsync(() -> {
             if (!(context.player().orElse(null) instanceof ServerPlayer player))
                 return;
-            handle(player, message.conversationId, message.thumbnailPng, message.fullPng);
+            handle(player, message.conversationId, message.photoId, message.thumbnailPng, message.fullPng);
         }).exceptionally(e -> {
             context.packetHandler().disconnect(Component.literal(e.getMessage()));
             return null;
@@ -155,7 +166,7 @@ public record CrazyPhoneUploadPicturePacket(String conversationId, byte[] thumbn
     //?}
     //? if fabric && >=1.20.5 {
     /*public static void handleDataFabric(CrazyPhoneUploadPicturePacket message, net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.Context context) {
-        handle(context.player(), message.conversationId, message.thumbnailPng, message.fullPng);
+        handle(context.player(), message.conversationId, message.photoId, message.thumbnailPng, message.fullPng);
     }
 
     public static void registerFabricType() {

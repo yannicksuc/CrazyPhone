@@ -95,12 +95,12 @@ public class PhotoSavedData extends SavedData {
             new SavedDataType<>(/^$ saved_data_id {^/DATA_NAME/^$}^/, PhotoSavedData::new, CODEC, DataFixTypes.LEVEL);
     *///?}
 
-    /** Stores a freshly-captured photo under a new random id, evicting the owner's oldest photo first if
-     * this pushes them over {@link Config#maxPhotosStoredPerOwner}. When the caller had no separate
-     * low-quality preview to offer (photoThumbnailPixelHeight disabled, or the source was already shorter
-     * than the configured target - see FabricPictureCapture#captureBothResolutions), thumbnailPng and
-     * fullPng are the exact same bytes - stored once, not twice (see the "thumbnail" tag omission below and
-     * getPhoto's matching fallback).
+    /** Stores a freshly-captured photo under {@code clientPhotoId} (or a fresh random id if null),
+     * evicting the owner's oldest photo first if this pushes them over {@link Config#maxPhotosStoredPerOwner}.
+     * When the caller had no separate low-quality preview to offer (photoThumbnailPixelHeight disabled, or
+     * the source was already shorter than the configured target - see
+     * FabricPictureCapture#captureBothResolutions), thumbnailPng and fullPng are the exact same bytes -
+     * stored once, not twice (see the "thumbnail" tag omission below and getPhoto's matching fallback).
      *
      * Deduplicates by content hash first: if this owner already has a stored photo with the exact same full-
      * image bytes under the exact same conversationId, its existing id is reused instead of minting (and
@@ -111,13 +111,17 @@ public class PhotoSavedData extends SavedData {
      * photo's stored conversationId to decide who may fetch it, so reusing one id across two different
      * owners or conversations would silently let a photo taken/shared in one conversation become readable
      * from another it was never actually sent to. */
-    public UUID storePhoto(String owner, String conversationId, byte[] thumbnailPng, byte[] fullPng, int createdMinutes) {
+    public UUID storePhoto(String owner, String conversationId, UUID clientPhotoId, byte[] thumbnailPng, byte[] fullPng, int createdMinutes) {
         String hash = sha256Hex(fullPng);
         UUID duplicate = findDuplicate(owner, conversationId, hash);
         if (duplicate != null)
             return duplicate;
 
-        UUID photoId = UUID.randomUUID();
+        // clientPhotoId lets the sender optimistically seed its own cache and message list with the SAME id
+        // this ends up stored under (see CrazyPhoneUploadPicturePacket's own doc comment) - only trusted when
+        // no duplicate was found above, so re-sending a byte-identical photo still correctly reuses whatever
+        // id it was already stored under instead of minting a second entry for the same bytes.
+        UUID photoId = clientPhotoId != null ? clientPhotoId : UUID.randomUUID();
         CompoundTag entry = new CompoundTag();
         entry.putString("owner", owner);
         entry.putString("conversationId", conversationId);

@@ -34,6 +34,8 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemStack;
 
+import fr.lordfinn.crazyphone.client.gui.CrazyPhoneConversationScreen;
+import fr.lordfinn.crazyphone.client.picture.FabricPictureCache;
 import fr.lordfinn.crazyphone.client.picture.FabricPictureCapture;
 import fr.lordfinn.crazyphone.init.ModItems;
 import fr.lordfinn.crazyphone.network.CrazyPhoneUploadPicturePacket;
@@ -41,6 +43,8 @@ import fr.lordfinn.crazyphone.procedures.IsPhoneOpenProcedure;
 import fr.lordfinn.crazyphone.procedures.IsPhoneSetupProcedure;
 import fr.lordfinn.crazyphone.utils.NetworkAccess;
 import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
+
+import java.util.UUID;
 
 /**
  * Event-driven replacement for the capture overlay's old {@code Screen}-based design: a real {@code Screen}
@@ -248,9 +252,25 @@ public final class CrazyPhoneCaptureMode {
             capturing = false;
             DEBUG_LOGGER.info("capture callback: thumbnailPng={} bytes, fullPng={} bytes",
                     thumbnailPng == null ? -1 : thumbnailPng.length, fullPng == null ? -1 : fullPng.length);
-            if (thumbnailPng != null && fullPng != null)
-                NetworkAccess.sendToServer(new CrazyPhoneUploadPicturePacket(conversationId, thumbnailPng, fullPng));
-            exit();
+            if (thumbnailPng != null && fullPng != null) {
+                // Client-generated, not server-assigned - same reasoning as VoiceMessageUploadPacket's own
+                // voiceId (see CrazyPhoneConversationScreen#sendCurrentMessage's sibling onPauseSendClicked):
+                // waiting on the upload's own round trip before the sender can see their own just-taken photo
+                // would mean "close and reopen the conversation to see it", which is exactly what this
+                // avoids. The capturing client already holds the exact final bytes, so it seeds its own
+                // cache directly instead of re-fetching them a moment later.
+                UUID photoId = UUID.randomUUID();
+                FabricPictureCache.seedFromLocalCapture(photoId, thumbnailPng, fullPng);
+                NetworkAccess.sendToServer(new CrazyPhoneUploadPicturePacket(conversationId, photoId, thumbnailPng, fullPng));
+                // exit() first - it's what restores the conversation screen enter() closed to free the mouse
+                // for framing the shot (mc.setScreen(null)/(previousScreen)); checking for it before this
+                // would always see no screen at all and silently no-op every single time.
+                exit();
+                if (!conversationId.isEmpty())
+                    CrazyPhoneConversationScreen.onLocalPhotoSent(conversationId, photoId);
+            } else {
+                exit();
+            }
         });
     }
 
