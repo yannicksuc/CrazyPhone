@@ -51,7 +51,7 @@ public class CrazyPhoneMyPhotosScreenScreen extends CrazyPhoneDefaultScreenScree
     private static final int THUMB_SIZE = 34;
     private static final int THUMB_PITCH = 36;
     // Matches CrazyPhoneConversationScreen's own message crop zone top (topPos+27), same as GRID_HEIGHT below.
-    private static final int GRID_TOP_Y = 27;
+    private static final int GRID_TOP_Y = 26;
     private static final int GRID_WIDTH = GRID_COLUMNS * THUMB_PITCH;
     // Matches CrazyPhoneConversationScreen's own message crop zone height exactly (its enableScissor call
     // spans topPos+27 to topPos+158, 131px) - the grid already scrolls in continuous pixels, not snapped

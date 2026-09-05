@@ -124,7 +124,7 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
     /** Topmost of the three hover-reveal icons (furthest from the send button) - only constructed/shown
      * when SVC is available (see VoicechatIntegration), guarded with a null check everywhere it's touched. */
     private ImageButton imagebutton_crazyphonevoicemessage;
-    private static final int SEND_VOICE_ICON_Y = 112;
+    private static final int SEND_VOICE_ICON_Y = 113;
     private static final int RECORDING_ROW_Y = 158;
     private static final int TRASH_X = 8;
     private static final int WAVEFORM_X = 23;
@@ -465,7 +465,7 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
             color = CrazyPhoneColors.ACCENT_YELLOW; // same "you could join/rejoin this" color as the contacts-list badge
         else
             color = 0xFFFFFFFF;
-        guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(this.font, "📞", iconX + 4, iconY + 4, color, true);
+        guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(this.font, "📞", iconX + 3, iconY + 4, color, true);
     }
 
     private boolean isHoveringCallIcon(double mouseX, double mouseY) {

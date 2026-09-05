@@ -59,14 +59,19 @@ import fr.lordfinn.crazyphone.utils.PhotoResolution;
 public class CrazyPhonePhotoFrameRenderer extends EntityRenderer<CrazyPhonePhotoFrameEntity> {
     private static final /*$ res_loc {*/ResourceLocation/*$}*/ GROUND_BACKING_TEXTURE =
             Crazyphone.parseId("crazyphone:textures/entity/photo_frame_ground_backing.png");
-    // Same near-white texture CrazyPhonePhotoItemRenderer already tints for the held/dropped item's own
-    // frame - reused as-is rather than a new asset (confirmed pixel-compatible: both this and
-    // GROUND_BACKING_TEXTURE are 16x16, sampled the same full-0..1-UV way by every box/backing quad below).
-    // Swapped in for the border/backing quads ONLY when the frame is actually dyed (see #frameColor) -
+    // A dedicated 16x16 texture for this class's own box sides/backing when dyed (see #frameColor) -
     // multiplying a color tint onto GROUND_BACKING_TEXTURE's own brown pixels would look muddy and wrong,
-    // exactly like tinting leather armor's texture instead of its own near-white one would.
+    // exactly like tinting leather armor's texture instead of its own near-white one would. Same near-white
+    // two-tone look as CrazyPhonePhotoItemRenderer's own FRAME_TEXTURE (1px border ring at (214,209,195),
+    // 14x14 interior at (244,241,233)) but FULLY OPAQUE everywhere, deliberately never sharing that exact
+    // file: that texture's interior later became transparent (only its border ring stays opaque) to fix
+    // z-fighting on the item's own flat card, where a border quad sits coplanar with a smaller inset photo
+    // quad drawn on top of it. This class's box sides/backing quads instead sample the FULL 0..1 UV range as
+    // one solid, fully opaque surface - not a border ring around a see-through window - so briefly reusing
+    // that same file here silently dropped most of every side wall ("le fix de zindex a supprime les
+    // bordures sur les faces des cotes" - live report) before this dedicated, always-opaque copy replaced it.
     private static final /*$ res_loc {*/ResourceLocation/*$}*/ FRAME_TEXTURE =
-            Crazyphone.parseId("crazyphone:textures/item/crazy_phone_photo_frame.png");
+            Crazyphone.parseId("crazyphone:textures/entity/photo_frame_dye_base.png");
     private static final float DEPTH = (float) CrazyPhonePhotoFrameEntity.DEPTH;
     // The side walls sit FLUSH against the photo's own edge, zero gap - an earlier version added a small
     // margin here, which (since the top face is the photo alone, no background quad under it anymore) left
@@ -367,10 +372,11 @@ import fr.lordfinn.crazyphone.utils.PhotoResolution;
 public class CrazyPhonePhotoFrameRenderer extends EntityRenderer<CrazyPhonePhotoFrameEntity, CrazyPhonePhotoFrameRenderer.State> {
     private static final Identifier GROUND_BACKING_TEXTURE =
             Crazyphone.parseId("crazyphone:textures/entity/photo_frame_ground_backing.png");
-    // See the <26 branch's own comment on this same pair of constants - reused as-is from the item's frame
-    // texture, swapped in for the border/backing quads only when the frame is actually dyed.
+    // See the <26 branch's own comment on this same pair of constants - a dedicated, uniformly opaque
+    // texture, NOT CrazyPhonePhotoItemRenderer's own FRAME_TEXTURE (which has a transparent middle for an
+    // unrelated reason and would silently drop most of every side wall if reused here).
     private static final Identifier FRAME_TEXTURE =
-            Crazyphone.parseId("crazyphone:textures/item/crazy_phone_photo_frame.png");
+            Crazyphone.parseId("crazyphone:textures/entity/photo_frame_dye_base.png");
     private static final float DEPTH = (float) CrazyPhonePhotoFrameEntity.DEPTH;
     // Flush against the photo's own edge, zero gap - see the <26 branch's own comment on this same constant.
     private static final float BORDER_MARGIN = 0f;
