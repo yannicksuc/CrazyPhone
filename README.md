@@ -40,8 +40,8 @@ here and only here, so it can't drift out of sync with the wiki), and pointers t
 - **[Photo frames](https://github.com/yannicksuc/CrazyPhone/wiki/Camera-and-Photos#photo-frames)** -
   place a photo on any surface as a resizable entity, with a drag-select resize GUI, rotate, and fullbright.
 - **[Voice calls & voice messages](https://github.com/yannicksuc/CrazyPhone/wiki/Voice-Calls-and-Messages)**
-  *(NeoForge only, optional, needs [Simple Voice Chat](https://modrepo.de/minecraft/voicechat))* - ringing
-  1:1/group calls with dedicated screens, and recorded voice-message clips with waveform playback.
+  *(optional, needs [Simple Voice Chat](https://modrepo.de/minecraft/voicechat))* - ringing 1:1/group calls
+  with dedicated screens, and recorded voice-message clips with waveform playback.
 - **Soulbound enchantment** *(≥1.20.5)* - an Ancient City-only enchantment that survives death.
 - **[Mayor election](https://github.com/yannicksuc/CrazyPhone/wiki/Mayor-Election)** *(optional)* -
   candidates with campaign posters, in-app voting.
@@ -89,7 +89,7 @@ ongoing port - see [PORTING-26x.md](PORTING-26x.md) for its detailed status and 
 | Sneak-presenting (hold a photo up, two-hand grip) | - | ✅ | ✅ | ✅ | - *(pending)* | ✅ | ✅ | - *(pending)* | - *(pending)* |
 | Photo frames (placeable, resizable, silk touch) | - | - | ✅ | ✅ | - | ✅ | ✅ | - *(pending)* | - *(pending)* |
 | Selfie mode (camera/arm/head on a selfie stick) | - | - | ✅ | ✅ | - | ✅ | ✅ | - *(pending)* | - *(pending)* |
-| Voice calls & voice messages | - | ✅ *(SVC)* | ✅ *(SVC)* | - | ✅ *(SVC)* | ✅ *(SVC)* | - | - *(pending)* | - |
+| Voice calls & voice messages | - | ✅ *(SVC)* | ✅ *(SVC)* | ✅ *(SVC)* | ✅ *(SVC)* | ✅ *(SVC)* | ✅ *(SVC)* | - *(pending)* | - *(pending)* |
 | Soulbound enchantment | - | - | ✅ | ✅ | ✅ | ✅ | ✅ | - *(pending)* | - *(pending)* |
 | Runtime-configurable settings | - | ✅ | ✅ | - | ✅ | ✅ | - | - *(pending)* | - |
 
@@ -104,11 +104,10 @@ ongoing port - see [PORTING-26x.md](PORTING-26x.md) for its detailed status and 
   networking layer needs an API (`CustomPacketPayload`) that doesn't exist before 1.20.5, so none of the
   screens/messaging/camera work yet on that specific version.
 - **Fabric 1.21.1** has the core feature set, the native camera pipeline (including punch-to-shoot,
-  standalone capture, and My Photos), sneak-presenting, selfie mode, and the Soulbound enchantment - but no
-  voice calls/messages, since [Simple Voice Chat](https://modrepo.de/minecraft/voicechat) integration hasn't
-  been ported to Fabric yet.
-- **Fabric 26.1** compiles clean and is live-tested, with full parity with NeoForge 26.1 except voice
-  calls/messages (same Fabric SVC gap as 1.21.1).
+  standalone capture, and My Photos), sneak-presenting, selfie mode, voice calls & voice messages, and the
+  Soulbound enchantment - full parity with NeoForge 1.21.1.
+- **Fabric 26.1** compiles clean and is live-tested, with full parity with NeoForge 26.1, voice calls &
+  voice messages included.
 - **Fabric 26.2** doesn't compile yet - blocked on the same item-rendering API migration 26.1/26.2 needed,
   plus its own Fabric-specific registration gap (no `BuiltinItemRendererRegistry`-equivalent wired up for
   the new API yet). See [PORTING-26x.md](PORTING-26x.md).
@@ -183,7 +182,7 @@ ongoing port - see [PORTING-26x.md](PORTING-26x.md) for its detailed status and 
 
 ## 🙏 Credits
 
-- **[Simple Voice Chat](https://modrepo.de/minecraft/voicechat)** by [henkelmax](https://github.com/henkelmax): the voice engine calls and voice messages are built on top of (NeoForge only).
+- **[Simple Voice Chat](https://modrepo.de/minecraft/voicechat)** by [henkelmax](https://github.com/henkelmax): the voice engine calls and voice messages are built on top of.
 - **[Pixel Twemoji 9x](https://modrinth.com/resourcepack/pixel-twemoji-9x)** by [AmberW](https://modrinth.com/user/AmberW), based on [Twemoji](https://github.com/twitter/twemoji) (Copyright (c) 2018 Twitter, Inc and other contributors): pixel-art emoji glyphs bundled into the chat font. Both CC-BY-4.0 - see [`THIRD-PARTY-LICENSES.md`](THIRD-PARTY-LICENSES.md).
 - Original `crazythings` project (also mine): source of the feature set and assets this mod ports and rebuilds.
 
