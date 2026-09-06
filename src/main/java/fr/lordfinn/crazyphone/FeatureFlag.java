@@ -8,6 +8,13 @@ import net.neoforged.neoforge.server.permission.PermissionAPI;
 import net.neoforged.neoforge.server.permission.nodes.PermissionNode;
 import net.neoforged.neoforge.server.permission.nodes.PermissionTypes;
 //?}
+// Real, original Forge 1.20.1 - same permission-node API shape as NeoForge's own, javap-verified against
+// the actual 1.20.1 Forge jar, just under net.minecraftforge.
+//? if legacyforge {
+import net.minecraftforge.server.permission.PermissionAPI;
+import net.minecraftforge.server.permission.nodes.PermissionNode;
+import net.minecraftforge.server.permission.nodes.PermissionTypes;
+//?}
 
 import javax.annotation.Nullable;
 import java.util.function.BooleanSupplier;
@@ -28,7 +35,7 @@ import java.util.function.Consumer;
  * use an enabled feature.
  */
 public enum FeatureFlag {
-    //? if neoforge {
+    //? if neoforge || legacyforge {
     CALLS("calls", "Voice calls", () -> Config.callsFeatureEnabled, Config::setCallsFeatureEnabled),
     VOICE_MESSAGES("voice_messages", "Voice messages", () -> Config.voiceMessagesFeatureEnabled, Config::setVoiceMessagesFeatureEnabled),
     IMAGES("images", "Sending images", () -> Config.imagesFeatureEnabled, Config::setImagesFeatureEnabled),
@@ -49,7 +56,7 @@ public enum FeatureFlag {
     public final String displayName;
     private final BooleanSupplier globalEnabledGetter;
     private final Consumer<Boolean> globalEnabledSetter;
-    //? if neoforge {
+    //? if neoforge || legacyforge {
     public final PermissionNode<Boolean> permission;
     //?}
 
@@ -58,7 +65,7 @@ public enum FeatureFlag {
         this.displayName = displayName;
         this.globalEnabledGetter = globalEnabledGetter;
         this.globalEnabledSetter = globalEnabledSetter;
-        //? if neoforge {
+        //? if neoforge || legacyforge {
         // Allowed by default for everyone - the permission node is an opt-in RESTRICTION for servers running
         // a permission plugin, not an opt-in requirement; a server with no such plugin installed (the common
         // case) should see every feature work exactly as if this system didn't exist, gated only by the
@@ -78,7 +85,7 @@ public enum FeatureFlag {
 
     /** The one check every feature's actual entry point (packet handler, procedure, etc.) should gate on. */
     public boolean isEnabledFor(ServerPlayer player) {
-        //? if neoforge {
+        //? if neoforge || legacyforge {
         return isGloballyEnabled() && PermissionAPI.getPermission(player, permission);
         //?}
         //? if fabric {

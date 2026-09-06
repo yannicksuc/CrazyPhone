@@ -13,7 +13,9 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/;
 import net.minecraft.network.chat.Component;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+//? if fabric || neoforge {
 import net.minecraft.client.gui.components.WidgetSprites;
+//?}
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.ImageButton;
 import net.minecraft.client.gui.components.Button;
@@ -174,12 +176,27 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 		this.extractTooltip(guiGraphics, mouseX, mouseY);
 	}
 	*///? } else {
+	//? if neoforge || fabric {
 	@Override
 	public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
 		this.renderBackground(guiGraphics, mouseX, mouseY, partialTicks);
 		super.render(guiGraphics, mouseX, mouseY, partialTicks);
 		this.renderTooltip(guiGraphics, mouseX, mouseY);
 	}
+	//?}
+	// Real 1.20.1 vanilla's AbstractContainerScreen has no renderBackground(GuiGraphics, int, int, float)
+	// override point at all (only the no-args Screen#renderBackground(GuiGraphics), and render() itself
+	// already invokes renderBg internally) - the dim this mod wants drawn before the phone's own texture is
+	// just done directly in render() here instead, ahead of the super.render() call that triggers renderBg
+	// below.
+	//? if legacyforge {
+	@Override
+	public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
+		guiGraphics.fill(0, 0, this.width, this.height, 0x50000000);
+		super.render(guiGraphics, mouseX, mouseY, partialTicks);
+		this.renderTooltip(guiGraphics, mouseX, mouseY);
+	}
+	//?}
 	//?}
 
 	/** A much lighter dim than vanilla's default (AbstractContainerScreen#renderBackground normally fills a
@@ -198,11 +215,13 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 		this.drawScreenBackground(guiGraphics);
 	}
 	*///? } else {
+	//? if neoforge || fabric {
 	@Override
 	public void renderBackground(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
 		guiGraphics.fill(0, 0, this.width, this.height, 0x50000000);
 		this.renderBg(guiGraphics, partialTick, mouseX, mouseY);
 	}
+	//?}
 
 	@Override
 	protected void renderBg(GuiGraphics guiGraphics, float partialTicks, int gx, int gy) {
@@ -292,13 +311,8 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 	 * this instead of touching the button itself - AbstractWidget.OnPress has no way to be reassigned once
 	 * a Button is constructed, so this indirection is what makes that overridable at all. */
 	protected void onBackButtonPressed() {
-		//? if >=1.20.5 {
-		/*NetworkAccess.sendToServer(
+		NetworkAccess.sendToServer(
 				new CrazyPhoneDefaultScreenButtonMessage(0, x, y, z, getEditBoxAndCheckBoxValues()));
-		*///? } else {
-		PacketDistributor.SERVER.noArg().send(
-				new CrazyPhoneDefaultScreenButtonMessage(0, x, y, z, getEditBoxAndCheckBoxValues()));
-		//?}
 		CrazyPhoneDefaultScreenButtonMessage.handleButtonAction(entity, 0, x, y, z,
 				getEditBoxAndCheckBoxValues());
 	}
@@ -321,6 +335,19 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 	public void init() {
 		super.init();
 		HashMap<String, Object> guistate = getWidgets();
+		//? if legacyforge {
+		/*ResourceLocation backNormal = Crazyphone.parseId("crazyphone:textures/screens/crazyphone-back.png");
+		ResourceLocation backHover = Crazyphone.parseId("crazyphone:textures/screens/crazyphone-back-hover.png");
+		imagebutton_crazyphoneback = new ImageButton(this.leftPos + 14, this.topPos + 180, 29, 12, 0, 0, 12, backNormal,
+				e -> onBackButtonPressed()) {
+			private final WidgetSprites sprites = new WidgetSprites(backNormal, backHover);
+
+			@Override
+			public void renderWidget(GuiGraphics guiGraphics, int x, int y, float partialTicks) {
+				fr.lordfinn.crazyphone.utils.GuiCompat.blit(guiGraphics, sprites.get(isActive(), isHoveredOrFocused()), getX(), getY(), 0, width, height);
+			}
+		};
+		*///? } else {
 		imagebutton_crazyphoneback = new ImageButton(this.leftPos + 14, this.topPos + 180, 29, 12,
 				new WidgetSprites(Crazyphone.parseId("crazyphone:textures/screens/crazyphone-back.png"),
 						Crazyphone.parseId("crazyphone:textures/screens/crazyphone-back-hover.png")),
@@ -337,21 +364,35 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 			}
 			//?}
 		};
+		//?}
 		imagebutton_crazyphoneback.setTooltip(Tooltip.create(Component.translatable("gui.crazyphone.crazyphone_home_screen.tooltip_back")));
 		guistate.put("button:imagebutton_crazyphoneback", imagebutton_crazyphoneback);
 		this.addRenderableWidget(imagebutton_crazyphoneback);
 
+		//? if legacyforge {
+		/*ResourceLocation homeNormal = Crazyphone.parseId("crazyphone:textures/screens/crazyphone-home.png");
+		ResourceLocation homeHover = Crazyphone.parseId("crazyphone:textures/screens/crazyphone-home-hover.png");
+		imagebutton_crazyphonehome = new ImageButton(this.leftPos + 46, this.topPos + 180, 29, 12, 0, 0, 12, homeNormal,
+				e -> {
+					NetworkAccess.sendToServer(
+							new CrazyPhoneDefaultScreenButtonMessage(1, x, y, z, getEditBoxAndCheckBoxValues()));
+					CrazyPhoneDefaultScreenButtonMessage.handleButtonAction(entity, 1, x, y, z,
+							getEditBoxAndCheckBoxValues());
+				}) {
+			private final WidgetSprites sprites = new WidgetSprites(homeNormal, homeHover);
+
+			@Override
+			public void renderWidget(GuiGraphics guiGraphics, int x, int y, float partialTicks) {
+				fr.lordfinn.crazyphone.utils.GuiCompat.blit(guiGraphics, sprites.get(isActive(), isHoveredOrFocused()), getX(), getY(), 0, width, height);
+			}
+		};
+		*///? } else {
 		imagebutton_crazyphonehome = new ImageButton(this.leftPos + 46, this.topPos + 180, 29, 12,
 				new WidgetSprites(Crazyphone.parseId("crazyphone:textures/screens/crazyphone-home.png"),
 						Crazyphone.parseId("crazyphone:textures/screens/crazyphone-home-hover.png")),
 				e -> {
-					//? if >=1.20.5 {
-					/*NetworkAccess.sendToServer(
+					NetworkAccess.sendToServer(
 							new CrazyPhoneDefaultScreenButtonMessage(1, x, y, z, getEditBoxAndCheckBoxValues()));
-					*///? } else {
-					PacketDistributor.SERVER.noArg().send(
-							new CrazyPhoneDefaultScreenButtonMessage(1, x, y, z, getEditBoxAndCheckBoxValues()));
-					//?}
 					CrazyPhoneDefaultScreenButtonMessage.handleButtonAction(entity, 1, x, y, z,
 							getEditBoxAndCheckBoxValues());
 				}) {
@@ -367,21 +408,35 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 			}
 			//?}
 		};
+		//?}
 		imagebutton_crazyphonehome.setTooltip(Tooltip.create(Component.translatable("gui.crazyphone.crazyphone_home_screen.tooltip_home")));
 		guistate.put("button:imagebutton_crazyphonehome", imagebutton_crazyphonehome);
 		this.addRenderableWidget(imagebutton_crazyphonehome);
 
+		//? if legacyforge {
+		/*ResourceLocation lockNormal = Crazyphone.parseId("crazyphone:textures/screens/crazyphone-lock.png");
+		ResourceLocation lockHover = Crazyphone.parseId("crazyphone:textures/screens/crazyphone-lock-hover.png");
+		imagebutton_crazyphonelock = new ImageButton(this.leftPos + 78, this.topPos + 180, 29, 12, 0, 0, 12, lockNormal,
+				e -> {
+					NetworkAccess.sendToServer(
+							new CrazyPhoneDefaultScreenButtonMessage(2, x, y, z, getEditBoxAndCheckBoxValues()));
+					CrazyPhoneDefaultScreenButtonMessage.handleButtonAction(entity, 2, x, y, z,
+							getEditBoxAndCheckBoxValues());
+				}) {
+			private final WidgetSprites sprites = new WidgetSprites(lockNormal, lockHover);
+
+			@Override
+			public void renderWidget(GuiGraphics guiGraphics, int x, int y, float partialTicks) {
+				fr.lordfinn.crazyphone.utils.GuiCompat.blit(guiGraphics, sprites.get(isActive(), isHoveredOrFocused()), getX(), getY(), 0, width, height);
+			}
+		};
+		*///? } else {
 		imagebutton_crazyphonelock = new ImageButton(this.leftPos + 78, this.topPos + 180, 29, 12,
 				new WidgetSprites(Crazyphone.parseId("crazyphone:textures/screens/crazyphone-lock.png"),
 						Crazyphone.parseId("crazyphone:textures/screens/crazyphone-lock-hover.png")),
 				e -> {
-					//? if >=1.20.5 {
-					/*NetworkAccess.sendToServer(
+					NetworkAccess.sendToServer(
 							new CrazyPhoneDefaultScreenButtonMessage(2, x, y, z, getEditBoxAndCheckBoxValues()));
-					*///? } else {
-					PacketDistributor.SERVER.noArg().send(
-							new CrazyPhoneDefaultScreenButtonMessage(2, x, y, z, getEditBoxAndCheckBoxValues()));
-					//?}
 					CrazyPhoneDefaultScreenButtonMessage.handleButtonAction(entity, 2, x, y, z,
 							getEditBoxAndCheckBoxValues());
 				}) {
@@ -397,6 +452,7 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 			}
 			//?}
 		};
+		//?}
 		imagebutton_crazyphonelock.setTooltip(Tooltip.create(Component.translatable("gui.crazyphone.crazyphone_home_screen.tooltip_lock")));
 		guistate.put("button:imagebutton_crazyphonelock", imagebutton_crazyphonelock);
 		this.addRenderableWidget(imagebutton_crazyphonelock);

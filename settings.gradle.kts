@@ -21,6 +21,13 @@ plugins {
 stonecutter {
     shared {
         versions("1.20.4", "1.21.1", "1.21.10", "26.1", "26.2")
+        // 1.20.1 predates NeoForge's own fork/rebrand (net.minecraftforge.* -> net.neoforged.neoforge.*,
+        // which happened at the 1.20.2 boundary) - NeoForge's own tooling builds it via ModDevGradle's
+        // "legacyforge" plugin against the real, original net.minecraftforge:forge:1.20.1-47.1.x artifact,
+        // not a "neoforge" one at all. Genuinely a third API generation the shared tree has to gate for,
+        // not just another //? if <1.20.5 version check - see stonecutter.gradle.kts's own "legacyforge"
+        // constant.
+        version("1.20.1", "1.20.1").buildscript("build.legacyforge.gradle.kts")
         version("1.21.1-fabric", "1.21.1").buildscript("build.fabric.gradle.kts")
         version("1.20.1-fabric", "1.20.1").buildscript("build.fabric.gradle.kts")
         // 26.x is unobfuscated by Mojang - a genuinely different Loom plugin id/mode, no mappings

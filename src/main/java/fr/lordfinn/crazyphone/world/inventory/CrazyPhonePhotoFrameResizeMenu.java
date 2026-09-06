@@ -133,8 +133,8 @@ public class CrazyPhonePhotoFrameResizeMenu extends AbstractContainerMenu {
         }
         if (id >= AXIS_V_BASE) {
             int packed = id - AXIS_V_BASE;
-            int negV = Math.clamp(packed / 1000, 0, maxUnits);
-            int posV = Math.clamp(packed % 1000, 0, maxUnits);
+            int negV = Math.max(0, Math.min(packed / 1000, maxUnits));
+            int posV = Math.max(0, Math.min(packed % 1000, maxUnits));
             data.set(2, negV);
             data.set(3, posV);
             entity.setExtents(data.get(0), data.get(1), negV, posV);
@@ -146,8 +146,8 @@ public class CrazyPhonePhotoFrameResizeMenu extends AbstractContainerMenu {
         }
         if (id >= AXIS_U_BASE) {
             int packed = id - AXIS_U_BASE;
-            int negU = Math.clamp(packed / 1000, 0, maxUnits);
-            int posU = Math.clamp(packed % 1000, 0, maxUnits);
+            int negU = Math.max(0, Math.min(packed / 1000, maxUnits));
+            int posU = Math.max(0, Math.min(packed % 1000, maxUnits));
             entity.setExtents(negU, posU, data.get(2), data.get(3));
             data.set(0, entity.negUUnits());
             data.set(1, entity.posUUnits());

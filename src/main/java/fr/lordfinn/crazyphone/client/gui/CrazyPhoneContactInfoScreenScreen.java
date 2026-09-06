@@ -17,9 +17,10 @@ import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.multiplayer.PlayerInfo;
 import net.minecraft.client.player.RemotePlayer;
-//? if <1.21.10 {
+//? if (fabric || neoforge) && <1.21.10 {
 import net.minecraft.client.resources.PlayerSkin;
-//? } else {
+//?}
+//? if >=1.21.10 {
 /*import net.minecraft.world.entity.player.PlayerSkin;
 *///?}
 import net.minecraft.client.resources.SkinManager;
@@ -148,6 +149,7 @@ public class CrazyPhoneContactInfoScreenScreen extends CrazyPhoneDefaultScreenSc
 		try {
 			// Try to create a RemotePlayer with the given name and UUID
 			this.profile = new GameProfile(uuid, name);
+        	//? if fabric || neoforge {
         	SkinManager skinManager = Minecraft.getInstance().getSkinManager();
         	//? if <1.21.10 {
       	  	CompletableFuture<PlayerSkin> skinFuture = skinManager.getOrLoad(profile);
@@ -165,6 +167,20 @@ public class CrazyPhoneContactInfoScreenScreen extends CrazyPhoneDefaultScreenSc
 			fr.lordfinn.crazyphone.client.FakePlayerPreview.showAllSkinLayers(this.fakePlayer);
 			level.addFreshEntity(this.fakePlayer);
 		});
+		//?}
+		// Real 1.20.1 vanilla has no PlayerSkin/getOrLoad at all - SkinManager's classic per-texture-type
+		// callback (registerSkins) just gates spawning the fake player until the real skin is resolved,
+		// same as the newer branches' async trigger did (the resolved skin itself isn't otherwise used here -
+		// RemotePlayer/AbstractClientPlayer resolves its own texture lazily off the profile either way).
+		//? if legacyforge {
+		Minecraft.getInstance().getSkinManager().registerSkins(profile, (type, location, texture) -> {
+			if (type != com.mojang.authlib.minecraft.MinecraftProfileTexture.Type.SKIN)
+				return;
+			this.fakePlayer = new RemotePlayer(level, profile);
+			fr.lordfinn.crazyphone.client.FakePlayerPreview.showAllSkinLayers(this.fakePlayer);
+			level.addFreshEntity(this.fakePlayer);
+		}, false);
+		//?}
 		} catch (Exception e) {
 			createGuiDefaultFakePlayer();
 		}
@@ -208,21 +224,27 @@ public class CrazyPhoneContactInfoScreenScreen extends CrazyPhoneDefaultScreenSc
 				setSuggestion(getValue().isEmpty() ? Component.translatable("gui.crazyphone.crazy_phone_contact_info_screen.number").getString() : null);
 			}
 
+			// Real 1.20.1 vanilla predates EditBox#moveCursorTo's boolean "select" parameter (added by 1.20.4).
+			//? if >=1.20.4 {
 			@Override
 			public void moveCursorTo(int pos, boolean flag) {
 				super.moveCursorTo(pos, flag);
 				setSuggestion(getValue().isEmpty() ? Component.translatable("gui.crazyphone.crazy_phone_contact_info_screen.number").getString() : null);
 			}
+			//?}
+			//? if <1.20.4 {
+			/*@Override
+			public void moveCursorTo(int pos) {
+				super.moveCursorTo(pos);
+				setSuggestion(getValue().isEmpty() ? Component.translatable("gui.crazyphone.crazy_phone_contact_info_screen.number").getString() : null);
+			}
+			*///?}
 		};
 		number.setMaxLength(32767);
 		number.setSuggestion(Component.translatable("gui.crazyphone.crazy_phone_contact_info_screen.number").getString());
 		number.setResponder(text -> {
 			if (entity != null) {
-				//? if >=1.20.5 {
-				/*NetworkAccess.sendToServer(new CrazyPhoneContactInfoScreenButtonMessage(1, x, y, z, getEditBoxAndCheckBoxValues()));
-				*///? } else {
-				PacketDistributor.SERVER.noArg().send(new CrazyPhoneContactInfoScreenButtonMessage(1, x, y, z, getEditBoxAndCheckBoxValues()));
-				//?}
+				NetworkAccess.sendToServer(new CrazyPhoneContactInfoScreenButtonMessage(1, x, y, z, getEditBoxAndCheckBoxValues()));
 				CrazyPhoneContactInfoScreenButtonMessage.handleButtonAction(entity, 1, x, y, z, getEditBoxAndCheckBoxValues());
 			}
 		});
@@ -230,11 +252,7 @@ public class CrazyPhoneContactInfoScreenScreen extends CrazyPhoneDefaultScreenSc
 		this.addWidget(this.number);
 
 		button_ajouter = Button.builder(Component.translatable("gui.crazyphone.crazy_phone_contact_info_screen.button_ajouter"), e -> {
-			//? if >=1.20.5 {
-			/*NetworkAccess.sendToServer(new CrazyPhoneContactInfoScreenButtonMessage(0, x, y, z, getEditBoxAndCheckBoxValues()));
-			*///? } else {
-			PacketDistributor.SERVER.noArg().send(new CrazyPhoneContactInfoScreenButtonMessage(0, x, y, z, getEditBoxAndCheckBoxValues()));
-			//?}
+			NetworkAccess.sendToServer(new CrazyPhoneContactInfoScreenButtonMessage(0, x, y, z, getEditBoxAndCheckBoxValues()));
 			CrazyPhoneContactInfoScreenButtonMessage.handleButtonAction(entity, 0, x, y, z, getEditBoxAndCheckBoxValues());
 		}).bounds(this.leftPos + CONTENT_X, this.topPos + BUTTON_Y, CONTENT_WIDTH, 14)
 				.tooltip(net.minecraft.client.gui.components.Tooltip.create(

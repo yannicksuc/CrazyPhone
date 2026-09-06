@@ -18,12 +18,34 @@ import net.fabricmc.fabric.api.attachment.v1.AttachmentTarget;
 import net.fabricmc.fabric.api.attachment.v1.AttachmentType;
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 *///?}
+// Real, original Forge 1.20.1 has no generic Attachment system of its own (that's a NeoForge-only
+// abstraction added at the fork) - the idiomatic old-Forge equivalent for small persisted per-entity data
+// is its (heavier, but stable since 1.7) Capability system: a Capability<T> token, an ICapabilityProvider
+// added per-entity via AttachCapabilitiesEvent<Entity>, wrapping the exact same INBTSerializable-
+// implementing PlayerPhoneState/SoulboundStash objects the neoforge <1.21.10 branch already uses (see
+// those classes' own legacyforge import blocks) - so the only genuinely new code here is the plumbing,
+// not the data classes themselves.
+//? if legacyforge {
+import net.minecraftforge.common.capabilities.Capability;
+import net.minecraftforge.common.capabilities.CapabilityManager;
+import net.minecraftforge.common.capabilities.CapabilityToken;
+import net.minecraftforge.common.capabilities.ICapabilityProvider;
+import net.minecraftforge.common.util.LazyOptional;
+import net.minecraftforge.event.AttachCapabilitiesEvent;
+import net.minecraftforge.event.entity.player.PlayerEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
+
+import net.minecraft.core.Direction;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
+//?}
 
 import net.minecraft.server.level.ServerPlayer;
 
 import fr.lordfinn.crazyphone.Crazyphone;
 import fr.lordfinn.crazyphone.network.FeatureFlagSyncPacket;
-//? if neoforge {
+//? if neoforge || legacyforge {
 import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
 import fr.lordfinn.crazyphone.voicechat.SvcCallBridge;
 import fr.lordfinn.crazyphone.voicechat.VoicechatIntegration;
@@ -84,6 +106,89 @@ public class PhoneAttachmentTypes {
             clone.crazyPhoneScreenHistory = original.crazyPhoneScreenHistory;
         }
         event.getEntity().setData(PLAYER_PHONE_STATE, clone);
+    }
+}
+//?}
+//? if legacyforge {
+@EventBusSubscriber
+public class PhoneAttachmentTypes {
+    public static final Capability<PlayerPhoneState> PLAYER_PHONE_STATE_CAP =
+            CapabilityManager.get(new CapabilityToken<PlayerPhoneState>() {
+            });
+
+    /** See {@link SoulboundStash} - only ever non-empty for the brief window between a death that pulled
+     * soulbound items out of the drops and the respawn that reinserts them. */
+    public static final Capability<SoulboundStash> SOULBOUND_STASH_CAP =
+            CapabilityManager.get(new CapabilityToken<SoulboundStash>() {
+            });
+
+    public static PlayerPhoneState getPlayerPhoneState(Player player) {
+        return player.getCapability(PLAYER_PHONE_STATE_CAP, null).orElseGet(PlayerPhoneState::new);
+    }
+
+    public static SoulboundStash getSoulboundStash(Player player) {
+        return player.getCapability(SOULBOUND_STASH_CAP, null).orElseGet(SoulboundStash::new);
+    }
+
+    @SubscribeEvent
+    public static void onAttachCapabilitiesPlayer(AttachCapabilitiesEvent<Entity> event) {
+        if (event.getObject() instanceof Player) {
+            event.addCapability(Crazyphone.resource("player_phone_state"), new ICapabilityProvider() {
+                private final LazyOptional<PlayerPhoneState> instance = LazyOptional.of(PlayerPhoneState::new);
+
+                @Override
+                public <T> LazyOptional<T> getCapability(Capability<T> cap, Direction side) {
+                    return cap == PLAYER_PHONE_STATE_CAP ? instance.cast() : LazyOptional.empty();
+                }
+            });
+            event.addCapability(Crazyphone.resource("soulbound_stash"), new ICapabilityProvider() {
+                private final LazyOptional<SoulboundStash> instance = LazyOptional.of(SoulboundStash::new);
+
+                @Override
+                public <T> LazyOptional<T> getCapability(Capability<T> cap, Direction side) {
+                    return cap == SOULBOUND_STASH_CAP ? instance.cast() : LazyOptional.empty();
+                }
+            });
+        }
+    }
+
+    @SubscribeEvent
+    public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) {
+            CrazyPhoneHelper.reconcilePhoneStateOnJoin(player);
+            if (VoicechatIntegration.isAvailable())
+                SvcCallBridge.leaveGroup(player.getUUID());
+            getPlayerPhoneState(player).syncTo(player);
+            PhoneRegistrySavedData.get(player.level()).syncTo(player);
+            FeatureFlagSyncPacket.syncTo(player);
+        }
+    }
+
+    @SubscribeEvent
+    public static void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player)
+            getPlayerPhoneState(player).syncTo(player);
+    }
+
+    @SubscribeEvent
+    public static void onPlayerChangedDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player)
+            getPlayerPhoneState(player).syncTo(player);
+    }
+
+    // The new player instance for the respawn/clone already got its own fresh PlayerPhoneState attached by
+    // AttachCapabilitiesEvent<Entity> above (empty, by construction) - unlike NeoForge's setData (which
+    // replaces the whole attachment instance outright), an old-Forge capability instance is a fixed
+    // container attached once at entity-creation time, so "restoring" data onto it means mutating that
+    // already-attached instance's own fields in place instead.
+    @SubscribeEvent
+    public static void clonePlayer(PlayerEvent.Clone event) {
+        if (event.isWasDeath())
+            return;
+        PlayerPhoneState original = getPlayerPhoneState(event.getOriginal());
+        PlayerPhoneState target = getPlayerPhoneState(event.getEntity());
+        target.currentCrazyPhoneScreenOpened = original.currentCrazyPhoneScreenOpened;
+        target.crazyPhoneScreenHistory = original.crazyPhoneScreenHistory;
     }
 }
 //?}

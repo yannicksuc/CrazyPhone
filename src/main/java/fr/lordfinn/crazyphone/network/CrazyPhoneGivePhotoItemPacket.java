@@ -14,8 +14,19 @@ import net.neoforged.fml.common.Mod.EventBusSubscriber;
 //?}
 import net.neoforged.bus.api.SubscribeEvent;
 //?}
+// Real, original Forge 1.20.1 - same FMLCommonSetupEvent/EventBusSubscriber/SubscribeEvent shape as
+// NeoForge's own <1.20.5 branch above (see NetworkAccess.java's own doc comment) - PlayPayloadContext
+// itself is NOT imported here: this file is in the same package as the same-package compat shim
+// (fr.lordfinn.crazyphone.network.PlayPayloadContext), so it resolves with no import at all.
+//? if legacyforge {
+import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+//?}
 
+//? if fabric || neoforge {
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+//?}
 import net.minecraft.network.protocol.PacketFlow;
 //? if >=1.20.5 {
 /*import net.minecraft.network.codec.StreamCodec;
@@ -38,7 +49,11 @@ import fr.lordfinn.crazyphone.utils.PhotoItemData;
 import java.util.UUID;
 
 /** Client -> server: "Save to Inventory" from the photo viewer - gives the player a physical Photo item pointing at this photoId. */
+//? if legacyforge {
+/*public record CrazyPhoneGivePhotoItemPacket(UUID photoId) {
+*///? } else {
 public record CrazyPhoneGivePhotoItemPacket(UUID photoId) implements CustomPacketPayload {
+//?}
 
     //? if >=1.20.5 {
     /*public static final Type<CrazyPhoneGivePhotoItemPacket> TYPE = new Type<>(
@@ -66,7 +81,9 @@ public record CrazyPhoneGivePhotoItemPacket(UUID photoId) implements CustomPacke
         buffer.writeUUID(photoId);
     }
 
+    //? if fabric || neoforge {
     @Override
+    //?}
     public /*$ res_loc {*/ResourceLocation/*$}*/ id() {
         return ID;
     }
@@ -95,7 +112,7 @@ public record CrazyPhoneGivePhotoItemPacket(UUID photoId) implements CustomPacke
         PhotoSavedData.get(world).markPhysical(photoId);
     }
 
-    //? if neoforge {
+    //? if neoforge || legacyforge {
     //? if >=1.20.5 {
     /*public static void handleData(final CrazyPhoneGivePhotoItemPacket message, final IPayloadContext context) {
         if (context.flow() != PacketFlow.SERVERBOUND)
@@ -152,6 +169,17 @@ public record CrazyPhoneGivePhotoItemPacket(UUID photoId) implements CustomPacke
             *///? } else {
             Crazyphone.addNetworkMessage(ID, CrazyPhoneGivePhotoItemPacket::new, CrazyPhoneGivePhotoItemPacket::handleData);
             //?}
+        }
+    }
+    //?}
+
+
+    //? if legacyforge {
+    @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
+    public static class LegacyForgeRegistration {
+        @SubscribeEvent
+        public static void register(FMLCommonSetupEvent event) {
+            Crazyphone.addNetworkMessage(CrazyPhoneGivePhotoItemPacket.class, CrazyPhoneGivePhotoItemPacket::write, CrazyPhoneGivePhotoItemPacket::new, CrazyPhoneGivePhotoItemPacket::handleData);
         }
     }
     //?}

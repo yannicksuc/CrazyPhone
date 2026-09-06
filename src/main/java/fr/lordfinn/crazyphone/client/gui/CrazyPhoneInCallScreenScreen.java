@@ -108,11 +108,17 @@ public class CrazyPhoneInCallScreenScreen extends CrazyPhoneDefaultScreenScreen<
      * deliberately swaps in a default skin for any non-local player whose textures aren't server-signed, and a
      * skin this client fetched itself (see MojangProfileLookup) never is - that's what made every remote face
      * render as a default Steve/Alex while the local one was fine. */
-    //? if <1.21.10 {
+    //? if (fabric || neoforge) && <1.21.10 {
     private final Map<UUID, net.minecraft.client.resources.PlayerSkin> faceSkins = new ConcurrentHashMap<>();
-    //? } else {
+    //?}
+    //? if >=1.21.10 {
     /*private final Map<UUID, net.minecraft.world.entity.player.PlayerSkin> faceSkins = new ConcurrentHashMap<>();
     *///?}
+    // Real 1.20.1 vanilla has no PlayerSkin object at all - just a plain skin-texture ResourceLocation (see
+    // AbstractClientPlayer#getSkinTextureLocation and PlayerFaceRenderer's own <1.20.5-era overload below).
+    //? if legacyforge {
+    private final Map<UUID, net.minecraft.resources.ResourceLocation> faceSkins = new ConcurrentHashMap<>();
+    //?}
     private final List<CellLayout> lastLayout = new ArrayList<>();
     /** The OTHER participants, straight from the server (never includes the local player - see
      * ScreenMenuUtils#populateCallScreenBuffer). */
@@ -163,7 +169,12 @@ public class CrazyPhoneInCallScreenScreen extends CrazyPhoneDefaultScreenScreen<
         self = new CrazyPhoneInCallScreenMenu.CallParticipant(id, name,
                 player.getItemBySlot(EquipmentSlot.HEAD), player.getItemBySlot(EquipmentSlot.CHEST),
                 player.getItemBySlot(EquipmentSlot.LEGS), player.getItemBySlot(EquipmentSlot.FEET));
+        //? if fabric || neoforge {
         faceSkins.put(id, player.getSkin());
+        //?}
+        //? if legacyforge {
+        faceSkins.put(id, player.getSkinTextureLocation());
+        //?}
         bustPreview.ensure(id, name, self.helmet(), self.chestplate(), self.leggings(), self.boots());
     }
 
@@ -229,11 +240,18 @@ public class CrazyPhoneInCallScreenScreen extends CrazyPhoneDefaultScreenScreen<
         Minecraft mc = Minecraft.getInstance();
         MojangProfileLookup.lookup(name).thenAccept(realProfile -> {
             GameProfile profile = realProfile != null ? realProfile : new GameProfile(id, name);
-            //? if <1.21.10 {
+            //? if (fabric || neoforge) && <1.21.10 {
             mc.getSkinManager().getOrLoad(profile).thenAccept(skin -> faceSkins.put(id, skin));
-            //? } else {
+            //?}
+            //? if >=1.21.10 {
             /*mc.getSkinManager().get(profile).thenAccept(skin -> skin.ifPresent(s -> faceSkins.put(id, s)));
             *///?}
+            //? if legacyforge {
+            mc.getSkinManager().registerSkins(profile, (type, location, texture) -> {
+                if (type == com.mojang.authlib.minecraft.MinecraftProfileTexture.Type.SKIN)
+                    faceSkins.put(id, location);
+            }, false);
+            //?}
         });
     }
 

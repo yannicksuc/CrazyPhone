@@ -4,12 +4,18 @@ plugins {
 stonecutter active "1.20.4"
 
 // Loader identity as a Stonecutter boolean constant, usable in the shared source tree as
-// //? if fabric { ... } / //? if neoforge { ... } - exactly the same mechanism already used throughout
-// this codebase for Minecraft-version gating (//? if >=1.21.10 etc.), just gating on loader instead. Only
-// the two new "*-fabric" nodes carry that suffix (see settings.gradle.kts); every other node is NeoForge.
+// //? if fabric { ... } / //? if neoforge { ... } / //? if legacyforge { ... } - exactly the same
+// mechanism already used throughout this codebase for Minecraft-version gating (//? if >=1.21.10 etc.),
+// just gating on loader instead. The "*-fabric" nodes carry that suffix (see settings.gradle.kts); "1.20.1"
+// is the one "legacyforge" node (real net.minecraftforge.* Forge 1.20.1, predating NeoForge's own fork -
+// see settings.gradle.kts's own comment on that node); every other node is modern NeoForge.
 stonecutter parameters {
-    val loader = if (current.project.endsWith("-fabric")) "fabric" else "neoforge"
-    constants.match(loader, "fabric", "neoforge")
+    val loader = when {
+        current.project.endsWith("-fabric") -> "fabric"
+        current.project == "1.20.1" -> "legacyforge"
+        else -> "neoforge"
+    }
+    constants.match(loader, "fabric", "neoforge", "legacyforge")
     // 26.x renamed net.minecraft.resources.ResourceLocation to net.minecraft.resources.Identifier (same
     // package, same shape - confirmed via decompiled vanilla source, javap-verified) - used across 50+ files
     // in the shared tree, so a per-occurrence //? if >=26 branch everywhere would be enormous. A scoped swap
@@ -64,7 +70,10 @@ stonecutter parameters {
     swaps.put("gui_draw_word_wrap", if (is26) "textWithWordWrap" else "drawWordWrap")
     swaps.put("gui_render_tooltip", if (is26) "setTooltipForNextFrame" else "renderTooltip")
     swaps.put("gui_render_component_tooltip", if (is26) "setComponentTooltipForNextFrame" else "renderComponentTooltip")
-    swaps.put("gui_render_transparent_background", if (is26) "extractTransparentBackground" else "renderTransparentBackground")
+    // Real 1.20.1 vanilla has no renderTransparentBackground(GuiGraphics) at all (only the plain
+    // renderBackground(GuiGraphics) - the dedicated "transparent" overlay-screen variant was added later,
+    // alongside the same 1.20.2-era GuiGraphics rework several other swaps above already branch around).
+    swaps.put("gui_render_transparent_background", if (is26) "extractTransparentBackground" else if (semantics.eval(current.version, "<1.20.2")) "renderBackground" else "renderTransparentBackground")
     // 26.x moved PlayerModel into its own subpackage (net.minecraft.client.model.player.PlayerModel).
     swaps.put("player_model_pkg", if (is26) "net.minecraft.client.model.player.PlayerModel" else "net.minecraft.client.model.PlayerModel")
     // Renderable/AbstractWidget's own public render dispatcher (what any caller uses to render a widget or

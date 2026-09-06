@@ -16,9 +16,22 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.api.distmarker.Dist;
 //?}
+// Real, original Forge 1.20.1 - same FMLCommonSetupEvent/EventBusSubscriber/SubscribeEvent shape as
+// NeoForge's own <1.20.5 branch above (see NetworkAccess.java's own doc comment) - PlayPayloadContext
+// itself is NOT imported here: this file is in the same package as the same-package compat shim
+// (fr.lordfinn.crazyphone.network.PlayPayloadContext), so it resolves with no import at all.
+//? if legacyforge {
+import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraftforge.api.distmarker.Dist;
+//?}
 
 import net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/;
+//? if fabric || neoforge {
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+//?}
 import net.minecraft.network.protocol.PacketFlow;
 //? if >=1.20.5 {
 /*import net.minecraft.network.codec.StreamCodec;
@@ -31,7 +44,11 @@ import net.minecraft.client.Minecraft;
 import fr.lordfinn.crazyphone.Crazyphone;
 import fr.lordfinn.crazyphone.data.PlayerPhoneState;
 
+//? if legacyforge {
+/*public record PlayerPhoneStateSyncPacket(PlayerPhoneState data) {
+*///? } else {
 public record PlayerPhoneStateSyncPacket(PlayerPhoneState data) implements CustomPacketPayload {
+//?}
     //? if neoforge && >=1.20.5 <1.21.10 {
     /*public static final Type<PlayerPhoneStateSyncPacket> TYPE = new Type<>(Crazyphone.resource("player_phone_state_sync"));
 
@@ -72,7 +89,7 @@ public record PlayerPhoneStateSyncPacket(PlayerPhoneState data) implements Custo
         return TYPE;
     }
     *///?}
-    //? if neoforge && <1.20.5 {
+    //? if (neoforge || legacyforge) && <1.20.5 {
     public static final /*$ res_loc {*/ResourceLocation/*$}*/ ID = Crazyphone.resource("player_phone_state_sync");
 
     public PlayerPhoneStateSyncPacket(FriendlyByteBuf buffer) {
@@ -89,7 +106,9 @@ public record PlayerPhoneStateSyncPacket(PlayerPhoneState data) implements Custo
         buffer.writeNbt(data.serializeNBT());
     }
 
+    //? if fabric || neoforge {
     @Override
+    //?}
     public /*$ res_loc {*/ResourceLocation/*$}*/ id() {
         return ID;
     }
@@ -157,6 +176,22 @@ public record PlayerPhoneStateSyncPacket(PlayerPhoneState data) implements Custo
         }
     }
     //?}
+    //? if legacyforge {
+    @OnlyIn(Dist.CLIENT)
+    private static void applyState(PlayerPhoneStateSyncPacket message) {
+        fr.lordfinn.crazyphone.data.PhoneAttachmentTypes.getPlayerPhoneState(Minecraft.getInstance().player)
+                .deserializeNBT(message.data.serializeNBT());
+    }
+
+    public static void handleData(final PlayerPhoneStateSyncPacket message, final PlayPayloadContext context) {
+        if (context.flow() == PacketFlow.CLIENTBOUND) {
+            context.workHandler().submitAsync(() -> applyState(message)).exceptionally(e -> {
+                context.packetHandler().disconnect(Component.literal(e.getMessage()));
+                return null;
+            });
+        }
+    }
+    //?}
 
     //? if neoforge {
     //? if <1.20.5 {
@@ -189,4 +224,15 @@ public record PlayerPhoneStateSyncPacket(PlayerPhoneState data) implements Custo
         fr.lordfinn.crazyphone.fabric.FabricNetworking.registerClientReceiver(TYPE, PlayerPhoneStateSyncPacket::handleDataFabric);
     }
     *///?}
+
+
+    //? if legacyforge {
+    @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
+    public static class LegacyForgeRegistration {
+        @SubscribeEvent
+        public static void register(FMLCommonSetupEvent event) {
+            Crazyphone.addNetworkMessage(PlayerPhoneStateSyncPacket.class, PlayerPhoneStateSyncPacket::write, PlayerPhoneStateSyncPacket::new, PlayerPhoneStateSyncPacket::handleData);
+        }
+    }
+    //?}
 }

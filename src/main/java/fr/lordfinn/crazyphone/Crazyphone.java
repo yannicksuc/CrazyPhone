@@ -40,20 +40,50 @@ import org.slf4j.Logger;
 import java.util.HashMap;
 import java.util.Map;
 //?}
+// Real, original Forge 1.20.1 (predates NeoForge's own fork/rebrand) - same @Mod-annotated entrypoint idea
+// as NeoForge's, just without the modern (IEventBus, ModContainer) auto-injected constructor convenience
+// (that's a NeoForge-only addition) - the well-established old-Forge 1.20.1 pattern is a plain no-arg
+// constructor pulling the mod event bus from FMLJavaModLoadingContext instead.
+//? if legacyforge {
+import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.config.ModConfig;
+import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.minecraftforge.network.NetworkEvent;
+import net.minecraftforge.network.NetworkRegistry;
+import net.minecraftforge.network.simple.SimpleChannel;
+
+import net.minecraft.network.FriendlyByteBuf;
+
+import fr.lordfinn.crazyphone.data.PhoneAttachmentTypes;
+import fr.lordfinn.crazyphone.init.ModItems;
+import fr.lordfinn.crazyphone.init.ModMenus;
+import fr.lordfinn.crazyphone.init.ModSounds;
+import fr.lordfinn.crazyphone.init.ModTabs;
+import fr.lordfinn.crazyphone.init.ModRecipes;
+import fr.lordfinn.crazyphone.network.PlayPayloadContext;
+
+import org.slf4j.Logger;
+import com.mojang.logging.LogUtils;
+
+import java.util.function.BiConsumer;
+import java.util.function.Function;
+//?}
 
 /**
  * MODID/resource()/parseId() are shared across both loaders (referenced from ~everywhere in the codebase
  * that builds a ResourceLocation) - only the actual mod-lifecycle registration below (constructor, network
- * message registrar) is NeoForge-specific. Fabric's own entrypoint/registration glue lives in
+ * message registrar) is loader-specific. Fabric's own entrypoint/registration glue lives in
  * fr.lordfinn.crazyphone.fabric.CrazyphoneFabric instead, since Fabric's entrypoint mechanism (interface
- * implementation) has no equivalent of NeoForge's @Mod-annotated constructor injection to share code with.
+ * implementation) has no equivalent of NeoForge/Forge's @Mod-annotated constructor injection to share code
+ * with.
  */
-//? if neoforge {
+//? if neoforge || legacyforge {
 @Mod(Crazyphone.MODID)
 //?}
 public class Crazyphone {
     public static final String MODID = "crazyphone";
-    //? if neoforge {
+    //? if neoforge || legacyforge {
     private static final Logger LOGGER = LogUtils.getLogger();
     //?}
 
@@ -170,5 +200,48 @@ public class Crazyphone {
         networkingRegistered = true;
     }
     //?}
+    //?}
+
+    // Real, original Forge 1.20.1 - no (IEventBus, ModContainer) auto-injected constructor convenience (a
+    // NeoForge-only addition), and no RegisterPayloadHandler(s)Event to defer registration to either - old
+    // Forge's SimpleChannel.registerMessage(int discriminator, ...) can (and, since nothing else drives it
+    // here, must) be called directly as each packet's own FMLCommonSetupEvent subscriber fires, with no
+    // intermediate MESSAGES map/two-phase registerNetworking step needed at all.
+    //? if legacyforge {
+    public Crazyphone() {
+        IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
+
+        ModItems.REGISTRY.register(modEventBus);
+        ModTabs.REGISTRY.register(modEventBus);
+        ModMenus.REGISTRY.register(modEventBus);
+        ModSounds.REGISTRY.register(modEventBus);
+        ModRecipes.REGISTRY.register(modEventBus);
+        // CrazyPhoneCraftingCondition is NOT ported here: it's built on NeoForge's Codec-based ICondition
+        // registry (net.neoforged.neoforge.common.conditions), which old Forge 1.20.1 has no equivalent of -
+        // its own, older condition system predates the Codec-based rewrite entirely and would need its own
+        // datapack JSON key (crazy_phone.json only carries "neoforge:conditions"/"fabric:load_conditions"
+        // today) on top of a differently-shaped Java API. Follow-up if this toggle turns out to matter on
+        // 1.20.1: for now, crazyPhoneCraftingEnabled=false does not remove the recipe on this target.
+
+        net.minecraftforge.fml.ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, Config.SPEC);
+    }
+
+    private static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(resource("main"),
+            () -> "1", "1"::equals, "1"::equals);
+    private static int nextMessageId = 0;
+
+    public static SimpleChannel channel() {
+        return CHANNEL;
+    }
+
+    public static <T> void addNetworkMessage(Class<T> clazz, BiConsumer<T, FriendlyByteBuf> writer,
+                                              Function<FriendlyByteBuf, T> reader,
+                                              BiConsumer<T, PlayPayloadContext> handler) {
+        CHANNEL.registerMessage(nextMessageId++, clazz, writer, reader, (msg, ctxSupplier) -> {
+            NetworkEvent.Context ctx = ctxSupplier.get();
+            handler.accept(msg, new PlayPayloadContext(ctx));
+            ctx.setPacketHandled(true);
+        });
+    }
     //?}
 }

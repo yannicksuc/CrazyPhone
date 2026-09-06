@@ -30,9 +30,19 @@ import fr.lordfinn.crazyphone.item.CrazyPhonePhotoItem;
 import java.util.List;
 
 public class CrazyPhoneDuplicatePhotoRecipe extends CustomRecipe {
+    //? if fabric || neoforge {
     public CrazyPhoneDuplicatePhotoRecipe(CraftingBookCategory category) {
         super(category);
     }
+    //?}
+    // Real 1.20.1 vanilla's CustomRecipe still carries an explicit ResourceLocation id (ID-less recipes came
+    // later) - SimpleCraftingRecipeSerializer.Factory<T>#create(ResourceLocation, CraftingBookCategory)
+    // matches this constructor shape exactly, javap-verified.
+    //? if legacyforge {
+    public CrazyPhoneDuplicatePhotoRecipe(net.minecraft.resources.ResourceLocation id, CraftingBookCategory category) {
+        super(id, category);
+    }
+    //?}
 
     // Returns the matched photo stack, or null unless the grid holds exactly one Photo + one Paper and
     // nothing else.

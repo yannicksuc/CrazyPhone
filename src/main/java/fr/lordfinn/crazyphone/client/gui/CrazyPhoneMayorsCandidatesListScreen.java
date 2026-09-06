@@ -124,11 +124,7 @@ public class CrazyPhoneMayorsCandidatesListScreen extends CrazyPhoneDefaultScree
 			if (isHovering(rs, mouseX, mouseY)) {
 				String candidateNumber = fr.lordfinn.crazyphone.utils.NbtCompat.getString(PhoneTagAccess.getTag(rs.stack), "number");
 				textstate.put(	"candidateNumber", candidateNumber);
-                //? if >=1.20.5 {
-                /*NetworkAccess.sendToServer(new CrazyPhoneMayorsCandidatesButtonMessage(0, x, y, z, textstate));
-                *///? } else {
-                PacketDistributor.SERVER.noArg().send(new CrazyPhoneMayorsCandidatesButtonMessage(0, x, y, z, textstate));
-                //?}
+                NetworkAccess.sendToServer(new CrazyPhoneMayorsCandidatesButtonMessage(0, x, y, z, textstate));
                 CrazyPhoneMayorsCandidatesButtonMessage.handleButtonAction(entity, 0, x, y, z, textstate);
 				break;
 			}

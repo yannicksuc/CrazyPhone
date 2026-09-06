@@ -150,11 +150,7 @@ public class CrazyPhoneContactsScreenScreen extends CrazyPhoneDefaultScreenScree
 			if (selectedSlots.size() >= 2) {
 				HashMap<String, String> textstate = getEditBoxAndCheckBoxValues();
 				textstate.put("selectedNumbers", joinSelectedNumbers());
-				//? if >=1.20.5 {
-				/*NetworkAccess.sendToServer(new CrazyPhoneContactsScreenButtonMessage(2, x, y, z, textstate));
-				*///? } else {
-				PacketDistributor.SERVER.noArg().send(new CrazyPhoneContactsScreenButtonMessage(2, x, y, z, textstate));
-				//?}
+				NetworkAccess.sendToServer(new CrazyPhoneContactsScreenButtonMessage(2, x, y, z, textstate));
 				CrazyPhoneContactsScreenButtonMessage.handleButtonAction(entity, 2, x, y, z, textstate);
 			}
 		}).bounds(this.leftPos + 8, this.topPos + 158, 74, 14).build();
@@ -166,11 +162,7 @@ public class CrazyPhoneContactsScreenScreen extends CrazyPhoneDefaultScreenScree
 			if (!selectedSlots.isEmpty()) {
 				HashMap<String, String> textstate = getEditBoxAndCheckBoxValues();
 				textstate.put("selectedNumbers", joinSelectedNumbers());
-				//? if >=1.20.5 {
-				/*NetworkAccess.sendToServer(new CrazyPhoneContactsScreenButtonMessage(3, x, y, z, textstate));
-				*///? } else {
-				PacketDistributor.SERVER.noArg().send(new CrazyPhoneContactsScreenButtonMessage(3, x, y, z, textstate));
-				//?}
+				NetworkAccess.sendToServer(new CrazyPhoneContactsScreenButtonMessage(3, x, y, z, textstate));
 				CrazyPhoneContactsScreenButtonMessage.handleButtonAction(entity, 3, x, y, z, textstate);
 			}
 			selectedSlots.clear();
@@ -184,11 +176,7 @@ public class CrazyPhoneContactsScreenScreen extends CrazyPhoneDefaultScreenScree
 			if (!selectedSlots.isEmpty()) {
 				HashMap<String, String> textstate = getEditBoxAndCheckBoxValues();
 				textstate.put("selectedNumbers", joinSelectedNumbers());
-				//? if >=1.20.5 {
-				/*NetworkAccess.sendToServer(new CrazyPhoneContactsScreenButtonMessage(5, x, y, z, textstate));
-				*///? } else {
-				PacketDistributor.SERVER.noArg().send(new CrazyPhoneContactsScreenButtonMessage(5, x, y, z, textstate));
-				//?}
+				NetworkAccess.sendToServer(new CrazyPhoneContactsScreenButtonMessage(5, x, y, z, textstate));
 				CrazyPhoneContactsScreenButtonMessage.handleButtonAction(entity, 5, x, y, z, textstate);
 			}
 			selectedSlots.clear();
@@ -703,6 +691,9 @@ public class CrazyPhoneContactsScreenScreen extends CrazyPhoneDefaultScreenScree
 		return -1;
 	}
 
+	// Real 1.20.1 vanilla predates GuiEventListener's horizontal-scroll parameter (added by 1.20.4) - only
+	// the vertical delta is ever used here either way.
+	//? if >=1.20.4 {
 	@Override
 	public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
 		if (this.layout == null)
@@ -715,6 +706,21 @@ public class CrazyPhoneContactsScreenScreen extends CrazyPhoneDefaultScreenScree
 			scrollPosition = max;
 		return true;
 	}
+	//?}
+	//? if <1.20.4 {
+	@Override
+	public boolean mouseScrolled(double mouseX, double mouseY, double scrollY) {
+		if (this.layout == null)
+			this.layout = computeLayout();
+		scrollPosition -= (int) (scrollY * SCROLL_STEP);
+		int max = maxScroll();
+		if (scrollPosition < 0)
+			scrollPosition = 0;
+		else if (scrollPosition > max)
+			scrollPosition = max;
+		return true;
+	}
+	//?}
 
 	//? if <1.21.10 {
 	@Override
@@ -736,11 +742,7 @@ public class CrazyPhoneContactsScreenScreen extends CrazyPhoneDefaultScreenScree
 			this.layout = computeLayout();
 		HashMap<String, String> textstate = getEditBoxAndCheckBoxValues();
 		if (button == 0 && isHoveringAddContactTile(mouseX, mouseY)) {
-			//? if >=1.20.5 {
-			/*NetworkAccess.sendToServer(new CrazyPhoneContactsScreenButtonMessage(0, x, y, z, textstate));
-			*///? } else {
-			PacketDistributor.SERVER.noArg().send(new CrazyPhoneContactsScreenButtonMessage(0, x, y, z, textstate));
-			//?}
+			NetworkAccess.sendToServer(new CrazyPhoneContactsScreenButtonMessage(0, x, y, z, textstate));
 			CrazyPhoneContactsScreenButtonMessage.handleButtonAction(entity, 0, x, y, z, textstate);
 			return true;
 		}
@@ -748,11 +750,7 @@ public class CrazyPhoneContactsScreenScreen extends CrazyPhoneDefaultScreenScree
 			int groupIndex = hoveredGroupIndex(mouseX, mouseY);
 			if (groupIndex >= 0) {
 				textstate.put("conversationId", menu.getGroups().get(groupIndex).conversationId());
-				//? if >=1.20.5 {
-				/*NetworkAccess.sendToServer(new CrazyPhoneContactsScreenButtonMessage(4, x, y, z, textstate));
-				*///? } else {
-				PacketDistributor.SERVER.noArg().send(new CrazyPhoneContactsScreenButtonMessage(4, x, y, z, textstate));
-				//?}
+				NetworkAccess.sendToServer(new CrazyPhoneContactsScreenButtonMessage(4, x, y, z, textstate));
 				CrazyPhoneContactsScreenButtonMessage.handleButtonAction(entity, 4, x, y, z, textstate);
 				return true;
 			}
@@ -770,11 +768,7 @@ public class CrazyPhoneContactsScreenScreen extends CrazyPhoneDefaultScreenScree
 				Contact person = personAt(personIndex);
 				if (person != null) {
 					textstate.put("contactNumber", person.getNumber());
-					//? if >=1.20.5 {
-					/*NetworkAccess.sendToServer(new CrazyPhoneContactsScreenButtonMessage(1, x, y, z, textstate));
-					*///? } else {
-					PacketDistributor.SERVER.noArg().send(new CrazyPhoneContactsScreenButtonMessage(1, x, y, z, textstate));
-					//?}
+					NetworkAccess.sendToServer(new CrazyPhoneContactsScreenButtonMessage(1, x, y, z, textstate));
 					CrazyPhoneContactsScreenButtonMessage.handleButtonAction(entity, 1, x, y, z, textstate);
 				}
 				return true;

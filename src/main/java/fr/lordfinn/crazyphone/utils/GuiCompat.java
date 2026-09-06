@@ -153,8 +153,17 @@ public final class GuiCompat {
      *  enableScissor - gets a chance to crop the final result down to the intended area, exactly like it did
      *  pre-1.21.10). */
     public static void renderEntityInInventory(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int x, int y, int scale, Vector3f translation, Quaternionf rotation, @Nullable Quaternionf cameraOrientation, LivingEntity entity) {
-        //? if <1.21.10 {
+        //? if (neoforge || fabric) && <1.21.10 {
         net.minecraft.client.gui.screens.inventory.InventoryScreen.renderEntityInInventory(guiGraphics, x, y, scale, translation, rotation, cameraOrientation, entity);
+        //?}
+        // Real 1.20.1 vanilla's renderEntityInInventory has no translation parameter at all (that was added
+        // later, alongside the >=1.21.10 rect-based rework above) - applied as a manual pose translate
+        // around the call instead, same net visual effect.
+        //? if legacyforge {
+        guiGraphics.pose().pushPose();
+        guiGraphics.pose().translate(translation.x, translation.y, translation.z);
+        net.minecraft.client.gui.screens.inventory.InventoryScreen.renderEntityInInventory(guiGraphics, x, y, scale, rotation, cameraOrientation, entity);
+        guiGraphics.pose().popPose();
         //?}
         //? if >=1.21.10 <26 {
         /*int half = Math.max(scale * 3, 1);

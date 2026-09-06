@@ -152,10 +152,20 @@ public final class CrazyPhonePhotoItemRenderer {
     // on 26.1, and this never touches that field), so this needs no stonecutter version gate at all. Reused
     // by both the <26 render() path and the >=26 ModelImpl#update() path below, plus
     // CrazyPhonePresentHandGripMixin's own direct renderHandFramedCard() call site.
+    //? if fabric || neoforge {
     public static int borderRgb(ItemStack stack) {
         net.minecraft.world.item.component.DyedItemColor dyed = stack.get(net.minecraft.core.component.DataComponents.DYED_COLOR);
         return dyed != null ? dyed.rgb() : DEFAULT_BORDER_RGB;
     }
+    //?}
+    // Real 1.20.1 vanilla has no Data Components system at all (see CrazyPhonePhotoItem's own doc comment
+    // on the same boundary) - the dyed-photo-frame feature has no recipe on this target either way, so the
+    // border simply never picks up a tint here instead of backporting component lookup.
+    //? if legacyforge {
+    public static int borderRgb(ItemStack stack) {
+        return DEFAULT_BORDER_RGB;
+    }
+    //?}
 
     private CrazyPhonePhotoItemRenderer() {
     }

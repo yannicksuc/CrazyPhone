@@ -47,12 +47,14 @@ config = "${mod_id}.mixins.json"
 
 # A dependency - use the . to indicate dependency for a specific modid. Dependencies are optional.
 [[dependencies."${mod_id}"]] #optional
-# the modid of the dependency
-modId = "neoforge" #mandatory
+# the modid of the dependency - "forge" on 1.20.1 (predates NeoForge's own fork/rebrand and its "neoforge"
+# modid), "neoforge" on every other (modern NeoForge) node - see build.gradle.kts/build.legacyforge.gradle.kts's
+# own loader_mod_id.
+modId = "${loader_mod_id}" #mandatory
 # The type of the dependency. Can be one of "required", "optional", "incompatible" or "discouraged" (case insensitive).
 # 'required' requires the mod to exist, 'optional' does not
 # 'incompatible' will prevent the game from loading when the mod exists, and 'discouraged' will show a warning
-type = "required" #mandatory
+${dependency_required} #mandatory
 # Optional field describing why the dependency is required or why it is incompatible
 # reason="..."
 # The version range of the dependency
@@ -66,7 +68,7 @@ side = "BOTH"
 # Here's another dependency
 [[dependencies."${mod_id}"]]
 modId = "minecraft"
-type = "required"
+${dependency_required}
 # This version range declares a minimum of the current minecraft version up to but not including the next major version
 versionRange = "${minecraft_version_range}"
 ordering = "NONE"
@@ -79,7 +81,7 @@ side = "BOTH"
 # reads that string as major version 1 and always fails the range check.
 [[dependencies."${mod_id}"]]
 modId = "voicechat"
-type = "optional"
+${dependency_optional}
 versionRange = "[1.0.0,)"
 ordering = "AFTER"
 side = "BOTH"

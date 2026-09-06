@@ -238,13 +238,18 @@ val modMetadataProperties = mapOf(
     "neo_version" to property("neo_version"),
     "neo_version_range" to property("neo_version_range"),
     "loader_version_range" to loaderVersionRange,
+    "loader_mod_id" to "neoforge",
     "mod_id" to property("mod_id"),
     "mod_name" to property("mod_name"),
     "mod_license" to property("mod_license"),
     "mod_version" to property("mod_version"),
     "mod_authors" to property("mod_authors"),
     "mod_description" to property("mod_description"),
-    "mixin_compatibility_level" to mixinCompatibilityLevel
+    "mixin_compatibility_level" to mixinCompatibilityLevel,
+    // NeoForge's mods.toml schema - "type" (string enum), not old Forge's "mandatory" (boolean, see
+    // build.legacyforge.gradle.kts's own doc comment on that difference).
+    "dependency_required" to "type = \"required\"",
+    "dependency_optional" to "type = \"optional\""
 )
 val generateModMetadata = tasks.register<ProcessResources>("generateModMetadata") {
     inputs.properties(modMetadataProperties)

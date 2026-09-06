@@ -161,10 +161,13 @@ public class ConversationSavedData extends SavedData {
                     //? if >=1.21.10 {
                     /*.computeIfAbsent(TYPE);
                     *///?}
-                    // Fabric branches use real vanilla SavedData/DimensionDataStorage signatures (confirmed via
-                    // javap on the Loom-remapped vanilla jar) rather than the NeoForge-only convenience
+                    // Fabric and legacyforge (real, original net.minecraftforge:forge:1.20.1, predating
+                    // NeoForge's own SavedData.Factory convenience patch entirely - javap-verified against
+                    // the actual 1.20.1 Forge jar: DimensionDataStorage only has the plain vanilla 3-arg
+                    // computeIfAbsent, no Factory overload at all) both use real vanilla
+                    // SavedData/DimensionDataStorage signatures rather than the NeoForge-only convenience
                     // overloads the two branches above rely on - see the import block's comment above.
-                    //? if fabric && <1.20.5 {
+                    //? if (fabric || legacyforge) && <1.20.5 {
                     /*.computeIfAbsent(ConversationSavedData::load, ConversationSavedData::new, DATA_NAME);
                     *///?}
                     //? if fabric && >=1.20.5 <1.21.10 {

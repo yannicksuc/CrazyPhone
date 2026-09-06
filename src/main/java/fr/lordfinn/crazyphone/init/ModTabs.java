@@ -4,6 +4,14 @@ package fr.lordfinn.crazyphone.init;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.neoforged.neoforge.registries.DeferredHolder;
 //?}
+// Real, original Forge 1.20.1 - DeferredRegister.create(ResourceKey<Registry<T>>, String) matches, javap-
+// verified, and CreativeModeTab.builder()/withSearchBar() are both real vanilla-jar patches present since
+// before the NeoForge fork - only .register(...) returning a RegistryObject<T> instead of a DeferredHolder
+// differs (same .get() either way).
+//? if legacyforge {
+import net.minecraftforge.registries.DeferredRegister;
+import net.minecraftforge.registries.RegistryObject;
+//?}
 //? if fabric && <26 {
 /*import net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup;
 *///?}
@@ -23,6 +31,19 @@ public class ModTabs {
     public static final DeferredRegister<CreativeModeTab> REGISTRY = DeferredRegister.create(Registries.CREATIVE_MODE_TAB, Crazyphone.MODID);
 
     public static final DeferredHolder<CreativeModeTab, CreativeModeTab> CRAZY_PHONE_TAB = REGISTRY.register("crazy_phone_tab",
+            () -> CreativeModeTab.builder()
+                    .title(Component.translatable("item_group.crazyphone.crazy_phone_tab"))
+                    .icon(() -> ModItems.CRAZY_PHONE.get().getDefaultInstance())
+                    .displayItems((parameters, tabData) -> tabData.accept(ModItems.CRAZY_PHONE.get()))
+                    .withSearchBar()
+                    .build());
+}
+//?}
+//? if legacyforge {
+public class ModTabs {
+    public static final DeferredRegister<CreativeModeTab> REGISTRY = DeferredRegister.create(Registries.CREATIVE_MODE_TAB, Crazyphone.MODID);
+
+    public static final RegistryObject<CreativeModeTab> CRAZY_PHONE_TAB = REGISTRY.register("crazy_phone_tab",
             () -> CreativeModeTab.builder()
                     .title(Component.translatable("item_group.crazyphone.crazy_phone_tab"))
                     .icon(() -> ModItems.CRAZY_PHONE.get().getDefaultInstance())

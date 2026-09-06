@@ -10,6 +10,17 @@ import net.neoforged.fml.common.Mod.EventBusSubscriber;
 import net.neoforged.fml.event.config.ModConfigEvent;
 import net.neoforged.neoforge.common.ModConfigSpec;
 //?}
+// Real, original Forge 1.20.1 - ForgeConfigSpec is the exact same builder API NeoForge's own ModConfigSpec
+// was itself forked/renamed from (comment/define/defineInRange all match, javap-verified), just under
+// net.minecraftforge and without the typed IntValue/BooleanValue convenience subclasses NeoForge added
+// later - a generic ConfigValue<Integer>/ConfigValue<Boolean> (same .get()) stands in for those, and
+// defineInRange needs an explicit trailing Class<V> token that NeoForge's own newer overload infers instead.
+//? if legacyforge {
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
+import net.minecraftforge.fml.event.config.ModConfigEvent;
+import net.minecraftforge.common.ForgeConfigSpec;
+//?}
 
 //? if neoforge {
 //? if <1.20.5 {
@@ -217,6 +228,177 @@ public class Config {
         SPEC.save();
     }
 
+}
+//?}
+//? if legacyforge {
+@EventBusSubscriber(modid = Crazyphone.MODID, bus = EventBusSubscriber.Bus.MOD)
+public class Config {
+    private static final ForgeConfigSpec.Builder BUILDER = new ForgeConfigSpec.Builder();
+
+    private static final ForgeConfigSpec.ConfigValue<Integer> MAX_STORED_MESSAGES_PER_CONVERSATION = BUILDER
+            .comment("Maximum number of messages kept on disk per conversation. Older messages beyond this are discarded when a new one arrives.")
+            .defineInRange("maxStoredMessagesPerConversation", 300, 10, 10000, Integer.class);
+
+    private static final ForgeConfigSpec.ConfigValue<Integer> MAX_MESSAGES_SENT_PER_REQUEST = BUILDER
+            .comment("Maximum number of messages sent to a client in one page when it opens/scrolls a conversation.")
+            .defineInRange("maxMessagesSentPerRequest", 100, 10, 1000, Integer.class);
+
+    private static final ForgeConfigSpec.ConfigValue<Integer> MAX_IMAGES_STORED_PER_CONVERSATION = BUILDER
+            .comment("Maximum number of image messages kept on disk per conversation (images are the heaviest payload, capped separately from text messages).")
+            .defineInRange("maxImagesStoredPerConversation", 50, 5, 2000, Integer.class);
+
+    private static final ForgeConfigSpec.ConfigValue<Integer> MAX_PHOTOS_STORED_PER_OWNER = BUILDER
+            .comment("Maximum number of photos (both resolutions) kept on disk per owning phone number - the oldest is discarded once a new one exceeds this, independent of conversation history trimming.")
+            .defineInRange("maxPhotosStoredPerOwner", 300, 10, 5000, Integer.class);
+
+    private static final ForgeConfigSpec.ConfigValue<Integer> PHOTO_THUMBNAIL_PIXEL_HEIGHT = BUILDER
+            .comment("Target height in pixels for a photo's low-quality preview (thumbnails, chat bubbles) - lower looks more like pixel art, higher looks closer to the full photo. 0 disables the separate preview entirely (the full photo is reused as-is, so nothing extra is stored). If the photo's own height is already shorter than this, no resize happens either - a photo is never upscaled for its preview.")
+            .defineInRange("photoThumbnailPixelHeight", 14, 0, 256, Integer.class);
+
+    private static final ForgeConfigSpec.ConfigValue<Integer> PHOTO_FULL_MAX_DIMENSION = BUILDER
+            .comment("Maximum size in pixels, on the longer side, for a photo's full-quality version (fetched on demand when a photo is opened full-size) - independent of the player's actual render resolution. Higher looks sharper but costs more storage/network per photo.")
+            .defineInRange("photoFullMaxDimension", 1024, 64, 4096, Integer.class);
+
+    private static final ForgeConfigSpec.ConfigValue<Integer> PHOTO_FULL_MAX_UPLOAD_BYTES = BUILDER
+            .comment("Server-side ceiling, in bytes, on a photo's full-quality upload (defense in depth against a modified client - the real client already stays under this by construction, via photoFullMaxDimension). Raise this if you raise photoFullMaxDimension high enough that legitimate uploads start getting rejected.")
+            .defineInRange("photoFullMaxUploadBytes", 4_000_000, 100_000, 50_000_000, Integer.class);
+
+    private static final ForgeConfigSpec.ConfigValue<Boolean> MAYOR_ELECTION_FEATURE_ENABLED = BUILDER
+            .comment("Whether the mayor election/voting feature (accessible from the phone) is enabled.")
+            .define("mayorElectionFeatureEnabled", true);
+
+    private static final ForgeConfigSpec.ConfigValue<Boolean> CALLS_FEATURE_ENABLED = BUILDER
+            .comment("Whether voice calls are enabled. Has no effect if Simple Voice Chat isn't installed or voicechatIntegrationEnabled is false.")
+            .define("callsFeatureEnabled", true);
+
+    private static final ForgeConfigSpec.ConfigValue<Boolean> VOICE_MESSAGES_FEATURE_ENABLED = BUILDER
+            .comment("Whether recording and sending voice messages is enabled. Has no effect if Simple Voice Chat isn't installed or voicechatIntegrationEnabled is false.")
+            .define("voiceMessagesFeatureEnabled", true);
+
+    private static final ForgeConfigSpec.ConfigValue<Boolean> IMAGES_FEATURE_ENABLED = BUILDER
+            .comment("Whether sending images from the phone's album into a conversation is enabled.")
+            .define("imagesFeatureEnabled", true);
+
+    private static final ForgeConfigSpec.ConfigValue<Boolean> VOICECHAT_INTEGRATION_ENABLED = BUILDER
+            .comment("Master switch for the Simple Voice Chat integration (calls + voice messages). Has no effect if Simple Voice Chat itself isn't installed.")
+            .define("voicechatIntegrationEnabled", true);
+
+    private static final ForgeConfigSpec.ConfigValue<Integer> CALL_RING_TIMEOUT_SECONDS = BUILDER
+            .comment("How long a call rings before an unanswered callee is treated as a missed call. Distinct from aloneInCallKickSeconds, which only applies once a call is actually connected.")
+            .defineInRange("callRingTimeoutSeconds", 30, 5, 120, Integer.class);
+
+    private static final ForgeConfigSpec.ConfigValue<Integer> ALONE_IN_CALL_KICK_SECONDS = BUILDER
+            .comment("How long a call stays open with only one participant left before that participant is automatically removed from it.")
+            .defineInRange("aloneInCallKickSeconds", 5, 1, 60, Integer.class);
+
+    private static final ForgeConfigSpec.ConfigValue<Integer> PHONE_DROP_GRACE_SECONDS = BUILDER
+            .comment("How long a player can be without their phone (dropped, or moved to another inventory) during a call before it actually ends - picking it back up within this window keeps the call going uninterrupted.")
+            .defineInRange("phoneDropGraceSeconds", 5, 0, 60, Integer.class);
+
+    private static final ForgeConfigSpec.ConfigValue<Boolean> CALL_VIDEO_ENABLED = BUILDER
+            .comment("Whether the In Call screen's live 3D participant previews (\"video\") are available at all. When false, every participant is shown as a flat 2D head and the per-player video toggle is hidden.")
+            .define("callVideoEnabled", true);
+
+    private static final ForgeConfigSpec.ConfigValue<Integer> MAX_VOICE_MESSAGES_STORED_PER_CONVERSATION = BUILDER
+            .comment("Maximum number of voice messages (with their audio) kept on disk per conversation - voice audio is the heaviest payload, capped separately from text/image messages.")
+            .defineInRange("maxVoiceMessagesStoredPerConversation", 30, 5, 500, Integer.class);
+
+    private static final ForgeConfigSpec.ConfigValue<Integer> MAX_VOICE_MESSAGE_RECORDING_SECONDS = BUILDER
+            .comment("Maximum length of a single voice message recording, in seconds - recording auto-stops once this is reached.")
+            .defineInRange("maxVoiceMessageRecordingSeconds", 60, 5, 600, Integer.class);
+
+    private static final ForgeConfigSpec.ConfigValue<Boolean> SOULBOUND_ENCHANTMENT_ENABLED = BUILDER
+            .comment("Whether the Soulbound enchantment actually keeps enchanted items on death. Does not affect whether it can still be found or applied.")
+            .define("soulboundEnchantmentEnabled", true);
+
+    private static final ForgeConfigSpec.ConfigValue<Boolean> PHONE_SOULBOUND_BY_DEFAULT = BUILDER
+            .comment("Whether the Crazy Phone item survives death on its own, without needing the Soulbound enchantment applied to it.")
+            .define("phoneSoulboundByDefault", false);
+
+    private static final ForgeConfigSpec.ConfigValue<Boolean> CRAZY_PHONE_CRAFTING_ENABLED = BUILDER
+            .comment("Whether the Crazy Phone item can be crafted. When false, the recipe is disabled - phones can still be given via /crazyphone give.")
+            .define("crazyPhoneCraftingEnabled", true);
+
+    private static final ForgeConfigSpec.ConfigValue<Integer> MAX_PHOTO_FRAME_SIZE_BLOCKS = BUILDER
+            .comment("Maximum size, in blocks on a side, a placed photo frame can be resized up to via its own right-click resize dialog.")
+            .defineInRange("maxPhotoFrameSizeBlocks", 32, 1, 32, Integer.class);
+
+    private static final ForgeConfigSpec.ConfigValue<Boolean> REQUIRE_PHONE_PASSWORD = BUILDER
+            .comment("Whether registering a new phone requires setting a password. When false, the password step can be left empty - a phone registered without one can never be locked.")
+            .define("requirePhonePassword", true);
+
+    static final ForgeConfigSpec SPEC = BUILDER.build();
+
+    public static int maxStoredMessagesPerConversation;
+    public static int maxMessagesSentPerRequest;
+    public static int maxImagesStoredPerConversation;
+    public static int maxPhotosStoredPerOwner;
+    public static int photoThumbnailPixelHeight;
+    public static int photoFullMaxDimension;
+    public static int photoFullMaxUploadBytes;
+    public static boolean mayorElectionFeatureEnabled;
+    public static boolean callsFeatureEnabled;
+    public static boolean voiceMessagesFeatureEnabled;
+    public static boolean imagesFeatureEnabled;
+    public static boolean voicechatIntegrationEnabled;
+    public static int callRingTimeoutSeconds;
+    public static int aloneInCallKickSeconds;
+    public static int phoneDropGraceSeconds;
+    public static boolean callVideoEnabled;
+    public static int maxVoiceMessagesStoredPerConversation;
+    public static int maxVoiceMessageRecordingSeconds;
+    public static boolean soulboundEnchantmentEnabled;
+    public static boolean phoneSoulboundByDefault;
+    public static boolean crazyPhoneCraftingEnabled;
+    public static int maxPhotoFrameSizeBlocks;
+    public static boolean requirePhonePassword;
+
+    @SubscribeEvent
+    static void onLoad(final ModConfigEvent event) {
+        maxStoredMessagesPerConversation = MAX_STORED_MESSAGES_PER_CONVERSATION.get();
+        maxMessagesSentPerRequest = MAX_MESSAGES_SENT_PER_REQUEST.get();
+        maxImagesStoredPerConversation = MAX_IMAGES_STORED_PER_CONVERSATION.get();
+        maxPhotosStoredPerOwner = MAX_PHOTOS_STORED_PER_OWNER.get();
+        photoThumbnailPixelHeight = PHOTO_THUMBNAIL_PIXEL_HEIGHT.get();
+        photoFullMaxDimension = PHOTO_FULL_MAX_DIMENSION.get();
+        photoFullMaxUploadBytes = PHOTO_FULL_MAX_UPLOAD_BYTES.get();
+        mayorElectionFeatureEnabled = MAYOR_ELECTION_FEATURE_ENABLED.get();
+        callsFeatureEnabled = CALLS_FEATURE_ENABLED.get();
+        voiceMessagesFeatureEnabled = VOICE_MESSAGES_FEATURE_ENABLED.get();
+        imagesFeatureEnabled = IMAGES_FEATURE_ENABLED.get();
+        voicechatIntegrationEnabled = VOICECHAT_INTEGRATION_ENABLED.get();
+        callRingTimeoutSeconds = CALL_RING_TIMEOUT_SECONDS.get();
+        aloneInCallKickSeconds = ALONE_IN_CALL_KICK_SECONDS.get();
+        phoneDropGraceSeconds = PHONE_DROP_GRACE_SECONDS.get();
+        callVideoEnabled = CALL_VIDEO_ENABLED.get();
+        maxVoiceMessagesStoredPerConversation = MAX_VOICE_MESSAGES_STORED_PER_CONVERSATION.get();
+        maxVoiceMessageRecordingSeconds = MAX_VOICE_MESSAGE_RECORDING_SECONDS.get();
+        soulboundEnchantmentEnabled = SOULBOUND_ENCHANTMENT_ENABLED.get();
+        phoneSoulboundByDefault = PHONE_SOULBOUND_BY_DEFAULT.get();
+        crazyPhoneCraftingEnabled = CRAZY_PHONE_CRAFTING_ENABLED.get();
+        maxPhotoFrameSizeBlocks = MAX_PHOTO_FRAME_SIZE_BLOCKS.get();
+        requirePhonePassword = REQUIRE_PHONE_PASSWORD.get();
+    }
+
+    public static void setMayorElectionFeatureEnabled(boolean enabled) {
+        MAYOR_ELECTION_FEATURE_ENABLED.set(enabled);
+        SPEC.save();
+    }
+
+    public static void setCallsFeatureEnabled(boolean enabled) {
+        CALLS_FEATURE_ENABLED.set(enabled);
+        SPEC.save();
+    }
+
+    public static void setVoiceMessagesFeatureEnabled(boolean enabled) {
+        VOICE_MESSAGES_FEATURE_ENABLED.set(enabled);
+        SPEC.save();
+    }
+
+    public static void setImagesFeatureEnabled(boolean enabled) {
+        IMAGES_FEATURE_ENABLED.set(enabled);
+        SPEC.save();
+    }
 }
 //?}
 //? if fabric {

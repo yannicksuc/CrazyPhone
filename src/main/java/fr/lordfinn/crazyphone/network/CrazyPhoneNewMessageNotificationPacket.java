@@ -16,9 +16,22 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.api.distmarker.Dist;
 //?}
+// Real, original Forge 1.20.1 - same FMLCommonSetupEvent/EventBusSubscriber/SubscribeEvent shape as
+// NeoForge's own <1.20.5 branch above (see NetworkAccess.java's own doc comment) - PlayPayloadContext
+// itself is NOT imported here: this file is in the same package as the same-package compat shim
+// (fr.lordfinn.crazyphone.network.PlayPayloadContext), so it resolves with no import at all.
+//? if legacyforge {
+import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraftforge.api.distmarker.Dist;
+//?}
 
 import net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/;
+//? if fabric || neoforge {
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+//?}
 import net.minecraft.network.protocol.PacketFlow;
 //? if >=1.20.5 {
 /*import net.minecraft.network.codec.StreamCodec;
@@ -51,6 +64,13 @@ import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
 /*@EventBusSubscriber
 *///?}
 //?}
+//? if legacyforge {
+/*public record CrazyPhoneNewMessageNotificationPacket(
+    CompoundTag messageTag,
+    String senderName,
+    boolean muted
+) {
+*///? } else {
 public record CrazyPhoneNewMessageNotificationPacket(
     CompoundTag messageTag,
     String senderName,
@@ -59,6 +79,7 @@ public record CrazyPhoneNewMessageNotificationPacket(
     // unread-notification badge (a separate mechanism, see addNotificationBadge) is never touched by this.
     boolean muted
 ) implements CustomPacketPayload {
+//?}
 
     //? if >=1.20.5 {
     /*public static final Type<CrazyPhoneNewMessageNotificationPacket> TYPE = new Type<>(
@@ -96,7 +117,9 @@ public record CrazyPhoneNewMessageNotificationPacket(
         buffer.writeBoolean(muted);
     }
 
+    //? if fabric || neoforge {
     @Override
+    //?}
     public /*$ res_loc {*/ResourceLocation/*$}*/ id() {
         return ID;
     }
@@ -106,7 +129,7 @@ public record CrazyPhoneNewMessageNotificationPacket(
     // removed @OnlyIn's runtime stripping, so a genuinely separate, class-level-@EventBusSubscriber(Dist.
     // CLIENT)-annotated nested class is what keeps AutomaticEventSubscriber's dedicated-server scan from
     // ever loading this method's Minecraft.getInstance() reference at all.
-    //? if neoforge && <1.20.5 {
+    //? if (neoforge || legacyforge) && <1.20.5 {
     @OnlyIn(Dist.CLIENT)
     //?}
     //? if neoforge && >=1.20.5 <26 {
@@ -160,7 +183,7 @@ public record CrazyPhoneNewMessageNotificationPacket(
         }
     }
     *///?}
-    //? if neoforge && <1.20.5 {
+    //? if (neoforge || legacyforge) && <1.20.5 {
     public static void handleData(final CrazyPhoneNewMessageNotificationPacket messagePacket, final PlayPayloadContext context) {
         if (context.flow() == PacketFlow.CLIENTBOUND) {
             context.workHandler().submitAsync(() -> ClientHandler.applyNotification(messagePacket));
@@ -191,4 +214,14 @@ public record CrazyPhoneNewMessageNotificationPacket(
         fr.lordfinn.crazyphone.fabric.FabricNetworking.registerClientReceiver(TYPE, CrazyPhoneNewMessageNotificationPacket::handleDataFabric);
     }
     *///?}
+
+    //? if legacyforge {
+    @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
+    public static class LegacyForgeRegistration {
+        @SubscribeEvent
+        public static void register(FMLCommonSetupEvent event) {
+            Crazyphone.addNetworkMessage(CrazyPhoneNewMessageNotificationPacket.class, CrazyPhoneNewMessageNotificationPacket::write, CrazyPhoneNewMessageNotificationPacket::new, CrazyPhoneNewMessageNotificationPacket::handleData);
+        }
+    }
+    //?}
 }

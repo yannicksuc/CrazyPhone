@@ -14,17 +14,28 @@ import net.minecraft.world.level.storage.ValueOutput;
 *///?}
 import net.neoforged.neoforge.network.PacketDistributor;
 //?}
+// Real, original Forge 1.20.1 (predates NeoForge's own fork/rebrand) - same INBTSerializable/
+// PacketDistributor shape NeoForge's own <1.21.10 branch above uses, javap-verified against the actual
+// 1.20.1 Forge jar, just under net.minecraftforge instead of net.neoforged.neoforge.
+//? if legacyforge {
+import net.minecraftforge.common.util.INBTSerializable;
+import net.minecraftforge.network.PacketDistributor;
+//?}
 //? if fabric && >=1.20.5 {
 /*import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import fr.lordfinn.crazyphone.utils.NetworkAccess;
 *///?}
+//? if fabric || legacyforge {
+import fr.lordfinn.crazyphone.utils.NetworkAccess;
+//?}
 
 import fr.lordfinn.crazyphone.network.PlayerPhoneStateSyncPacket;
-import org.jetbrains.annotations.NotNull;
+//? if >=1.20.5 <1.21.10 {
+/*import org.jetbrains.annotations.NotNull;
+*///?}
 
 /** Small per-player UI state (which phone screen is open and its navigation history). Cheap, per-player, synced as-is - not part of the crash fix. */
-//? if neoforge && <1.21.10 {
+//? if (neoforge || legacyforge) && <1.21.10 {
 public class PlayerPhoneState implements INBTSerializable<CompoundTag> {
 //?}
 //? if neoforge && >=1.21.10 {
@@ -49,7 +60,7 @@ public class PlayerPhoneState {
     public String currentCrazyPhoneScreenOpened = "";
     public String crazyPhoneScreenHistory = "";
 
-    //? if neoforge {
+    //? if neoforge || legacyforge {
     private static String readString(CompoundTag nbt, String key) {
         //? if <1.21.10 {
         return nbt.getString(key);
@@ -111,6 +122,9 @@ public class PlayerPhoneState {
             *///?}
             //? if neoforge && <1.20.5 {
             PacketDistributor.PLAYER.with(serverPlayer).send(new PlayerPhoneStateSyncPacket(this));
+            //?}
+            //? if legacyforge {
+            NetworkAccess.sendToPlayer(serverPlayer, new PlayerPhoneStateSyncPacket(this));
             //?}
             //? if fabric && >=1.20.5 {
             /*NetworkAccess.sendToPlayer(serverPlayer, new PlayerPhoneStateSyncPacket(this));

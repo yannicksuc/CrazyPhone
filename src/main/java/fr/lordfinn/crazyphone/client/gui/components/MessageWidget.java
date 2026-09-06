@@ -429,20 +429,12 @@ public class MessageWidget extends AbstractWidget {
                     // Already playing - this click is the pause icon, actually stop the server-side
                     // AudioPlayer rather than just resetting the local timer (which would leave the real
                     // audio still playing out even though the icon flipped back to "play").
-                    //? if >=1.20.5 {
-                    /*NetworkAccess.sendToServer(new VoiceMessageStopPacket());
-                    *///? } else {
-                    PacketDistributor.SERVER.noArg().send(new VoiceMessageStopPacket());
-                    //?}
+                    NetworkAccess.sendToServer(new VoiceMessageStopPacket());
                     voicePlayStartMs = -1;
                 } else {
                     voicePlayStartTick = 0;
                     voicePlayStartMs = System.currentTimeMillis();
-                    //? if >=1.20.5 {
-                    /*NetworkAccess.sendToServer(new VoiceMessageAudioRequestPacket(voiceId, VOICE_SPEEDS[voiceSpeedIndex], 0));
-                    *///? } else {
-                    PacketDistributor.SERVER.noArg().send(new VoiceMessageAudioRequestPacket(voiceId, VOICE_SPEEDS[voiceSpeedIndex], 0));
-                    //?}
+                    NetworkAccess.sendToServer(new VoiceMessageAudioRequestPacket(voiceId, VOICE_SPEEDS[voiceSpeedIndex], 0));
                 }
                 return true;
             }
@@ -461,11 +453,7 @@ public class MessageWidget extends AbstractWidget {
         if (wasPlaying) {
             voicePlayStartTick = resumeTick;
             voicePlayStartMs = System.currentTimeMillis();
-            //? if >=1.20.5 {
-            /*NetworkAccess.sendToServer(new VoiceMessageAudioRequestPacket(voiceId, VOICE_SPEEDS[voiceSpeedIndex], resumeTick));
-            *///? } else {
-            PacketDistributor.SERVER.noArg().send(new VoiceMessageAudioRequestPacket(voiceId, VOICE_SPEEDS[voiceSpeedIndex], resumeTick));
-            //?}
+            NetworkAccess.sendToServer(new VoiceMessageAudioRequestPacket(voiceId, VOICE_SPEEDS[voiceSpeedIndex], resumeTick));
         }
     }
 

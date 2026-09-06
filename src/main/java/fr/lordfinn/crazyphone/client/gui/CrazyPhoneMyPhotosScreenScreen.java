@@ -314,6 +314,9 @@ public class CrazyPhoneMyPhotosScreenScreen extends CrazyPhoneDefaultScreenScree
         return false;
     }
 
+    // Real 1.20.1 vanilla predates GuiEventListener's horizontal-scroll parameter (added by 1.20.4) - only
+    // the vertical delta is ever used here either way.
+    //? if >=1.20.4 {
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         int newPosition = Math.max(0, Math.min(maxScrollPosition(), scrollPosition - (int) (scrollY * SCROLL_STEP)));
@@ -324,6 +327,19 @@ public class CrazyPhoneMyPhotosScreenScreen extends CrazyPhoneDefaultScreenScree
         }
         return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
     }
+    //?}
+    //? if <1.20.4 {
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollY) {
+        int newPosition = Math.max(0, Math.min(maxScrollPosition(), scrollPosition - (int) (scrollY * SCROLL_STEP)));
+        if (newPosition != scrollPosition) {
+            scrollPosition = newPosition;
+            prefetchVisible();
+            return true;
+        }
+        return super.mouseScrolled(mouseX, mouseY, scrollY);
+    }
+    //?}
 
     @Override
     public void init() {
@@ -390,11 +406,7 @@ public class CrazyPhoneMyPhotosScreenScreen extends CrazyPhoneDefaultScreenScree
 
     private void sendAction(CrazyPhoneMyPhotosActionMessage.Action action) {
         var message = new CrazyPhoneMyPhotosActionMessage(action, java.util.List.copyOf(selectedPhotoIds), menu.conversationId);
-        //? if >=1.20.5 {
-        /*NetworkAccess.sendToServer(message);
-        *///? } else {
-        PacketDistributor.SERVER.noArg().send(message);
-        //?}
+        NetworkAccess.sendToServer(message);
     }
 
     private void updateActionButtonsState() {

@@ -14,9 +14,20 @@ import net.neoforged.fml.common.Mod.EventBusSubscriber;
 //?}
 import net.neoforged.bus.api.SubscribeEvent;
 //?}
+// Real, original Forge 1.20.1 - same FMLCommonSetupEvent/EventBusSubscriber/SubscribeEvent shape as
+// NeoForge's own <1.20.5 branch above (see NetworkAccess.java's own doc comment) - PlayPayloadContext
+// itself is NOT imported here: this file is in the same package as the same-package compat shim
+// (fr.lordfinn.crazyphone.network.PlayPayloadContext), so it resolves with no import at all.
+//? if legacyforge {
+import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+//?}
 
 import net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/;
+//? if fabric || neoforge {
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+//?}
 import net.minecraft.network.protocol.PacketFlow;
 //? if >=1.20.5 {
 /*import net.minecraft.network.codec.StreamCodec;
@@ -51,10 +62,17 @@ import java.util.UUID;
  * every join/leave/answer/video toggle (see CallRegistry) means the grid updates live with zero new sync
  * call sites.
  */
+//? if legacyforge {
+/*public record CrazyPhoneCallStateSyncPacket(String conversationId, UUID callId, State state, List<String> callNumbers,
+                                             List<UUID> participantIds, List<String> participantNames,
+                                             List<Boolean> participantVideoEnabled, boolean selfVideoEnabled,
+                                             boolean videoFeatureEnabled) {
+*///? } else {
 public record CrazyPhoneCallStateSyncPacket(String conversationId, UUID callId, State state, List<String> callNumbers,
                                              List<UUID> participantIds, List<String> participantNames,
                                              List<Boolean> participantVideoEnabled, boolean selfVideoEnabled,
                                              boolean videoFeatureEnabled) implements CustomPacketPayload {
+//?}
 
     public enum State {
         CALLING, RINGING, ACTIVE, ENDED
@@ -124,7 +142,9 @@ public record CrazyPhoneCallStateSyncPacket(String conversationId, UUID callId, 
         buffer.writeBoolean(videoFeatureEnabled);
     }
 
+    //? if fabric || neoforge {
     @Override
+    //?}
     public /*$ res_loc {*/ResourceLocation/*$}*/ id() {
         return ID;
     }
@@ -140,7 +160,7 @@ public record CrazyPhoneCallStateSyncPacket(String conversationId, UUID callId, 
         });
     }
     *///?}
-    //? if neoforge && <1.20.5 {
+    //? if (neoforge || legacyforge) && <1.20.5 {
     public static void handleData(final CrazyPhoneCallStateSyncPacket message, final PlayPayloadContext context) {
         if (context.flow() != PacketFlow.CLIENTBOUND)
             return;
@@ -181,4 +201,14 @@ public record CrazyPhoneCallStateSyncPacket(String conversationId, UUID callId, 
         fr.lordfinn.crazyphone.fabric.FabricNetworking.registerClientReceiver(TYPE, CrazyPhoneCallStateSyncPacket::handleDataFabric);
     }
     *///?}
+
+    //? if legacyforge {
+    @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
+    public static class LegacyForgeRegistration {
+        @SubscribeEvent
+        public static void register(FMLCommonSetupEvent event) {
+            Crazyphone.addNetworkMessage(CrazyPhoneCallStateSyncPacket.class, CrazyPhoneCallStateSyncPacket::write, CrazyPhoneCallStateSyncPacket::new, CrazyPhoneCallStateSyncPacket::handleData);
+        }
+    }
+    //?}
 }

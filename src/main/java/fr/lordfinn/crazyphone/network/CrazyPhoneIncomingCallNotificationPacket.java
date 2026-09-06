@@ -16,9 +16,22 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.api.distmarker.Dist;
 //?}
+// Real, original Forge 1.20.1 - same FMLCommonSetupEvent/EventBusSubscriber/SubscribeEvent shape as
+// NeoForge's own <1.20.5 branch above (see NetworkAccess.java's own doc comment) - PlayPayloadContext
+// itself is NOT imported here: this file is in the same package as the same-package compat shim
+// (fr.lordfinn.crazyphone.network.PlayPayloadContext), so it resolves with no import at all.
+//? if legacyforge {
+import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraftforge.api.distmarker.Dist;
+//?}
 
 import net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/;
+//? if fabric || neoforge {
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+//?}
 import net.minecraft.network.protocol.PacketFlow;
 //? if >=1.20.5 {
 /*import net.minecraft.network.codec.StreamCodec;
@@ -43,7 +56,11 @@ import java.util.UUID;
  * from this toast. Mirrors {@link CrazyPhoneGroupMembershipNotificationPacket}'s toast/sound template -
  * always sent via a targeted {@code PacketDistributor.sendToPlayer} call, never broadcast.
  */
+//? if legacyforge {
+/*public record CrazyPhoneIncomingCallNotificationPacket(String conversationId, String callerName, UUID callId) {
+*///? } else {
 public record CrazyPhoneIncomingCallNotificationPacket(String conversationId, String callerName, UUID callId) implements CustomPacketPayload {
+//?}
 
     //? if >=1.20.5 {
     /*public static final Type<CrazyPhoneIncomingCallNotificationPacket> TYPE = new Type<>(
@@ -81,7 +98,9 @@ public record CrazyPhoneIncomingCallNotificationPacket(String conversationId, St
         buffer.writeUUID(callId);
     }
 
+    //? if fabric || neoforge {
     @Override
+    //?}
     public /*$ res_loc {*/ResourceLocation/*$}*/ id() {
         return ID;
     }
@@ -89,7 +108,7 @@ public record CrazyPhoneIncomingCallNotificationPacket(String conversationId, St
 
     // See CrazyPhoneGroupMembershipNotificationPacket's own doc comment on this pattern - nesting
     // Registration alone isn't enough, the risky method itself must live in its own separate class.
-    //? if neoforge && <1.20.5 {
+    //? if (neoforge || legacyforge) && <1.20.5 {
     @OnlyIn(Dist.CLIENT)
     //?}
     //? if neoforge && >=1.20.5 <26 {
@@ -121,7 +140,7 @@ public record CrazyPhoneIncomingCallNotificationPacket(String conversationId, St
         }
     }
 
-    //? if neoforge {
+    //? if neoforge || legacyforge {
     //? if >=1.20.5 {
     /*public static void handleData(final CrazyPhoneIncomingCallNotificationPacket messagePacket, final IPayloadContext context) {
         if (context.flow() != PacketFlow.CLIENTBOUND)
@@ -173,4 +192,15 @@ public record CrazyPhoneIncomingCallNotificationPacket(String conversationId, St
         fr.lordfinn.crazyphone.fabric.FabricNetworking.registerClientReceiver(TYPE, CrazyPhoneIncomingCallNotificationPacket::handleDataFabric);
     }
     *///?}
+
+
+    //? if legacyforge {
+    @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
+    public static class LegacyForgeRegistration {
+        @SubscribeEvent
+        public static void register(FMLCommonSetupEvent event) {
+            Crazyphone.addNetworkMessage(CrazyPhoneIncomingCallNotificationPacket.class, CrazyPhoneIncomingCallNotificationPacket::write, CrazyPhoneIncomingCallNotificationPacket::new, CrazyPhoneIncomingCallNotificationPacket::handleData);
+        }
+    }
+    //?}
 }

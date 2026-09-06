@@ -3,6 +3,9 @@ package fr.lordfinn.crazyphone.voicechat;
 //? if neoforge {
 import net.neoforged.fml.ModList;
 //?}
+//? if legacyforge {
+import net.minecraftforge.fml.ModList;
+//?}
 //? if fabric {
 /*import net.fabricmc.loader.api.FabricLoader;
 *///?}
@@ -27,9 +30,10 @@ public final class VoicechatIntegration {
 
     public static boolean isAvailable() {
         if (available == null) {
-            //? if neoforge {
+            //? if neoforge || legacyforge {
             available = ModList.get().isLoaded(VOICECHAT_MOD_ID);
-            //? } else {
+            //?}
+            //? if fabric {
             /*available = FabricLoader.getInstance().isModLoaded(VOICECHAT_MOD_ID);
             *///?}
         }

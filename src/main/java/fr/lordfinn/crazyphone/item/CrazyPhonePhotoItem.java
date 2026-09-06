@@ -118,6 +118,11 @@ public class CrazyPhonePhotoItem extends Item {
     }
     *///?}
 
+    // Real 1.20.1 vanilla has no Data Components system at all (added in 1.20.5) - the dyed-photo-frame
+    // customization feature already has no crafting recipe outside its own version scope (see build.gradle.
+    // kts's own crazy_phone_photo_dyed.json handling), so the viewer border simply never picks up a tint on
+    // this target instead of backporting component lookup.
+    //? if fabric || neoforge {
     private void openViewerOnClient(Level world, ItemStack stack) {
         if (world.isClientSide() && clientViewerOpener != null) {
             PhotoItemData data = PhotoItemData.fromStack(stack);
@@ -127,6 +132,16 @@ public class CrazyPhonePhotoItem extends Item {
             }
         }
     }
+    //?}
+    //? if legacyforge {
+    private void openViewerOnClient(Level world, ItemStack stack) {
+        if (world.isClientSide() && clientViewerOpener != null) {
+            PhotoItemData data = PhotoItemData.fromStack(stack);
+            if (data != null)
+                clientViewerOpener.accept(data.photoId(), 0xFFFFFF);
+        }
+    }
+    //?}
 
     //? if fabric && >=1.20.5 <1.21.10 {
     /*// Fabric equivalent of the NeoForge renderer branch below - one BuiltinItemRendererRegistry.register

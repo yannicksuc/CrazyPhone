@@ -66,23 +66,44 @@ public class ScreenMenuUtils {
     // NeoForge's Player#getData/#setData don't exist on plain Fabric - Fabric's data-attachment-api-v1
     // reaches the same attachment via a cast to AttachmentTarget instead (see PhoneAttachmentTypes.java's
     // own doc comment for why the cast is the API's own intended usage, not a workaround).
+    //? if neoforge {
     private static PlayerPhoneState getPhoneState(Player player) {
-        //? if neoforge {
         return player.getData(PhoneAttachmentTypes.PLAYER_PHONE_STATE);
-        //? } else {
-        /*return ((net.fabricmc.fabric.api.attachment.v1.AttachmentTarget) player)
+    }
+    //?}
+    //? if fabric {
+    /*private static PlayerPhoneState getPhoneState(Player player) {
+        return ((net.fabricmc.fabric.api.attachment.v1.AttachmentTarget) player)
                 .getAttachedOrCreate(PhoneAttachmentTypes.PLAYER_PHONE_STATE, PlayerPhoneState::new);
-        *///?}
     }
+    *///?}
+    //? if legacyforge {
+    private static PlayerPhoneState getPhoneState(Player player) {
+        return PhoneAttachmentTypes.getPlayerPhoneState(player);
+    }
+    //?}
 
+    //? if neoforge {
     private static void setPhoneState(Player player, PlayerPhoneState playerData) {
-        //? if neoforge {
         player.setData(PhoneAttachmentTypes.PLAYER_PHONE_STATE, playerData);
-        //? } else {
-        /*((net.fabricmc.fabric.api.attachment.v1.AttachmentTarget) player)
-                .setAttached(PhoneAttachmentTypes.PLAYER_PHONE_STATE, playerData);
-        *///?}
     }
+    //?}
+    //? if fabric {
+    /*private static void setPhoneState(Player player, PlayerPhoneState playerData) {
+        ((net.fabricmc.fabric.api.attachment.v1.AttachmentTarget) player)
+                .setAttached(PhoneAttachmentTypes.PLAYER_PHONE_STATE, playerData);
+    }
+    *///?}
+    // Old-Forge capabilities are a fixed container attached once at entity-creation time (see
+    // PhoneAttachmentTypes.java's own doc comment) - "setting" data means mutating the already-attached
+    // instance's own fields in place, not swapping in a whole new instance the way NeoForge's setData does.
+    //? if legacyforge {
+    private static void setPhoneState(Player player, PlayerPhoneState playerData) {
+        PlayerPhoneState target = PhoneAttachmentTypes.getPlayerPhoneState(player);
+        target.currentCrazyPhoneScreenOpened = playerData.currentCrazyPhoneScreenOpened;
+        target.crazyPhoneScreenHistory = playerData.crazyPhoneScreenHistory;
+    }
+    //?}
 
     public static void openLastCrazyPhoneMenu(Player player, InteractionHand hand) {
 
@@ -113,7 +134,7 @@ public class ScreenMenuUtils {
         return (dotIndex != -1 && dotIndex + 1 < tag.length()) ? tag.substring(dotIndex + 1) : null;
     }
 
-    //? if neoforge {
+    //? if neoforge || legacyforge {
     public static void openCrazyPhoneMenuByTag(Player player, InteractionHand hand, String screenId,
             String screenData) {
         if (screenId == null || screenId.isEmpty())
@@ -295,6 +316,40 @@ public class ScreenMenuUtils {
         }
     }
     //?}
+    // Real, original Forge 1.20.1 has no (MenuProvider, Consumer<FriendlyByteBuf>) overload of Player#openMenu
+    // itself (that convenience is a NeoForge-only addition, confirmed absent from both IForgeEntity and
+    // IForgePlayer here) - NetworkHooks.openScreen(ServerPlayer, MenuProvider, Consumer<FriendlyByteBuf>) is
+    // the classic old-Forge equivalent, matching shape exactly.
+    //? if legacyforge {
+    public static void openPhoneCustomMenu(Player player, InteractionHand hand,
+            Class<? extends AbstractContainerMenu> menuClass) {
+        if (player instanceof ServerPlayer serverPlayer) {
+            net.minecraftforge.network.NetworkHooks.openScreen(serverPlayer, new MenuProvider() {
+                @Override
+                public Component getDisplayName() {
+                    return Component.translatable("item.crazyphone.crazy_phone");
+                }
+
+                @Override
+                public AbstractContainerMenu createMenu(int id, Inventory inventory, Player player) {
+                    FriendlyByteBuf packetBuffer = new FriendlyByteBuf(Unpooled.buffer());
+                    packetBuffer.writeBlockPos(player.blockPosition());
+                    packetBuffer.writeByte(hand == InteractionHand.MAIN_HAND ? 0 : 1);
+
+                    try {
+                        return menuClass.getConstructor(int.class, Inventory.class, FriendlyByteBuf.class)
+                                .newInstance(id, inventory, packetBuffer);
+                    } catch (Exception e) {
+                        throw new RuntimeException("Failed to create menu instance", e);
+                    }
+                }
+            }, buf -> {
+                buf.writeBlockPos(player.blockPosition());
+                buf.writeByte(0); // Always Main Hand
+            });
+        }
+    }
+    //?}
     //? if fabric && >=1.20.5 {
     /*public static void openPhoneCustomMenu(Player player, InteractionHand hand,
             Class<? extends AbstractContainerMenu> menuClass) {
@@ -440,6 +495,29 @@ public class ScreenMenuUtils {
                 }
             }, buf -> populateBufferWithMyPhotosData(buf, player, hand, conversationId, photoIds));
             //?}
+    //? if legacyforge {
+            net.minecraftforge.network.NetworkHooks.openScreen((ServerPlayer) player, new MenuProvider() {
+                @Override
+                public Component getDisplayName() {
+                    return Component.translatable("item.crazyphone.crazy_phone");
+                }
+
+                @Override
+                public AbstractContainerMenu createMenu(int id, Inventory inventory, Player player) {
+                    //? if >=1.20.5 {
+                    /*RegistryFriendlyByteBuf packetBuffer = new RegistryFriendlyByteBuf(Unpooled.buffer(), registryAccess);
+                    *///? } else {
+                    FriendlyByteBuf packetBuffer = new FriendlyByteBuf(Unpooled.buffer());
+                    //?}
+                    populateBufferWithMyPhotosData(packetBuffer, player, hand, conversationId, photoIds);
+                    try {
+                        return new CrazyPhoneMyPhotosScreenMenu(id, inventory, packetBuffer);
+                    } catch (Exception e) {
+                        throw new RuntimeException("Failed to create menu instance", e);
+                    }
+                }
+            }, buf -> populateBufferWithMyPhotosData(buf, player, hand, conversationId, photoIds));
+    //?}
             //? if fabric && >=1.20.5 {
             /*player.openMenu(new /^$ fabric_ext_menu_provider {^/net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory/^$}^/<RegistryFriendlyByteBuf>() {
                 @Override
@@ -531,6 +609,26 @@ public class ScreenMenuUtils {
                 }
             }, buf -> populateBufferWithMenuData(buf, player, hand, favorites, contacts, groups));
             //?}
+    //? if legacyforge {
+            net.minecraftforge.network.NetworkHooks.openScreen((ServerPlayer) player, new MenuProvider() {
+                @Override
+                public Component getDisplayName() {
+                    return Component.translatable("item.crazyphone.crazy_phone");
+                }
+
+                @Override
+                public AbstractContainerMenu createMenu(int id, Inventory inventory, Player player) {
+                    FriendlyByteBuf packetBuffer = new FriendlyByteBuf(Unpooled.buffer());
+                    populateBufferWithMenuData(packetBuffer, player, hand, favorites, contacts, groups);
+
+                    try {
+                        return new CrazyPhoneContactsScreenMenu(id, inventory, packetBuffer);
+                    } catch (Exception e) {
+                        throw new RuntimeException("Failed to create menu instance", e);
+                    }
+                }
+            }, buf -> populateBufferWithMenuData(buf, player, hand, favorites, contacts, groups));
+    //?}
             //? if fabric && >=1.20.5 {
             /*player.openMenu(new /^$ fabric_ext_menu_provider {^/net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory/^$}^/<RegistryFriendlyByteBuf>() {
                 @Override
@@ -637,6 +735,26 @@ public class ScreenMenuUtils {
                 }
             }, buf -> populateBufferWithGroupSettingsData(buf, player, conversationId));
             //?}
+    //? if legacyforge {
+            net.minecraftforge.network.NetworkHooks.openScreen((ServerPlayer) player, new MenuProvider() {
+                @Override
+                public Component getDisplayName() {
+                    return Component.translatable("item.crazyphone.crazy_phone");
+                }
+
+                @Override
+                public AbstractContainerMenu createMenu(int id, Inventory inventory, Player player) {
+                    FriendlyByteBuf packetBuffer = new FriendlyByteBuf(Unpooled.buffer());
+                    populateBufferWithGroupSettingsData(packetBuffer, player, conversationId);
+
+                    try {
+                        return new CrazyPhoneGroupSettingsScreenMenu(id, inventory, packetBuffer);
+                    } catch (Exception e) {
+                        throw new RuntimeException("Failed to create menu instance", e);
+                    }
+                }
+            }, buf -> populateBufferWithGroupSettingsData(buf, player, conversationId));
+    //?}
             //? if fabric && >=1.20.5 {
             /*player.openMenu(new /^$ fabric_ext_menu_provider {^/net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory/^$}^/<RegistryFriendlyByteBuf>() {
                 @Override
@@ -774,6 +892,30 @@ public class ScreenMenuUtils {
                     }
                 }, buf -> populateBufferWithConversationData(buf, player, hand, conversationId));
                 //?}
+    //? if legacyforge {
+                net.minecraftforge.network.NetworkHooks.openScreen((ServerPlayer) player, new MenuProvider() {
+                    @Override
+                    public Component getDisplayName() {
+                        return Component.translatable("item.crazyphone.crazy_phone");
+                    }
+
+                    @Override
+                    public AbstractContainerMenu createMenu(int id, Inventory inventory, Player player) {
+                        //? if >=1.20.5 {
+                        /*RegistryFriendlyByteBuf packetBuffer = new RegistryFriendlyByteBuf(Unpooled.buffer(), registryAccess, connectionType);
+                        *///? } else {
+                        FriendlyByteBuf packetBuffer = new FriendlyByteBuf(Unpooled.buffer());
+                        //?}
+                        populateBufferWithConversationData(packetBuffer, player, hand, conversationId);
+
+                        try {
+                            return new CrazyPhoneConversationMenu(id, inventory, packetBuffer);
+                        } catch (Exception e) {
+                            throw new RuntimeException("Failed to create menu instance", e);
+                        }
+                    }
+                }, buf -> populateBufferWithConversationData(buf, player, hand, conversationId));
+    //?}
                 //? if fabric && >=1.20.5 {
                 /*// Real vanilla RegistryFriendlyByteBuf only ever takes (ByteBuf, RegistryAccess) - the
                 // 3-arg overload above (with a ConnectionType) is a NeoForge-only addition, javap-confirmed
@@ -950,6 +1092,25 @@ public class ScreenMenuUtils {
                 }
             }, buf -> populateCallScreenBuffer(buf, player, conversationId, callId, displayTitle, participantIds));
             //?}
+    //? if legacyforge {
+            net.minecraftforge.network.NetworkHooks.openScreen((ServerPlayer) player, new MenuProvider() {
+                @Override
+                public Component getDisplayName() {
+                    return Component.translatable("item.crazyphone.crazy_phone");
+                }
+
+                @Override
+                public AbstractContainerMenu createMenu(int id, Inventory inventory, Player player) {
+                    FriendlyByteBuf packetBuffer = new FriendlyByteBuf(Unpooled.buffer());
+                    populateCallScreenBuffer(packetBuffer, player, conversationId, callId, displayTitle, participantIds);
+                    try {
+                        return new CrazyPhoneCallingScreenMenu(id, inventory, packetBuffer);
+                    } catch (Exception e) {
+                        throw new RuntimeException("Failed to create menu instance", e);
+                    }
+                }
+            }, buf -> populateCallScreenBuffer(buf, player, conversationId, callId, displayTitle, participantIds));
+    //?}
             //? if fabric && >=1.20.5 {
             /*player.openMenu(new /^$ fabric_ext_menu_provider {^/net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory/^$}^/<RegistryFriendlyByteBuf>() {
                 @Override
@@ -1003,6 +1164,25 @@ public class ScreenMenuUtils {
                 }
             }, buf -> populateCallScreenBuffer(buf, player, conversationId, callId, displayTitle, participantIds));
             //?}
+    //? if legacyforge {
+            net.minecraftforge.network.NetworkHooks.openScreen((ServerPlayer) player, new MenuProvider() {
+                @Override
+                public Component getDisplayName() {
+                    return Component.translatable("item.crazyphone.crazy_phone");
+                }
+
+                @Override
+                public AbstractContainerMenu createMenu(int id, Inventory inventory, Player player) {
+                    FriendlyByteBuf packetBuffer = new FriendlyByteBuf(Unpooled.buffer());
+                    populateCallScreenBuffer(packetBuffer, player, conversationId, callId, displayTitle, participantIds);
+                    try {
+                        return new CrazyPhoneIncomingCallScreenMenu(id, inventory, packetBuffer);
+                    } catch (Exception e) {
+                        throw new RuntimeException("Failed to create menu instance", e);
+                    }
+                }
+            }, buf -> populateCallScreenBuffer(buf, player, conversationId, callId, displayTitle, participantIds));
+    //?}
             //? if fabric && >=1.20.5 {
             /*player.openMenu(new /^$ fabric_ext_menu_provider {^/net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory/^$}^/<RegistryFriendlyByteBuf>() {
                 @Override
@@ -1056,6 +1236,25 @@ public class ScreenMenuUtils {
                 }
             }, buf -> populateCallScreenBuffer(buf, player, conversationId, callId, displayTitle, participantIds));
             //?}
+    //? if legacyforge {
+            net.minecraftforge.network.NetworkHooks.openScreen((ServerPlayer) player, new MenuProvider() {
+                @Override
+                public Component getDisplayName() {
+                    return Component.translatable("item.crazyphone.crazy_phone");
+                }
+
+                @Override
+                public AbstractContainerMenu createMenu(int id, Inventory inventory, Player player) {
+                    FriendlyByteBuf packetBuffer = new FriendlyByteBuf(Unpooled.buffer());
+                    populateCallScreenBuffer(packetBuffer, player, conversationId, callId, displayTitle, participantIds);
+                    try {
+                        return new CrazyPhoneInCallScreenMenu(id, inventory, packetBuffer);
+                    } catch (Exception e) {
+                        throw new RuntimeException("Failed to create menu instance", e);
+                    }
+                }
+            }, buf -> populateCallScreenBuffer(buf, player, conversationId, callId, displayTitle, participantIds));
+    //?}
             //? if fabric && >=1.20.5 {
             /*player.openMenu(new /^$ fabric_ext_menu_provider {^/net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory/^$}^/<RegistryFriendlyByteBuf>() {
                 @Override

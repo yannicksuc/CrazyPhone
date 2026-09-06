@@ -50,7 +50,9 @@ import net.minecraft.network.FriendlyByteBuf;
 /*import net.minecraft.network.RegistryFriendlyByteBuf;
 *///? }
 import net.minecraft.network.chat.Component;
+//? if fabric || neoforge {
 import net.minecraft.network.chat.ComponentSerialization;
+//?}
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
@@ -555,7 +557,14 @@ public class CrazyPhoneHelper {
         //? if >=1.20.5 {
         /*tag.put("systemText", ComponentSerialization.CODEC.encodeStart(NbtOps.INSTANCE, text).getOrThrow());
         *///? } else {
+        //? if neoforge || fabric {
         tag.put("systemText", ComponentSerialization.CODEC.encodeStart(NbtOps.INSTANCE, text).getOrThrow(false, s -> {}));
+        //?}
+        // Real 1.20.1 vanilla predates ComponentSerialization/its Codec entirely - Component.Serializer's
+        // classic Gson-based toJson/fromJson round trip stands in instead, stored as a plain string tag.
+        //? if legacyforge {
+        tag.putString("systemText", Component.Serializer.toJson(text));
+        //?}
         //?}
         if (icon != null && !icon.isEmpty()) {
             /*$ res_loc {*/ResourceLocation/*$}*/ id = BuiltInRegistries.ITEM.getKey(icon.getItem());
@@ -1169,8 +1178,18 @@ public class CrazyPhoneHelper {
     /*public static List<MessageData> getMessagesFromBuf(RegistryFriendlyByteBuf buffer) {
         Tag rawTag = RegistryFriendlyByteBuf.readNbt(buffer, NbtAccounter.create(2097152L));
     *///? } else {
+    //? if fabric || neoforge {
     public static List<MessageData> getMessagesFromBuf(FriendlyByteBuf buffer) {
         Tag rawTag = buffer.readNbt(NbtAccounter.create(2097152L));
+    //?}
+    // Real 1.20.1 vanilla's FriendlyByteBuf#readNbt only ever returns a CompoundTag (see
+    // ConversationResponsePacket.java's own doc comment on the same NbtAccounter/readNbt boundary) - the
+    // ListTag this reads is wrapped in one instead, same as that packet's own write side.
+    //? if legacyforge {
+    public static List<MessageData> getMessagesFromBuf(FriendlyByteBuf buffer) {
+        CompoundTag wrapper = buffer.readNbt(new NbtAccounter(2097152L));
+        Tag rawTag = wrapper != null ? wrapper.get("list") : null;
+    //?}
     //?}
         List<MessageData> messageDatas = new ArrayList<>();
 
@@ -1203,9 +1222,16 @@ public class CrazyPhoneHelper {
 
         if (NbtCompat.getBoolean(messageTag, "system")) {
             int timecode = NbtCompat.getInt(messageTag, "timecode");
+            //? if neoforge || fabric {
             Component text = NbtCompat.contains(messageTag, "systemText")
                     ? ComponentSerialization.CODEC.parse(NbtOps.INSTANCE, messageTag.get("systemText")).result().orElse(Component.empty())
                     : Component.empty();
+            //?}
+            //? if legacyforge {
+            Component text = NbtCompat.contains(messageTag, "systemText")
+                    ? Component.Serializer.fromJson(NbtCompat.getString(messageTag, "systemText"))
+                    : Component.empty();
+            //?}
             ItemStack icon = ItemStack.EMPTY;
             if (NbtCompat.contains(messageTag, "systemIcon")) {
                 /*$ res_loc {*/ResourceLocation/*$}*/ id = /*$ res_loc {*/ResourceLocation/*$}*/.tryParse(NbtCompat.getString(messageTag, "systemIcon"));

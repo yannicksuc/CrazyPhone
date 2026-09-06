@@ -14,8 +14,19 @@ import net.neoforged.fml.common.Mod.EventBusSubscriber;
 //?}
 import net.neoforged.bus.api.SubscribeEvent;
 //?}
+// Real, original Forge 1.20.1 - same FMLCommonSetupEvent/EventBusSubscriber/SubscribeEvent shape as
+// NeoForge's own <1.20.5 branch above (see NetworkAccess.java's own doc comment) - PlayPayloadContext
+// itself is NOT imported here: this file is in the same package as the same-package compat shim
+// (fr.lordfinn.crazyphone.network.PlayPayloadContext), so it resolves with no import at all.
+//? if legacyforge {
+import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+//?}
 
+//? if fabric || neoforge {
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+//?}
 import net.minecraft.network.protocol.PacketFlow;
 //? if >=1.20.5 {
 /*import net.minecraft.network.codec.StreamCodec;
@@ -34,7 +45,11 @@ import java.util.UUID;
 
 /** Server -> client: a batch of photos' PNG bytes (one entry per (photoId, resolution) that was asked for),
  * in response to {@link CrazyPhonePictureRequestPacket}. */
+//? if legacyforge {
+/*public record CrazyPhonePictureResponsePacket(List<Entry> entries) {
+*///? } else {
 public record CrazyPhonePictureResponsePacket(List<Entry> entries) implements CustomPacketPayload {
+//?}
 
     public record Entry(UUID photoId, PhotoResolution resolution, byte[] pngBytes) {
     }
@@ -77,7 +92,9 @@ public record CrazyPhonePictureResponsePacket(List<Entry> entries) implements Cu
         }
     }
 
+    //? if fabric || neoforge {
     @Override
+    //?}
     public /*$ res_loc {*/ResourceLocation/*$}*/ id() {
         return ID;
     }
@@ -95,7 +112,7 @@ public record CrazyPhonePictureResponsePacket(List<Entry> entries) implements Cu
         return entries;
     }
 
-    //? if neoforge {
+    //? if neoforge || legacyforge {
     //? if >=1.20.5 {
     /*public static void handleData(final CrazyPhonePictureResponsePacket message, final IPayloadContext context) {
         if (context.flow() != PacketFlow.CLIENTBOUND)
@@ -138,6 +155,17 @@ public record CrazyPhonePictureResponsePacket(List<Entry> entries) implements Cu
             *///? } else {
             Crazyphone.addNetworkMessage(ID, CrazyPhonePictureResponsePacket::new, CrazyPhonePictureResponsePacket::handleData);
             //?}
+        }
+    }
+    //?}
+
+
+    //? if legacyforge {
+    @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
+    public static class LegacyForgeRegistration {
+        @SubscribeEvent
+        public static void register(FMLCommonSetupEvent event) {
+            Crazyphone.addNetworkMessage(CrazyPhonePictureResponsePacket.class, CrazyPhonePictureResponsePacket::write, CrazyPhonePictureResponsePacket::new, CrazyPhonePictureResponsePacket::handleData);
         }
     }
     //?}

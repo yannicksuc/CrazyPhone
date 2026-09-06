@@ -125,11 +125,7 @@ public class CrazyPhoneSignInScreenScreen extends CrazyPhoneDefaultScreenScreen<
 		if (!IsPhonePasswordSetProcedure.execute(world, CrazyPhoneHelper.getMainHandItemOrEmpty(entity))) {
 			HashMap<String, String> emptyPassword = new HashMap<>();
 			emptyPassword.put("textin:password", "");
-			//? if >=1.20.5 {
-			/*NetworkAccess.sendToServer(new CrazyPhoneSignInScreenButtonMessage(0, x, y, z, emptyPassword));
-			*///? } else {
-			PacketDistributor.SERVER.noArg().send(new CrazyPhoneSignInScreenButtonMessage(0, x, y, z, emptyPassword));
-			//?}
+			NetworkAccess.sendToServer(new CrazyPhoneSignInScreenButtonMessage(0, x, y, z, emptyPassword));
 			CrazyPhoneSignInScreenButtonMessage.handleButtonAction(entity, 0, x, y, z, emptyPassword);
 			return;
 		}
@@ -146,6 +142,8 @@ public class CrazyPhoneSignInScreenScreen extends CrazyPhoneDefaultScreenScreen<
 					setSuggestion(null);
 			}
 
+			// Real 1.20.1 vanilla predates EditBox#moveCursorTo's boolean "select" parameter (added by 1.20.4).
+			//? if >=1.20.4 {
 			@Override
 			public void moveCursorTo(int pos, boolean flag) {
 				super.moveCursorTo(pos, flag);
@@ -154,6 +152,17 @@ public class CrazyPhoneSignInScreenScreen extends CrazyPhoneDefaultScreenScreen<
 				else
 					setSuggestion(null);
 			}
+			//?}
+			//? if <1.20.4 {
+			/*@Override
+			public void moveCursorTo(int pos) {
+				super.moveCursorTo(pos);
+				if (getValue().isEmpty())
+					setSuggestion(Component.translatable("gui.crazyphone.crazy_phone_sign_in_screen.password").getString());
+				else
+					setSuggestion(null);
+			}
+			*///?}
 		};
 		password.setMaxLength(32767);
 		password.setSuggestion(Component.translatable("gui.crazyphone.crazy_phone_sign_in_screen.password").getString());
@@ -169,11 +178,7 @@ public class CrazyPhoneSignInScreenScreen extends CrazyPhoneDefaultScreenScreen<
 	}
 
 	private void submitPassword() {
-		//? if >=1.20.5 {
-		/*NetworkAccess.sendToServer(new CrazyPhoneSignInScreenButtonMessage(0, x, y, z, getEditBoxAndCheckBoxValues()));
-		*///? } else {
-		PacketDistributor.SERVER.noArg().send(new CrazyPhoneSignInScreenButtonMessage(0, x, y, z, getEditBoxAndCheckBoxValues()));
-		//?}
+		NetworkAccess.sendToServer(new CrazyPhoneSignInScreenButtonMessage(0, x, y, z, getEditBoxAndCheckBoxValues()));
 		CrazyPhoneSignInScreenButtonMessage.handleButtonAction(entity, 0, x, y, z, getEditBoxAndCheckBoxValues());
 	}
 
@@ -247,11 +252,7 @@ public class CrazyPhoneSignInScreenScreen extends CrazyPhoneDefaultScreenScreen<
 
 	private void onAutoLockIconClicked() {
 		var values = getEditBoxAndCheckBoxValues();
-		//? if >=1.20.5 {
-		/*NetworkAccess.sendToServer(new CrazyphoneHomeScreenButtonMessage(AUTO_LOCK_TOGGLE_BUTTON_ID, x, y, z, values));
-		*///? } else {
-		PacketDistributor.SERVER.noArg().send(new CrazyphoneHomeScreenButtonMessage(AUTO_LOCK_TOGGLE_BUTTON_ID, x, y, z, values));
-		//?}
+		NetworkAccess.sendToServer(new CrazyphoneHomeScreenButtonMessage(AUTO_LOCK_TOGGLE_BUTTON_ID, x, y, z, values));
 		CrazyphoneHomeScreenButtonMessage.handleButtonAction(entity, AUTO_LOCK_TOGGLE_BUTTON_ID, x, y, z, values);
 	}
 

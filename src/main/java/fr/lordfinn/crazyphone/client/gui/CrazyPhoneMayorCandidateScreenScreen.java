@@ -142,7 +142,10 @@ public class CrazyPhoneMayorCandidateScreenScreen extends CrazyPhoneDefaultScree
 		this.maxScroll = Math.max(0, this.posterHeight - maxHeight);
 	}
 
-	    @Override
+	    // Real 1.20.1 vanilla predates GuiEventListener's horizontal-scroll parameter (added by 1.20.4) - only
+    // the vertical delta is ever used here either way.
+    //? if >=1.20.4 {
+    @Override
     public boolean mouseScrolled(double x, double y, double dx, double dy) {
 		if (this.posterHeight > 0) {
 			scrollOffsetY -= (int) (dy * 10); // Scroll speed
@@ -151,6 +154,18 @@ public class CrazyPhoneMayorCandidateScreenScreen extends CrazyPhoneDefaultScree
 		}
         return true;
     }
+    //?}
+    //? if <1.20.4 {
+    @Override
+    public boolean mouseScrolled(double x, double y, double dy) {
+		if (this.posterHeight > 0) {
+			scrollOffsetY -= (int) (dy * 10); // Scroll speed
+			scrollOffsetY = Math.max(0, Math.min(scrollOffsetY, maxScroll));
+			return true;
+		}
+        return true;
+    }
+    //?}
 
 	//? if >=26 {
 	/*@Override

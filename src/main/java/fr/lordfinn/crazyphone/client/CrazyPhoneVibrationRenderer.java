@@ -6,6 +6,7 @@ import com.mojang.math.Axis;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.Mth;
 
+//? if neoforge {
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 //? if >=1.20.5 {
@@ -14,6 +15,15 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.Mod.EventBusSubscriber;
 //?}
 import net.neoforged.neoforge.client.event.RenderHandEvent;
+//?}
+// Real, original Forge 1.20.1 - RenderHandEvent predates the NeoForge fork entirely and matches exactly,
+// javap-verified (same getItemStack/getPoseStack/getPartialTick shape).
+//? if legacyforge {
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
+import net.minecraftforge.client.event.RenderHandEvent;
+//?}
 
 import fr.lordfinn.crazyphone.init.ModItems;
 import fr.lordfinn.crazyphone.network.CrazyPhoneCallStateSyncPacket.State;

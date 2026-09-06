@@ -14,9 +14,20 @@ import net.neoforged.fml.common.Mod.EventBusSubscriber;
 //?}
 import net.neoforged.bus.api.SubscribeEvent;
 //?}
+// Real, original Forge 1.20.1 - same FMLCommonSetupEvent/EventBusSubscriber/SubscribeEvent shape as
+// NeoForge's own <1.20.5 branch above (see NetworkAccess.java's own doc comment) - PlayPayloadContext
+// itself is NOT imported here: this file is in the same package as the same-package compat shim
+// (fr.lordfinn.crazyphone.network.PlayPayloadContext), so it resolves with no import at all.
+//? if legacyforge {
+import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+//?}
 
 import net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/;
+//? if fabric || neoforge {
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+//?}
 import net.minecraft.network.protocol.PacketFlow;
 //? if >=1.20.5 {
 /*import net.minecraft.network.codec.StreamCodec;
@@ -46,7 +57,11 @@ import java.util.UUID;
  * elsewhere in this mod) - opening a menu is server-authoritative, so every action just waits for the
  * server's response (a {@link CrazyPhoneCallStateSyncPacket} and/or an actual screen open).
  */
+//? if legacyforge {
+/*public record CrazyPhoneCallActionMessage(int action, String conversationId) {
+*///? } else {
 public record CrazyPhoneCallActionMessage(int action, String conversationId) implements CustomPacketPayload {
+//?}
     public static final int START_CALL = 0;
     public static final int HANGUP = 1;
     public static final int OPEN_CALL_SCREEN = 2;
@@ -85,13 +100,15 @@ public record CrazyPhoneCallActionMessage(int action, String conversationId) imp
         buffer.writeUtf(conversationId);
     }
 
+    //? if fabric || neoforge {
     @Override
+    //?}
     public /*$ res_loc {*/ResourceLocation/*$}*/ id() {
         return ID;
     }
     //?}
 
-    //? if neoforge {
+    //? if neoforge || legacyforge {
     //? if >=1.20.5 {
     /*public static void handleData(final CrazyPhoneCallActionMessage message, final IPayloadContext context) {
         if (context.flow() != PacketFlow.SERVERBOUND)
@@ -201,6 +218,17 @@ public record CrazyPhoneCallActionMessage(int action, String conversationId) imp
             *///? } else {
             Crazyphone.addNetworkMessage(ID, CrazyPhoneCallActionMessage::new, CrazyPhoneCallActionMessage::handleData);
             //?}
+        }
+    }
+    //?}
+
+
+    //? if legacyforge {
+    @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
+    public static class LegacyForgeRegistration {
+        @SubscribeEvent
+        public static void register(FMLCommonSetupEvent event) {
+            Crazyphone.addNetworkMessage(CrazyPhoneCallActionMessage.class, CrazyPhoneCallActionMessage::write, CrazyPhoneCallActionMessage::new, CrazyPhoneCallActionMessage::handleData);
         }
     }
     //?}

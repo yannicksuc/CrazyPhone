@@ -342,6 +342,7 @@ public class CrazyPhonePhotoFrameRenderer extends EntityRenderer<CrazyPhonePhoto
         vertex(consumer, pose, x, y, z, u, v, light, 255, 255, 255);
     }
 
+    //? if fabric || neoforge {
     private void vertex(VertexConsumer consumer, PoseStack.Pose pose, float x, float y, float z, float u, float v, int light, int r, int g, int b) {
         consumer.addVertex(pose, x, y, z)
                 .setColor(r, g, b, 255)
@@ -350,6 +351,21 @@ public class CrazyPhonePhotoFrameRenderer extends EntityRenderer<CrazyPhonePhoto
                 .setLight(light)
                 .setNormal(pose, 0f, 0f, 1f);
     }
+    //?}
+    // Real 1.20.1 vanilla predates VertexConsumer's fluent addVertex/setColor/setUv chain (introduced
+    // alongside the >=1.21 rendering rework) - the classic vertex/color/uv/overlayCoords/uv2/normal/
+    // endVertex chain stands in instead, same net result.
+    //? if legacyforge {
+    private void vertex(VertexConsumer consumer, PoseStack.Pose pose, float x, float y, float z, float u, float v, int light, int r, int g, int b) {
+        consumer.vertex(pose.pose(), x, y, z)
+                .color(r, g, b, 255)
+                .uv(u, v)
+                .overlayCoords(net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY)
+                .uv2(light)
+                .normal(pose.normal(), 0f, 0f, 1f)
+                .endVertex();
+    }
+    //?}
 }
 //?}
 //? if >=26 {

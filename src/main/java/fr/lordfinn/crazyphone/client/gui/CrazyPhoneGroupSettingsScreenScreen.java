@@ -473,6 +473,9 @@ public class CrazyPhoneGroupSettingsScreenScreen extends CrazyPhoneDefaultScreen
         return true;
     }
 
+    // Real 1.20.1 vanilla predates GuiEventListener's horizontal-scroll parameter (added by 1.20.4) - only
+    // the vertical delta is ever used here either way.
+    //? if >=1.20.4 {
     @Override
     public boolean mouseScrolled(double x, double y, double dx, double dy) {
         int totalHeight = (menu.getMembers().size() + menu.getInvitableContacts().size()) * MEMBER_ROW_HEIGHT;
@@ -483,6 +486,19 @@ public class CrazyPhoneGroupSettingsScreenScreen extends CrazyPhoneDefaultScreen
             scrollPosition = totalHeight - MEMBER_LIST_HEIGHT;
         return true;
     }
+    //?}
+    //? if <1.20.4 {
+    @Override
+    public boolean mouseScrolled(double x, double y, double dy) {
+        int totalHeight = (menu.getMembers().size() + menu.getInvitableContacts().size()) * MEMBER_ROW_HEIGHT;
+        scrollPosition -= (int) (dy * SCROLL_STEP);
+        if (scrollPosition < 0 || totalHeight <= MEMBER_LIST_HEIGHT)
+            scrollPosition = 0;
+        else if (scrollPosition > totalHeight - MEMBER_LIST_HEIGHT)
+            scrollPosition = totalHeight - MEMBER_LIST_HEIGHT;
+        return true;
+    }
+    //?}
 
     private void onCancel() {
         this.minecraft.player.closeContainer();
@@ -503,10 +519,6 @@ public class CrazyPhoneGroupSettingsScreenScreen extends CrazyPhoneDefaultScreen
                 : CrazyPhoneHelper.encodeItemStack(this.entity.level(), stagedIcon).toString());
         textstate.put("excludedNumbers", String.join(",", stagedExcluded));
         textstate.put("addedNumbers", String.join(",", stagedAdded));
-        //? if >=1.20.5 {
-        /*NetworkAccess.sendToServer(new CrazyPhoneGroupSettingsButtonMessage(0, x, y, z, textstate));
-        *///? } else {
-        PacketDistributor.SERVER.noArg().send(new CrazyPhoneGroupSettingsButtonMessage(0, x, y, z, textstate));
-        //?}
+        NetworkAccess.sendToServer(new CrazyPhoneGroupSettingsButtonMessage(0, x, y, z, textstate));
     }
 }

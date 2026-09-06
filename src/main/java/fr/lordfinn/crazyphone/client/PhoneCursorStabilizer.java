@@ -2,6 +2,7 @@ package fr.lordfinn.crazyphone.client;
 
 import fr.lordfinn.crazyphone.client.gui.PhoneScreen;
 import net.minecraft.client.Minecraft;
+//? if neoforge {
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 //? if >=1.20.5 {
@@ -10,6 +11,15 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.Mod.EventBusSubscriber;
 //?}
 import net.neoforged.neoforge.client.event.ScreenEvent;
+//?}
+// Real, original Forge 1.20.1 - ScreenEvent.Closing/Opening predate the NeoForge fork entirely and match
+// exactly, javap-verified (same getScreen/getCurrentScreen/getNewScreen shape).
+//? if legacyforge {
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
+import net.minecraftforge.client.event.ScreenEvent;
+//?}
 import org.lwjgl.glfw.GLFW;
 
 /**

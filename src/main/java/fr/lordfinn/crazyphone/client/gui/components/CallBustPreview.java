@@ -97,7 +97,7 @@ public final class CallBustPreview {
             // AbstractClientPlayer#getSkin() would find no PlayerInfo for it and fall back to a default skin -
             // confirmed live: every remote bust rendered as a default Steve/Alex, read as "missing its outer
             // layer". Handing it the resolved skin directly is what makes it draw the real one.
-            //? if <1.21.10 {
+            //? if neoforge && <1.21.10 {
             mc.getSkinManager().getOrLoad(profile).thenAccept(skin -> {
                 RemotePlayer fake = new RemotePlayer(level, profile) {
                     @Override
@@ -105,7 +105,34 @@ public final class CallBustPreview {
                         return skin;
                     }
                 };
-            //? } else {
+                fake.refreshDisplayName();
+                FakePlayerPreview.showAllSkinLayers(fake);
+                fake.setItemSlot(EquipmentSlot.HEAD, helmet);
+                fake.setItemSlot(EquipmentSlot.CHEST, chestplate);
+                fake.setItemSlot(EquipmentSlot.LEGS, leggings);
+                fake.setItemSlot(EquipmentSlot.FEET, boots);
+                level.addFreshEntity(fake);
+                fakePlayers.put(id, fake);
+            });
+            //?}
+            //? if fabric && <1.21.10 {
+            /*mc.getSkinManager().getOrLoad(profile).thenAccept(skin -> {
+                RemotePlayer fake = new RemotePlayer(level, profile) {
+                    @Override
+                    public net.minecraft.client.resources.PlayerSkin getSkin() {
+                        return skin;
+                    }
+                };
+                FakePlayerPreview.showAllSkinLayers(fake);
+                fake.setItemSlot(EquipmentSlot.HEAD, helmet);
+                fake.setItemSlot(EquipmentSlot.CHEST, chestplate);
+                fake.setItemSlot(EquipmentSlot.LEGS, leggings);
+                fake.setItemSlot(EquipmentSlot.FEET, boots);
+                level.addFreshEntity(fake);
+                fakePlayers.put(id, fake);
+            });
+            *///?}
+            //? if >=1.21.10 {
             /*mc.getSkinManager().get(profile).thenAccept(skinOptional -> {
                 net.minecraft.world.entity.player.PlayerSkin skin = skinOptional.orElse(null);
                 RemotePlayer fake = skin == null ? new RemotePlayer(level, profile) : new RemotePlayer(level, profile) {
@@ -114,7 +141,6 @@ public final class CallBustPreview {
                         return skin;
                     }
                 };
-            *///?}
                 //? if neoforge {
                 fake.refreshDisplayName();
                 //?}
@@ -126,6 +152,31 @@ public final class CallBustPreview {
                 level.addFreshEntity(fake);
                 fakePlayers.put(id, fake);
             });
+            *///?}
+            // Real 1.20.1 vanilla has no PlayerSkin object at all - SkinManager's own API here is the
+            // classic per-texture-type callback (registerSkins), and AbstractClientPlayer exposes just a
+            // ResourceLocation (getSkinTextureLocation) to override, not a whole skin record - the arm
+            // model (slim/default) is derived from the profile's own UUID by vanilla automatically either
+            // way, so no separate override is needed for that part.
+            //? if legacyforge {
+            mc.getSkinManager().registerSkins(profile, (type, location, texture) -> {
+                if (type != com.mojang.authlib.minecraft.MinecraftProfileTexture.Type.SKIN)
+                    return;
+                RemotePlayer fake = new RemotePlayer(level, profile) {
+                    @Override
+                    public net.minecraft.resources.ResourceLocation getSkinTextureLocation() {
+                        return location;
+                    }
+                };
+                FakePlayerPreview.showAllSkinLayers(fake);
+                fake.setItemSlot(EquipmentSlot.HEAD, helmet);
+                fake.setItemSlot(EquipmentSlot.CHEST, chestplate);
+                fake.setItemSlot(EquipmentSlot.LEGS, leggings);
+                fake.setItemSlot(EquipmentSlot.FEET, boots);
+                level.addFreshEntity(fake);
+                fakePlayers.put(id, fake);
+            }, false);
+            //?}
         });
     }
 

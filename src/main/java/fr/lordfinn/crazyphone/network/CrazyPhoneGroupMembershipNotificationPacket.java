@@ -16,9 +16,22 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.api.distmarker.Dist;
 //?}
+// Real, original Forge 1.20.1 - same FMLCommonSetupEvent/EventBusSubscriber/SubscribeEvent shape as
+// NeoForge's own <1.20.5 branch above (see NetworkAccess.java's own doc comment) - PlayPayloadContext
+// itself is NOT imported here: this file is in the same package as the same-package compat shim
+// (fr.lordfinn.crazyphone.network.PlayPayloadContext), so it resolves with no import at all.
+//? if legacyforge {
+import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraftforge.api.distmarker.Dist;
+//?}
 
 import net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/;
+//? if fabric || neoforge {
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+//?}
 import net.minecraft.network.protocol.PacketFlow;
 //? if >=1.20.5 {
 /*import net.minecraft.network.codec.StreamCodec;
@@ -48,7 +61,11 @@ import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
 /*@EventBusSubscriber
 *///?}
 //?}
+//? if legacyforge {
+/*public record CrazyPhoneGroupMembershipNotificationPacket(String groupLabel, String actorName, boolean added) {
+*///? } else {
 public record CrazyPhoneGroupMembershipNotificationPacket(String groupLabel, String actorName, boolean added) implements CustomPacketPayload {
+//?}
 
     //? if >=1.20.5 {
     /*public static final Type<CrazyPhoneGroupMembershipNotificationPacket> TYPE = new Type<>(
@@ -86,7 +103,9 @@ public record CrazyPhoneGroupMembershipNotificationPacket(String groupLabel, Str
         buffer.writeBoolean(added);
     }
 
+    //? if fabric || neoforge {
     @Override
+    //?}
     public /*$ res_loc {*/ResourceLocation/*$}*/ id() {
         return ID;
     }
@@ -102,7 +121,7 @@ public record CrazyPhoneGroupMembershipNotificationPacket(String groupLabel, Str
     // - the same class-level pattern CrazyPhonePhotoItemClientBinding already established - so NeoForge's
     // dist-aware scanner skips loading THIS class entirely on the dedicated server, the same way it already
     // skips that one. See PORTING-26x.md for the full sweep across every packet class with this shape.
-    //? if neoforge && <1.20.5 {
+    //? if (neoforge || legacyforge) && <1.20.5 {
     @OnlyIn(Dist.CLIENT)
     //?}
     //? if neoforge && >=1.20.5 <26 {
@@ -147,7 +166,7 @@ public record CrazyPhoneGroupMembershipNotificationPacket(String groupLabel, Str
         }
     }
     *///?}
-    //? if neoforge && <1.20.5 {
+    //? if (neoforge || legacyforge) && <1.20.5 {
     public static void handleData(final CrazyPhoneGroupMembershipNotificationPacket messagePacket, final PlayPayloadContext context) {
         if (context.flow() == PacketFlow.CLIENTBOUND) {
             context.workHandler().submitAsync(() -> ClientHandler.showToast(messagePacket));
@@ -178,4 +197,15 @@ public record CrazyPhoneGroupMembershipNotificationPacket(String groupLabel, Str
         fr.lordfinn.crazyphone.fabric.FabricNetworking.registerClientReceiver(TYPE, CrazyPhoneGroupMembershipNotificationPacket::handleDataFabric);
     }
     *///?}
+
+
+    //? if legacyforge {
+    @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
+    public static class LegacyForgeRegistration {
+        @SubscribeEvent
+        public static void register(FMLCommonSetupEvent event) {
+            Crazyphone.addNetworkMessage(CrazyPhoneGroupMembershipNotificationPacket.class, CrazyPhoneGroupMembershipNotificationPacket::write, CrazyPhoneGroupMembershipNotificationPacket::new, CrazyPhoneGroupMembershipNotificationPacket::handleData);
+        }
+    }
+    //?}
 }

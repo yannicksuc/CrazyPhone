@@ -96,6 +96,13 @@ $Gradlew = Join-Path $RepoRoot 'gradlew.bat'
 # ClientRunDir below are derived from the node name itself rather than repeated per entry - only
 # Loader and the assigned dedicated-server Port actually vary node to node.
 $VersionMeta = [ordered]@{
+    # Real, original Forge 1.20.1 (predates NeoForge's own fork) - built via ModDevGradle's legacyforge
+    # plugin (build.legacyforge.gradle.kts), exposing the identical runServer/runClient/runClient2 task
+    # names every other node here does, so it needs no special-casing anywhere else in this script.
+    # Port 25565 to match build.legacyforge.gradle.kts's own hardcoded "--quickPlayMultiplayer
+    # localhost:25565" client run arg (same shared-literal-port tradeoff as 1.21.1/26.1 above - can't run
+    # a dedicated server for more than one of these three at the same time).
+    '1.20.1'        = @{ Loader = 'legacyforge'; Port = 25565 }
     '1.20.4'        = @{ Loader = 'neoforge'; Port = 25566 }
     # Matches build.gradle.kts' own hardcoded "--quickPlayMultiplayer localhost:25565" (shared literally
     # across every NeoForge node's client run config, not actually per-version) - a different port here

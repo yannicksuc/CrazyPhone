@@ -14,9 +14,20 @@ import net.neoforged.fml.common.Mod.EventBusSubscriber;
 //?}
 import net.neoforged.bus.api.SubscribeEvent;
 //?}
+// Real, original Forge 1.20.1 - same FMLCommonSetupEvent/EventBusSubscriber/SubscribeEvent shape as
+// NeoForge's own <1.20.5 branch above (see NetworkAccess.java's own doc comment) - PlayPayloadContext
+// itself is NOT imported here: this file is in the same package as the same-package compat shim
+// (fr.lordfinn.crazyphone.network.PlayPayloadContext), so it resolves with no import at all.
+//? if legacyforge {
+import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+//?}
 
 import net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/;
+//? if fabric || neoforge {
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+//?}
 import net.minecraft.network.protocol.PacketFlow;
 //? if >=1.20.5 {
 /*import net.minecraft.network.codec.StreamCodec;
@@ -40,7 +51,11 @@ import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
  * off the player's own {@link PhoneRegistrySavedData} copy, which {@link #handleToggle} refreshes via
  * {@code syncTo} right after the toggle - same one-round-trip pattern as any other registry mutation here.
  */
+//? if legacyforge {
+/*public record CrazyPhoneMuteConversationMessage(String conversationId) {
+*///? } else {
 public record CrazyPhoneMuteConversationMessage(String conversationId) implements CustomPacketPayload {
+//?}
 
     //? if >=1.20.5 {
     /*public static final Type<CrazyPhoneMuteConversationMessage> TYPE = new Type<>(
@@ -68,13 +83,15 @@ public record CrazyPhoneMuteConversationMessage(String conversationId) implement
         buffer.writeUtf(conversationId);
     }
 
+    //? if fabric || neoforge {
     @Override
+    //?}
     public /*$ res_loc {*/ResourceLocation/*$}*/ id() {
         return ID;
     }
     //?}
 
-    //? if neoforge {
+    //? if neoforge || legacyforge {
     //? if >=1.20.5 {
     /*public static void handleData(final CrazyPhoneMuteConversationMessage message, final IPayloadContext context) {
         if (context.flow() != PacketFlow.SERVERBOUND)
@@ -147,6 +164,17 @@ public record CrazyPhoneMuteConversationMessage(String conversationId) implement
             *///? } else {
             Crazyphone.addNetworkMessage(ID, CrazyPhoneMuteConversationMessage::new, CrazyPhoneMuteConversationMessage::handleData);
             //?}
+        }
+    }
+    //?}
+
+
+    //? if legacyforge {
+    @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
+    public static class LegacyForgeRegistration {
+        @SubscribeEvent
+        public static void register(FMLCommonSetupEvent event) {
+            Crazyphone.addNetworkMessage(CrazyPhoneMuteConversationMessage.class, CrazyPhoneMuteConversationMessage::write, CrazyPhoneMuteConversationMessage::new, CrazyPhoneMuteConversationMessage::handleData);
         }
     }
     //?}

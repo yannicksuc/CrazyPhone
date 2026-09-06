@@ -1,5 +1,6 @@
 package fr.lordfinn.crazyphone.item.inventory;
 
+//? if neoforge {
 //? if >=1.20.5 {
 /*import net.neoforged.neoforge.items.ComponentItemHandler;
 import net.neoforged.neoforge.common.MutableDataComponentHolder;
@@ -21,6 +22,20 @@ import net.neoforged.fml.common.Mod.EventBusSubscriber;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.api.distmarker.Dist;
+//?}
+// Real, original Forge 1.20.1 - net.minecraftforge.items.ItemStackHandler is the exact same class NeoForge's
+// own <1.20.5 ItemStackHandler was forked from (javap-verified), and Dist/OnlyIn are resolvable here too -
+// ModDevGradle's legacyforge plugin pulls in the mergetool artifact (the actual origin of that annotation
+// pair) as a compile-time-only dependency for exactly this reason. Since the body below (the "<1.20.5"
+// branch) was never loader-gated to begin with, only these imports need a legacyforge counterpart.
+//? if legacyforge {
+import net.minecraftforge.items.ItemStackHandler;
+import net.minecraftforge.event.entity.item.ItemTossEvent;
+import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraftforge.api.distmarker.Dist;
+//?}
 
 import net.minecraft.world.item.ItemStack;
 //? if >=1.20.5 {

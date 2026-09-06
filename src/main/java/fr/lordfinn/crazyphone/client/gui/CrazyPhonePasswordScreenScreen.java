@@ -12,7 +12,9 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.ImageButton;
 import net.minecraft.client.gui.components.Tooltip;
+//? if fabric || neoforge {
 import net.minecraft.client.gui.components.WidgetSprites;
+//?}
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/;
 import net.minecraft.world.entity.player.Inventory;
@@ -103,6 +105,7 @@ public class CrazyPhonePasswordScreenScreen extends CrazyPhoneDefaultScreenScree
         extractTooltip(guiGraphics, mouseX, mouseY);
     }
     *///? } else {
+    //? if neoforge || fabric {
     @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
         renderBackground(guiGraphics, mouseX, mouseY, partialTicks);
@@ -119,6 +122,27 @@ public class CrazyPhonePasswordScreenScreen extends CrazyPhoneDefaultScreenScree
         }
         renderTooltip(guiGraphics, mouseX, mouseY);
     }
+    //?}
+    // Real 1.20.1 vanilla has no renderBackground(GuiGraphics, int, int, float) override point (see
+    // CrazyPhoneDefaultScreenScreen's own doc comment) - the dim is drawn directly here instead.
+    //? if legacyforge {
+    @Override
+    public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
+        guiGraphics.fill(0, 0, this.width, this.height, 0x50000000);
+        super.render(guiGraphics, mouseX, mouseY, partialTicks);
+        renderHeader(guiGraphics, new ItemStack(fr.lordfinn.crazyphone.init.ModItems.CRAZY_PHONE.get()),
+                Component.translatable(step == STEP_PASSWORD
+                        ? "gui.crazyphone.crazy_phone_password_screen.title_password_step"
+                        : "gui.crazyphone.crazy_phone_password_screen.title"));
+        if (step == STEP_IDENTITY) {
+            number.render(guiGraphics, mouseX, mouseY, partialTicks);
+            name.render(guiGraphics, mouseX, mouseY, partialTicks);
+        } else {
+            password.render(guiGraphics, mouseX, mouseY, partialTicks);
+        }
+        renderTooltip(guiGraphics, mouseX, mouseY);
+    }
+    //?}
     //?}
 
     //? if >=26 {
@@ -250,11 +274,21 @@ public class CrazyPhonePasswordScreenScreen extends CrazyPhoneDefaultScreenScree
                 updateSuggestion();
             }
 
+            // Real 1.20.1 vanilla predates EditBox#moveCursorTo's boolean "select" parameter (added by 1.20.4).
+            //? if >=1.20.4 {
             @Override
             public void moveCursorTo(int pos, boolean flag) {
                 super.moveCursorTo(pos, flag);
                 updateSuggestion();
             }
+            //?}
+            //? if <1.20.4 {
+            /*@Override
+            public void moveCursorTo(int pos) {
+                super.moveCursorTo(pos);
+                updateSuggestion();
+            }
+            *///?}
 
             private void updateSuggestion() {
                 setSuggestion(getValue().isEmpty() ? defaultNameSuggestion() : null);
@@ -288,11 +322,21 @@ public class CrazyPhonePasswordScreenScreen extends CrazyPhoneDefaultScreenScree
                 updateSuggestion();
             }
 
+            // Real 1.20.1 vanilla predates EditBox#moveCursorTo's boolean "select" parameter (added by 1.20.4).
+            //? if >=1.20.4 {
             @Override
             public void moveCursorTo(int pos, boolean flag) {
                 super.moveCursorTo(pos, flag);
                 updateSuggestion();
             }
+            //?}
+            //? if <1.20.4 {
+            /*@Override
+            public void moveCursorTo(int pos) {
+                super.moveCursorTo(pos);
+                updateSuggestion();
+            }
+            *///?}
 
             private void updateSuggestion() {
                 setSuggestion(getValue().isEmpty() ? passwordSuggestion() : null);
@@ -349,26 +393,37 @@ public class CrazyPhonePasswordScreenScreen extends CrazyPhoneDefaultScreenScree
                     // sound (validation alone already passed for both), so it looked like it worked -
                     // explains why the very first phone in a session sometimes actually registered (pure
                     // ordering luck) and every one after kept bouncing back to the registration screen.
-                    //? if >=1.20.5 {
-                    /*NetworkAccess.sendToServer(new CrazyPhonePasswordScreenButtonMessage(0, x, y, z, getEditBoxAndCheckBoxValues()));
-                    *///? } else {
-                    PacketDistributor.SERVER.noArg().send(new CrazyPhonePasswordScreenButtonMessage(0, x, y, z, getEditBoxAndCheckBoxValues()));
-                    //?}
+                    NetworkAccess.sendToServer(new CrazyPhonePasswordScreenButtonMessage(0, x, y, z, getEditBoxAndCheckBoxValues()));
                 });
         guistate.put("button:button_valider", buttonAction);
         addRenderableWidget(buttonAction);
     }
 
     private void initResetButton() {
+        //? if legacyforge {
+        /*ResourceLocation resetTex = Crazyphone.parseId("crazyphone:textures/screens/reset.png");
+        buttonReset = new ImageButton(leftPos + 96, topPos + 40, 18, 18, 0, 0, 18, resetTex,
+            e -> {
+                NetworkAccess.sendToServer(new CrazyPhonePasswordScreenButtonMessage(1, x, y, z, getEditBoxAndCheckBoxValues()));
+                CrazyPhonePasswordScreenButtonMessage.handleButtonAction(entity, 1, x, y, z, getEditBoxAndCheckBoxValues());
+            }) {
+            private final WidgetSprites sprites = new WidgetSprites(resetTex, resetTex);
+
+            {
+                setTooltip(Tooltip.create(Component.translatable("gui.crazyphone.crazy_phone_password_screen.tooltip_reset")));
+            }
+
+            @Override
+            public void renderWidget(GuiGraphics guiGraphics, int x, int y, float partialTicks) {
+                fr.lordfinn.crazyphone.utils.GuiCompat.blit(guiGraphics, sprites.get(isActive(), isHoveredOrFocused()), getX(), getY(), 0, width, height);
+            }
+        };
+        *///? } else {
         buttonReset = new ImageButton(leftPos + 96, topPos + 40, 18, 18,
             new WidgetSprites(Crazyphone.parseId("crazyphone:textures/screens/reset.png"),
                               Crazyphone.parseId("crazyphone:textures/screens/reset.png")),
             e -> {
-                //? if >=1.20.5 {
-                /*NetworkAccess.sendToServer(new CrazyPhonePasswordScreenButtonMessage(1, x, y, z, getEditBoxAndCheckBoxValues()));
-                *///? } else {
-                PacketDistributor.SERVER.noArg().send(new CrazyPhonePasswordScreenButtonMessage(1, x, y, z, getEditBoxAndCheckBoxValues()));
-                //?}
+                NetworkAccess.sendToServer(new CrazyPhonePasswordScreenButtonMessage(1, x, y, z, getEditBoxAndCheckBoxValues()));
                 CrazyPhonePasswordScreenButtonMessage.handleButtonAction(entity, 1, x, y, z, getEditBoxAndCheckBoxValues());
             }) {
             {
@@ -386,6 +441,7 @@ public class CrazyPhonePasswordScreenScreen extends CrazyPhoneDefaultScreenScree
             }
             //?}
         };
+        //?}
         guistate.put("button:imagebutton_reset", buttonReset);
         addRenderableWidget(buttonReset);
     }

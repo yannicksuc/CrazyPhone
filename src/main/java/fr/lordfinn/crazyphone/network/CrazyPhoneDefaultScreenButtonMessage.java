@@ -15,11 +15,22 @@ import net.neoforged.fml.common.Mod.EventBusSubscriber;
 //?}
 import net.neoforged.bus.api.SubscribeEvent;
 //?}
+// Real, original Forge 1.20.1 - same FMLCommonSetupEvent/EventBusSubscriber/SubscribeEvent shape as
+// NeoForge's own <1.20.5 branch above (see NetworkAccess.java's own doc comment) - PlayPayloadContext
+// itself is NOT imported here: this file is in the same package as the same-package compat shim
+// (fr.lordfinn.crazyphone.network.PlayPayloadContext), so it resolves with no import at all.
+//? if legacyforge {
+import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+//?}
 
 import net.minecraft.world.level.Level;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/;
+//? if fabric || neoforge {
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+//?}
 import net.minecraft.network.protocol.PacketFlow;
 //? if >=1.20.5 {
 /*import net.minecraft.network.codec.StreamCodec;
@@ -32,9 +43,10 @@ import net.minecraft.core.BlockPos;
 import fr.lordfinn.crazyphone.world.inventory.CrazyPhoneDefaultScreenMenu;
 import fr.lordfinn.crazyphone.procedures.CrazyPhoneGoBackScreenProcedure;
 import fr.lordfinn.crazyphone.procedures.CrazyPhoneLockProcedure;
-//? if neoforge {
+//? if neoforge || legacyforge {
 import fr.lordfinn.crazyphone.procedures.CrazyPhoneRightclickedProcedure;
-//? } else {
+//?}
+//? if fabric {
 /*import fr.lordfinn.crazyphone.utils.ScreenMenuUtils;
 import fr.lordfinn.crazyphone.world.inventory.CrazyphoneHomeScreenMenu;
 import net.minecraft.world.InteractionHand;
@@ -54,7 +66,11 @@ import java.util.HashMap;
 /*@EventBusSubscriber
 *///?}
 //?}
+//? if legacyforge {
+/*public record CrazyPhoneDefaultScreenButtonMessage(int buttonID, int x, int y, int z, HashMap<String, String> textstate) {
+*///? } else {
 public record CrazyPhoneDefaultScreenButtonMessage(int buttonID, int x, int y, int z, HashMap<String, String> textstate) implements CustomPacketPayload {
+//?}
 
 	//? if >=1.20.5 {
 	/*public static final Type<CrazyPhoneDefaultScreenButtonMessage> TYPE = new Type<>(Crazyphone.resource("crazy_phone_default_screen_buttons"));
@@ -84,13 +100,15 @@ public record CrazyPhoneDefaultScreenButtonMessage(int buttonID, int x, int y, i
 		writeTextState(textstate, buffer);
 	}
 
+	//? if fabric || neoforge {
 	@Override
+	//?}
 	public /*$ res_loc {*/ResourceLocation/*$}*/ id() {
 		return ID;
 	}
 	//?}
 
-	//? if neoforge {
+	//? if neoforge || legacyforge {
 	//? if >=1.20.5 {
 	/*public static void handleData(final CrazyPhoneDefaultScreenButtonMessage message, final IPayloadContext context) {
 		if (context.flow() == PacketFlow.SERVERBOUND) {
@@ -148,9 +166,10 @@ public record CrazyPhoneDefaultScreenButtonMessage(int buttonID, int x, int y, i
 		if (buttonID == 0) {
 			CrazyPhoneGoBackScreenProcedure.execute(world, x, y, z, entity);
 		} else if (buttonID == 1) {
-			//? if neoforge {
+			//? if neoforge || legacyforge {
 			CrazyPhoneRightclickedProcedure.execute(world, x, y, z, entity);
-			//? } else {
+			//?}
+			//? if fabric {
 			/*// Camerapture integration (task #165) not done yet, so unlike CrazyPhoneRightclickedProcedure
 			// this skips the "camera active -> take photo" branch and always resets to the home screen.
 			ItemStack stack = entity.getItemInHand(InteractionHand.MAIN_HAND);
@@ -210,4 +229,15 @@ public record CrazyPhoneDefaultScreenButtonMessage(int buttonID, int x, int y, i
 		fr.lordfinn.crazyphone.fabric.FabricNetworking.registerServerReceiver(TYPE, CrazyPhoneDefaultScreenButtonMessage::handleDataFabric);
 	}
 	*///?}
+
+
+    //? if legacyforge {
+    @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
+    public static class LegacyForgeRegistration {
+        @SubscribeEvent
+        public static void register(FMLCommonSetupEvent event) {
+            Crazyphone.addNetworkMessage(CrazyPhoneDefaultScreenButtonMessage.class, CrazyPhoneDefaultScreenButtonMessage::write, CrazyPhoneDefaultScreenButtonMessage::new, CrazyPhoneDefaultScreenButtonMessage::handleData);
+        }
+    }
+    //?}
 }

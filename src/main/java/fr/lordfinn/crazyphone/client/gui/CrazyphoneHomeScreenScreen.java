@@ -91,6 +91,20 @@ public class CrazyphoneHomeScreenScreen extends CrazyPhoneDefaultScreenScreen<Cr
         // Photo: purely client-side, opens the same capture overlay the conversation camera icon and
         // punch-to-shoot use - bypasses addImageButton's generic send-packet-then-handleButtonAction
         // machinery entirely since there's nothing server-authoritative about framing a shot.
+        //? if legacyforge {
+        /*ResourceLocation photoNormal = Crazyphone.parseId("crazyphone:textures/screens/crazyphone-photo-icon.png");
+        ResourceLocation photoHover = Crazyphone.parseId("crazyphone:textures/screens/crazyphone-photo-icon-hover.png");
+        net.minecraft.client.gui.components.ImageButton photoButton = new net.minecraft.client.gui.components.ImageButton(
+                photoX, this.topPos + 28, 46, 62, 0, 0, 62, photoNormal,
+                e -> fr.lordfinn.crazyphone.client.CrazyPhoneCaptureMode.enter("")) {
+            private final WidgetSprites sprites = new WidgetSprites(photoNormal, photoHover);
+
+            @Override
+            public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
+                fr.lordfinn.crazyphone.utils.GuiCompat.blit(guiGraphics, sprites.get(isActive(), isHoveredOrFocused()), getX(), getY(), 0, width, height);
+            }
+        };
+        *///? } else {
         net.minecraft.client.gui.components.ImageButton photoButton = new net.minecraft.client.gui.components.ImageButton(
                 photoX, this.topPos + 28, 46, 62,
                 new net.minecraft.client.gui.components.WidgetSprites(
@@ -109,6 +123,7 @@ public class CrazyphoneHomeScreenScreen extends CrazyPhoneDefaultScreenScreen<Cr
             }
             //?}
         };
+        //?}
         guistate.put("button:imagebutton_photo", photoButton);
         this.addRenderableWidget(photoButton);
 
@@ -121,13 +136,23 @@ public class CrazyphoneHomeScreenScreen extends CrazyPhoneDefaultScreenScreen<Cr
         /*$ res_loc {*/ResourceLocation/*$}*/ normal = Crazyphone.parseId("crazyphone:textures/screens/" + baseIconName + ".png");
         /*$ res_loc {*/ResourceLocation/*$}*/ hover = Crazyphone.parseId("crazyphone:textures/screens/" + baseIconName + "-hover.png");
 
+        //? if legacyforge {
+/*ImageButton button = new ImageButton(x, y, width, height, 0, 0, height, normal, e -> {
+            var values = getEditBoxAndCheckBoxValues();
+            NetworkAccess.sendToServer(new CrazyphoneHomeScreenButtonMessage(buttonId, this.x, this.y, this.z, values));
+            CrazyphoneHomeScreenButtonMessage.handleButtonAction(this.entity, buttonId, this.x, this.y, this.z, values);
+        }) {
+            private final WidgetSprites sprites = new WidgetSprites(normal, hover);
+
+            @Override
+            public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
+                fr.lordfinn.crazyphone.utils.GuiCompat.blit(guiGraphics, sprites.get(isActive(), isHoveredOrFocused()), getX(), getY(), 0, width, height);
+            }
+        };
+        *///? } else {
         ImageButton button = new ImageButton(x, y, width, height, new net.minecraft.client.gui.components.WidgetSprites(normal, hover), e -> {
             var values = getEditBoxAndCheckBoxValues();
-            //? if >=1.20.5 {
-            /*NetworkAccess.sendToServer(new CrazyphoneHomeScreenButtonMessage(buttonId, this.x, this.y, this.z, values));
-            *///? } else {
-            PacketDistributor.SERVER.noArg().send(new CrazyphoneHomeScreenButtonMessage(buttonId, this.x, this.y, this.z, values));
-            //?}
+            NetworkAccess.sendToServer(new CrazyphoneHomeScreenButtonMessage(buttonId, this.x, this.y, this.z, values));
             CrazyphoneHomeScreenButtonMessage.handleButtonAction(this.entity, buttonId, this.x, this.y, this.z, values);
         }) {
             //? if >=26 {
@@ -142,6 +167,7 @@ public class CrazyphoneHomeScreenScreen extends CrazyPhoneDefaultScreenScreen<Cr
             }
             //?}
         };
+        //?}
 
         guistate.put("button:" + key, button);
         this.addRenderableWidget(button);

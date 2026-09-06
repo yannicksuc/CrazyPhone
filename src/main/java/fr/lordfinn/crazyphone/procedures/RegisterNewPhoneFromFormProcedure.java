@@ -42,7 +42,14 @@ public class RegisterNewPhoneFromFormProcedure {
             if (gameProfile != null) {
                 Property property = fr.lordfinn.crazyphone.utils.GameProfileCompat.properties(gameProfile).get("textures").stream().findFirst().orElse(null);
                 if (property != null) {
+                    // Real 1.20.1 authlib (4.0.43) predates Property's value()/name() record-style
+                    // accessors - the classic getValue()/getName() getters stand in instead.
+                    //? if legacyforge {
+                    String textureUUID = property.getValue();
+                    //?}
+                    //? if fabric || neoforge {
                     String textureUUID = property.value();
+                    //?}
                     phone.putString("skin", textureUUID);
                 }
             }

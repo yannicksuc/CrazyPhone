@@ -1,6 +1,8 @@
 package fr.lordfinn.crazyphone.utils;
 
+//? if fabric || neoforge {
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+//?}
 import net.minecraft.server.MinecraftServer;
 //? if fabric {
 /*import net.minecraft.server.level.ServerPlayer;
@@ -58,6 +60,16 @@ public final class NetworkAccess {
         net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.send(payload);
     }
     *///?}
+    // Real, original Forge 1.20.1 - same PacketDistributor shape as NeoForge's own <1.20.5 branch below,
+    // javap-verified, but sending a raw message through it needs the mediating SimpleChannel (old Forge's
+    // PacketDistributor.PacketTarget.send only takes a vanilla Packet<?>, not an arbitrary MSG - unlike
+    // NeoForge's own reimplementation of the same class, which added that convenience directly on the
+    // target).
+    //? if legacyforge {
+    public static void sendToServer(Object payload) {
+        fr.lordfinn.crazyphone.Crazyphone.channel().sendToServer(payload);
+    }
+    //?}
 
     //? if neoforge && <1.20.5 {
     public static void sendToPlayer(net.minecraft.server.level.ServerPlayer player, CustomPacketPayload payload) {
@@ -74,6 +86,11 @@ public final class NetworkAccess {
         net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.send(player, payload);
     }
     *///?}
+    //? if legacyforge {
+    public static void sendToPlayer(net.minecraft.server.level.ServerPlayer player, Object payload) {
+        fr.lordfinn.crazyphone.Crazyphone.channel().send(net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> player), payload);
+    }
+    //?}
 
     //? if neoforge && <1.20.5 {
     public static void sendToAllPlayers(MinecraftServer server, CustomPacketPayload payload) {
@@ -94,4 +111,9 @@ public final class NetworkAccess {
         }
     }
     *///?}
+    //? if legacyforge {
+    public static void sendToAllPlayers(MinecraftServer server, Object payload) {
+        fr.lordfinn.crazyphone.Crazyphone.channel().send(net.minecraftforge.network.PacketDistributor.ALL.noArg(), payload);
+    }
+    //?}
 }

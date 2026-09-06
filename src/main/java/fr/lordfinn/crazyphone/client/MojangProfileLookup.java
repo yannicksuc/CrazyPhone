@@ -45,7 +45,12 @@ public final class MojangProfileLookup {
     public static CompletableFuture<GameProfile> lookup(String name) {
         return CACHE.computeIfAbsent(name, n -> CompletableFuture.supplyAsync(() -> {
             GameProfile[] result = new GameProfile[1];
+            //? if fabric || neoforge {
             repository().findProfilesByNames(new String[]{n}, new ProfileLookupCallback() {
+            //?}
+            //? if legacyforge {
+            /*repository().findProfilesByNames(new String[]{n}, com.mojang.authlib.Agent.MINECRAFT, new ProfileLookupCallback() {
+            *///?}
                 //? if <1.21.10 {
                 @Override
                 public void onProfileLookupSucceeded(GameProfile profile) {
@@ -63,11 +68,22 @@ public final class MojangProfileLookup {
                 }
                 *///?}
 
+                //? if fabric || neoforge {
                 @Override
                 public void onProfileLookupFailed(String failedName, Exception exception) {
                     // Not a real account, or Mojang's API is unreachable - result stays null, handled by
                     // the caller falling back to a synthetic (default-skin) profile.
                 }
+                //?}
+                // Real 1.20.1 authlib (4.0.43) predates the String-keyed failure callback - it hands back
+                // the (unresolved) GameProfile it was given instead, javap-verified.
+                //? if legacyforge {
+                @Override
+                public void onProfileLookupFailed(GameProfile failedProfile, Exception exception) {
+                    // Not a real account, or Mojang's API is unreachable - result stays null, handled by
+                    // the caller falling back to a synthetic (default-skin) profile.
+                }
+                //?}
             });
             return result[0] == null ? null : withTextures(result[0]);
         }, Util.backgroundExecutor()));

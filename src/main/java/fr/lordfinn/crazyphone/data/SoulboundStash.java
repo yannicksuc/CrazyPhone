@@ -14,6 +14,11 @@ import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 *///?}
 //?}
+// Real, original Forge 1.20.1 - same INBTSerializable shape as NeoForge's own <1.21.10 branch above,
+// javap-verified against the actual 1.20.1 Forge jar, just under net.minecraftforge.
+//? if legacyforge {
+import net.minecraftforge.common.util.INBTSerializable;
+//?}
 //? if neoforge && >=1.20.5 {
 /*import net.minecraft.core.RegistryAccess;
 import net.minecraft.nbt.NbtOps;
@@ -23,7 +28,9 @@ import net.minecraft.resources.RegistryOps;
 /*import com.mojang.serialization.Codec;
 *///?}
 
+//? if fabric || neoforge {
 import org.jetbrains.annotations.NotNull;
+//?}
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,7 +38,7 @@ import java.util.List;
 /** Items carrying the Soulbound enchantment, pulled off a dying player's death drops (see SoulboundHandler)
  * and held here only for the brief window between death and respawn, where they're reinserted into the
  * player's inventory and this is cleared. Empty the rest of the time. */
-//? if neoforge && <1.21.10 {
+//? if (neoforge || legacyforge) && <1.21.10 {
 public class SoulboundStash implements INBTSerializable<CompoundTag> {
 //?}
 //? if neoforge && >=1.21.10 {
@@ -52,7 +59,7 @@ public class SoulboundStash {
 *///?}
     public List<ItemStack> items = new ArrayList<>();
 
-    //? if neoforge {
+    //? if neoforge || legacyforge {
     //? if >=1.21.10 {
     /*@Override
     public void serialize(ValueOutput output) {

@@ -310,7 +310,7 @@ public class PhotoSavedData extends SavedData {
                     //? if >=1.21.10 {
                     /*.computeIfAbsent(TYPE);
                     *///?}
-                    //? if fabric && <1.20.5 {
+                    //? if (fabric || legacyforge) && <1.20.5 {
                     /*.computeIfAbsent(PhotoSavedData::load, PhotoSavedData::new, DATA_NAME);
                     *///?}
                     //? if fabric && >=1.20.5 <1.21.10 {

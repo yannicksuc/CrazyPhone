@@ -1,5 +1,6 @@
 package fr.lordfinn.crazyphone.network;
 
+//? if neoforge {
 //? if >=1.20.5 {
 /*import net.neoforged.neoforge.network.handling.IPayloadContext;
 *///? } else {
@@ -14,9 +15,22 @@ import net.neoforged.fml.common.Mod.EventBusSubscriber;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.api.distmarker.Dist;
+//?}
+// Real, original Forge 1.20.1 - same shapes as NeoForge's own <1.20.5 branch above (see NetworkAccess.java's
+// own doc comment and PlayPayloadContext.java's same-package compat shim - not imported here for the same
+// reason).
+//? if legacyforge {
+import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraftforge.api.distmarker.Dist;
+//?}
 
 import net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/;
+//? if fabric || neoforge {
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+//?}
 import net.minecraft.network.protocol.PacketFlow;
 //? if >=1.20.5 {
 /*import net.minecraft.network.codec.StreamCodec;
@@ -41,7 +55,11 @@ import java.util.UUID;
  * value for the two actual participants) without needing that. Always targeted, never broadcast, same as
  * every other per-conversation packet in this mod.
  */
+//? if legacyforge {
+/*public record CrazyPhoneNewCallDurationNotificationPacket(String conversationId, UUID callId, long durationMillis) {
+*///? } else {
 public record CrazyPhoneNewCallDurationNotificationPacket(String conversationId, UUID callId, long durationMillis) implements CustomPacketPayload {
+//?}
 
     //? if >=1.20.5 {
     /*public static final Type<CrazyPhoneNewCallDurationNotificationPacket> TYPE = new Type<>(
@@ -79,7 +97,9 @@ public record CrazyPhoneNewCallDurationNotificationPacket(String conversationId,
         buffer.writeVarLong(durationMillis);
     }
 
+    //? if fabric || neoforge {
     @Override
+    //?}
     public /*$ res_loc {*/ResourceLocation/*$}*/ id() {
         return ID;
     }
@@ -90,7 +110,7 @@ public record CrazyPhoneNewCallDurationNotificationPacket(String conversationId,
     // to fully load+verify THIS class (including whichever methods live directly on it) the moment
     // Registration's own register() resolves the ::handleData method reference during Common Setup, so
     // nesting Registration alone isn't enough; the risky method itself must live somewhere else entirely.
-    //? if neoforge && <1.20.5 {
+    //? if (neoforge || legacyforge) && <1.20.5 {
     @OnlyIn(Dist.CLIENT)
     //?}
     //? if neoforge && >=1.20.5 <26 {
@@ -127,11 +147,13 @@ public record CrazyPhoneNewCallDurationNotificationPacket(String conversationId,
     }
     //?}
 
-    //? if <1.20.5 {
+    //? if neoforge && <1.20.5 {
     @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
-    //?} else {
+    //?}
+    //? if neoforge && >=1.20.5 {
     /*@EventBusSubscriber
     *///?}
+    //? if neoforge {
     public static class Registration {
         @SubscribeEvent
         public static void register(FMLCommonSetupEvent event) {
@@ -142,4 +164,15 @@ public record CrazyPhoneNewCallDurationNotificationPacket(String conversationId,
             //?}
         }
     }
+    //?}
+
+    //? if legacyforge {
+    @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
+    public static class LegacyForgeRegistration {
+        @SubscribeEvent
+        public static void register(FMLCommonSetupEvent event) {
+            Crazyphone.addNetworkMessage(CrazyPhoneNewCallDurationNotificationPacket.class, CrazyPhoneNewCallDurationNotificationPacket::write, CrazyPhoneNewCallDurationNotificationPacket::new, CrazyPhoneNewCallDurationNotificationPacket::handleData);
+        }
+    }
+    //?}
 }

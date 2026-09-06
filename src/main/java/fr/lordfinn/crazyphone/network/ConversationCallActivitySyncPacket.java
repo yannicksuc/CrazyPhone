@@ -14,9 +14,20 @@ import net.neoforged.fml.common.Mod.EventBusSubscriber;
 //?}
 import net.neoforged.bus.api.SubscribeEvent;
 //?}
+// Real, original Forge 1.20.1 - same FMLCommonSetupEvent/EventBusSubscriber/SubscribeEvent shape as
+// NeoForge's own <1.20.5 branch above (see NetworkAccess.java's own doc comment) - PlayPayloadContext
+// itself is NOT imported here: this file is in the same package as the same-package compat shim
+// (fr.lordfinn.crazyphone.network.PlayPayloadContext), so it resolves with no import at all.
+//? if legacyforge {
+import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+//?}
 
 import net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/;
+//? if fabric || neoforge {
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+//?}
 import net.minecraft.network.protocol.PacketFlow;
 //? if >=1.20.5 {
 /*import net.minecraft.network.codec.StreamCodec;
@@ -38,7 +49,11 @@ import fr.lordfinn.crazyphone.client.ClientCallState;
  * liveness, so it doesn't need a resend. Always targeted via {@code PacketDistributor.sendToPlayer}, never
  * broadcast, same as every other packet in this mod.
  */
+//? if legacyforge {
+/*public record ConversationCallActivitySyncPacket(String conversationId, boolean active) {
+*///? } else {
 public record ConversationCallActivitySyncPacket(String conversationId, boolean active) implements CustomPacketPayload {
+//?}
 
     //? if >=1.20.5 {
     /*public static final Type<ConversationCallActivitySyncPacket> TYPE = new Type<>(
@@ -73,7 +88,9 @@ public record ConversationCallActivitySyncPacket(String conversationId, boolean 
         buffer.writeBoolean(active);
     }
 
+    //? if fabric || neoforge {
     @Override
+    //?}
     public /*$ res_loc {*/ResourceLocation/*$}*/ id() {
         return ID;
     }
@@ -90,7 +107,7 @@ public record ConversationCallActivitySyncPacket(String conversationId, boolean 
                 });
     }
     *///?}
-    //? if neoforge && <1.20.5 {
+    //? if (neoforge || legacyforge) && <1.20.5 {
     public static void handleData(final ConversationCallActivitySyncPacket message, final PlayPayloadContext context) {
         if (context.flow() != PacketFlow.CLIENTBOUND)
             return;
@@ -132,4 +149,15 @@ public record ConversationCallActivitySyncPacket(String conversationId, boolean 
         fr.lordfinn.crazyphone.fabric.FabricNetworking.registerClientReceiver(TYPE, ConversationCallActivitySyncPacket::handleDataFabric);
     }
     *///?}
+
+
+    //? if legacyforge {
+    @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
+    public static class LegacyForgeRegistration {
+        @SubscribeEvent
+        public static void register(FMLCommonSetupEvent event) {
+            Crazyphone.addNetworkMessage(ConversationCallActivitySyncPacket.class, ConversationCallActivitySyncPacket::write, ConversationCallActivitySyncPacket::new, ConversationCallActivitySyncPacket::handleData);
+        }
+    }
+    //?}
 }

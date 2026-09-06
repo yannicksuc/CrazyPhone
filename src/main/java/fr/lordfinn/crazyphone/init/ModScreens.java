@@ -13,12 +13,22 @@ import net.neoforged.api.distmarker.Dist;
 //? if fabric && >=1.20.5 {
 /*import net.minecraft.client.gui.screens.MenuScreens;
 *///?}
+// Real, original Forge 1.20.1 has no RegisterMenuScreensEvent (a NeoForge-only rewrite) - client-side
+// MenuScreens.register calls go straight in a plain FMLClientSetupEvent subscriber instead, same vanilla
+// MenuScreens.register calls the Fabric branch below already uses directly.
+//? if legacyforge {
+import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
+import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraft.client.gui.screens.MenuScreens;
+//?}
 
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.Minecraft;
 
-//? if neoforge {
+//? if neoforge || legacyforge {
 import fr.lordfinn.crazyphone.init.ModMenus.GuiSyncMessage;
 //?}
 import fr.lordfinn.crazyphone.client.gui.CrazyPhoneDefaultScreenScreen;
@@ -60,6 +70,9 @@ import java.util.HashMap;
 //?} else {
 /*@EventBusSubscriber(value = Dist.CLIENT)
 *///?}
+//?}
+//? if legacyforge {
+@EventBusSubscriber(value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)
 //?}
 public class ModScreens {
 	//? if neoforge {
@@ -103,7 +116,29 @@ public class ModScreens {
 	}
 	*///?}
 
-	//? if neoforge {
+	//? if legacyforge {
+	@SubscribeEvent
+	public static void clientSetup(FMLClientSetupEvent event) {
+		event.enqueueWork(() -> {
+			MenuScreens.register(ModMenus.CRAZYPHONE_HOME_SCREEN.get(), CrazyphoneHomeScreenScreen::new);
+			MenuScreens.register(ModMenus.CRAZY_PHONE_PASSWORD_SCREEN.get(), CrazyPhonePasswordScreenScreen::new);
+			MenuScreens.register(ModMenus.CRAZY_PHONE_SIGN_IN_SCREEN.get(), CrazyPhoneSignInScreenScreen::new);
+			MenuScreens.register(ModMenus.CRAZY_PHONE_CONTACTS_SCREEN.get(), CrazyPhoneContactsScreenScreen::new);
+			MenuScreens.register(ModMenus.CRAZY_PHONE_CONTACT_INFO_SCREEN.get(), CrazyPhoneContactInfoScreenScreen::new);
+			MenuScreens.register(ModMenus.CRAZY_PHONE_CONVERSATION.get(), CrazyPhoneConversationScreen::new);
+			MenuScreens.register(ModMenus.CRAZY_PHONE_MAYORS_CANDIDATES_LIST.get(), CrazyPhoneMayorsCandidatesListScreen::new);
+			MenuScreens.register(ModMenus.CRAZY_PHONE_MY_PHOTOS_SCREEN.get(), CrazyPhoneMyPhotosScreenScreen::new);
+			MenuScreens.register(ModMenus.CRAZY_PHONE_GROUP_SETTINGS_SCREEN.get(), CrazyPhoneGroupSettingsScreenScreen::new);
+			MenuScreens.register(ModMenus.CRAZY_PHONE_CALLING_SCREEN.get(), CrazyPhoneCallingScreenScreen::new);
+			MenuScreens.register(ModMenus.CRAZY_PHONE_IN_CALL_SCREEN.get(), CrazyPhoneInCallScreenScreen::new);
+			MenuScreens.register(ModMenus.CRAZY_PHONE_INCOMING_CALL_SCREEN.get(), CrazyPhoneIncomingCallScreenScreen::new);
+			MenuScreens.register(ModMenus.CRAZY_PHONE_PHOTO_FRAME_RESIZE.get(), CrazyPhonePhotoFrameResizeScreen::new);
+			// Mayor-candidate poster screen stays NeoForge-only, matching the feature itself.
+		});
+	}
+	//?}
+
+	//? if neoforge || legacyforge {
 	public static void handleTextBoxMessage(GuiSyncMessage message) {
 		String editbox = message.editbox();
 		String value = message.value();

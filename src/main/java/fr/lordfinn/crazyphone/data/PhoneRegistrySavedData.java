@@ -27,7 +27,9 @@ import net.minecraft.world.level.saveddata.SavedDataType;
 import fr.lordfinn.crazyphone.network.PhoneRegistrySyncPacket;
 import fr.lordfinn.crazyphone.utils.NbtCompat;
 import fr.lordfinn.crazyphone.utils.NetworkAccess;
+//? if fabric || neoforge {
 import org.jetbrains.annotations.NotNull;
+//?}
 
 /**
  * Bounded, always-synced phone state: one entry per registered phone/contact/mayor record.
@@ -109,9 +111,24 @@ public class PhoneRegistrySavedData extends SavedData {
         this.mutedConversations = nbt.get("mutedConversations") instanceof CompoundTag t ? t : new CompoundTag();
     }
 
-    //? if <1.20.5 {
+    //? if fabric && <1.20.5 {
+    /*@Override
+    public @NotNull CompoundTag save(CompoundTag nbt) {
+        return writeNbt(nbt);
+    }
+    *///?}
+    //? if neoforge && <1.20.5 {
     @Override
     public @NotNull CompoundTag save(CompoundTag nbt) {
+        return writeNbt(nbt);
+    }
+    //?}
+    // Real, original Forge 1.20.1 - same save(CompoundTag) override point as the neoforge branch above,
+    // just without the @NotNull annotation (org.jetbrains.annotations isn't on this classpath, and the
+    // annotation itself has no effect on override resolution either way).
+    //? if legacyforge {
+    @Override
+    public CompoundTag save(CompoundTag nbt) {
         return writeNbt(nbt);
     }
     //?}
@@ -176,7 +193,7 @@ public class PhoneRegistrySavedData extends SavedData {
                     *///?}
                     // Fabric branches use real vanilla SavedData/DimensionDataStorage signatures (javap-
                     // verified - see ConversationSavedData.java's import block for the full explanation).
-                    //? if fabric && <1.20.5 {
+                    //? if (fabric || legacyforge) && <1.20.5 {
                     /*.computeIfAbsent(PhoneRegistrySavedData::load, PhoneRegistrySavedData::new, DATA_NAME);
                     *///?}
                     //? if fabric && >=1.20.5 <1.21.10 {

@@ -17,7 +17,9 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.PacketFlow;
+//? if fabric || neoforge {
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+//?}
 import net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
@@ -38,6 +40,15 @@ import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.neoforge.network.handling.PlayPayloadContext;
 //?}
 //?}
+// Real, original Forge 1.20.1 - same FMLCommonSetupEvent/EventBusSubscriber/SubscribeEvent shape as
+// NeoForge's own <1.20.5 branch above (see NetworkAccess.java's own doc comment) - PlayPayloadContext
+// itself is NOT imported here: this file is in the same package as the same-package compat shim
+// (fr.lordfinn.crazyphone.network.PlayPayloadContext), so it resolves with no import at all.
+//? if legacyforge {
+import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+//?}
 
 //? if neoforge {
 //? if <1.20.5 {
@@ -46,7 +57,11 @@ import net.neoforged.neoforge.network.handling.PlayPayloadContext;
 /*@EventBusSubscriber
 *///?}
 //?}
+//? if legacyforge {
+/*public record CrazyphoneHomeScreenButtonMessage(int buttonID, int x, int y, int z, HashMap<String, String> textstate) {
+*///? } else {
 public record CrazyphoneHomeScreenButtonMessage(int buttonID, int x, int y, int z, HashMap<String, String> textstate) implements CustomPacketPayload {
+//?}
 
 	//? if >=1.20.5 {
 	/*public static final Type<CrazyphoneHomeScreenButtonMessage> TYPE = new Type<>(Crazyphone.resource("crazyphone_home_screen_buttons"));
@@ -76,13 +91,15 @@ public record CrazyphoneHomeScreenButtonMessage(int buttonID, int x, int y, int 
 		writeTextState(textstate, buffer);
 	}
 
+	//? if fabric || neoforge {
 	@Override
+	//?}
 	public /*$ res_loc {*/ResourceLocation/*$}*/ id() {
 		return ID;
 	}
 	//?}
 
-	//? if neoforge {
+	//? if neoforge || legacyforge {
 	//? if >=1.20.5 {
 	/*public static void handleData(final CrazyphoneHomeScreenButtonMessage message, final IPayloadContext context) {
 		if (context.flow() == PacketFlow.SERVERBOUND) {
@@ -209,4 +226,15 @@ public record CrazyphoneHomeScreenButtonMessage(int buttonID, int x, int y, int 
 		fr.lordfinn.crazyphone.fabric.FabricNetworking.registerServerReceiver(TYPE, CrazyphoneHomeScreenButtonMessage::handleDataFabric);
 	}
 	*///?}
+
+
+    //? if legacyforge {
+    @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
+    public static class LegacyForgeRegistration {
+        @SubscribeEvent
+        public static void register(FMLCommonSetupEvent event) {
+            Crazyphone.addNetworkMessage(CrazyphoneHomeScreenButtonMessage.class, CrazyphoneHomeScreenButtonMessage::write, CrazyphoneHomeScreenButtonMessage::new, CrazyphoneHomeScreenButtonMessage::handleData);
+        }
+    }
+    //?}
 }
