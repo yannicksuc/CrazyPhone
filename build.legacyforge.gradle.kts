@@ -202,12 +202,61 @@ sourceSets.main {
 }
 legacyForge.ideSyncTask(generateModMetadata)
 
+// Real, original Forge on 1.20.1 fails to build a valid ResourcePackInfo for this mod's dev-mode "folder
+// mod" source location (logged as "File Mod File: .../build/classes/java/main failed to load a valid
+// ResourcePackInfo") because that location has no pack.mcmeta at all - unlike NeoForge's own ModDevGradle
+// tooling for the other targets (which auto-synthesizes one), old Forge apparently needs a real file.
+// Consequences confirmed live, both silent (Forge's default forge-client.toml has showLoadWarnings=true,
+// which swallows the resulting ModLoadingWarning into a LoadingErrorScreen instead of logging it):
+//  - the mod's own resource pack is dropped from ReloadableResourceManager entirely (crazy_phone item
+//    models/sounds "not found" even though the files are genuinely present on disk and correctly rooted)
+//  - the client silently stalls on a LoadingErrorScreen instead of ever reaching the title screen, which
+//    also means quickPlayMultiplayer's auto-connect (scheduled to fire once the initial screen is set)
+//    never runs
+// Scoped to this buildscript only (a dedicated task instead of adding to the shared src/main/templates
+// pool build.gradle.kts's own generateModMetadata also draws from) because pack_format is genuinely
+// version-specific and 1.20.1 is the only node confirmed to need this - build.gradle.kts's other 8 nodes
+// already work fine without one.
+val packMetadataDir = layout.buildDirectory.dir("generated/sources/packMetadata")
+val packMetadataModName = property("mod_name") as String
+val generatePackMetadata = tasks.register("generatePackMetadata") {
+    val outputDir = packMetadataDir
+    val modName = packMetadataModName
+    outputs.dir(outputDir)
+    doLast {
+        outputDir.get().asFile.mkdirs()
+        outputDir.get().file("pack.mcmeta").asFile.writeText(
+            "{\"pack\":{\"pack_format\":15,\"description\":\"$modName resources\"}}"
+        )
+    }
+}
+sourceSets.main {
+    resources.srcDir(generatePackMetadata)
+}
+
 // The photo-dyeing recipe's own "minecraft:crafting_dye" type doesn't exist before 26.x - see
 // build.gradle.kts's own identical block for the full explanation. Dyeing still works on 1.20.1 via the
 // item's own "dyeable" tag + vanilla's built-in ArmorDyeRecipe.
+//
+// crazy_phone.json's own "result" object uses the post-1.20.5 Data Components shape ({"id": ..., "count":
+// ...}) - real 1.20.1's RecipeManager expects the old {"item": ..., "count": ...} shape instead and fails
+// the whole recipe file with "Parsing error loading recipe crazyphone:crazy_phone" /
+// JsonSyntaxException("Missing item, expected to find a string") otherwise, confirmed live at server
+// startup (non-fatal - the server keeps running - but the crafting recipe silently doesn't exist). Also
+// strips the unrecognized "neoforge:conditions"/"fabric:load_conditions" toggle (CrazyPhoneCraftingCondition
+// itself is already skipped for legacyforge - see ModItems.java's own doc comment - so the recipe is simply
+// always enabled here, same as every other loader when the config toggle is on).
 tasks.named<ProcessResources>("processResources") {
     doLast {
         destinationDir.resolve("data/crazyphone/recipe/crazy_phone_photo_dyed.json").delete()
+        val craftingRecipe = destinationDir.resolve("data/crazyphone/recipes/crazy_phone.json")
+        val json = groovy.json.JsonSlurper().parse(craftingRecipe) as MutableMap<String, Any?>
+        json.remove("neoforge:conditions")
+        json.remove("fabric:load_conditions")
+        @Suppress("UNCHECKED_CAST")
+        val result = json["result"] as MutableMap<String, Any?>
+        result["item"] = result.remove("id")
+        craftingRecipe.writeText(groovy.json.JsonOutput.toJson(json))
     }
 }
 

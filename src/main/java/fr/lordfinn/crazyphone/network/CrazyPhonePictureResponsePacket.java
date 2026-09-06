@@ -162,10 +162,10 @@ public record CrazyPhonePictureResponsePacket(List<Entry> entries) implements Cu
 
     //? if legacyforge {
     @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
-    public static class LegacyForgeRegistration {
+    public static class CrazyPhonePictureResponsePacketLegacyForgeRegistration {
         @SubscribeEvent
         public static void register(FMLCommonSetupEvent event) {
-            Crazyphone.addNetworkMessage(CrazyPhonePictureResponsePacket.class, CrazyPhonePictureResponsePacket::write, CrazyPhonePictureResponsePacket::new, CrazyPhonePictureResponsePacket::handleData);
+            Crazyphone.addNetworkMessage(CrazyPhonePictureResponsePacket.class, 23, CrazyPhonePictureResponsePacket::write, CrazyPhonePictureResponsePacket::new, CrazyPhonePictureResponsePacket::handleData);
         }
     }
     //?}

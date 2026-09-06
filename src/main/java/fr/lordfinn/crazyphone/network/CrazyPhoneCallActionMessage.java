@@ -225,10 +225,10 @@ public record CrazyPhoneCallActionMessage(int action, String conversationId) imp
 
     //? if legacyforge {
     @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
-    public static class LegacyForgeRegistration {
+    public static class CrazyPhoneCallActionMessageLegacyForgeRegistration {
         @SubscribeEvent
         public static void register(FMLCommonSetupEvent event) {
-            Crazyphone.addNetworkMessage(CrazyPhoneCallActionMessage.class, CrazyPhoneCallActionMessage::write, CrazyPhoneCallActionMessage::new, CrazyPhoneCallActionMessage::handleData);
+            Crazyphone.addNetworkMessage(CrazyPhoneCallActionMessage.class, 5, CrazyPhoneCallActionMessage::write, CrazyPhoneCallActionMessage::new, CrazyPhoneCallActionMessage::handleData);
         }
     }
     //?}

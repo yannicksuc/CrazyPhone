@@ -75,9 +75,14 @@ Set-Location $RepoRoot
 
 # Override with $env:CRAZYPHONE_JAVA_HOME if your JDK lives elsewhere - this default only matches
 # this machine's own setup. gradlew.bat needs a real JAVA_HOME set; it won't reliably fall back to
-# whatever's already on PATH for this project's toolchain requirements.
-$JavaHomeDefault = 'C:\Users\yanni\.jdks\ms-21.0.12'
-$JavaHome = if ($env:CRAZYPHONE_JAVA_HOME) { $env:CRAZYPHONE_JAVA_HOME } else { $JavaHomeDefault }
+# whatever's already on PATH for this project's toolchain requirements. A JAVA_HOME already set in
+# the environment (e.g. a real, valid Windows user-level var) wins over the hardcoded default below -
+# this script should only patch things up when nothing usable is already there, never clobber a good
+# ambient value with a stale machine-specific guess.
+$JavaHomeDefault = 'C:\Program Files\Eclipse Adoptium\jdk-21.0.12.101-hotspot'
+$JavaHome = if ($env:CRAZYPHONE_JAVA_HOME) { $env:CRAZYPHONE_JAVA_HOME }
+    elseif ($env:JAVA_HOME -and (Test-Path $env:JAVA_HOME)) { $env:JAVA_HOME }
+    else { $JavaHomeDefault }
 if (-not (Test-Path $JavaHome)) {
     Write-Warning "JAVA_HOME candidate '$JavaHome' does not exist on this machine."
     Write-Warning "Set `$env:CRAZYPHONE_JAVA_HOME to your own JDK 21 path, or edit the default at the top of this script."
@@ -458,6 +463,13 @@ function Initialize-ServerRunDir {
     $propsPath = Join-Path $runDir 'server.properties'
     $lines = if (Test-Path $propsPath) { @(Get-Content $propsPath) } else { @() }
     $lines = Set-PropertyLine $lines 'server-port' $info.Port
+    # Every dev client here launches with a fake/offline username+UUID (see the runs{} blocks in each
+    # buildscript) - online-mode=true (vanilla's own default for a freshly-generated server.properties)
+    # makes Mojang's session-server auth reject that fake session instantly, which surfaces as nothing
+    # more than a silent "lost connection: Disconnected" with no reason logged on either side. This line
+    # was missing for whichever node's run-server directory didn't already have a server.properties from
+    # some earlier manual setup (1.20.1's, freshly created by this session's port, hit exactly this).
+    $lines = Set-PropertyLine $lines 'online-mode' 'false'
     $lines = Set-PropertyLine $lines 'gamemode' 'creative'
     $lines = Set-PropertyLine $lines 'force-gamemode' 'true'
     $lines = Set-PropertyLine $lines 'difficulty' 'peaceful'

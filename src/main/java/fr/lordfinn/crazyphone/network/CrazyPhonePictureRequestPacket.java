@@ -269,10 +269,10 @@ public record CrazyPhonePictureRequestPacket(List<Entry> entries) implements Cus
 
     //? if legacyforge {
     @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
-    public static class LegacyForgeRegistration {
+    public static class CrazyPhonePictureRequestPacketLegacyForgeRegistration {
         @SubscribeEvent
         public static void register(FMLCommonSetupEvent event) {
-            Crazyphone.addNetworkMessage(CrazyPhonePictureRequestPacket.class, CrazyPhonePictureRequestPacket::write, CrazyPhonePictureRequestPacket::new, CrazyPhonePictureRequestPacket::handleData);
+            Crazyphone.addNetworkMessage(CrazyPhonePictureRequestPacket.class, 22, CrazyPhonePictureRequestPacket::write, CrazyPhonePictureRequestPacket::new, CrazyPhonePictureRequestPacket::handleData);
         }
     }
     //?}

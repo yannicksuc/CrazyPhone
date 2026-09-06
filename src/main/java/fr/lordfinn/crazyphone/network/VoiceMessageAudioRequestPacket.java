@@ -245,10 +245,10 @@ public record VoiceMessageAudioRequestPacket(UUID voiceMessageId, float speed, i
 
     //? if legacyforge {
     @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
-    public static class LegacyForgeRegistration {
+    public static class VoiceMessageAudioRequestPacketLegacyForgeRegistration {
         @SubscribeEvent
         public static void register(FMLCommonSetupEvent event) {
-            Crazyphone.addNetworkMessage(VoiceMessageAudioRequestPacket.class, VoiceMessageAudioRequestPacket::write, VoiceMessageAudioRequestPacket::new, VoiceMessageAudioRequestPacket::handleData);
+            Crazyphone.addNetworkMessage(VoiceMessageAudioRequestPacket.class, 32, VoiceMessageAudioRequestPacket::write, VoiceMessageAudioRequestPacket::new, VoiceMessageAudioRequestPacket::handleData);
         }
     }
     //?}

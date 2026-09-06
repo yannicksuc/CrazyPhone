@@ -319,7 +319,7 @@ public class ModMenus {
 
 	@SubscribeEvent
 	public static void init(FMLCommonSetupEvent event) {
-		Crazyphone.addNetworkMessage(GuiSyncMessage.class, GuiSyncMessage::write, GuiSyncMessage::new, GuiSyncMessage::handleData);
+		Crazyphone.addNetworkMessage(GuiSyncMessage.class, 35, GuiSyncMessage::write, GuiSyncMessage::new, GuiSyncMessage::handleData);
 	}
 	//?}
 }

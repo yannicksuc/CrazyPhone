@@ -171,10 +171,10 @@ public record CrazyPhoneMuteConversationMessage(String conversationId) implement
 
     //? if legacyforge {
     @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
-    public static class LegacyForgeRegistration {
+    public static class CrazyPhoneMuteConversationMessageLegacyForgeRegistration {
         @SubscribeEvent
         public static void register(FMLCommonSetupEvent event) {
-            Crazyphone.addNetworkMessage(CrazyPhoneMuteConversationMessage.class, CrazyPhoneMuteConversationMessage::write, CrazyPhoneMuteConversationMessage::new, CrazyPhoneMuteConversationMessage::handleData);
+            Crazyphone.addNetworkMessage(CrazyPhoneMuteConversationMessage.class, 17, CrazyPhoneMuteConversationMessage::write, CrazyPhoneMuteConversationMessage::new, CrazyPhoneMuteConversationMessage::handleData);
         }
     }
     //?}

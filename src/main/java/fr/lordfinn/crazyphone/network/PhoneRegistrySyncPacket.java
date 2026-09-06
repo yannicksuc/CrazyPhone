@@ -169,10 +169,10 @@ public record PhoneRegistrySyncPacket(PhoneRegistrySavedData data) implements Cu
 
     //? if legacyforge {
     @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
-    public static class LegacyForgeRegistration {
+    public static class PhoneRegistrySyncPacketLegacyForgeRegistration {
         @SubscribeEvent
         public static void register(FMLCommonSetupEvent event) {
-            Crazyphone.addNetworkMessage(PhoneRegistrySyncPacket.class, PhoneRegistrySyncPacket::write, PhoneRegistrySyncPacket::new, PhoneRegistrySyncPacket::handleData);
+            Crazyphone.addNetworkMessage(PhoneRegistrySyncPacket.class, 29, PhoneRegistrySyncPacket::write, PhoneRegistrySyncPacket::new, PhoneRegistrySyncPacket::handleData);
         }
     }
     //?}

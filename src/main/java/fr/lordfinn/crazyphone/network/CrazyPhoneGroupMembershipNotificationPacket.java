@@ -201,10 +201,10 @@ public record CrazyPhoneGroupMembershipNotificationPacket(String groupLabel, Str
 
     //? if legacyforge {
     @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
-    public static class LegacyForgeRegistration {
+    public static class CrazyPhoneGroupMembershipNotificationPacketLegacyForgeRegistration {
         @SubscribeEvent
         public static void register(FMLCommonSetupEvent event) {
-            Crazyphone.addNetworkMessage(CrazyPhoneGroupMembershipNotificationPacket.class, CrazyPhoneGroupMembershipNotificationPacket::write, CrazyPhoneGroupMembershipNotificationPacket::new, CrazyPhoneGroupMembershipNotificationPacket::handleData);
+            Crazyphone.addNetworkMessage(CrazyPhoneGroupMembershipNotificationPacket.class, 13, CrazyPhoneGroupMembershipNotificationPacket::write, CrazyPhoneGroupMembershipNotificationPacket::new, CrazyPhoneGroupMembershipNotificationPacket::handleData);
         }
     }
     //?}

@@ -153,10 +153,10 @@ public record ConversationCallActivitySyncPacket(String conversationId, boolean 
 
     //? if legacyforge {
     @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
-    public static class LegacyForgeRegistration {
+    public static class ConversationCallActivitySyncPacketLegacyForgeRegistration {
         @SubscribeEvent
         public static void register(FMLCommonSetupEvent event) {
-            Crazyphone.addNetworkMessage(ConversationCallActivitySyncPacket.class, ConversationCallActivitySyncPacket::write, ConversationCallActivitySyncPacket::new, ConversationCallActivitySyncPacket::handleData);
+            Crazyphone.addNetworkMessage(ConversationCallActivitySyncPacket.class, 1, ConversationCallActivitySyncPacket::write, ConversationCallActivitySyncPacket::new, ConversationCallActivitySyncPacket::handleData);
         }
     }
     //?}

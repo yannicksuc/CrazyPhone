@@ -316,10 +316,10 @@ public record CrazyPhoneContactsScreenButtonMessage(int buttonID, int x, int y, 
 
     //? if legacyforge {
     @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
-    public static class LegacyForgeRegistration {
+    public static class CrazyPhoneContactsScreenButtonMessageLegacyForgeRegistration {
         @SubscribeEvent
         public static void register(FMLCommonSetupEvent event) {
-            Crazyphone.addNetworkMessage(CrazyPhoneContactsScreenButtonMessage.class, CrazyPhoneContactsScreenButtonMessage::write, CrazyPhoneContactsScreenButtonMessage::new, CrazyPhoneContactsScreenButtonMessage::handleData);
+            Crazyphone.addNetworkMessage(CrazyPhoneContactsScreenButtonMessage.class, 9, CrazyPhoneContactsScreenButtonMessage::write, CrazyPhoneContactsScreenButtonMessage::new, CrazyPhoneContactsScreenButtonMessage::handleData);
         }
     }
     //?}

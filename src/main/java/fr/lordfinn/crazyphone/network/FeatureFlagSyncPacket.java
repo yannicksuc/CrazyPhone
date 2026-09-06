@@ -189,10 +189,10 @@ public record FeatureFlagSyncPacket(Map<String, Boolean> enabledStates) implemen
 
     //? if legacyforge {
     @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
-    public static class LegacyForgeRegistration {
+    public static class FeatureFlagSyncPacketLegacyForgeRegistration {
         @SubscribeEvent
         public static void register(FMLCommonSetupEvent event) {
-            Crazyphone.addNetworkMessage(FeatureFlagSyncPacket.class, FeatureFlagSyncPacket::write, FeatureFlagSyncPacket::new, FeatureFlagSyncPacket::handleData);
+            Crazyphone.addNetworkMessage(FeatureFlagSyncPacket.class, 28, FeatureFlagSyncPacket::write, FeatureFlagSyncPacket::new, FeatureFlagSyncPacket::handleData);
         }
     }
     //?}

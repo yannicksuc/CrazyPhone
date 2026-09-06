@@ -131,10 +131,10 @@ public record CrazyPhoneClearPictureCachePacket() implements CustomPacketPayload
 
     //? if legacyforge {
     @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
-    public static class LegacyForgeRegistration {
+    public static class CrazyPhoneClearPictureCachePacketLegacyForgeRegistration {
         @SubscribeEvent
         public static void register(FMLCommonSetupEvent event) {
-            Crazyphone.addNetworkMessage(CrazyPhoneClearPictureCachePacket.class, CrazyPhoneClearPictureCachePacket::write, CrazyPhoneClearPictureCachePacket::new, CrazyPhoneClearPictureCachePacket::handleData);
+            Crazyphone.addNetworkMessage(CrazyPhoneClearPictureCachePacket.class, 7, CrazyPhoneClearPictureCachePacket::write, CrazyPhoneClearPictureCachePacket::new, CrazyPhoneClearPictureCachePacket::handleData);
         }
     }
     //?}

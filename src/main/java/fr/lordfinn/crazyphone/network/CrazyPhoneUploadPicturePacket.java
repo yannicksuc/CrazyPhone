@@ -216,10 +216,10 @@ public record CrazyPhoneUploadPicturePacket(String conversationId, UUID photoId,
 
     //? if legacyforge {
     @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
-    public static class LegacyForgeRegistration {
+    public static class CrazyPhoneUploadPicturePacketLegacyForgeRegistration {
         @SubscribeEvent
         public static void register(FMLCommonSetupEvent event) {
-            Crazyphone.addNetworkMessage(CrazyPhoneUploadPicturePacket.class, CrazyPhoneUploadPicturePacket::write, CrazyPhoneUploadPicturePacket::new, CrazyPhoneUploadPicturePacket::handleData);
+            Crazyphone.addNetworkMessage(CrazyPhoneUploadPicturePacket.class, 26, CrazyPhoneUploadPicturePacket::write, CrazyPhoneUploadPicturePacket::new, CrazyPhoneUploadPicturePacket::handleData);
         }
     }
     //?}

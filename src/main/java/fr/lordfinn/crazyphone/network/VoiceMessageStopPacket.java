@@ -163,10 +163,10 @@ public record VoiceMessageStopPacket() implements CustomPacketPayload {
 
     //? if legacyforge {
     @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
-    public static class LegacyForgeRegistration {
+    public static class VoiceMessageStopPacketLegacyForgeRegistration {
         @SubscribeEvent
         public static void register(FMLCommonSetupEvent event) {
-            Crazyphone.addNetworkMessage(VoiceMessageStopPacket.class, VoiceMessageStopPacket::write, VoiceMessageStopPacket::new, VoiceMessageStopPacket::handleData);
+            Crazyphone.addNetworkMessage(VoiceMessageStopPacket.class, 33, VoiceMessageStopPacket::write, VoiceMessageStopPacket::new, VoiceMessageStopPacket::handleData);
         }
     }
     //?}

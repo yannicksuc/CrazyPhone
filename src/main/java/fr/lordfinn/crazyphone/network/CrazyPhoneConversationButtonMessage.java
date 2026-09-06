@@ -266,10 +266,10 @@ public record CrazyPhoneConversationButtonMessage(int buttonID, int x, int y, in
 
 	//? if legacyforge {
 	@EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
-	public static class LegacyForgeRegistration {
+	public static class CrazyPhoneConversationButtonMessageLegacyForgeRegistration {
 		@SubscribeEvent
 		public static void register(FMLCommonSetupEvent event) {
-			Crazyphone.addNetworkMessage(CrazyPhoneConversationButtonMessage.class, CrazyPhoneConversationButtonMessage::write, CrazyPhoneConversationButtonMessage::new, CrazyPhoneConversationButtonMessage::handleData);
+			Crazyphone.addNetworkMessage(CrazyPhoneConversationButtonMessage.class, 10, CrazyPhoneConversationButtonMessage::write, CrazyPhoneConversationButtonMessage::new, CrazyPhoneConversationButtonMessage::handleData);
 		}
 	}
 	//?}

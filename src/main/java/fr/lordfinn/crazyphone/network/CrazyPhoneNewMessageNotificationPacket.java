@@ -217,10 +217,10 @@ public record CrazyPhoneNewMessageNotificationPacket(
 
     //? if legacyforge {
     @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
-    public static class LegacyForgeRegistration {
+    public static class CrazyPhoneNewMessageNotificationPacketLegacyForgeRegistration {
         @SubscribeEvent
         public static void register(FMLCommonSetupEvent event) {
-            Crazyphone.addNetworkMessage(CrazyPhoneNewMessageNotificationPacket.class, CrazyPhoneNewMessageNotificationPacket::write, CrazyPhoneNewMessageNotificationPacket::new, CrazyPhoneNewMessageNotificationPacket::handleData);
+            Crazyphone.addNetworkMessage(CrazyPhoneNewMessageNotificationPacket.class, 20, CrazyPhoneNewMessageNotificationPacket::write, CrazyPhoneNewMessageNotificationPacket::new, CrazyPhoneNewMessageNotificationPacket::handleData);
         }
     }
     //?}

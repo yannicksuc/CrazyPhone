@@ -228,16 +228,29 @@ public class Crazyphone {
 
     private static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(resource("main"),
             () -> "1", "1"::equals, "1"::equals);
-    private static int nextMessageId = 0;
 
     public static SimpleChannel channel() {
         return CHANNEL;
     }
 
-    public static <T> void addNetworkMessage(Class<T> clazz, BiConsumer<T, FriendlyByteBuf> writer,
+    // Each packet's own LegacyForgeRegistration class self-registers via a @SubscribeEvent handler on
+    // FMLCommonSetupEvent (see any packet file's own doc comment on why - no central registration list
+    // exists to drive registration order). An auto-incrementing counter here used to assign the id, which
+    // hid a much worse bug: old Forge's EventBus generates its ASM event-handler bridge for a
+    // @SubscribeEvent method keyed by the DECLARING CLASS'S SIMPLE NAME, not its fully-qualified one - so
+    // 34 packet files all nesting an identically-named "LegacyForgeRegistration" class in the same
+    // network/ package collided onto the same generated bridge, and only the alphabetically-first
+    // packet's register() call ever actually ran (35 times over). Confirmed live via a temporary log in
+    // this method: every single registration logged CallParticipantHeadRotationSyncPacket's id/class,
+    // never any other packet's. Fixed by giving every packet's nested class a name derived from its own
+    // outer class (see each packet file's own "<PacketName>LegacyForgeRegistration" class), which also
+    // meant the id had to become an explicit, stable, hardcoded argument at each of the 36 call sites
+    // instead of an auto-incrementing counter (now that registration genuinely runs once per packet, nothing
+    // is order-dependent, but a literal id is clearer than relying on call order regardless).
+    public static <T> void addNetworkMessage(Class<T> clazz, int id, BiConsumer<T, FriendlyByteBuf> writer,
                                               Function<FriendlyByteBuf, T> reader,
                                               BiConsumer<T, PlayPayloadContext> handler) {
-        CHANNEL.registerMessage(nextMessageId++, clazz, writer, reader, (msg, ctxSupplier) -> {
+        CHANNEL.registerMessage(id, clazz, writer, reader, (msg, ctxSupplier) -> {
             NetworkEvent.Context ctx = ctxSupplier.get();
             handler.accept(msg, new PlayPayloadContext(ctx));
             ctx.setPacketHandled(true);

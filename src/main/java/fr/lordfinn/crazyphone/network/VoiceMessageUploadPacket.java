@@ -232,10 +232,10 @@ public record VoiceMessageUploadPacket(String conversationId, UUID voiceId, byte
 
     //? if legacyforge {
     @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
-    public static class LegacyForgeRegistration {
+    public static class VoiceMessageUploadPacketLegacyForgeRegistration {
         @SubscribeEvent
         public static void register(FMLCommonSetupEvent event) {
-            Crazyphone.addNetworkMessage(VoiceMessageUploadPacket.class, VoiceMessageUploadPacket::write, VoiceMessageUploadPacket::new, VoiceMessageUploadPacket::handleData);
+            Crazyphone.addNetworkMessage(VoiceMessageUploadPacket.class, 34, VoiceMessageUploadPacket::write, VoiceMessageUploadPacket::new, VoiceMessageUploadPacket::handleData);
         }
     }
     //?}

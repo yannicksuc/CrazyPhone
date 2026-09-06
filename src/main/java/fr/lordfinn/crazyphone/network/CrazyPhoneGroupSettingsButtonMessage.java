@@ -341,10 +341,10 @@ public record CrazyPhoneGroupSettingsButtonMessage(int buttonID, int x, int y, i
 
     //? if legacyforge {
     @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
-    public static class LegacyForgeRegistration {
+    public static class CrazyPhoneGroupSettingsButtonMessageLegacyForgeRegistration {
         @SubscribeEvent
         public static void register(FMLCommonSetupEvent event) {
-            Crazyphone.addNetworkMessage(CrazyPhoneGroupSettingsButtonMessage.class, CrazyPhoneGroupSettingsButtonMessage::write, CrazyPhoneGroupSettingsButtonMessage::new, CrazyPhoneGroupSettingsButtonMessage::handleData);
+            Crazyphone.addNetworkMessage(CrazyPhoneGroupSettingsButtonMessage.class, 14, CrazyPhoneGroupSettingsButtonMessage::write, CrazyPhoneGroupSettingsButtonMessage::new, CrazyPhoneGroupSettingsButtonMessage::handleData);
         }
     }
     //?}

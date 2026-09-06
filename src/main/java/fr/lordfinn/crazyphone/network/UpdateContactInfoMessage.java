@@ -165,10 +165,10 @@ public record UpdateContactInfoMessage(String name, String uuid, String number) 
 
     //? if legacyforge {
     @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
-    public static class LegacyForgeRegistration {
+    public static class UpdateContactInfoMessageLegacyForgeRegistration {
         @SubscribeEvent
         public static void register(FMLCommonSetupEvent event) {
-            Crazyphone.addNetworkMessage(UpdateContactInfoMessage.class, UpdateContactInfoMessage::write, UpdateContactInfoMessage::new, UpdateContactInfoMessage::handleData);
+            Crazyphone.addNetworkMessage(UpdateContactInfoMessage.class, 31, UpdateContactInfoMessage::write, UpdateContactInfoMessage::new, UpdateContactInfoMessage::handleData);
         }
     }
     //?}

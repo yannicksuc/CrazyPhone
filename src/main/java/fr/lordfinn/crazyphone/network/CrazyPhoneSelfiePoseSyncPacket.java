@@ -176,10 +176,10 @@ public record CrazyPhoneSelfiePoseSyncPacket(boolean active, float stickX, float
 
     //? if legacyforge {
     @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
-    public static class LegacyForgeRegistration {
+    public static class CrazyPhoneSelfiePoseSyncPacketLegacyForgeRegistration {
         @SubscribeEvent
         public static void register(FMLCommonSetupEvent event) {
-            Crazyphone.addNetworkMessage(CrazyPhoneSelfiePoseSyncPacket.class, CrazyPhoneSelfiePoseSyncPacket::write, CrazyPhoneSelfiePoseSyncPacket::new, CrazyPhoneSelfiePoseSyncPacket::handleData);
+            Crazyphone.addNetworkMessage(CrazyPhoneSelfiePoseSyncPacket.class, 24, CrazyPhoneSelfiePoseSyncPacket::write, CrazyPhoneSelfiePoseSyncPacket::new, CrazyPhoneSelfiePoseSyncPacket::handleData);
         }
     }
     //?}

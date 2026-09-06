@@ -176,10 +176,10 @@ public record ConversationRequestPacket(String conversationId, int skipFromEnd) 
 
     //? if legacyforge {
     @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
-    public static class LegacyForgeRegistration {
+    public static class ConversationRequestPacketLegacyForgeRegistration {
         @SubscribeEvent
         public static void register(FMLCommonSetupEvent event) {
-            Crazyphone.addNetworkMessage(ConversationRequestPacket.class, ConversationRequestPacket::write, ConversationRequestPacket::new, ConversationRequestPacket::handleData);
+            Crazyphone.addNetworkMessage(ConversationRequestPacket.class, 2, ConversationRequestPacket::write, ConversationRequestPacket::new, ConversationRequestPacket::handleData);
         }
     }
     //?}

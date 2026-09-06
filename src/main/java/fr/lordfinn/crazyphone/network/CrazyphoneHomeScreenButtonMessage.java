@@ -230,10 +230,10 @@ public record CrazyphoneHomeScreenButtonMessage(int buttonID, int x, int y, int 
 
     //? if legacyforge {
     @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
-    public static class LegacyForgeRegistration {
+    public static class CrazyphoneHomeScreenButtonMessageLegacyForgeRegistration {
         @SubscribeEvent
         public static void register(FMLCommonSetupEvent event) {
-            Crazyphone.addNetworkMessage(CrazyphoneHomeScreenButtonMessage.class, CrazyphoneHomeScreenButtonMessage::write, CrazyphoneHomeScreenButtonMessage::new, CrazyphoneHomeScreenButtonMessage::handleData);
+            Crazyphone.addNetworkMessage(CrazyphoneHomeScreenButtonMessage.class, 27, CrazyphoneHomeScreenButtonMessage::write, CrazyphoneHomeScreenButtonMessage::new, CrazyphoneHomeScreenButtonMessage::handleData);
         }
     }
     //?}

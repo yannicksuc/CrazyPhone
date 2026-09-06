@@ -220,10 +220,10 @@ public record CrazyPhoneMayorsCandidatesButtonMessage(int buttonID, int x, int y
 
     //? if legacyforge {
     @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
-    public static class LegacyForgeRegistration {
+    public static class CrazyPhoneMayorsCandidatesButtonMessageLegacyForgeRegistration {
         @SubscribeEvent
         public static void register(FMLCommonSetupEvent event) {
-            Crazyphone.addNetworkMessage(CrazyPhoneMayorsCandidatesButtonMessage.class, CrazyPhoneMayorsCandidatesButtonMessage::write, CrazyPhoneMayorsCandidatesButtonMessage::new, CrazyPhoneMayorsCandidatesButtonMessage::handleData);
+            Crazyphone.addNetworkMessage(CrazyPhoneMayorsCandidatesButtonMessage.class, 16, CrazyPhoneMayorsCandidatesButtonMessage::write, CrazyPhoneMayorsCandidatesButtonMessage::new, CrazyPhoneMayorsCandidatesButtonMessage::handleData);
         }
     }
     //?}

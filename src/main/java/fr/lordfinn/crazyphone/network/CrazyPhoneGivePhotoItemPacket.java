@@ -176,10 +176,10 @@ public record CrazyPhoneGivePhotoItemPacket(UUID photoId) implements CustomPacke
 
     //? if legacyforge {
     @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
-    public static class LegacyForgeRegistration {
+    public static class CrazyPhoneGivePhotoItemPacketLegacyForgeRegistration {
         @SubscribeEvent
         public static void register(FMLCommonSetupEvent event) {
-            Crazyphone.addNetworkMessage(CrazyPhoneGivePhotoItemPacket.class, CrazyPhoneGivePhotoItemPacket::write, CrazyPhoneGivePhotoItemPacket::new, CrazyPhoneGivePhotoItemPacket::handleData);
+            Crazyphone.addNetworkMessage(CrazyPhoneGivePhotoItemPacket.class, 12, CrazyPhoneGivePhotoItemPacket::write, CrazyPhoneGivePhotoItemPacket::new, CrazyPhoneGivePhotoItemPacket::handleData);
         }
     }
     //?}

@@ -205,10 +205,10 @@ public record ConversationResponsePacket(String conversationId, int skipFromEnd,
 
     //? if legacyforge {
     @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
-    public static class LegacyForgeRegistration {
+    public static class ConversationResponsePacketLegacyForgeRegistration {
         @SubscribeEvent
         public static void register(FMLCommonSetupEvent event) {
-            Crazyphone.addNetworkMessage(ConversationResponsePacket.class, ConversationResponsePacket::write, ConversationResponsePacket::new, ConversationResponsePacket::handleData);
+            Crazyphone.addNetworkMessage(ConversationResponsePacket.class, 3, ConversationResponsePacket::write, ConversationResponsePacket::new, ConversationResponsePacket::handleData);
         }
     }
     //?}

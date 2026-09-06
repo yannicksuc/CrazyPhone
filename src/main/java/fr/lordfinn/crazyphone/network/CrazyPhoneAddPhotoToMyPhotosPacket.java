@@ -174,10 +174,10 @@ public record CrazyPhoneAddPhotoToMyPhotosPacket(UUID photoId) implements Custom
 
     //? if legacyforge {
     @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
-    public static class LegacyForgeRegistration {
+    public static class CrazyPhoneAddPhotoToMyPhotosPacketLegacyForgeRegistration {
         @SubscribeEvent
         public static void register(FMLCommonSetupEvent event) {
-            Crazyphone.addNetworkMessage(CrazyPhoneAddPhotoToMyPhotosPacket.class, CrazyPhoneAddPhotoToMyPhotosPacket::write, CrazyPhoneAddPhotoToMyPhotosPacket::new, CrazyPhoneAddPhotoToMyPhotosPacket::handleData);
+            Crazyphone.addNetworkMessage(CrazyPhoneAddPhotoToMyPhotosPacket.class, 4, CrazyPhoneAddPhotoToMyPhotosPacket::write, CrazyPhoneAddPhotoToMyPhotosPacket::new, CrazyPhoneAddPhotoToMyPhotosPacket::handleData);
         }
     }
     //?}

@@ -168,10 +168,10 @@ public record CrazyPhoneNewCallDurationNotificationPacket(String conversationId,
 
     //? if legacyforge {
     @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
-    public static class LegacyForgeRegistration {
+    public static class CrazyPhoneNewCallDurationNotificationPacketLegacyForgeRegistration {
         @SubscribeEvent
         public static void register(FMLCommonSetupEvent event) {
-            Crazyphone.addNetworkMessage(CrazyPhoneNewCallDurationNotificationPacket.class, CrazyPhoneNewCallDurationNotificationPacket::write, CrazyPhoneNewCallDurationNotificationPacket::new, CrazyPhoneNewCallDurationNotificationPacket::handleData);
+            Crazyphone.addNetworkMessage(CrazyPhoneNewCallDurationNotificationPacket.class, 19, CrazyPhoneNewCallDurationNotificationPacket::write, CrazyPhoneNewCallDurationNotificationPacket::new, CrazyPhoneNewCallDurationNotificationPacket::handleData);
         }
     }
     //?}

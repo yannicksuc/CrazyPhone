@@ -207,10 +207,10 @@ public record CallParticipantHeadRotationSyncPacket(String conversationId, List<
 
     //? if legacyforge {
     @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
-    public static class LegacyForgeRegistration {
+    public static class CallParticipantHeadRotationSyncPacketLegacyForgeRegistration {
         @SubscribeEvent
         public static void register(FMLCommonSetupEvent event) {
-            Crazyphone.addNetworkMessage(CallParticipantHeadRotationSyncPacket.class, CallParticipantHeadRotationSyncPacket::write, CallParticipantHeadRotationSyncPacket::new, CallParticipantHeadRotationSyncPacket::handleData);
+            Crazyphone.addNetworkMessage(CallParticipantHeadRotationSyncPacket.class, 0, CallParticipantHeadRotationSyncPacket::write, CallParticipantHeadRotationSyncPacket::new, CallParticipantHeadRotationSyncPacket::handleData);
         }
     }
     //?}

@@ -207,10 +207,10 @@ public record CrazyPhoneSignInScreenButtonMessage(int buttonID, int x, int y, in
 
     //? if legacyforge {
     @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
-    public static class LegacyForgeRegistration {
+    public static class CrazyPhoneSignInScreenButtonMessageLegacyForgeRegistration {
         @SubscribeEvent
         public static void register(FMLCommonSetupEvent event) {
-            Crazyphone.addNetworkMessage(CrazyPhoneSignInScreenButtonMessage.class, CrazyPhoneSignInScreenButtonMessage::write, CrazyPhoneSignInScreenButtonMessage::new, CrazyPhoneSignInScreenButtonMessage::handleData);
+            Crazyphone.addNetworkMessage(CrazyPhoneSignInScreenButtonMessage.class, 25, CrazyPhoneSignInScreenButtonMessage::write, CrazyPhoneSignInScreenButtonMessage::new, CrazyPhoneSignInScreenButtonMessage::handleData);
         }
     }
     //?}

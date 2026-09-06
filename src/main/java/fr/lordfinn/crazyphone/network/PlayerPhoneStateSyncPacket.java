@@ -228,10 +228,10 @@ public record PlayerPhoneStateSyncPacket(PlayerPhoneState data) implements Custo
 
     //? if legacyforge {
     @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
-    public static class LegacyForgeRegistration {
+    public static class PlayerPhoneStateSyncPacketLegacyForgeRegistration {
         @SubscribeEvent
         public static void register(FMLCommonSetupEvent event) {
-            Crazyphone.addNetworkMessage(PlayerPhoneStateSyncPacket.class, PlayerPhoneStateSyncPacket::write, PlayerPhoneStateSyncPacket::new, PlayerPhoneStateSyncPacket::handleData);
+            Crazyphone.addNetworkMessage(PlayerPhoneStateSyncPacket.class, 30, PlayerPhoneStateSyncPacket::write, PlayerPhoneStateSyncPacket::new, PlayerPhoneStateSyncPacket::handleData);
         }
     }
     //?}

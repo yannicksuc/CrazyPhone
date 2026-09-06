@@ -218,10 +218,10 @@ public record CrazyPhoneMyPhotosActionMessage(Action action, List<UUID> photoIds
 
     //? if legacyforge {
     @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
-    public static class LegacyForgeRegistration {
+    public static class CrazyPhoneMyPhotosActionMessageLegacyForgeRegistration {
         @SubscribeEvent
         public static void register(FMLCommonSetupEvent event) {
-            Crazyphone.addNetworkMessage(CrazyPhoneMyPhotosActionMessage.class, CrazyPhoneMyPhotosActionMessage::write, CrazyPhoneMyPhotosActionMessage::new, CrazyPhoneMyPhotosActionMessage::handleData);
+            Crazyphone.addNetworkMessage(CrazyPhoneMyPhotosActionMessage.class, 18, CrazyPhoneMyPhotosActionMessage::write, CrazyPhoneMyPhotosActionMessage::new, CrazyPhoneMyPhotosActionMessage::handleData);
         }
     }
     //?}

@@ -204,10 +204,10 @@ public record CrazyPhoneCallStateSyncPacket(String conversationId, UUID callId, 
 
     //? if legacyforge {
     @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
-    public static class LegacyForgeRegistration {
+    public static class CrazyPhoneCallStateSyncPacketLegacyForgeRegistration {
         @SubscribeEvent
         public static void register(FMLCommonSetupEvent event) {
-            Crazyphone.addNetworkMessage(CrazyPhoneCallStateSyncPacket.class, CrazyPhoneCallStateSyncPacket::write, CrazyPhoneCallStateSyncPacket::new, CrazyPhoneCallStateSyncPacket::handleData);
+            Crazyphone.addNetworkMessage(CrazyPhoneCallStateSyncPacket.class, 6, CrazyPhoneCallStateSyncPacket::write, CrazyPhoneCallStateSyncPacket::new, CrazyPhoneCallStateSyncPacket::handleData);
         }
     }
     //?}
