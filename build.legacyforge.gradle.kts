@@ -124,6 +124,10 @@ legacyForge {
             sourceSet(sourceSets["main"])
         }
     }
+
+    // Unlike neoForge{}, the legacyForge{} extension has no unitTest{} DSL at all (ModDevGradle never
+    // backported that feature to its old-Forge support) - see build.legacyforge.gradle.kts's own doc
+    // comment on the testing{} block below for how `src/test/java` is handled on this version instead.
 }
 
 testing {
