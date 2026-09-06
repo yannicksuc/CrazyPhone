@@ -544,15 +544,17 @@ public final class CrazyPhonePhotoItemRenderer {
         }
 
         PoseStack.Pose pose = poseStack.last();
-        VertexConsumer frameBuffer = bufferSource.getBuffer(/*$ render_types {*/RenderType/*$}*/.entityCutout(FRAME_TEXTURE));
-        VertexConsumer backingBuffer = bufferSource.getBuffer(/*$ render_types {*/RenderType/*$}*/.entityCutout(BACKING_TEXTURE));
         float t = HAND_CARD_THICKNESS_HALF;
         float b = HAND_FRAME_BORDER;
         float uB = FRAME_UV_BORDER;
         float ow = iw + b, oh = ih + b;
 
         // Frame front, nine-sliced: 4 fixed-size corners + 4 edges stretched only along their long axis: the
-        // hollow center (where the photo quad goes) is left unfilled.
+        // hollow center (where the photo quad goes) is left unfilled. Fully drawn into before backingBuffer
+        // below is ever fetched - see renderFramedCard's own comment on frameBuffer for why (some
+        // MultiBufferSource implementations end/finalize the previously-active buffer the moment getBuffer()
+        // is called for a different RenderType, even before the new one is written to).
+        VertexConsumer frameBuffer = bufferSource.getBuffer(/*$ render_types {*/RenderType/*$}*/.entityCutout(FRAME_TEXTURE));
         slice(frameBuffer, pose, packedLight, packedOverlay, dyeR, dyeG, dyeB, -ow, -iw, oh, ih, t, 0, uB, 0, uB); // top-left
         slice(frameBuffer, pose, packedLight, packedOverlay, dyeR, dyeG, dyeB, -iw, iw, oh, ih, t, uB, 1 - uB, 0, uB); // top
         slice(frameBuffer, pose, packedLight, packedOverlay, dyeR, dyeG, dyeB, iw, ow, oh, ih, t, 1 - uB, 1, 0, uB); // top-right
@@ -563,6 +565,9 @@ public final class CrazyPhonePhotoItemRenderer {
         slice(frameBuffer, pose, packedLight, packedOverlay, dyeR, dyeG, dyeB, iw, ow, -ih, -oh, t, 1 - uB, 1, 1 - uB, 1); // bottom-right
 
         // Frame back, nine-sliced the same as the front (opaque backing texture - see BACKING_TEXTURE's own
+        // doc comment). Own fetch, not reused from above - see this method's own comment on frameBuffer for
+        // why.
+        VertexConsumer backingBuffer = bufferSource.getBuffer(/*$ render_types {*/RenderType/*$}*/.entityCutout(BACKING_TEXTURE));
         // doc comment; a single stretched quad here would also distort the border's own width unevenly on a
         // rectangular (non-square) hand photo, exactly the artifact a nine-slice exists to avoid).
         sliceBack(backingBuffer, pose, packedLight, packedOverlay, dyeR, dyeG, dyeB, -ow, -iw, oh, ih, -t, 0, uB, 0, uB); // top-left
@@ -606,19 +611,26 @@ public final class CrazyPhonePhotoItemRenderer {
     private static void renderFramedCard(PhotoItemData data, PoseStack poseStack, MultiBufferSource bufferSource, int packedLight, int packedOverlay, int rgb) {
         int r = (rgb >> 16) & 0xFF, g = (rgb >> 8) & 0xFF, b = rgb & 0xFF;
         PoseStack.Pose pose = poseStack.last();
-        VertexConsumer frameBuffer = bufferSource.getBuffer(/*$ render_types {*/RenderType/*$}*/.entityCutout(FRAME_TEXTURE));
-        VertexConsumer backingBuffer = bufferSource.getBuffer(/*$ render_types {*/RenderType/*$}*/.entityCutout(BACKING_TEXTURE));
         float t = CARD_THICKNESS_HALF;
         float h = FRAME_HALF;
 
-        // Frame front (border-ring texture, photo shows through its transparent middle) / back (opaque
-        // backing texture - see BACKING_TEXTURE's own doc comment).
+        // Frame front (border-ring texture, photo shows through its transparent middle). Fetched and fully
+        // drawn into before the backing buffer below is ever fetched - some MultiBufferSource
+        // implementations (confirmed live: the GUI/hotbar item-icon one, not the world's own) end/finalize
+        // whichever buffer was last active the moment getBuffer() is called for a DIFFERENT RenderType, even
+        // before anything is written to the new one - fetching both up front, then writing to the first one
+        // afterward, crashed there with "Not building!".
+        VertexConsumer frameBuffer = bufferSource.getBuffer(/*$ render_types {*/RenderType/*$}*/.entityCutout(FRAME_TEXTURE));
         quad(frameBuffer, pose, packedLight, packedOverlay, r, g, b,
                 -h, h, t, 0, 0,
                 -h, -h, t, 0, 1,
                 h, -h, t, 1, 1,
                 h, h, t, 1, 0,
                 0, 0, 1);
+
+        // Frame back (opaque backing texture - see BACKING_TEXTURE's own doc comment). Own fetch, not reused
+        // from above - see this method's own comment on frameBuffer for why.
+        VertexConsumer backingBuffer = bufferSource.getBuffer(/*$ render_types {*/RenderType/*$}*/.entityCutout(BACKING_TEXTURE));
         quad(backingBuffer, pose, packedLight, packedOverlay, r, g, b,
                 h, h, -t, 0, 0,
                 h, -h, -t, 0, 1,

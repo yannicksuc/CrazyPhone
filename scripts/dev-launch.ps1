@@ -97,7 +97,14 @@ $Gradlew = Join-Path $RepoRoot 'gradlew.bat'
 # Loader and the assigned dedicated-server Port actually vary node to node.
 $VersionMeta = [ordered]@{
     '1.20.4'        = @{ Loader = 'neoforge'; Port = 25566 }
-    '1.21.1'        = @{ Loader = 'neoforge'; Port = 25568 }
+    # Matches build.gradle.kts' own hardcoded "--quickPlayMultiplayer localhost:25565" (shared literally
+    # across every NeoForge node's client run config, not actually per-version) - a different port here
+    # left the client auto-connecting to the wrong place (Connection refused, confirmed live) whenever
+    # 1.21.1 wasn't the one node that happened to already sit on 25565. Means 1.21.1 and 26.1 can't have
+    # their own dedicated servers running at the same time (both now claim 25565) - acceptable given
+    # neither this project's current active test matrix nor dev-launch's own docs promise true
+    # simultaneous multi-node testing, only "no manual port bookkeeping" for whichever ones ARE run.
+    '1.21.1'        = @{ Loader = 'neoforge'; Port = 25565 }
     '1.21.10'       = @{ Loader = 'neoforge'; Port = 25569 }
     '26.1'          = @{ Loader = 'neoforge'; Port = 25565 }
     '26.2'          = @{ Loader = 'neoforge'; Port = 25570 }

@@ -330,6 +330,20 @@ tasks.named<ProcessResources>("processResources") {
         }
     }
 
+    // The photo-dyeing recipe's own "minecraft:crafting_dye" type doesn't exist before 26.x (confirmed live:
+    // 1.21.1's own RecipeManager fails the whole reload with "Unknown registry key ... minecraft:crafting_dye"
+    // otherwise, not just skip this one recipe) - dyeing still works fine on every earlier version without it,
+    // since the item's own "dyeable" tag (data/minecraft/tags/item/dyeable.json) is all vanilla's built-in
+    // ArmorDyeRecipe needs there (see CrazyPhoneItem... commit message for the full "ArmorDyeRecipe on
+    // 1.21.1, minecraft:crafting_dye on 26.1" split). Same "patch the build output, not the tracked shared
+    // resource" approach as everything else in this task - Fabric's own build script has no equivalent
+    // patch yet, a real gap on 1.21.1-fabric/1.20.1-fabric, not fixed here.
+    if (!minecraftVersion.startsWith("26.")) {
+        doLast {
+            destinationDir.resolve("data/crazyphone/recipe/crazy_phone_photo_dyed.json").delete()
+        }
+    }
+
     // The duplicate-photo crafting recipe's serializer isn't registered on >=1.21.10 for either loader (see
     // ModRecipes.java/CrazyPhoneDuplicatePhotoRecipe.java's own <1.21.10 guards - the Recipe API rework there
     // isn't backported yet). The recipe JSON itself has no such per-version gate (shared resource, no
