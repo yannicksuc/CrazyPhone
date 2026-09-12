@@ -397,8 +397,9 @@ public class CrazyPhoneHelper {
             return true;
         }
 
+        boolean isAlbum = fr.lordfinn.crazyphone.utils.ForeignPhotoMods.isForeignAlbumItem(foreignStack);
         List<fr.lordfinn.crazyphone.utils.ForeignPhotoMods.ForeignPhoto> photos;
-        if (fr.lordfinn.crazyphone.utils.ForeignPhotoMods.isForeignAlbumItem(foreignStack)) {
+        if (isAlbum) {
             photos = fr.lordfinn.crazyphone.utils.ForeignPhotoMods.readAlbum(server, foreignStack);
         } else {
             fr.lordfinn.crazyphone.utils.ForeignPhotoMods.ForeignPhoto single = fr.lordfinn.crazyphone.utils.ForeignPhotoMods.readSingle(server, foreignStack);
@@ -415,7 +416,7 @@ public class CrazyPhoneHelper {
         // An Album's own contents stay exactly as they were (Camera mod/Camerapture keep their own separate
         // copy) - only a single loose Image/Picture item is actually consumed, the same "feed one photo in"
         // gesture importPhotoIntoPhone uses for this mod's own Photo item.
-        if (!fr.lordfinn.crazyphone.utils.ForeignPhotoMods.isForeignAlbumItem(foreignStack))
+        if (!isAlbum)
             consumeForeignItem.run();
         playImportResultSound(player, true);
         return true;

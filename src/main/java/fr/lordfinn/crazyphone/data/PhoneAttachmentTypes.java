@@ -82,7 +82,10 @@ public class PhoneAttachmentTypes {
             player.getData(PLAYER_PHONE_STATE).syncTo(player);
             PhoneRegistrySavedData.get(player.level()).syncTo(player);
             FeatureFlagSyncPacket.syncTo(player);
+            // <1.21.10 only - see LegacyPhotoMigration#importPhoneAlbumsOnLogin's own doc comment on why.
+            //? if <1.21.10 {
             LegacyPhotoMigration.importPhoneAlbumsOnLogin(player);
+            //?}
         }
     }
 

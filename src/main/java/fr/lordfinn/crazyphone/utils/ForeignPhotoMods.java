@@ -72,7 +72,14 @@ public final class ForeignPhotoMods {
         net.minecraft.world.item.component.ItemContainerContents contents = stack.get(net.minecraft.core.component.DataComponents.CONTAINER);
         if (contents == null)
             return result;
-        for (net.minecraft.world.item.ItemStack sub : contents.nonEmptyItemsCopy()) {
+        // A plain indexed loop over getSlots()/getStackInSlot(int) rather than the convenience iterator -
+        // that convenience method got renamed between versions (nonEmptyItemsCopy() pre-26, replaced by a
+        // Stream-returning nonEmptyItemCopyStream() at 26.x - confirmed via javap on both jars), while these
+        // two plain accessors are identical everywhere.
+        for (int slot = 0; slot < contents.getSlots(); slot++) {
+            net.minecraft.world.item.ItemStack sub = contents.getStackInSlot(slot);
+            if (sub.isEmpty())
+                continue;
             ForeignPhoto photo = readSingle(server, sub);
             if (photo != null)
                 result.add(photo);

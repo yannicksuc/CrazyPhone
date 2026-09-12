@@ -134,14 +134,19 @@ public final class LegacyPhotoMigration {
     // ids in it after upgrading, sitting inside their crazy_phone item's own capability data, which survives
     // a mod update untouched since it's just NBT no different from any other item's.
     //
-    // NeoForge-only, matching ForeignPhotoMods' own scope. Runs once per login (see PhoneAttachmentTypes'
-    // own onPlayerLoggedIn) rather than once per world boot like migrate() above, since it needs one
-    // specific player's own inventory, which doesn't exist yet at server start. Not flag-guarded anywhere:
-    // every step here is already idempotent on its own (storePhoto dedups by content hash, linkPhotoToOwner
-    // is a no-op once already linked), so a cheap re-scan on every future login only costs however many
-    // phones/albums THIS ONE player happens to carry, never the whole server's history the way migrate()
-    // has to guard against.
-    //? if neoforge {
+    // NeoForge-only, matching ForeignPhotoMods' own scope - and further capped to <1.21.10, where
+    // CrazyPhoneHelper#getPhoneItemHandler still returns the old IItemHandlerModifiable (the >=1.21.10
+    // branch returns a completely different Transfer-API ResourceHandler<ItemResource> instead, with no
+    // equivalent getSlots()/getStackInSlot() surface). Not worth porting: 1.1.0-beta.1 (the only version
+    // that ever wrote a Camera-mod Album/Image into a phone's own attached inventory to begin with) never
+    // targeted 1.21.10+ at all, so no world running there could have this legacy data to recover in the
+    // first place. Runs once per login (see PhoneAttachmentTypes' own onPlayerLoggedIn) rather than once
+    // per world boot like migrate() above, since it needs one specific player's own inventory, which
+    // doesn't exist yet at server start. Not flag-guarded anywhere: every step here is already idempotent
+    // on its own (storePhoto dedups by content hash, linkPhotoToOwner is a no-op once already linked), so
+    // a cheap re-scan on every future login only costs however many phones/albums THIS ONE player happens
+    // to carry, never the whole server's history the way migrate() has to guard against.
+    //? if neoforge && <1.21.10 {
     public static void importPhoneAlbumsOnLogin(net.minecraft.server.level.ServerPlayer player) {
         net.minecraft.world.entity.player.Inventory inventory = player.getInventory();
         for (int i = 0; i < inventory.getContainerSize(); i++) {
