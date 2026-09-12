@@ -111,8 +111,16 @@ public class CrazyPhoneHelper {
     //? if neoforge {
     @Nullable
     public static IItemHandlerModifiable getPhoneItemHandler(Player player) {
-        ItemStack held = player.getMainHandItem();
+        return getPhoneItemHandler(player.getMainHandItem());
+    }
 
+    /** Same as {@link #getPhoneItemHandler(Player)}, but for any phone {@link ItemStack} - not just the one
+     * currently held in the main hand - so a phone found anywhere else in a player's inventory (see
+     * {@link LegacyPhotoMigration#importPhoneAlbumsOnLogin}, which needs to check every phone a player
+     * owns, not just whichever one they happen to be holding at login) can have its own attached inventory
+     * read the same way. */
+    @Nullable
+    public static IItemHandlerModifiable getPhoneItemHandler(ItemStack held) {
         if (!(held.getItem() instanceof CrazyPhoneItem))
             return null;
 

@@ -51,11 +51,14 @@ public class PhotoSavedData extends SavedData {
     /** owner (phone number) -> ListTag of photoId strings, oldest first - lets eviction find/drop the
      * oldest entry for that owner in O(1) instead of scanning every photo's "created" timestamp. */
     public CompoundTag photosByOwner = new CompoundTag();
-    /** Set once {@link LegacyPhotoMigration} has scanned this world's conversations for pre-this-store
-     * image messages (see that class's own doc comment) - skips the scan on every future boot once there's
-     * nothing left it could possibly recover, including on a brand new world that never had anything to
-     * migrate in the first place. */
-    public boolean legacyPhotosMigrated = false;
+    /** Set to {@link LegacyPhotoMigration#CURRENT_VERSION} once that class has scanned this world's
+     * conversations for pre-this-store image messages (see its own doc comment) - skips the scan on every
+     * future boot once there's nothing left it could possibly recover, including on a brand new world that
+     * never had anything to migrate in the first place. A version number rather than a plain boolean so a
+     * future fix to the migration's own logic (see CURRENT_VERSION's own doc comment on the bug that first
+     * needed this) can still repair a world that already ran an earlier, buggier pass - not just worlds
+     * that haven't migrated at all yet. */
+    public int legacyPhotosMigrationVersion = 0;
 
     //? if >=1.20.5 <1.21.10 {
     /*public static PhotoSavedData load(CompoundTag tag, net.minecraft.core.HolderLookup.Provider lookupProvider) {
@@ -65,7 +68,7 @@ public class PhotoSavedData extends SavedData {
         PhotoSavedData data = new PhotoSavedData();
         data.photos = tag.get("photos") instanceof CompoundTag t ? t : new CompoundTag();
         data.photosByOwner = tag.get("photosByOwner") instanceof CompoundTag t ? t : new CompoundTag();
-        data.legacyPhotosMigrated = NbtCompat.getBoolean(tag, "legacyPhotosMigrated");
+        data.legacyPhotosMigrationVersion = NbtCompat.getInt(tag, "legacyPhotosMigrationVersion");
         return data;
     }
 
@@ -90,7 +93,7 @@ public class PhotoSavedData extends SavedData {
     private CompoundTag writeNbt(CompoundTag nbt) {
         nbt.put("photos", this.photos);
         nbt.put("photosByOwner", this.photosByOwner);
-        nbt.putBoolean("legacyPhotosMigrated", this.legacyPhotosMigrated);
+        nbt.putInt("legacyPhotosMigrationVersion", this.legacyPhotosMigrationVersion);
         return nbt;
     }
 

@@ -91,7 +91,7 @@ class LegacyPhotoMigrationTest {
             assertEquals(42, entry.createdMinutes());
             assertTrue(photos.getPhotoIdsForOwner("111").contains(imageId),
                     "the sender's own My Photos gallery must list the recovered photo too");
-            assertTrue(photos.legacyPhotosMigrated, "must record that this world has been scanned");
+            assertEquals(LegacyPhotoMigration.CURRENT_VERSION, photos.legacyPhotosMigrationVersion, "must record that this world has been scanned");
         }
     }
 
@@ -115,7 +115,7 @@ class LegacyPhotoMigrationTest {
             mockedPhotos.when(() -> PhotoSavedData.get(any())).thenReturn(photos);
 
             LegacyPhotoMigration.migrate(server);
-            assertTrue(photos.legacyPhotosMigrated);
+            assertEquals(LegacyPhotoMigration.CURRENT_VERSION, photos.legacyPhotosMigrationVersion);
 
             // Simulate a fresh boot re-running the same hook - already-migrated data must be left alone
             // (deleting the recovered entry here would make a second call's no-op behavior visibly wrong).
@@ -146,7 +146,7 @@ class LegacyPhotoMigrationTest {
             mockedPhotos.when(() -> PhotoSavedData.get(any())).thenReturn(photos);
 
             assertDoesNotThrow(() -> LegacyPhotoMigration.migrate(server));
-            assertTrue(photos.legacyPhotosMigrated);
+            assertEquals(LegacyPhotoMigration.CURRENT_VERSION, photos.legacyPhotosMigrationVersion);
         }
     }
 
