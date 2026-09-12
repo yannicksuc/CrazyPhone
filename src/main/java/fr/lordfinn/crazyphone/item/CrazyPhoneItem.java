@@ -55,14 +55,40 @@ public class CrazyPhoneItem extends Item {
     // Clicking a carried phone onto a Photo item in any inventory screen imports that photo into the
     // phone's own gallery instead of the normal cursor/slot swap - see CrazyPhonePhotoItem's matching
     // override (the reverse click order) and CrazyPhoneHelper#importPhotoIntoPhone for the shared logic
-    // and why no menu/screen-specific code is needed on either loader.
+    // and why no menu/screen-specific code is needed on either loader. Also recognizes a Camera-mod
+    // (de.maxhenkel.camera) Image/Album item or a Camerapture (me.chrr.camerapture) Picture/Album item the
+    // same way, if either is installed - see CrazyPhoneHelper#importForeignPhoto and ForeignPhotoMods'
+    // own doc comment on why that needs neither mod as a compile-time dependency. NeoForge-only for now:
+    // both foreign mods' items are only reflectively recognized against a real, installed copy of them,
+    // untested against Fabric's own (still walking-skeleton) build of this class.
     //? if neoforge || (fabric && >=1.20.5) {
     @Override
     public boolean overrideStackedOnOther(ItemStack stack, Slot slot, ClickAction action, Player player) {
-        if (slot.getItem().getItem() != ModItems.CRAZY_PHONE_PHOTO.get())
-            return false;
-        ItemStack photoStack = slot.getItem();
-        return CrazyPhoneHelper.importPhotoIntoPhone(stack, photoStack, player, () -> photoStack.shrink(1));
+        ItemStack slotStack = slot.getItem();
+        if (slotStack.getItem() == ModItems.CRAZY_PHONE_PHOTO.get())
+            return CrazyPhoneHelper.importPhotoIntoPhone(stack, slotStack, player, () -> slotStack.shrink(1));
+        //? if neoforge {
+        if (fr.lordfinn.crazyphone.utils.ForeignPhotoMods.isForeignPhotoItem(slotStack) || fr.lordfinn.crazyphone.utils.ForeignPhotoMods.isForeignAlbumItem(slotStack))
+            return CrazyPhoneHelper.importForeignPhoto(stack, slotStack, player, () -> slotStack.shrink(1));
+        //?}
+        return false;
+    }
+    //?}
+
+    // The reverse drag order from the override above: the phone is already sitting IN a slot and a foreign
+    // photo/album item is dragged onto it FROM the cursor - vanilla's own overrideOtherStackedOnMe is called
+    // on the SLOT item's class for exactly this case (see AbstractContainerMenu#doClick's own decompiled
+    // source), so this needs no mixin into either foreign mod's item class at all, only this one of this
+    // mod's own. CrazyPhonePhotoItem doesn't need a matching override here: overrideStackedOnOther already
+    // covers "phone on cursor, Photo item in slot", and the actual reverse ("Photo item on cursor, phone in
+    // slot") already worked before this - CrazyPhonePhotoItem.overrideStackedOnOther fires on the CURSOR
+    // item's class regardless of which side the phone is on.
+    //? if neoforge {
+    @Override
+    public boolean overrideOtherStackedOnMe(ItemStack stack, ItemStack other, Slot slot, ClickAction action, Player player, net.minecraft.world.entity.SlotAccess access) {
+        if (fr.lordfinn.crazyphone.utils.ForeignPhotoMods.isForeignPhotoItem(other) || fr.lordfinn.crazyphone.utils.ForeignPhotoMods.isForeignAlbumItem(other))
+            return CrazyPhoneHelper.importForeignPhoto(stack, other, player, () -> other.shrink(1));
+        return false;
     }
     //?}
 

@@ -300,6 +300,7 @@ sourceSets.main {
             "fr/lordfinn/crazyphone/procedures/VoteForMayorProcedure.java",
             "fr/lordfinn/crazyphone/command/ModCommands.java",
             "fr/lordfinn/crazyphone/data/OrphanedCallCleanup.java",
+            "fr/lordfinn/crazyphone/data/LegacyPhotoMigration.java",
             "fr/lordfinn/crazyphone/data/AutoLockOnDisconnect.java",
             "fr/lordfinn/crazyphone/item/CrazyPhoneItemProperties.java",
             "fr/lordfinn/crazyphone/client/PhoneClickableCursorHandler.java",

@@ -357,6 +357,63 @@ public class CrazyPhoneHelper {
         return true;
     }
 
+    /** Backing logic for dragging a Camera-mod (de.maxhenkel.camera) Image/Album item, or a Camerapture
+     * (me.chrr.camerapture) Picture/Album item, onto/off of a phone - see
+     * {@link fr.lordfinn.crazyphone.item.CrazyPhoneItem}'s own two override hooks for the actual drag
+     * gesture (either drag order works, matching {@link #importPhotoIntoPhone}'s own native-Photo-item
+     * gesture). Unlike that method, this doesn't just LINK an id already known to {@link
+     * fr.lordfinn.crazyphone.data.PhotoSavedData} - the foreign photo has never been stored here at all, so
+     * this stores it fresh under the SAME id the foreign mod already uses (so re-dragging the same photo
+     * twice is naturally a no-op via storePhoto's own dedup, and future re-imports collide with the first
+     * one instead of piling up duplicates).
+     * <p>
+     * The importing player's OWN CrazyPhone number is used as both the photo's stored owner and its
+     * conversationId - not the foreign mod's own "creator"/"owner" field (a bare Minecraft username, not a
+     * phone number, and not necessarily the player doing the importing here at all: a traded/dropped-and-
+     * picked-up photo item can list someone else entirely). There's no real conversation behind a personal
+     * import, so this reuses the owner's own number as a private, single-person "conversationId" - never
+     * naturally produced by {@link CrazyPhoneHelper#getConversationNumber}, which always joins 2+ sorted
+     * numbers with a "." separator, so it can never collide with a genuine conversation or group id.
+     * <p>
+     * NeoForge-only - see {@link fr.lordfinn.crazyphone.utils.ForeignPhotoMods}'s own doc comment on why. */
+    //? if neoforge {
+    public static boolean importForeignPhoto(ItemStack phoneStack, ItemStack foreignStack, Player player, Runnable consumeForeignItem) {
+        if (player.level().isClientSide())
+            return true;
+        MinecraftServer server = player.level().getServer();
+        if (server == null)
+            return true;
+        String owner = GetCrazyPhoneNumberProcedure.execute(phoneStack, player.level());
+        if (owner.isEmpty()) {
+            playImportResultSound(player, false);
+            return true;
+        }
+
+        List<fr.lordfinn.crazyphone.utils.ForeignPhotoMods.ForeignPhoto> photos;
+        if (fr.lordfinn.crazyphone.utils.ForeignPhotoMods.isForeignAlbumItem(foreignStack)) {
+            photos = fr.lordfinn.crazyphone.utils.ForeignPhotoMods.readAlbum(server, foreignStack);
+        } else {
+            fr.lordfinn.crazyphone.utils.ForeignPhotoMods.ForeignPhoto single = fr.lordfinn.crazyphone.utils.ForeignPhotoMods.readSingle(server, foreignStack);
+            photos = single == null ? List.of() : List.of(single);
+        }
+        if (photos.isEmpty()) {
+            playImportResultSound(player, false);
+            return true;
+        }
+
+        fr.lordfinn.crazyphone.data.PhotoSavedData data = fr.lordfinn.crazyphone.data.PhotoSavedData.get(player.level());
+        for (fr.lordfinn.crazyphone.utils.ForeignPhotoMods.ForeignPhoto photo : photos)
+            data.storePhoto(owner, owner, photo.id(), photo.bytes(), photo.bytes(), photo.createdMinutes());
+        // An Album's own contents stay exactly as they were (Camera mod/Camerapture keep their own separate
+        // copy) - only a single loose Image/Picture item is actually consumed, the same "feed one photo in"
+        // gesture importPhotoIntoPhone uses for this mod's own Photo item.
+        if (!fr.lordfinn.crazyphone.utils.ForeignPhotoMods.isForeignAlbumItem(foreignStack))
+            consumeForeignItem.run();
+        playImportResultSound(player, true);
+        return true;
+    }
+    //?}
+
     // player.level().playSound(player, ...) (what playNotifySound above does) broadcasts to every nearby
     // player EXCEPT the "except" argument, per ServerLevel#playSeededSound's own decompiled source - passing
     // the acting player there means THEY never hear their own sound, only bystanders. Deliberately not routed
