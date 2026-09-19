@@ -102,9 +102,8 @@ public class CrazyPhoneIncomingCallScreenScreen extends CrazyPhoneDefaultScreenS
         renderHeader(guiGraphics, new ItemStack(ModItems.CRAZY_PHONE.get()),
                 Component.translatable("gui.crazyphone.crazy_phone_incoming_call_screen.title"));
         renderCallerBust(guiGraphics);
-        guiGraphics.centeredText(this.font, Component.literal(menu.getDisplayTitle())
-                        .withStyle(style -> style.withColor(ChatFormatting.GRAY)),
-                this.leftPos + 61, this.topPos + 143, 0xFFFFFFFF);
+        fr.lordfinn.crazyphone.client.gui.components.CallScreenText.drawCenteredOrScrolling(guiGraphics, this.font, Component.literal(menu.getDisplayTitle()),
+                this.leftPos + 61, this.topPos + 143, 104, 0xFFAAAAAA);
         this.extractTooltip(guiGraphics, mouseX, mouseY);
     }
     *///? } else {
@@ -114,9 +113,8 @@ public class CrazyPhoneIncomingCallScreenScreen extends CrazyPhoneDefaultScreenS
         renderHeader(guiGraphics, new ItemStack(ModItems.CRAZY_PHONE.get()),
                 Component.translatable("gui.crazyphone.crazy_phone_incoming_call_screen.title"));
         renderCallerBust(guiGraphics);
-        guiGraphics.drawCenteredString(this.font, Component.literal(menu.getDisplayTitle())
-                        .withStyle(style -> style.withColor(ChatFormatting.GRAY)),
-                this.leftPos + 61, this.topPos + 143, 0xFFFFFFFF);
+        fr.lordfinn.crazyphone.client.gui.components.CallScreenText.drawCenteredOrScrolling(guiGraphics, this.font, Component.literal(menu.getDisplayTitle()),
+                this.leftPos + 61, this.topPos + 143, 104, 0xFFAAAAAA);
         this.renderTooltip(guiGraphics, mouseX, mouseY);
     }
     //?}

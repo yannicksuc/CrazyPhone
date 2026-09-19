@@ -56,6 +56,9 @@ public final class ClientCallState {
     /** The SERVER's Config.callVideoEnabled - the client's own config file is irrelevant here, the server
      * decides whether the video toggle exists at all. */
     private static volatile boolean videoFeatureEnabled = true;
+    /** Ordinal of fr.lordfinn.crazyphone.voicechat.CallVoiceMode - kept as a plain int so this class stays free
+     * of the voicechat package. */
+    private static volatile int voiceMode = 0;
 
     /** @param headYawDelta head-vs-body yaw deviation in degrees, to reapply on top of the bust's fixed
      *                      camera-facing body (see CrazyPhoneInCallScreenScreen.renderBust)
@@ -90,6 +93,10 @@ public final class ClientCallState {
         return selfVideoEnabled;
     }
 
+    public static int getVoiceMode() {
+        return voiceMode;
+    }
+
     public static boolean isVideoFeatureEnabled() {
         return videoFeatureEnabled;
     }
@@ -104,6 +111,7 @@ public final class ClientCallState {
             videoEnabled.put(packet.participantIds().get(i), packet.participantVideoEnabled().get(i));
         selfVideoEnabled = packet.state() != State.ENDED && packet.selfVideoEnabled();
         videoFeatureEnabled = packet.videoFeatureEnabled();
+        voiceMode = packet.voiceMode();
         if (packet.state() == State.ACTIVE) {
             // First ACTIVE sync for THIS call id starts the clock; a later resync of the same still-active
             // call (participant list refresh etc.) must not push the timestamp forward again.

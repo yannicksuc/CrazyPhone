@@ -14,6 +14,7 @@ import net.minecraft.ChatFormatting;
 
 import fr.lordfinn.crazyphone.client.ClientCallState;
 import fr.lordfinn.crazyphone.client.gui.components.CallBustPreview;
+import fr.lordfinn.crazyphone.client.gui.components.CallScreenText;
 import fr.lordfinn.crazyphone.init.ModItems;
 import fr.lordfinn.crazyphone.network.CrazyPhoneCallActionMessage;
 import fr.lordfinn.crazyphone.network.CrazyPhoneCallStateSyncPacket;
@@ -34,6 +35,8 @@ public class CrazyPhoneCallingScreenScreen extends CrazyPhoneDefaultScreenScreen
     private static final int BUST_TOP = 44;
     private static final int BUST_BOTTOM = 138;
     private static final int CELL_BACKGROUND_COLOR = 0xFF2B2B2B;
+    private static final int CELL_GAP = 3;
+    private static final int NAME_MAX_WIDTH = 104;
 
     private final Consumer<CrazyPhoneCallStateSyncPacket> callStateListener = this::onCallStateChanged;
     private final CallBustPreview bustPreview = new CallBustPreview();
@@ -97,9 +100,8 @@ public class CrazyPhoneCallingScreenScreen extends CrazyPhoneDefaultScreenScreen
         renderHeader(guiGraphics, new ItemStack(ModItems.CRAZY_PHONE.get()),
                 Component.translatable("gui.crazyphone.crazy_phone_calling_screen.title"));
         renderCalleeBust(guiGraphics);
-        guiGraphics./^$ gui_draw_centered_string {^/drawCenteredString/^$}^/(this.font, Component.literal(menu.getDisplayTitle())
-                        .withStyle(style -> style.withColor(ChatFormatting.GRAY)),
-                this.leftPos + 61, this.topPos + 143, 0xFFFFFFFF);
+        CallScreenText.drawCenteredOrScrolling(guiGraphics, this.font, Component.literal(menu.getDisplayTitle()),
+                this.leftPos + 61, this.topPos + 143, NAME_MAX_WIDTH, 0xFFAAAAAA);
         this.extractTooltip(guiGraphics, mouseX, mouseY);
     }
     *///? } else {
@@ -109,9 +111,8 @@ public class CrazyPhoneCallingScreenScreen extends CrazyPhoneDefaultScreenScreen
         renderHeader(guiGraphics, new ItemStack(ModItems.CRAZY_PHONE.get()),
                 Component.translatable("gui.crazyphone.crazy_phone_calling_screen.title"));
         renderCalleeBust(guiGraphics);
-        guiGraphics./*$ gui_draw_centered_string {*/drawCenteredString/*$}*/(this.font, Component.literal(menu.getDisplayTitle())
-                        .withStyle(style -> style.withColor(ChatFormatting.GRAY)),
-                this.leftPos + 61, this.topPos + 143, 0xFFFFFFFF);
+        CallScreenText.drawCenteredOrScrolling(guiGraphics, this.font, Component.literal(menu.getDisplayTitle()),
+                this.leftPos + 61, this.topPos + 143, NAME_MAX_WIDTH, 0xFFAAAAAA);
         this.renderTooltip(guiGraphics, mouseX, mouseY);
     }
     //?}
@@ -123,10 +124,24 @@ public class CrazyPhoneCallingScreenScreen extends CrazyPhoneDefaultScreenScreen
         if (callees.isEmpty())
             return;
 
-        int cellSize = Math.min(BUST_WIDTH, BUST_BOTTOM - BUST_TOP);
-        int cellX = this.leftPos + BUST_LEFT + (BUST_WIDTH - cellSize) / 2;
-        int cellY = this.topPos + BUST_TOP;
-        guiGraphics.fill(cellX, cellY, cellX + cellSize, cellY + cellSize, CELL_BACKGROUND_COLOR);
-        bustPreview.render(guiGraphics, callees.get(0).id(), cellX, cellY, cellSize, CallBustPreview.CropMode.BUST, false);
+        // Every callee, not just the first - same adaptive grid as the InCall screen (1 fills a big square,
+        // 2 sit side by side, 4 form a 2x2, ...).
+        int n = callees.size();
+        int columns = (int) Math.ceil(Math.sqrt(n));
+        int rows = (int) Math.ceil((double) n / columns);
+        int availHeight = BUST_BOTTOM - BUST_TOP;
+        int cellSize = Math.min((BUST_WIDTH - (columns - 1) * CELL_GAP) / columns, (availHeight - (rows - 1) * CELL_GAP) / rows);
+        cellSize = Math.max(16, Math.min(BUST_WIDTH, cellSize));
+        int gridWidth = columns * cellSize + (columns - 1) * CELL_GAP;
+        int gridHeight = rows * cellSize + (rows - 1) * CELL_GAP;
+        int startX = this.leftPos + BUST_LEFT + Math.max(0, (BUST_WIDTH - gridWidth) / 2);
+        int startY = this.topPos + BUST_TOP + Math.max(0, (availHeight - gridHeight) / 2);
+        CallBustPreview.CropMode crop = n == 1 ? CallBustPreview.CropMode.BUST : CallBustPreview.CropMode.FULL_BODY;
+        for (int i = 0; i < n; i++) {
+            int cellX = startX + (i % columns) * (cellSize + CELL_GAP);
+            int cellY = startY + (i / columns) * (cellSize + CELL_GAP);
+            guiGraphics.fill(cellX, cellY, cellX + cellSize, cellY + cellSize, CELL_BACKGROUND_COLOR);
+            bustPreview.render(guiGraphics, callees.get(i).id(), cellX, cellY, cellSize, crop, false);
+        }
     }
 }

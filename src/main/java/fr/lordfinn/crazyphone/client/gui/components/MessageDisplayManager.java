@@ -244,7 +244,7 @@ public class MessageDisplayManager {
             x,
             0, // temp y, updated in render
             width,
-            Component.literal(bubbleText),
+            fr.lordfinn.crazyphone.client.EmojiShortcodes.styleForDisplay(bubbleText),
             scale,
             (!isSender ? 0xff000000 : 0xffffffff),
             (transparentBackground ? 0x00ffffff : (!isSender ? 0xccfafafa : 0xcc0084ff))

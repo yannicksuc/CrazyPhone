@@ -205,6 +205,7 @@ sourceSets.main {
             "fr/lordfinn/crazyphone/world/inventory/CrazyphoneHomeScreenMenu.java",
             "fr/lordfinn/crazyphone/client/gui/components/MessageDisplayManager.java",
             "fr/lordfinn/crazyphone/client/gui/components/CallBustPreview.java",
+            "fr/lordfinn/crazyphone/client/gui/components/CallScreenText.java",
             "fr/lordfinn/crazyphone/client/gui/components/WrappedTextWidget.java",
             "fr/lordfinn/crazyphone/client/gui/components/ScrollingText.java",
             "fr/lordfinn/crazyphone/client/gui/components/CrazyPhoneColors.java",
@@ -262,6 +263,7 @@ sourceSets.main {
             "fr/lordfinn/crazyphone/voicechat/CrazyPhoneVoicechatPlugin.java",
             "fr/lordfinn/crazyphone/voicechat/SvcCallBridge.java",
             "fr/lordfinn/crazyphone/voicechat/CallRegistry.java",
+            "fr/lordfinn/crazyphone/voicechat/CallVoiceMode.java",
             "fr/lordfinn/crazyphone/voicechat/CallHeadRotationSync.java",
             "fr/lordfinn/crazyphone/voicechat/CallTerminationListener.java",
             "fr/lordfinn/crazyphone/network/CrazyPhoneIncomingCallNotificationPacket.java",
@@ -323,6 +325,7 @@ sourceSets.main {
             "fr/lordfinn/crazyphone/item/CrazyPhonePhotoItem.java",
             "fr/lordfinn/crazyphone/client/render/CrazyPhonePhotoItemRenderer.java",
             "fr/lordfinn/crazyphone/client/picture/FabricPictureCapture.java",
+            "fr/lordfinn/crazyphone/client/picture/PhotoImporter.java",
             "fr/lordfinn/crazyphone/client/picture/FabricPictureCache.java",
             "fr/lordfinn/crazyphone/client/picture/PixelArtDownscaler.java",
             // CrazyPhoneCaptureMode's core (enter/exit/tick/triggerCapture/drawOverlay) is loader-neutral;

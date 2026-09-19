@@ -111,6 +111,10 @@ public class CrazyPhoneMyPhotosScreenScreen extends CrazyPhoneDefaultScreenScree
         renderHeader(guiGraphics, new ItemStack(ModItems.CRAZY_PHONE_PHOTO.get()),
                 Component.translatable("gui.crazyphone.crazy_phone_my_photos_screen.title"), HEADER_BANNER_RIGHT_X, false);
         renderPhotoCountInfo(guiGraphics);
+        renderImportButton(guiGraphics, mouseX, mouseY);
+        java.util.List<Component> importTooltip = importTooltipAt(mouseX, mouseY);
+        if (importTooltip != null)
+            guiGraphics.setComponentTooltipForNextFrame(this.font, importTooltip, mouseX, mouseY);
     }
     *///? } else {
     @Override
@@ -119,6 +123,10 @@ public class CrazyPhoneMyPhotosScreenScreen extends CrazyPhoneDefaultScreenScree
         renderHeader(guiGraphics, new ItemStack(ModItems.CRAZY_PHONE_PHOTO.get()),
                 Component.translatable("gui.crazyphone.crazy_phone_my_photos_screen.title"), HEADER_BANNER_RIGHT_X, false);
         renderPhotoCountInfo(guiGraphics);
+        renderImportButton(guiGraphics, mouseX, mouseY);
+        java.util.List<Component> importTooltip = importTooltipAt(mouseX, mouseY);
+        if (importTooltip != null)
+            guiGraphics.renderComponentTooltip(this.font, importTooltip, mouseX, mouseY);
     }
     //?}
 
@@ -176,6 +184,56 @@ public class CrazyPhoneMyPhotosScreenScreen extends CrazyPhoneDefaultScreenScree
         return max > 0 && menu.photoIds.size() >= max * STORAGE_WARNING_THRESHOLD_FRACTION;
     }
 
+    // "Import from PC" button in the yellow header, right at the banner's right edge with the counter to its
+    // left - same emoji-font icon technique as the in-call screen's header buttons.
+    private static final Component IMPORT_ICON = Component.literal("📥");
+    private static final int IMPORT_ICON_GAP = 3;
+
+    private int importIconX() {
+        return this.leftPos + HEADER_BANNER_RIGHT_X - this.font.width(IMPORT_ICON) - 2;
+    }
+
+    private boolean isHoveringImportIcon(double mouseX, double mouseY) {
+        int iconX = importIconX();
+        int iconY = this.topPos + HEADER_TITLE_Y;
+        return mouseX >= iconX - 1 && mouseX < iconX + this.font.width(IMPORT_ICON) + 1
+                && mouseY >= iconY - 1 && mouseY < iconY + this.font.lineHeight + 1;
+    }
+
+    private void renderImportButton(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int mouseX, int mouseY) {
+        int iconX = importIconX();
+        int iconY = this.topPos + HEADER_TITLE_Y;
+        if (isHoveringImportIcon(mouseX, mouseY)) {
+            fr.lordfinn.crazyphone.client.CursorEffects.requestPointerCursor();
+            guiGraphics.fill(iconX - 1, iconY - 1, iconX + this.font.width(IMPORT_ICON) + 1, iconY + this.font.lineHeight + 1, 0x80FFFFFF);
+        }
+        guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(this.font, IMPORT_ICON, iconX, iconY, 0xFFFFFFFF, true);
+    }
+
+    private java.util.List<Component> importTooltipAt(double mouseX, double mouseY) {
+        if (!isHoveringImportIcon(mouseX, mouseY))
+            return null;
+        return java.util.List.of(Component.translatable("gui.crazyphone.crazy_phone_my_photos_screen.import"),
+                Component.translatable("gui.crazyphone.crazy_phone_my_photos_screen.import.lore").withStyle(net.minecraft.ChatFormatting.GRAY));
+    }
+
+    private boolean handleImportClick(double mouseX, double mouseY, int button) {
+        if (button != 0 || !isHoveringImportIcon(mouseX, mouseY))
+            return false;
+        java.util.List<java.util.UUID> imported = fr.lordfinn.crazyphone.client.picture.PhotoImporter.importFromDisk();
+        if (!imported.isEmpty()) {
+            // The server-sent list this screen was opened with doesn't know about them yet.
+            menu.photoIds.addAll(imported);
+            net.minecraft.client.player.LocalPlayer player = net.minecraft.client.Minecraft.getInstance().player;
+            if (player != null) {
+                player.playSound(net.minecraft.sounds.SoundEvents.ITEM_PICKUP, 1f, 1f);
+                fr.lordfinn.crazyphone.utils.CrazyPhoneHelper.sendClientMessage(player,
+                        Component.translatable("message.crazyphone.photos_imported", imported.size()), true);
+            }
+        }
+        return true;
+    }
+
     /** Draws the "247/300" photo counter flush against the header banner's right edge, on the title's own
      * row (see the HEADER_BANNER_RIGHT_X/HEADER_TITLE_Y comment above), and - once the owner's photo count
      * gets within STORAGE_WARNING_THRESHOLD_FRACTION of Config.maxPhotosStoredPerOwner - a short one-line
@@ -186,7 +244,7 @@ public class CrazyPhoneMyPhotosScreenScreen extends CrazyPhoneDefaultScreenScree
         int max = fr.lordfinn.crazyphone.Config.maxPhotosStoredPerOwner;
         int count = menu.photoIds.size();
         Component counterText = Component.translatable("gui.crazyphone.crazy_phone_my_photos_screen.photo_count", count, max);
-        int counterX = this.leftPos + HEADER_BANNER_RIGHT_X - this.font.width(counterText) - 2;
+        int counterX = importIconX() - IMPORT_ICON_GAP - this.font.width(counterText);
         // Explicit alpha byte (0xFF......) - on >=26, GuiGraphicsExtractor#text silently drops any call
         // whose color has a zero alpha byte instead of treating it as opaque like pre-26's drawString did.
         guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(this.font, counterText, counterX, this.topPos + HEADER_TITLE_Y, COUNTER_TEXT_COLOR, false);
@@ -282,6 +340,8 @@ public class CrazyPhoneMyPhotosScreenScreen extends CrazyPhoneDefaultScreenScree
     *///?}
 
     private boolean mouseClickedImpl(double mouseX, double mouseY, int button) {
+        if (handleImportClick(mouseX, mouseY, button))
+            return true;
         if (button != 0 && button != 1)
             return false;
         if (!isWithinGridCropZone(mouseX, mouseY))
@@ -378,6 +438,10 @@ public class CrazyPhoneMyPhotosScreenScreen extends CrazyPhoneDefaultScreenScree
         //? } else {
         /*Minecraft.getInstance().player.playSound(SoundEvents.ITEM_BREAK.value(), 1.0F, 1.0F);
         *///?}
+        // The list this screen was opened with is a client-side snapshot - drop the deleted photos from it
+        // right away so the grid updates live instead of only after leaving and reopening the screen.
+        menu.photoIds.removeAll(selectedPhotoIds);
+        scrollPosition = Math.min(scrollPosition, maxScrollPosition());
         selectedPhotoIds.clear();
         updateActionButtonsState();
     }

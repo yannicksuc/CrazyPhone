@@ -66,12 +66,12 @@ import java.util.UUID;
 /*public record CrazyPhoneCallStateSyncPacket(String conversationId, UUID callId, State state, List<String> callNumbers,
                                              List<UUID> participantIds, List<String> participantNames,
                                              List<Boolean> participantVideoEnabled, boolean selfVideoEnabled,
-                                             boolean videoFeatureEnabled) {
+                                             boolean videoFeatureEnabled, int voiceMode) {
 *///? } else {
 public record CrazyPhoneCallStateSyncPacket(String conversationId, UUID callId, State state, List<String> callNumbers,
                                              List<UUID> participantIds, List<String> participantNames,
                                              List<Boolean> participantVideoEnabled, boolean selfVideoEnabled,
-                                             boolean videoFeatureEnabled) implements CustomPacketPayload {
+                                             boolean videoFeatureEnabled, int voiceMode) implements CustomPacketPayload {
 //?}
 
     public enum State {
@@ -95,6 +95,7 @@ public record CrazyPhoneCallStateSyncPacket(String conversationId, UUID callId, 
                         buffer.writeCollection(message.participantVideoEnabled, (buf, enabled) -> buf.writeBoolean(enabled));
                         buffer.writeBoolean(message.selfVideoEnabled);
                         buffer.writeBoolean(message.videoFeatureEnabled);
+                        buffer.writeVarInt(message.voiceMode);
                     },
                     (RegistryFriendlyByteBuf buffer) -> new CrazyPhoneCallStateSyncPacket(
                             buffer.readUtf(),
@@ -105,7 +106,8 @@ public record CrazyPhoneCallStateSyncPacket(String conversationId, UUID callId, 
                             buffer.readList(buf -> buf.readUtf()),
                             buffer.readList(buf -> buf.readBoolean()),
                             buffer.readBoolean(),
-                            buffer.readBoolean()
+                            buffer.readBoolean(),
+                            buffer.readVarInt()
                     )
             );
 
@@ -126,7 +128,8 @@ public record CrazyPhoneCallStateSyncPacket(String conversationId, UUID callId, 
                 buffer.readList(buf -> buf.readUtf()),
                 buffer.readList(buf -> buf.readBoolean()),
                 buffer.readBoolean(),
-                buffer.readBoolean()
+                buffer.readBoolean(),
+                buffer.readVarInt()
         );
     }
 
@@ -140,6 +143,7 @@ public record CrazyPhoneCallStateSyncPacket(String conversationId, UUID callId, 
         buffer.writeCollection(participantVideoEnabled, (buf, enabled) -> buf.writeBoolean(enabled));
         buffer.writeBoolean(selfVideoEnabled);
         buffer.writeBoolean(videoFeatureEnabled);
+        buffer.writeVarInt(voiceMode);
     }
 
     //? if fabric || neoforge {

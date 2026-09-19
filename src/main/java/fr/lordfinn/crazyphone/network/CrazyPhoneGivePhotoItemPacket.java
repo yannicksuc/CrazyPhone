@@ -94,14 +94,18 @@ public record CrazyPhoneGivePhotoItemPacket(UUID photoId) implements CustomPacke
     static void handle(ServerPlayer player, UUID photoId) {
         Level world = player.level();
         PhotoSavedData.PhotoEntry entry = PhotoSavedData.get(world).getPhoto(photoId);
-        if (entry == null)
+        if (entry == null) {
+            org.slf4j.LoggerFactory.getLogger("crazyphone").warn("give photo item refused: photo {} is not stored on the server", photoId);
             return;
+        }
 
         String requesterNumber = GetCrazyPhoneNumberFromMainHandProcedure.execute(player, null);
-        boolean authorized = !requesterNumber.isEmpty() && (requesterNumber.equals(entry.owner())
-                || CrazyPhoneHelper.getGroupMembers(world, entry.conversationId()).contains(requesterNumber));
-        if (!authorized)
+        boolean authorized = CrazyPhoneHelper.canAccessPhoto(world, requesterNumber, photoId, entry);
+        if (!authorized) {
+            org.slf4j.LoggerFactory.getLogger("crazyphone").warn("give photo item refused for {}: requester number=[{}] (empty = phone not in main hand), photo owner=[{}], conversation=[{}]",
+                    fr.lordfinn.crazyphone.utils.GameProfileCompat.name(player.getGameProfile()), requesterNumber, entry.owner(), entry.conversationId());
             return;
+        }
 
         ItemStack stack = new ItemStack(ModItems.CRAZY_PHONE_PHOTO.get());
         new PhotoItemData(photoId, entry.owner(), entry.createdMinutes()).writeTo(stack);

@@ -153,6 +153,32 @@ public class CrazyPhoneHelper {
         return "";
     }
 
+    /** Whether {@code requesterNumber} may take a copy of a photo (give-as-item / add to My Photos): its
+     * owner, a member of the conversation it was first stored under, or a member of ANY conversation it
+     * has since been posted into. The last case matters because a photo sent from the gallery keeps its
+     * original conversationId (empty for a standalone shot) - checking only that one refused every
+     * recipient. Only conversations the requester belongs to are scanned, and only on an explicit click. */
+    public static boolean canAccessPhoto(LevelAccessor world, String requesterNumber, UUID photoId, fr.lordfinn.crazyphone.data.PhotoSavedData.PhotoEntry entry) {
+        if (requesterNumber.isEmpty())
+            return false;
+        if (requesterNumber.equals(entry.owner()) || getGroupMembers(world, entry.conversationId()).contains(requesterNumber))
+            return true;
+        ConversationSavedData conversations = ConversationSavedData.get(world);
+        for (String conversationId : NbtCompat.keySet(conversations.conversations)) {
+            if (!(conversations.conversations.get(conversationId) instanceof ListTag messages))
+                continue;
+            if (!getGroupMembers(world, conversationId).contains(requesterNumber))
+                continue;
+            for (int i = 0; i < messages.size(); i++) {
+                CompoundTag image = NbtCompat.getCompound(NbtCompat.getCompound(messages, i), "image");
+                if (NbtCompat.contains(image, "image_id_most")
+                        && photoId.equals(new UUID(NbtCompat.getLong(image, "image_id_most"), NbtCompat.getLong(image, "image_id_least"))))
+                    return true;
+            }
+        }
+        return false;
+    }
+
     public static Contact getContact(Level world, String number) {
         Tag potentialContact = PhoneRegistrySavedData.get(world).phones.get(number);
         if (potentialContact != null && potentialContact instanceof CompoundTag contactTag) {

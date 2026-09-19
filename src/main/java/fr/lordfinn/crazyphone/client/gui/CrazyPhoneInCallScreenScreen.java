@@ -94,6 +94,11 @@ public class CrazyPhoneInCallScreenScreen extends CrazyPhoneDefaultScreenScreen<
     private static final int VIDEO_ICON_ON_COLOR = 0xFFFFFFFF;
     private static final int VIDEO_ICON_OFF_COLOR = 0xFF9A9A9A;
     private static final int VIDEO_ICON_OFF_BAR_COLOR = 0xFFFF5555;
+    // Voice mode button in the yellow header, left of the elapsed timer: open (loudspeaker) / normal (busts) /
+    // isolated (lock) - same emoji-font technique as the icons above.
+    private static final Component[] VOICE_MODE_ICONS = {Component.literal("📢"), Component.literal("👥"), Component.literal("🔒")};
+    private static final String[] VOICE_MODE_KEYS = {"open", "normal", "isolated"};
+    private static final int VOICE_MODE_ICON_GAP = 3;
 
     /** One tile's on-screen rectangle from the most recent grid layout pass, so mouseClicked and the tooltip
      * hover check can hit-test against exactly what was drawn (the layout depends on the participant count,
@@ -262,9 +267,12 @@ public class CrazyPhoneInCallScreenScreen extends CrazyPhoneDefaultScreenScreen<
         renderHeader(guiGraphics, new ItemStack(ModItems.CRAZY_PHONE.get()),
                 Component.translatable("gui.crazyphone.crazy_phone_in_call_screen.title"), timerHeaderRightBoundX());
         renderElapsedTimer(guiGraphics);
+        renderVoiceModeButton(guiGraphics, mouseX, mouseY);
         renderMuteWarning(guiGraphics);
         renderParticipantGrid(guiGraphics, mouseX, mouseY);
         List<Component> videoTooltip = videoIconTooltipAt(mouseX, mouseY);
+        if (videoTooltip == null)
+            videoTooltip = voiceModeTooltipAt(mouseX, mouseY);
         if (videoTooltip != null)
             guiGraphics.setComponentTooltipForNextFrame(this.font, videoTooltip, mouseX, mouseY);
         this.extractTooltip(guiGraphics, mouseX, mouseY);
@@ -276,9 +284,12 @@ public class CrazyPhoneInCallScreenScreen extends CrazyPhoneDefaultScreenScreen<
         renderHeader(guiGraphics, new ItemStack(ModItems.CRAZY_PHONE.get()),
                 Component.translatable("gui.crazyphone.crazy_phone_in_call_screen.title"), timerHeaderRightBoundX());
         renderElapsedTimer(guiGraphics);
+        renderVoiceModeButton(guiGraphics, mouseX, mouseY);
         renderMuteWarning(guiGraphics);
         renderParticipantGrid(guiGraphics, mouseX, mouseY);
         List<Component> videoTooltip = videoIconTooltipAt(mouseX, mouseY);
+        if (videoTooltip == null)
+            videoTooltip = voiceModeTooltipAt(mouseX, mouseY);
         if (videoTooltip != null)
             guiGraphics.renderComponentTooltip(this.font, videoTooltip, mouseX, mouseY);
         this.renderTooltip(guiGraphics, mouseX, mouseY);
@@ -437,6 +448,49 @@ public class CrazyPhoneInCallScreenScreen extends CrazyPhoneDefaultScreenScreen<
         return null;
     }
 
+    private Component voiceModeIcon() {
+        int mode = Math.max(0, Math.min(VOICE_MODE_ICONS.length - 1, ClientCallState.getVoiceMode()));
+        return VOICE_MODE_ICONS[mode];
+    }
+
+    private int voiceModeIconX() {
+        String timer = elapsedTimerText();
+        int timerLeft = this.leftPos + HEADER_BANNER_RIGHT_X - (timer == null ? 0 : this.font.width(timer) + 2);
+        return timerLeft - this.font.width(voiceModeIcon()) - VOICE_MODE_ICON_GAP;
+    }
+
+    private boolean isHoveringVoiceModeIcon(double mouseX, double mouseY) {
+        int iconX = voiceModeIconX();
+        int iconY = this.topPos + HEADER_TITLE_Y;
+        return mouseX >= iconX - 1 && mouseX < iconX + this.font.width(voiceModeIcon()) + 1
+                && mouseY >= iconY - 1 && mouseY < iconY + this.font.lineHeight + 1;
+    }
+
+    private void renderVoiceModeButton(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int mouseX, int mouseY) {
+        int iconX = voiceModeIconX();
+        int iconY = this.topPos + HEADER_TITLE_Y;
+        if (isHoveringVoiceModeIcon(mouseX, mouseY)) {
+            CursorEffects.requestPointerCursor();
+            guiGraphics.fill(iconX - 1, iconY - 1, iconX + this.font.width(voiceModeIcon()) + 1, iconY + this.font.lineHeight + 1, 0x80FFFFFF);
+        }
+        guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(this.font, voiceModeIcon(), iconX, iconY, 0xFFFFFFFF, true);
+    }
+
+    private List<Component> voiceModeTooltipAt(double mouseX, double mouseY) {
+        if (!isHoveringVoiceModeIcon(mouseX, mouseY))
+            return null;
+        String key = VOICE_MODE_KEYS[Math.max(0, Math.min(VOICE_MODE_KEYS.length - 1, ClientCallState.getVoiceMode()))];
+        String base = "gui.crazyphone.crazy_phone_in_call_screen.voice_mode." + key;
+        return List.of(Component.translatable(base), Component.translatable(base + ".lore").withStyle(ChatFormatting.GRAY));
+    }
+
+    private boolean handleVoiceModeClick(double mouseX, double mouseY, int button) {
+        if (button != 0 || !isHoveringVoiceModeIcon(mouseX, mouseY))
+            return false;
+        NetworkAccess.sendToServer(new CrazyPhoneCallActionMessage(CrazyPhoneCallActionMessage.CYCLE_VOICE_MODE, menu.getConversationId()));
+        return true;
+    }
+
     private boolean handleVideoIconClick(double mouseX, double mouseY, int button) {
         if (button != 0 || !ClientCallState.isVideoFeatureEnabled())
             return false;
@@ -452,7 +506,7 @@ public class CrazyPhoneInCallScreenScreen extends CrazyPhoneDefaultScreenScreen<
     //? if <26 {
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (handleVideoIconClick(mouseX, mouseY, button))
+        if (handleVideoIconClick(mouseX, mouseY, button) || handleVoiceModeClick(mouseX, mouseY, button))
             return true;
         return super.mouseClicked(mouseX, mouseY, button);
     }
@@ -460,7 +514,7 @@ public class CrazyPhoneInCallScreenScreen extends CrazyPhoneDefaultScreenScreen<
     //? if >=26 {
     /*@Override
     public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent event, boolean doubleClick) {
-        if (handleVideoIconClick(event.x(), event.y(), event.button()))
+        if (handleVideoIconClick(event.x(), event.y(), event.button()) || handleVoiceModeClick(event.x(), event.y(), event.button()))
             return true;
         return super.mouseClicked(event, doubleClick);
     }
@@ -491,7 +545,8 @@ public class CrazyPhoneInCallScreenScreen extends CrazyPhoneDefaultScreenScreen<
      * every other screen. */
     private int timerHeaderRightBoundX() {
         String text = elapsedTimerText();
-        return text == null ? HEADER_BANNER_RIGHT_X : HEADER_BANNER_RIGHT_X - this.font.width(text) - 4;
+        int reserved = this.font.width(voiceModeIcon()) + VOICE_MODE_ICON_GAP + 2;
+        return (text == null ? HEADER_BANNER_RIGHT_X : HEADER_BANNER_RIGHT_X - this.font.width(text) - 4) - reserved;
     }
 
     private String elapsedTimerText() {

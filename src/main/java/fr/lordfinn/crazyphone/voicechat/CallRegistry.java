@@ -58,6 +58,9 @@ public final class CallRegistry {
          * Empty = everyone off, the default (live request: "la vidéo doit être off de base"). Session-scoped
          * like everything else here: a fresh call starts with everyone's video off again. */
         public final Set<UUID> videoEnabled = new HashSet<>();
+        /** Who can hear this call - OPEN by default (bystanders hear participants, as before this was
+         * switchable), cycled from the InCall screen's header button. */
+        public CallVoiceMode voiceMode = CallVoiceMode.OPEN;
 
         private CallSession(UUID callId, String conversationId, UUID initiator) {
             this.callId = callId;
@@ -130,7 +133,7 @@ public final class CallRegistry {
             return existing;
         }
 
-        UUID callId = SvcCallBridge.createCallGroup("crazyphone-call-" + conversationId);
+        UUID callId = SvcCallBridge.createCallGroup("crazyphone-call-" + conversationId, CallVoiceMode.OPEN);
         if (callId == null)
             return null;
 
@@ -236,6 +239,22 @@ public final class CallRegistry {
         for (UUID participantId : new HashSet<>(session.participants)) {
             ServerPlayer participant = findPlayer(player, participantId);
             if (participant != null && isViewingInCallScreen(participant))
+                notifySafe(participant, session, CrazyPhoneCallStateSyncPacket.State.ACTIVE);
+        }
+    }
+
+    /** The InCall header button (CrazyPhoneCallActionMessage.CYCLE_VOICE_MODE): steps the call's voice mode
+     * OPEN -> NORMAL -> ISOLATED -> OPEN, swaps the SVC group for one of that type, and resyncs every
+     * participant so their header icon follows. Any participant may change it, same as toggling video. */
+    public static void cycleVoiceMode(ServerPlayer player, String conversationId) {
+        CallSession session = getSessionFor(player.getUUID()).orElse(null);
+        if (session == null || !session.conversationId.equals(conversationId) || !session.participants.contains(player.getUUID()))
+            return;
+        session.voiceMode = session.voiceMode.next();
+        SvcCallBridge.switchCallGroupMode(session.callId, "crazyphone-call-" + session.conversationId, session.voiceMode, session.participants);
+        for (UUID participantId : new HashSet<>(session.participants)) {
+            ServerPlayer participant = findPlayer(player, participantId);
+            if (participant != null)
                 notifySafe(participant, session, CrazyPhoneCallStateSyncPacket.State.ACTIVE);
         }
     }
@@ -398,7 +417,7 @@ public final class CallRegistry {
         List<Boolean> participantVideoEnabled = participantIds.stream().map(id -> isVideoEnabled(session, id)).toList();
         boolean selfVideoEnabled = state != CrazyPhoneCallStateSyncPacket.State.ENDED && isVideoEnabled(session, target.getUUID());
         NetworkAccess.sendToPlayer(target, new CrazyPhoneCallStateSyncPacket(session.conversationId, session.callId, state, callNumbers,
-                participantIds, participantNames, participantVideoEnabled, selfVideoEnabled, Config.callVideoEnabled));
+                participantIds, participantNames, participantVideoEnabled, selfVideoEnabled, Config.callVideoEnabled, session.voiceMode.ordinal()));
         // Also written into the actual held phone's own item data, not just this targeted packet - vanilla's
         // equipment sync then carries it to nearby bystanders for free (see CrazyPhoneHelper), which the
         // packet above (sent only to this one player) never would.

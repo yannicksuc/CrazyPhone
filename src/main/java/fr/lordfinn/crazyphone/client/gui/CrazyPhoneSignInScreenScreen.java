@@ -234,7 +234,7 @@ public class CrazyPhoneSignInScreenScreen extends CrazyPhoneDefaultScreenScreen<
 			guiGraphics.fill(iconX, iconY, iconX + AUTO_LOCK_ICON_SIZE, iconY + AUTO_LOCK_ICON_SIZE, 0x80FFFFFF);
 		}
 		Component glyph = isAutoLockEnabled() ? AUTO_LOCK_ICON_ON : AUTO_LOCK_ICON_OFF;
-		guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(this.font, glyph, iconX + 4, iconY + 4, 0xFFFFFFFF, true);
+		guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(this.font, glyph, iconX + 3, iconY + 4, 0xFFFFFFFF, true);
 	}
 
 	private boolean isHoveringAutoLockIcon(double mouseX, double mouseY) {

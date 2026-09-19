@@ -103,5 +103,11 @@ public final class CrazyPhoneSelfiePose {
 
         model.head.yRot = (float) Math.toRadians(Mth.wrapDegrees(lookYaw - bodyYaw));
         model.head.xRot = (float) Math.toRadians(lookPitch);
+        // The hat/second skin layer is a separate ModelPart that vanilla's setupAnim already copied from the
+        // head BEFORE this override ran - without re-copying, it kept the pre-override rotation and swung
+        // independently of the head.
+        model.hat.xRot = model.head.xRot;
+        model.hat.yRot = model.head.yRot;
+        model.hat.zRot = model.head.zRot;
     }
 }

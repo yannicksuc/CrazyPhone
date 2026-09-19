@@ -32,11 +32,41 @@ public final class CrazyPhoneSelfiePoseNetwork {
         return !phone.isEmpty() && CrazyPhoneHelper.isPhoneSelfieActive(phone);
     }
 
+    // The synced angles only change as often as the framing player's packets arrive (~20 Hz at best, plus
+    // network jitter), which looks stepped at 60+ fps - ease the value shown toward the latest target instead.
+    private static final class Smoothed {
+        float x, y;
+        long lastNanos;
+        boolean initialized;
+    }
+
+    private static final java.util.Map<java.util.UUID, Smoothed> SMOOTHED = new java.util.concurrent.ConcurrentHashMap<>();
+    private static final double SMOOTHING_SECONDS = 0.06;
+
+    private static Smoothed smoothed(LivingEntity entity) {
+        Smoothed s = SMOOTHED.computeIfAbsent(entity.getUUID(), id -> new Smoothed());
+        float targetX = CrazyPhoneHelper.getPhoneSelfieStickX(heldPhone(entity));
+        float targetY = CrazyPhoneHelper.getPhoneSelfieStickY(heldPhone(entity));
+        long now = System.nanoTime();
+        if (!s.initialized || !isSelfieActive(entity)) {
+            s.x = targetX;
+            s.y = targetY;
+            s.initialized = isSelfieActive(entity);
+        } else {
+            double dt = (now - s.lastNanos) / 1.0e9;
+            double alpha = 1.0 - Math.exp(-Math.max(0.0, dt) / SMOOTHING_SECONDS);
+            s.x += (targetX - s.x) * (float) alpha;
+            s.y += (targetY - s.y) * (float) alpha;
+        }
+        s.lastNanos = now;
+        return s;
+    }
+
     public static float stickX(LivingEntity entity) {
-        return CrazyPhoneHelper.getPhoneSelfieStickX(heldPhone(entity));
+        return smoothed(entity).x;
     }
 
     public static float stickY(LivingEntity entity) {
-        return CrazyPhoneHelper.getPhoneSelfieStickY(heldPhone(entity));
+        return smoothed(entity).y;
     }
 }

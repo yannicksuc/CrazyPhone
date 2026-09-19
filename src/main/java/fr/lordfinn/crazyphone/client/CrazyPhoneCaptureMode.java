@@ -219,6 +219,19 @@ public final class CrazyPhoneCaptureMode {
         }
         currentZoom += (targetZoom - currentZoom) * LERP_SPEED;
         tickSelfiePoseSync();
+        // Toasts (advancements, "chat can't be verified", ...) render outside the GUI layers cancelled
+        // above, so they'd otherwise be baked into the photo.
+        clearToasts(mc);
+    }
+
+    private static void clearToasts(Minecraft mc) {
+        //? if >=26.2 {
+        /*mc.toastManager().clear();
+        *///?} else if >=1.21.10 {
+        /*mc.getToastManager().clear();
+        *///?} else {
+        mc.getToasts().clear();
+        //?}
     }
 
     // Broadcasts the local player's own live selfie pose to the server (see
@@ -227,17 +240,22 @@ public final class CrazyPhoneCaptureMode {
     // screen_on/call-state's own one-shot transition-only sends. Fires one final "deactivate" the instant
     // selfie mode itself ends (cycling to a different view state), same reasoning exit()'s own explicit call
     // documents for the "capture mode closes entirely" case this doesn't cover.
-    private static final int SELFIE_POSE_SYNC_INTERVAL_TICKS = 3;
-    private static int selfiePoseSyncCooldown = 0;
+    // Every tick (20 Hz) rather than every 3rd (~7 Hz, which looked choppy to other players) - but only when
+    // the angles actually changed, so a still framing costs nothing. Observers additionally smooth between
+    // updates (see CrazyPhoneSelfiePoseNetwork).
+    private static float lastSyncedStickX = Float.NaN;
+    private static float lastSyncedStickY = Float.NaN;
     private static boolean lastSyncedSelfieActive = false;
 
     private static void tickSelfiePoseSync() {
         if (isSelfieMode()) {
-            if (--selfiePoseSyncCooldown > 0)
+            float x = CrazyPhoneSelfieStickPose.stickX;
+            float y = CrazyPhoneSelfieStickPose.stickY;
+            if (lastSyncedSelfieActive && Math.abs(x - lastSyncedStickX) < 0.05f && Math.abs(y - lastSyncedStickY) < 0.05f)
                 return;
-            selfiePoseSyncCooldown = SELFIE_POSE_SYNC_INTERVAL_TICKS;
-            NetworkAccess.sendToServer(new fr.lordfinn.crazyphone.network.CrazyPhoneSelfiePoseSyncPacket(
-                    true, CrazyPhoneSelfieStickPose.stickX, CrazyPhoneSelfieStickPose.stickY));
+            lastSyncedStickX = x;
+            lastSyncedStickY = y;
+            NetworkAccess.sendToServer(new fr.lordfinn.crazyphone.network.CrazyPhoneSelfiePoseSyncPacket(true, x, y));
             lastSyncedSelfieActive = true;
         } else if (lastSyncedSelfieActive) {
             sendSelfiePoseDeactivate();
@@ -255,6 +273,7 @@ public final class CrazyPhoneCaptureMode {
         if (!active || capturing)
             return;
         capturing = true;
+        clearToasts(Minecraft.getInstance());
         DEBUG_LOGGER.info("triggerCapture() firing, requesting capture");
         if (Minecraft.getInstance().player != null)
             Minecraft.getInstance().player.playSound(fr.lordfinn.crazyphone.init.ModSounds.TAKE_PICTURE.get(), 1.0f, 1.0f);
@@ -412,7 +431,7 @@ public final class CrazyPhoneCaptureMode {
 
     @SubscribeEvent
     public static void onRenderGuiOverlay(RenderGuiOverlayEvent.Pre event) {
-        if (active && HIDDEN_OVERLAYS.contains(event.getOverlay().id()))
+        if (active)
             event.setCanceled(true);
     }
     //?}
@@ -432,9 +451,12 @@ public final class CrazyPhoneCaptureMode {
             VanillaGuiLayers.SAVING_INDICATOR, VanillaGuiLayers.CAMERA_OVERLAYS
     );
 
+    // Cancels EVERY layer while active, not just the vanilla ones in HIDDEN_LAYERS - other mods' HUD
+    // elements (minimaps, quest trackers, ...) register their own layers through the same event and were
+    // staying on screen in the shot. Our own overlay draws from RenderGuiEvent.Post, which isn't a layer.
     @SubscribeEvent
     public static void onRenderGuiLayer(RenderGuiLayerEvent.Pre event) {
-        if (active && HIDDEN_LAYERS.contains(event.getName()))
+        if (active)
             event.setCanceled(true);
     }
     *///?}
@@ -468,9 +490,10 @@ public final class CrazyPhoneCaptureMode {
             net.neoforged.neoforge.client.gui.VanillaGuiLayers.CONTEXTUAL_INFO_BAR, net.neoforged.neoforge.client.gui.VanillaGuiLayers.CONTEXTUAL_INFO_BAR_BACKGROUND
     );
 
+    // Every layer, not just the vanilla ones above - see the <1.21.10 variant's note.
     @SubscribeEvent
     public static void onRenderGuiLayer(RenderGuiLayerEvent.Pre event) {
-        if (active && HIDDEN_LAYERS.contains(event.getName()))
+        if (active)
             event.setCanceled(true);
     }
     *///?}

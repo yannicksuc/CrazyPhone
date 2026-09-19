@@ -6,6 +6,7 @@ import de.maxhenkel.voicechat.api.VoicechatPlugin;
 import de.maxhenkel.voicechat.api.VoicechatServerApi;
 import de.maxhenkel.voicechat.api.VoicechatClientApi;
 import de.maxhenkel.voicechat.api.events.ClientReceiveSoundEvent;
+import de.maxhenkel.voicechat.api.events.ClientSoundEvent;
 import de.maxhenkel.voicechat.api.events.EventRegistration;
 
 import fr.lordfinn.crazyphone.Crazyphone;
@@ -47,5 +48,8 @@ public class CrazyPhoneVoicechatPlugin implements VoicechatPlugin {
         registration.registerEvent(ClientReceiveSoundEvent.EntitySound.class, event -> SvcCallBridge.markReceivedSound(event.getId()));
         registration.registerEvent(ClientReceiveSoundEvent.StaticSound.class, event -> SvcCallBridge.markReceivedSound(event.getId()));
         registration.registerEvent(ClientReceiveSoundEvent.LocationalSound.class, event -> SvcCallBridge.markReceivedSound(event.getId()));
+        // The local player's own mic: VoicechatClientApi#isTalking() proved unreliable live (border never lit
+        // while speaking), so stamp every frame SVC is actually about to transmit instead.
+        registration.registerEvent(ClientSoundEvent.class, event -> SvcCallBridge.markLocalSound());
     }
 }

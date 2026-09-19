@@ -77,7 +77,15 @@ public final class SvcCallBridge {
      * {@code VoicechatClientApi#isTalking()} (mic thread), the one variant that actually works in 2.6.22.
      * Null-safe so it can be polled every frame without the caller worrying about client-API init timing. */
     public static boolean isLocalTalking() {
+        if (System.currentTimeMillis() - lastLocalSoundMillis < TALKING_HOLD_MILLIS)
+            return true;
         return clientApi != null && clientApi.isTalking();
+    }
+
+    private static volatile long lastLocalSoundMillis = 0L;
+
+    public static void markLocalSound() {
+        lastLocalSoundMillis = System.currentTimeMillis();
     }
 
     /** Whether the LOCAL player has muted their own microphone in Simple Voice Chat's own settings -
@@ -89,26 +97,64 @@ public final class SvcCallBridge {
         return clientApi != null && clientApi.isMuted();
     }
 
-    /** Creates a fresh, transient, hidden, isolated (no proximity leak either way) group for one call. */
-    public static UUID createCallGroup(String name) {
+    private static Group.Type toSvcType(CallVoiceMode mode) {
+        return switch (mode) {
+            case OPEN -> Group.Type.OPEN;
+            case NORMAL -> Group.Type.NORMAL;
+            case ISOLATED -> Group.Type.ISOLATED;
+        };
+    }
+
+    /** callId -> the SVC group currently backing it. SVC fixes a group's type at creation, so changing a
+     * call's voice mode swaps in a new group (see {@link #switchCallGroupMode}) while the callId every other
+     * class holds stays the same. */
+    private static final Map<UUID, UUID> CALL_TO_GROUP = new ConcurrentHashMap<>();
+
+    /** Creates a fresh, transient, hidden group of the given mode for one call. The returned id is the call's
+     * stable callId, even after the underlying group is later replaced. */
+    public static UUID createCallGroup(String name, CallVoiceMode mode) {
         if (serverApi == null)
             return null;
+        Group group = buildGroup(name, mode);
+        CALL_TO_GROUP.put(group.getId(), group.getId());
+        return group.getId();
+    }
+
+    private static Group buildGroup(String name, CallVoiceMode mode) {
         Group group = serverApi.groupBuilder()
                 .setName(name)
                 .setPersistent(false)
                 .setHidden(true)
-                .setType(Group.Type.ISOLATED)
+                .setType(toSvcType(mode))
                 .build();
         ACTIVE_GROUPS.put(group.getId(), group);
-        return group.getId();
+        return group;
+    }
+
+    /** Replaces the call's group with a new one of {@code mode} and moves every listed member over. */
+    public static void switchCallGroupMode(UUID callId, String name, CallVoiceMode mode, java.util.Collection<UUID> memberIds) {
+        if (serverApi == null || callId == null)
+            return;
+        UUID oldGroupId = CALL_TO_GROUP.get(callId);
+        Group newGroup = buildGroup(name, mode);
+        CALL_TO_GROUP.put(callId, newGroup.getId());
+        for (UUID memberId : memberIds) {
+            VoicechatConnection connection = serverApi.getConnectionOf(memberId);
+            if (connection != null)
+                connection.setGroup(newGroup);
+        }
+        if (oldGroupId != null) {
+            ACTIVE_GROUPS.remove(oldGroupId);
+            serverApi.removeGroup(oldGroupId);
+        }
     }
 
     /** Server-authoritative join - the player never has to touch SVC's own group UI. */
-    public static void joinGroup(ServerPlayer player, UUID groupId) {
-        if (serverApi == null || groupId == null)
+    public static void joinGroup(ServerPlayer player, UUID callId) {
+        if (serverApi == null || callId == null)
             return;
         VoicechatConnection connection = serverApi.getConnectionOf(player.getUUID());
-        Group group = ACTIVE_GROUPS.get(groupId);
+        Group group = ACTIVE_GROUPS.get(CALL_TO_GROUP.getOrDefault(callId, callId));
         if (connection != null && group != null)
             connection.setGroup(group);
     }
@@ -125,9 +171,12 @@ public final class SvcCallBridge {
             connection.setGroup(null);
     }
 
-    public static void removeGroup(UUID groupId) {
-        if (serverApi == null || groupId == null)
+    public static void removeGroup(UUID callId) {
+        if (serverApi == null || callId == null)
             return;
+        UUID groupId = CALL_TO_GROUP.remove(callId);
+        if (groupId == null)
+            groupId = callId;
         ACTIVE_GROUPS.remove(groupId);
         serverApi.removeGroup(groupId);
     }
@@ -156,6 +205,10 @@ public final class SvcCallBridge {
 
         OpusEncoder encoder = serverApi.createEncoder();
         StaticAudioChannel channel = serverApi.createStaticAudioChannel(java.util.UUID.randomUUID());
+        // A player mid-call sits in an ISOLATED group (see createCallGroup), and SVC silently drops every
+        // static-channel packet addressed to such a player unless the channel opts out of group isolation -
+        // without this, voice messages were inaudible for the whole duration of a call.
+        channel.setBypassGroupIsolation(true);
         channel.addTarget(connection);
         AudioPlayer audioPlayer = serverApi.createAudioPlayer(channel, encoder, pcm);
         UUID playerId = player.getUUID();
