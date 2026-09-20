@@ -72,6 +72,9 @@ public class CallRingtoneManager {
         LocalPlayer player = mc.player;
         if (player == null) {
             stopCurrent();
+            // Not in a world (title screen, disconnected, crashed out): any call state left over from the last
+            // session is stale - see ClientCallState#reset.
+            ClientCallState.reset();
             return;
         }
 

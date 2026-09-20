@@ -72,6 +72,25 @@ public final class ClientCallState {
     private ClientCallState() {
     }
 
+    /** Forgets everything about the current call. Called whenever the client has no world (disconnected, kicked
+     * or crashed out to the title screen): the server only ever announces a call's end to players still
+     * connected, so a client that dropped mid-call would otherwise keep believing it was ringing forever -
+     * and, since nothing on screen can hang up a call the server no longer has, the ringtone looped until the
+     * game was restarted. */
+    public static void reset() {
+        state = State.ENDED;
+        conversationId = null;
+        callId = null;
+        activeSinceMillis = -1;
+        activeSinceCallId = null;
+        callNumbers = List.of();
+        conversationsWithActiveCalls.clear();
+        liveStates.clear();
+        videoEnabled.clear();
+        selfVideoEnabled = false;
+        voiceMode = 0;
+    }
+
     public static void setLiveState(UUID playerId, float headYawDelta, float pitch, int poseOrdinal,
                                      boolean crouching, boolean sprinting, boolean swimming, float walkAnimationSpeed) {
         liveStates.put(playerId, new LiveState(headYawDelta, pitch, poseOrdinal, crouching, sprinting, swimming, walkAnimationSpeed));
