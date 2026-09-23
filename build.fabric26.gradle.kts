@@ -146,6 +146,7 @@ sourceSets.main {
         "fr/lordfinn/crazyphone/ClientConfig.java",
         "fr/lordfinn/crazyphone/utils/NbtCompat.java",
         "fr/lordfinn/crazyphone/utils/PhoneTagAccess.java",
+        "fr/lordfinn/crazyphone/utils/PhoneLocationRegistry.java",
         "fr/lordfinn/crazyphone/utils/RegistryCompat.java",
         "fr/lordfinn/crazyphone/utils/GameProfileCompat.java",
         "fr/lordfinn/crazyphone/utils/Contact.java",
@@ -247,6 +248,10 @@ sourceSets.main {
         "fr/lordfinn/crazyphone/voicechat/CallVoiceMode.java",
         "fr/lordfinn/crazyphone/voicechat/CallHeadRotationSync.java",
         "fr/lordfinn/crazyphone/voicechat/CallTerminationListener.java",
+        // A COMMON (both-sides), server-side-only mixin - not one of the client-only capture-mode mixins
+        // further down this list. Registered in crazyphone.fabric.mixins.json's own "mixins" array (not
+        // "client"), via the crazyphone_fabric_common_mixins token.
+        "fr/lordfinn/crazyphone/mixin/CrazyPhoneContainerInsertMixin.java",
         "fr/lordfinn/crazyphone/network/CrazyPhoneIncomingCallNotificationPacket.java",
         "fr/lordfinn/crazyphone/network/CallParticipantHeadRotationSyncPacket.java",
         "fr/lordfinn/crazyphone/network/UpdateContactInfoMessage.java",
@@ -298,8 +303,11 @@ sourceSets.main {
         "fr/lordfinn/crazyphone/client/render/CrazyPhonePhotoItemRenderer.java",
         "fr/lordfinn/crazyphone/client/picture/FabricPictureCapture.java",
         "fr/lordfinn/crazyphone/client/picture/PhotoImporter.java",
+        "fr/lordfinn/crazyphone/client/picture/AnimatedPhotoCodec.java",
         "fr/lordfinn/crazyphone/client/picture/FabricPictureCache.java",
         "fr/lordfinn/crazyphone/client/picture/PixelArtDownscaler.java",
+        "fr/lordfinn/crazyphone/client/picture/PhotoEditState.java",
+        "fr/lordfinn/crazyphone/client/picture/PhotoImageOps.java",
         "fr/lordfinn/crazyphone/client/CrazyPhoneCaptureMode.java",
         "fr/lordfinn/crazyphone/mixin/CrazyPhoneCaptureFovMixin.java",
         "fr/lordfinn/crazyphone/mixin/CrazyPhoneCaptureHandMixin.java",
@@ -356,6 +364,7 @@ sourceSets.main {
         "fr/lordfinn/crazyphone/mixin/CrazyPhoneItemModelRegistrationMixin.java",
         "fr/lordfinn/crazyphone/mixin/CrazyPhoneConditionalItemModelPropertyMixin.java",
         "fr/lordfinn/crazyphone/client/gui/CrazyPhonePhotoViewerScreen.java",
+        "fr/lordfinn/crazyphone/client/gui/CrazyPhonePhotoEditScreen.java",
         "fr/lordfinn/crazyphone/item/CrazyPhoneCaptureShortcut.java",
         "fr/lordfinn/crazyphone/utils/PhotoItemData.java",
         // Placeable/resizable wall-photo entity - see CrazyPhonePhotoFrameEntity's own doc comment for why
@@ -383,8 +392,8 @@ sourceSets.main {
 // own doc comment for why this lives in a separate directory from the NeoForge template.
 // Mirrors build.fabric.gradle.kts's own fabricClientMixins - see that file's own doc comment (this is plain
 // JSON, not Stonecutter-processed, so the //? if conditionals used everywhere else don't apply here either).
-// Every mixin file actually included in this build's own compile scope above, in the "client" bucket
-// (server-side mixins would go in mixins.json's own "mixins" array instead - none needed yet on this loader).
+// Every mixin file actually included in this build's own compile scope above, in the "client" bucket -
+// see fabricCommonMixins below for the one server-side (both-sides) mixin this loader now has.
 val fabricClientMixins = listOf(
     "CrazyPhoneCaptureFovMixin",
     "CrazyPhoneCaptureHandMixin",
@@ -409,6 +418,12 @@ val fabricClientMixins = listOf(
     "CrazyPhoneSelfieStickMouseMixin"
 ).joinToString(",\n    ") { "\"$it\"" }
 
+// No 1.20.1 boundary to worry about on this loader (unlike build.fabric.gradle.kts's own conditional
+// version) - this build's call system is never excluded, so the mixin is always present.
+val fabricCommonMixins = listOf(
+    "CrazyPhoneContainerInsertMixin"
+).joinToString(",\n    ") { "\"$it\"" }
+
 val modMetadataProperties = mapOf(
     "minecraft_version" to property("minecraft_version"),
     "mod_id" to property("mod_id"),
@@ -419,7 +434,8 @@ val modMetadataProperties = mapOf(
     "mod_description" to property("mod_description"),
     "fabric_loader_version_range" to property("fabric_loader_version_range"),
     "mixin_compatibility_level" to mixinCompatibilityLevel,
-    "crazyphone_fabric_client_mixins" to fabricClientMixins
+    "crazyphone_fabric_client_mixins" to fabricClientMixins,
+    "crazyphone_fabric_common_mixins" to fabricCommonMixins
 )
 val generateModMetadata = tasks.register<ProcessResources>("generateModMetadata") {
     inputs.properties(modMetadataProperties)

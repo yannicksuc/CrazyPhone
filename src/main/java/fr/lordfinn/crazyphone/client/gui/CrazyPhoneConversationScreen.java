@@ -1434,9 +1434,14 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
         // Keep the buffer in sync so a later resize doesn't lose this live message.
         receivedMessages.add(newMessageData);
 
-        // Add message
-        MessageEntry entry = messageManager.addMessage(newMessageData);
-        this.addRenderableWidget(entry.widget());
+        // Deliberately NOT addRenderableWidget(entry.widget()) - same bug, same fix as
+        // onConversationPageReceived's own loop above: messageManager.render(guiGraphics) already draws
+        // every message (including this new one) inside renderMessageWidget()'s scissor block, and clicks
+        // are dispatched manually too (see mouseClicked() below). Registering it a second time here made
+        // the standard Screen render pass draw it AGAIN, unclipped - live-reported as a message popping up
+        // in the empty space below the feed while scrolled up, since its own layout Y (below every
+        // currently-visible message) was never scissored to the feed's actual bounds.
+        messageManager.addMessage(newMessageData);
     }
 
     /** Called directly by {@link fr.lordfinn.crazyphone.network.CrazyPhoneNewCallDurationNotificationPacket}

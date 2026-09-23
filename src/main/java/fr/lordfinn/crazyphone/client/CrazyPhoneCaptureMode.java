@@ -290,7 +290,7 @@ public final class CrazyPhoneCaptureMode {
                 // cache directly instead of re-fetching them a moment later.
                 UUID photoId = UUID.randomUUID();
                 FabricPictureCache.seedFromLocalCapture(photoId, thumbnailPng, fullPng);
-                NetworkAccess.sendToServer(new CrazyPhoneUploadPicturePacket(conversationId, photoId, thumbnailPng, fullPng));
+                NetworkAccess.sendToServer(new CrazyPhoneUploadPicturePacket(conversationId, photoId, thumbnailPng, fullPng, false));
                 // exit() first - it's what restores the conversation screen enter() closed to free the mouse
                 // for framing the shot (mc.setScreen(null)/(previousScreen)); checking for it before this
                 // would always see no screen at all and silently no-op every single time.

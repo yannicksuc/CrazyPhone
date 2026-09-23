@@ -8,10 +8,13 @@ import de.maxhenkel.voicechat.api.audiochannel.AudioPlayer;
 import de.maxhenkel.voicechat.api.audiochannel.StaticAudioChannel;
 import de.maxhenkel.voicechat.api.opus.OpusEncoder;
 
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -169,6 +172,28 @@ public final class SvcCallBridge {
         VoicechatConnection connection = serverApi.getConnectionOf(playerId);
         if (connection != null)
             connection.setGroup(null);
+    }
+
+    /** Every ONLINE player whose SVC connection is CURRENTLY set to this call's own group - the real, live
+     * membership as SVC itself sees it, independent of {@link CallRegistry.CallSession#participants} (this
+     * mod's own INTENDED membership). The two can drift apart: nothing stops a player from joining the
+     * underlying group through SVC's own UI/permissions rather than through the phone's call flow at all
+     * (live request: "gerer tout ces cas etrange ou ca pourrait creer des bugs") - see
+     * CallTerminationListener's own periodic sweep, which uses this to force such a player back out rather
+     * than silently treating their SVC-side presence as call membership. */
+    public static Set<UUID> getConnectedMembers(UUID callId, MinecraftServer server) {
+        if (serverApi == null || callId == null)
+            return Set.of();
+        Group group = ACTIVE_GROUPS.get(CALL_TO_GROUP.getOrDefault(callId, callId));
+        if (group == null)
+            return Set.of();
+        Set<UUID> members = new HashSet<>();
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            VoicechatConnection connection = serverApi.getConnectionOf(player.getUUID());
+            if (connection != null && connection.isInGroup() && group.getId().equals(connection.getGroup().getId()))
+                members.add(player.getUUID());
+        }
+        return members;
     }
 
     public static void removeGroup(UUID callId) {

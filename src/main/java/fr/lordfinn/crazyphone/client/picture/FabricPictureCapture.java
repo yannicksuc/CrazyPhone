@@ -244,8 +244,8 @@ public final class FabricPictureCapture {
     /** Derives both stored resolutions (thumbnail, full) from an arbitrary already-decoded image - same
      * downscale/encode steps a live capture applies, reused by PhotoImporter for photos picked from disk. */
     //? if <1.21.10 {
-    static void deriveBothResolutions(NativeImage source, BiConsumer<byte[], byte[]> callback) throws IOException {
-        try (NativeImage fullScaled = downscale(source, Config.photoFullMaxDimension)) {
+    static void deriveBothResolutions(NativeImage source, int maxDimension, BiConsumer<byte[], byte[]> callback) throws IOException {
+        try (NativeImage fullScaled = downscale(source, maxDimension)) {
             byte[] fullBytes = fullScaled.asByteArray();
             int targetHeight = Config.photoThumbnailPixelHeight;
             if (targetHeight <= 0 || targetHeight >= fullScaled.getHeight()) {
@@ -258,8 +258,8 @@ public final class FabricPictureCapture {
         }
     }
     //? } else {
-    /*static void deriveBothResolutions(NativeImage source, BiConsumer<byte[], byte[]> callback) throws IOException {
-        try (NativeImage fullScaled = downscale(source, Config.photoFullMaxDimension)) {
+    /*static void deriveBothResolutions(NativeImage source, int maxDimension, BiConsumer<byte[], byte[]> callback) throws IOException {
+        try (NativeImage fullScaled = downscale(source, maxDimension)) {
             byte[] fullBytes = toPngBytes(fullScaled);
             int targetHeight = Config.photoThumbnailPixelHeight;
             if (targetHeight <= 0 || targetHeight >= fullScaled.getHeight()) {

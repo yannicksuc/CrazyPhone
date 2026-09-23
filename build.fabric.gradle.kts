@@ -266,6 +266,18 @@ sourceSets.main {
             "fr/lordfinn/crazyphone/voicechat/CallVoiceMode.java",
             "fr/lordfinn/crazyphone/voicechat/CallHeadRotationSync.java",
             "fr/lordfinn/crazyphone/voicechat/CallTerminationListener.java",
+            // Only ever fed by CrazyPhoneContainerInsertMixin and read by CallTerminationListener's own
+            // container-ringing sweep, both already scoped to this same !=1.20.1 block - moved in here
+            // alongside them rather than left unconditional (caught in a cleanliness pass): 1.20.1-fabric's
+            // narrower walking-skeleton scope has no call system at all for it to ever actually feed.
+            "fr/lordfinn/crazyphone/utils/PhoneLocationRegistry.java",
+            // A COMMON (both-sides), server-side-only mixin - not one of the client-only capture-mode
+            // mixins further down this list. Registered in crazyphone.fabric.mixins.json's own "mixins"
+            // array (not "client"), via the crazyphone_fabric_common_mixins token (mirrors
+            // crazyphone_fabric_client_mixins's own !=1.20.1 gating - see that token's own doc comment for
+            // why: this class was previously misplaced right in the middle of the capture-mode mixin block
+            // below with no comment of its own, caught in a cleanliness pass).
+            "fr/lordfinn/crazyphone/mixin/CrazyPhoneContainerInsertMixin.java",
             "fr/lordfinn/crazyphone/network/CrazyPhoneIncomingCallNotificationPacket.java",
             "fr/lordfinn/crazyphone/network/CallParticipantHeadRotationSyncPacket.java",
             // Remaining C2S button-message packets + voice/call packets - each gated NeoForge-only only
@@ -326,8 +338,11 @@ sourceSets.main {
             "fr/lordfinn/crazyphone/client/render/CrazyPhonePhotoItemRenderer.java",
             "fr/lordfinn/crazyphone/client/picture/FabricPictureCapture.java",
             "fr/lordfinn/crazyphone/client/picture/PhotoImporter.java",
+            "fr/lordfinn/crazyphone/client/picture/AnimatedPhotoCodec.java",
             "fr/lordfinn/crazyphone/client/picture/FabricPictureCache.java",
             "fr/lordfinn/crazyphone/client/picture/PixelArtDownscaler.java",
+            "fr/lordfinn/crazyphone/client/picture/PhotoEditState.java",
+            "fr/lordfinn/crazyphone/client/picture/PhotoImageOps.java",
             // CrazyPhoneCaptureMode's core (enter/exit/tick/triggerCapture/drawOverlay) is loader-neutral;
             // the old Screen-based CrazyPhoneCaptureOverlayScreen/CrazyPhoneZoomController it replaced here
             // are gone entirely (that design couldn't keep the mouse grabbed while framing a shot - a real
@@ -381,6 +396,7 @@ sourceSets.main {
             "fr/lordfinn/crazyphone/mixin/CrazyPhonePresentHandGripMixin.java",
             "fr/lordfinn/crazyphone/mixin/CrazyPhonePresentHandGripInvokerMixin.java",
             "fr/lordfinn/crazyphone/client/gui/CrazyPhonePhotoViewerScreen.java",
+            "fr/lordfinn/crazyphone/client/gui/CrazyPhonePhotoEditScreen.java",
             // Punch-to-shoot - isHoldingPhone/clientOpenOverlay are loader-neutral, only the NeoForge event
             // handlers inside are gated; Fabric wires clientOpenOverlay via ClientPreAttackCallback instead
             // (see CrazyphoneFabricClient), which needs no separate empty-click handler of its own.
@@ -440,6 +456,18 @@ val fabricClientMixins = (if (minecraftVersion != "1.20.1") listOf(
     "CrazyPhoneSelfieCameraMixin"
 ) else emptyList()).joinToString(",\n    ") { "\"$it\"" }
 
+// Same boundary/bug as fabricClientMixins above, for the COMMON (both-sides) mixin list instead of the
+// client-only one - CrazyPhoneContainerInsertMixin only exists in the sourceSet's own include list (see
+// its own comment) for minecraftVersion != "1.20.1" too (it feeds PhoneLocationRegistry, itself only
+// consumed by the call system, which 1.20.1-fabric's own narrower walking-skeleton scope excludes
+// entirely - no CustomPacketPayload-based networking there at all). Caught in a cleanliness pass, not
+// live-reported - crazyphone.fabric.mixins.json's own "mixins" array had this hardcoded unconditionally,
+// which would have crashed 1.20.1-fabric on boot the exact same way the client list already had to be
+// fixed for.
+val fabricCommonMixins = (if (minecraftVersion != "1.20.1") listOf(
+    "CrazyPhoneContainerInsertMixin"
+) else emptyList()).joinToString(",\n    ") { "\"$it\"" }
+
 val modMetadataProperties = mapOf(
     "minecraft_version" to property("minecraft_version"),
     "mod_id" to property("mod_id"),
@@ -450,7 +478,8 @@ val modMetadataProperties = mapOf(
     "mod_description" to property("mod_description"),
     "fabric_loader_version_range" to property("fabric_loader_version_range"),
     "mixin_compatibility_level" to mixinCompatibilityLevel,
-    "crazyphone_fabric_client_mixins" to fabricClientMixins
+    "crazyphone_fabric_client_mixins" to fabricClientMixins,
+    "crazyphone_fabric_common_mixins" to fabricCommonMixins
 )
 val generateModMetadata = tasks.register<ProcessResources>("generateModMetadata") {
     inputs.properties(modMetadataProperties)

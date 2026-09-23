@@ -3,7 +3,9 @@
   "minVersion": "0.8",
   "package": "fr.lordfinn.crazyphone.mixin",
   "compatibilityLevel": "${mixin_compatibility_level}",
-  "mixins": [],
+  "mixins": [
+    ${crazyphone_fabric_common_mixins}
+  ],
   "client": [
     ${crazyphone_fabric_client_mixins}
   ],

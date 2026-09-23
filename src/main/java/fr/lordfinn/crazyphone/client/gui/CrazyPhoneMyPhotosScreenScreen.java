@@ -8,7 +8,6 @@ import fr.lordfinn.crazyphone.client.gui.components.CrazyPhoneColors;
 import fr.lordfinn.crazyphone.client.gui.components.PhotoLoadingPlaceholder;
 import fr.lordfinn.crazyphone.client.gui.components.ScrollingText;
 import fr.lordfinn.crazyphone.client.picture.FabricPictureCache;
-import fr.lordfinn.crazyphone.init.ModItems;
 import fr.lordfinn.crazyphone.network.CrazyPhoneMyPhotosActionMessage;
 import fr.lordfinn.crazyphone.utils.GuiCompat;
 import fr.lordfinn.crazyphone.utils.NetworkAccess;
@@ -99,6 +98,15 @@ public class CrazyPhoneMyPhotosScreenScreen extends CrazyPhoneDefaultScreenScree
         super(container, inventory, text);
     }
 
+    /** The client-side snapshot of photo ids this grid was opened with, mutable in place - CrazyPhonePhotoEditScreen
+     * patches this directly right after a successful Replace/Create Copy so the grid reflects it immediately
+     * on return, instead of only after leaving and reopening this screen. AbstractContainerScreen's own
+     * {@code menu} field is `protected`, declared in a DIFFERENT package (vanilla) - same-package access
+     * from a sibling class here still needs this class to actually own the access, hence the getter. */
+    public java.util.List<UUID> getPhotoIds() {
+        return menu.photoIds;
+    }
+
     @Override
     public HashMap<String, Object> getWidgets() {
         return guistate;
@@ -108,11 +116,17 @@ public class CrazyPhoneMyPhotosScreenScreen extends CrazyPhoneDefaultScreenScree
     /*@Override
     public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTicks) {
         super.extractRenderState(guiGraphics, mouseX, mouseY, partialTicks);
-        renderHeader(guiGraphics, new ItemStack(ModItems.CRAZY_PHONE_PHOTO.get()),
-                Component.translatable("gui.crazyphone.crazy_phone_my_photos_screen.title"), HEADER_BANNER_RIGHT_X, false);
+        renderHeader(guiGraphics, ItemStack.EMPTY,
+                Component.translatable("gui.crazyphone.crazy_phone_my_photos_screen.title"), HEADER_BANNER_RIGHT_X, true);
+        renderPhotoCountIcon(guiGraphics, mouseX, mouseY);
         renderPhotoCountInfo(guiGraphics);
         renderImportButton(guiGraphics, mouseX, mouseY);
-        java.util.List<Component> importTooltip = importTooltipAt(mouseX, mouseY);
+        renderLinkButton(guiGraphics, mouseX, mouseY);
+        java.util.List<Component> importTooltip = photoCountTooltipAt(mouseX, mouseY);
+        if (importTooltip == null)
+            importTooltip = importTooltipAt(mouseX, mouseY);
+        if (importTooltip == null)
+            importTooltip = linkTooltipAt(mouseX, mouseY);
         if (importTooltip != null)
             guiGraphics.setComponentTooltipForNextFrame(this.font, importTooltip, mouseX, mouseY);
     }
@@ -120,11 +134,17 @@ public class CrazyPhoneMyPhotosScreenScreen extends CrazyPhoneDefaultScreenScree
     @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
         super.render(guiGraphics, mouseX, mouseY, partialTicks);
-        renderHeader(guiGraphics, new ItemStack(ModItems.CRAZY_PHONE_PHOTO.get()),
-                Component.translatable("gui.crazyphone.crazy_phone_my_photos_screen.title"), HEADER_BANNER_RIGHT_X, false);
+        renderHeader(guiGraphics, ItemStack.EMPTY,
+                Component.translatable("gui.crazyphone.crazy_phone_my_photos_screen.title"), HEADER_BANNER_RIGHT_X, true);
+        renderPhotoCountIcon(guiGraphics, mouseX, mouseY);
         renderPhotoCountInfo(guiGraphics);
         renderImportButton(guiGraphics, mouseX, mouseY);
-        java.util.List<Component> importTooltip = importTooltipAt(mouseX, mouseY);
+        renderLinkButton(guiGraphics, mouseX, mouseY);
+        java.util.List<Component> importTooltip = photoCountTooltipAt(mouseX, mouseY);
+        if (importTooltip == null)
+            importTooltip = importTooltipAt(mouseX, mouseY);
+        if (importTooltip == null)
+            importTooltip = linkTooltipAt(mouseX, mouseY);
         if (importTooltip != null)
             guiGraphics.renderComponentTooltip(this.font, importTooltip, mouseX, mouseY);
     }
@@ -222,8 +242,12 @@ public class CrazyPhoneMyPhotosScreenScreen extends CrazyPhoneDefaultScreenScree
             return false;
         java.util.List<java.util.UUID> imported = fr.lordfinn.crazyphone.client.picture.PhotoImporter.importFromDisk();
         if (!imported.isEmpty()) {
-            // The server-sent list this screen was opened with doesn't know about them yet.
-            menu.photoIds.addAll(imported);
+            // The server-sent list this screen was opened with doesn't know about them yet. It is ordered
+            // newest first, so each one goes in at the top (the last imported ends up first), and the grid
+            // scrolls back up so the result is visible.
+            for (java.util.UUID id : imported)
+                menu.photoIds.add(0, id);
+            scrollPosition = 0;
             net.minecraft.client.player.LocalPlayer player = net.minecraft.client.Minecraft.getInstance().player;
             if (player != null) {
                 player.playSound(net.minecraft.sounds.SoundEvents.ITEM_PICKUP, 1f, 1f);
@@ -234,21 +258,115 @@ public class CrazyPhoneMyPhotosScreenScreen extends CrazyPhoneDefaultScreenScree
         return true;
     }
 
-    /** Draws the "247/300" photo counter flush against the header banner's right edge, on the title's own
-     * row (see the HEADER_BANNER_RIGHT_X/HEADER_TITLE_Y comment above), and - once the owner's photo count
-     * gets within STORAGE_WARNING_THRESHOLD_FRACTION of Config.maxPhotosStoredPerOwner - a short one-line
-     * warning just below the header that the oldest photos will soon be auto-evicted. The warning reuses
-     * ScrollingText (same as the title itself) so an overly long translation scrolls instead of overflowing
-     * past the phone's frame. */
-    private void renderPhotoCountInfo(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics) {
+    // "Import from link" button, left of the import one: imports the image whose http(s) link is currently in
+    // the clipboard (no text field needed, so no extra screen).
+    private static final Component LINK_ICON = Component.literal("🔗");
+
+    private int linkIconX() {
+        return importIconX() - IMPORT_ICON_GAP - this.font.width(LINK_ICON);
+    }
+
+    private boolean isHoveringLinkIcon(double mouseX, double mouseY) {
+        int iconX = linkIconX();
+        int iconY = this.topPos + HEADER_TITLE_Y;
+        return mouseX >= iconX - 1 && mouseX < iconX + this.font.width(LINK_ICON) + 1
+                && mouseY >= iconY - 1 && mouseY < iconY + this.font.lineHeight + 1;
+    }
+
+    private void renderLinkButton(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int mouseX, int mouseY) {
+        int iconX = linkIconX();
+        int iconY = this.topPos + HEADER_TITLE_Y;
+        if (isHoveringLinkIcon(mouseX, mouseY)) {
+            fr.lordfinn.crazyphone.client.CursorEffects.requestPointerCursor();
+            guiGraphics.fill(iconX - 1, iconY - 1, iconX + this.font.width(LINK_ICON) + 1, iconY + this.font.lineHeight + 1, 0x80FFFFFF);
+        }
+        guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(this.font, LINK_ICON, iconX, iconY, 0xFFFFFFFF, true);
+    }
+
+    private java.util.List<Component> linkTooltipAt(double mouseX, double mouseY) {
+        if (!isHoveringLinkIcon(mouseX, mouseY))
+            return null;
+        return java.util.List.of(Component.translatable("gui.crazyphone.crazy_phone_my_photos_screen.import_link"),
+                Component.translatable("gui.crazyphone.crazy_phone_my_photos_screen.import_link.lore").withStyle(net.minecraft.ChatFormatting.GRAY));
+    }
+
+    private boolean handleLinkClick(double mouseX, double mouseY, int button) {
+        if (button != 0 || !isHoveringLinkIcon(mouseX, mouseY))
+            return false;
+        net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
+        net.minecraft.client.player.LocalPlayer player = mc.player;
+        if (player == null)
+            return true;
+        String clipboard = mc.keyboardHandler.getClipboard();
+        if (!fr.lordfinn.crazyphone.client.picture.PhotoImporter.isHttpLink(clipboard)) {
+            fr.lordfinn.crazyphone.utils.CrazyPhoneHelper.sendClientMessage(player,
+                    Component.translatable("message.crazyphone.photo_link_no_link"), true);
+            return true;
+        }
+        fr.lordfinn.crazyphone.utils.CrazyPhoneHelper.sendClientMessage(player,
+                Component.translatable("message.crazyphone.photo_link_downloading"), true);
+        fr.lordfinn.crazyphone.client.picture.PhotoImporter.importFromLink(clipboard, id -> {
+            net.minecraft.client.player.LocalPlayer current = net.minecraft.client.Minecraft.getInstance().player;
+            if (current == null)
+                return;
+            if (id == null) {
+                fr.lordfinn.crazyphone.utils.CrazyPhoneHelper.sendClientMessage(current,
+                        Component.translatable("message.crazyphone.photo_link_failed"), true);
+                return;
+            }
+            // Only if this screen is still the one showing - the download can finish after leaving it.
+            if (net.minecraft.client.Minecraft.getInstance()./*$ mc_get_screen {*/screen/*$}*/ == this) {
+                menu.photoIds.add(0, id);
+                scrollPosition = 0;
+            }
+            current.playSound(net.minecraft.sounds.SoundEvents.ITEM_PICKUP, 1f, 1f);
+            fr.lordfinn.crazyphone.utils.CrazyPhoneHelper.sendClientMessage(current,
+                    Component.translatable("message.crazyphone.photos_imported", 1), true);
+        });
+        return true;
+    }
+
+    // Photo-count icon, in the header's own icon slot (left of the title, x=HEADER_ICON_X, matching
+    // renderHeader's own showIcon=true layout - see the ItemStack.EMPTY call above) - the "247/300" text
+    // only shows as this icon's tooltip now (live request: a page icon here instead of the number sitting
+    // in the banner itself).
+    private static final Component PHOTO_COUNT_ICON = Component.literal("📄");
+    private static final int PHOTO_COUNT_ICON_X = 7;
+    private static final int PHOTO_COUNT_ICON_SIZE = 16;
+
+    private boolean isHoveringPhotoCountIcon(double mouseX, double mouseY) {
+        int iconX = this.leftPos + PHOTO_COUNT_ICON_X;
+        int iconY = this.topPos + 9;
+        return mouseX >= iconX && mouseX < iconX + PHOTO_COUNT_ICON_SIZE && mouseY >= iconY && mouseY < iconY + PHOTO_COUNT_ICON_SIZE;
+    }
+
+    private void renderPhotoCountIcon(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int mouseX, int mouseY) {
+        int iconX = this.leftPos + PHOTO_COUNT_ICON_X;
+        int iconY = this.topPos + 9;
+        if (isHoveringPhotoCountIcon(mouseX, mouseY)) {
+            fr.lordfinn.crazyphone.client.CursorEffects.requestPointerCursor();
+            guiGraphics.fill(iconX - 1, iconY - 1, iconX + PHOTO_COUNT_ICON_SIZE + 1, iconY + PHOTO_COUNT_ICON_SIZE + 1, 0x80FFFFFF);
+        }
+        // Centered inside the 16x16 slot a real item icon would have filled.
+        int textX = iconX + (PHOTO_COUNT_ICON_SIZE - this.font.width(PHOTO_COUNT_ICON)) / 2;
+        int textY = iconY + (PHOTO_COUNT_ICON_SIZE - this.font.lineHeight) / 2;
+        guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(this.font, PHOTO_COUNT_ICON, textX, textY, COUNTER_TEXT_COLOR, false);
+    }
+
+    private java.util.List<Component> photoCountTooltipAt(double mouseX, double mouseY) {
+        if (!isHoveringPhotoCountIcon(mouseX, mouseY))
+            return null;
         int max = fr.lordfinn.crazyphone.Config.maxPhotosStoredPerOwner;
         int count = menu.photoIds.size();
-        Component counterText = Component.translatable("gui.crazyphone.crazy_phone_my_photos_screen.photo_count", count, max);
-        int counterX = importIconX() - IMPORT_ICON_GAP - this.font.width(counterText);
-        // Explicit alpha byte (0xFF......) - on >=26, GuiGraphicsExtractor#text silently drops any call
-        // whose color has a zero alpha byte instead of treating it as opaque like pre-26's drawString did.
-        guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(this.font, counterText, counterX, this.topPos + HEADER_TITLE_Y, COUNTER_TEXT_COLOR, false);
+        return java.util.List.of(Component.translatable("gui.crazyphone.crazy_phone_my_photos_screen.photo_count", count, max));
+    }
 
+    /** Once the owner's photo count gets within STORAGE_WARNING_THRESHOLD_FRACTION of
+     * Config.maxPhotosStoredPerOwner, draws a short one-line warning just below the header that the oldest
+     * photos will soon be auto-evicted - the "247/300" counter itself is rendered separately (see
+     * renderPhotoCountIcon/photoCountTooltipAt). Reuses ScrollingText (same as the title itself) so an
+     * overly long translation scrolls instead of overflowing past the phone's frame. */
+    private void renderPhotoCountInfo(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics) {
         if (isNearStorageCap()) {
             Component warning = Component.translatable("gui.crazyphone.crazy_phone_my_photos_screen.storage_warning");
             ScrollingText.render(guiGraphics, this.font, warning, gridLeft(), this.topPos + HEADER_HEIGHT, GRID_WIDTH, STORAGE_WARNING_COLOR);
@@ -340,7 +458,7 @@ public class CrazyPhoneMyPhotosScreenScreen extends CrazyPhoneDefaultScreenScree
     *///?}
 
     private boolean mouseClickedImpl(double mouseX, double mouseY, int button) {
-        if (handleImportClick(mouseX, mouseY, button))
+        if (handleImportClick(mouseX, mouseY, button) || handleLinkClick(mouseX, mouseY, button))
             return true;
         if (button != 0 && button != 1)
             return false;

@@ -39,6 +39,7 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 *///? }
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
@@ -151,10 +152,35 @@ public record CrazyPhoneNewMessageNotificationPacket(
             // server-side (see CrazyPhoneHelper#notifyContacts/#notifySystemMessage) - the unread-notification
             // badge is a separate mechanism (addNotificationBadge) and keeps working regardless of this.
             if (!message.isSystem() && !messagePacket.muted()) {
+                // Reworked visually (live request: "l'icone aussi peut etre modifie et les couleurs/mise
+                // en forme du message pour etre plus marquant visuellement") - message.crazyphone.
+                // new_message_received (lang files) already carries its own leading emoji glyph from the
+                // bundled Twemoji resource pack; an earlier version of this ALSO prepended its own separate
+                // envelope glyph in code, rendering two icons back to back (caught in a cleanliness pass,
+                // not live-reported) - the lang string's own icon is the only one now. A true Toast popup
+                // with a rendered contact-head icon would need a from-scratch custom Toast implementation
+                // whose render API is a COMPLETELY different shape on every one of this project's 3
+                // supported version tiers (checked: 1.21.1's single Toast#render(GuiGraphics, ToastComponent,
+                // long) is unrecognizable next to 26.1's getWantedVisibility()/update()/extractRenderState(
+                // GuiGraphicsExtractor,...) split, and GuiGraphics#renderItem itself is gone entirely on
+                // 26.1) - a much bigger, separate undertaking than this visual polish pass, with zero
+                // existing Toast implementation anywhere in this codebase to safely mirror either.
+                // Also now shows WHICH of the receiver's own phones this landed on (live request: "afficher
+                // ces infos de qui envoie / recoit / sur quel telephone") - resolved from the receiving
+                // player's own ACCOUNT via the synced phone registry (CrazyPhoneHelper#getOwnedPhoneNumber),
+                // not from whatever happens to be in their hand right now, since this notification fires
+                // even while the phone is elsewhere in the inventory.
                 Component senderName = Component.literal(messagePacket.senderName)
-                        .withStyle(style -> style.withBold(true).withColor(0x00FF55));
-                Component notifText = Component.translatable("message.crazyphone.new_message_received", senderName)
-                    .withStyle(style -> style.withColor(0x55FFFF).withItalic(true));
+                        .withStyle(style -> style.withBold(true).withColor(0x55FF7F));
+                MutableComponent notifText = Component.translatable("message.crazyphone.new_message_received", senderName)
+                        .withStyle(style -> style.withColor(0xFFD35C).withItalic(true));
+                String receiverNumber = mc.level != null
+                        ? CrazyPhoneHelper.getOwnedPhoneNumber(mc.level, mc.player.getUUID())
+                        : "";
+                if (!receiverNumber.isEmpty()) {
+                    notifText.append(Component.literal(" (" + receiverNumber + ")")
+                            .withStyle(style -> style.withColor(0x8899AA).withItalic(true)));
+                }
                 //? if <1.21.10 {
                 mc.player.sendSystemMessage(notifText);
                 //? } else {

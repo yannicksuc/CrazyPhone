@@ -18,6 +18,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 *///?}
 
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
@@ -28,7 +29,9 @@ import net.minecraft.sounds.SoundSource;
 
 import fr.lordfinn.crazyphone.Config;
 import fr.lordfinn.crazyphone.init.ModItems;
+import fr.lordfinn.crazyphone.init.ModSounds;
 import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
+import fr.lordfinn.crazyphone.utils.PhoneLocationRegistry;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -111,6 +114,73 @@ public class CallTerminationListener {
         sweepInventoryPossession(server);
         sweepAloneParticipants(server);
         sweepRingTimeouts(server);
+        sweepUnauthorizedGroupMembers(server);
+        sweepContainerRinging(server);
+    }
+
+    // How often a still-ringing callee's phone, if it's sitting in a container rather than on any online
+    // player, gets its positional ringtone re-triggered - a plain multiple of SWEEP_INTERVAL_TICKS so no
+    // extra state is needed to track "last played", just a coarser modulo on the same tick counter. Not
+    // tuned against the ringtone melody's own real length (unknown from this class) - a reasonable "let it
+    // ring again" cadence, adjustable live like every other timing constant in this codebase.
+    private static final int RING_SOUND_INTERVAL_TICKS = 60;
+
+    /** A ringing callee's phone that ISN'T on any online player (see {@link #stillHasPhone}) - the normal
+     * case {@link fr.lordfinn.crazyphone.client.CallRingtoneManager} already handles entirely client-side,
+     * by each client checking its OWN inventory - gets no ringtone AT ALL today if the item is sitting in a
+     * container instead. This plays it POSITIONALLY at the container's own world location instead (live
+     * request: "il faut faire sonner le telephone aux coordonnees du conteneur ... qui entend la sonnerie
+     * dependra pas du joueur qui recoit l'appel mais de l'emplacement du telephone") - vanilla's own
+     * {@code Level#playSound(null, pos, ...)} already broadcasts to everyone within normal hearing range of
+     * that position, no custom packet needed. Revalidates the recorded location is still actually correct
+     * right before playing (see {@link PhoneLocationRegistry#containerStillHasPhone}) rather than trusting
+     * a possibly-stale hint. */
+    private static void sweepContainerRinging(MinecraftServer server) {
+        if (server.getTickCount() % RING_SOUND_INTERVAL_TICKS != 0)
+            return;
+        for (CallRegistry.CallSession session : CallRegistry.getActiveSessions()) {
+            try {
+                for (UUID ringingId : session.ringing) {
+                    ServerPlayer player = server.getPlayerList().getPlayer(ringingId);
+                    if (player == null || stillHasPhone(player))
+                        continue;
+                    String number = CrazyPhoneHelper.getOwnedPhoneNumber(player.level(), ringingId);
+                    if (number.isEmpty())
+                        continue;
+                    PhoneLocationRegistry.get(number).ifPresent(location -> ringAtContainer(server, number, location));
+                }
+            } catch (Exception e) {
+                LOGGER.error("Failed to sweep container-ringing for call {}", session.callId, e);
+            }
+        }
+    }
+
+    private static void ringAtContainer(MinecraftServer server, String number, PhoneLocationRegistry.Location location) {
+        ServerLevel level = server.getLevel(location.dimension());
+        if (level == null || !PhoneLocationRegistry.containerStillHasPhone(number, level, location.pos()))
+            return;
+        level.playSound(null, location.pos(), ModSounds.RINGTONE.get(), SoundSource.RECORDS, 1.0f, 1.0f);
+    }
+
+    /** Force-removes anyone whose SVC connection sits in a call's own voice group without actually being a
+     * legitimate participant of that call (see {@link SvcCallBridge#getConnectedMembers} for how/why the two
+     * can diverge) - never the other way around: an uninvited voice-group join is always kicked back out,
+     * never silently treated as "now part of this phone call" (live request - a private call between
+     * specific phone contacts must not let a bystander self-invite into it just by reaching its underlying
+     * voice group through some other means). */
+    private static void sweepUnauthorizedGroupMembers(MinecraftServer server) {
+        for (CallRegistry.CallSession session : CallRegistry.getActiveSessions()) {
+            try {
+                for (UUID memberId : SvcCallBridge.getConnectedMembers(session.callId, server)) {
+                    if (!session.participants.contains(memberId)) {
+                        SvcCallBridge.leaveGroup(memberId);
+                        LOGGER.warn("Removed player {} from call {}'s voice group - not a legitimate participant of that call", memberId, session.callId);
+                    }
+                }
+            } catch (Exception e) {
+                LOGGER.error("Failed to sweep unauthorized voice-group members for call {}", session.callId, e);
+            }
+        }
     }
 
     private static void sweepInventoryPossession(MinecraftServer server) {

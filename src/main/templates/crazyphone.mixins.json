@@ -3,7 +3,9 @@
   "minVersion": "0.8",
   "package": "fr.lordfinn.crazyphone.mixin",
   "compatibilityLevel": "${mixin_compatibility_level}",
-  "mixins": [],
+  "mixins": [
+    "CrazyPhoneContainerInsertMixin"
+  ],
   "client": [
     "MouseHandlerCursorMixin",
     "LivingEntityRenderStateMixin",

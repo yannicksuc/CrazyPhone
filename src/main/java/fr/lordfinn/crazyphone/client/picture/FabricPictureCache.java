@@ -53,7 +53,77 @@ import java.util.concurrent.Executors;
 public final class FabricPictureCache {
     private static final Logger LOGGER = LoggerFactory.getLogger("crazyphone");
 
-    public record CachedTexture(/*$ res_loc {*/ResourceLocation/*$}*/ location, int width, int height, boolean hasTransparency) {
+    /** A photo ready to draw - either a single fixed texture, or (see {@link #animated}) a short loop of
+     * frame textures this class itself picks between based on wall-clock time, so every call site that
+     * already just calls {@code texture.location()} once per render keeps working unchanged: it always gets
+     * back whichever frame should be showing right now, static photos included (where that's simply the
+     * only frame there is). Two viewers' clocks aren't synchronized, so they see roughly, not frame-exactly,
+     * the same point in the loop - acceptable for a decorative photo animation. */
+    public static final class CachedTexture {
+        private final /*$ res_loc {*/ResourceLocation/*$}*/[] frameLocations;
+        // Cumulative delay in millis through frame i (inclusive) - null for a static (single-frame) texture,
+        // where location() never needs to consult the clock at all.
+        private final int[] cumulativeDelaysMillis;
+        private final int totalDurationMillis;
+        private final int width;
+        private final int height;
+        private final boolean hasTransparency;
+
+        private CachedTexture(/*$ res_loc {*/ResourceLocation/*$}*/[] frameLocations, int[] delaysMillis, int width, int height, boolean hasTransparency) {
+            this.frameLocations = frameLocations;
+            this.width = width;
+            this.height = height;
+            this.hasTransparency = hasTransparency;
+            if (frameLocations.length <= 1) {
+                this.cumulativeDelaysMillis = null;
+                this.totalDurationMillis = 0;
+            } else {
+                this.cumulativeDelaysMillis = new int[delaysMillis.length];
+                int sum = 0;
+                for (int i = 0; i < delaysMillis.length; i++) {
+                    sum += delaysMillis[i];
+                    this.cumulativeDelaysMillis[i] = sum;
+                }
+                this.totalDurationMillis = Math.max(1, sum);
+            }
+        }
+
+        static CachedTexture of(/*$ res_loc {*/ResourceLocation/*$}*/ location, int width, int height, boolean hasTransparency) {
+            return new CachedTexture(new /*$ res_loc {*/ResourceLocation/*$}*/[]{location}, new int[]{0}, width, height, hasTransparency);
+        }
+
+        static CachedTexture animated(/*$ res_loc {*/ResourceLocation/*$}*/[] frameLocations, int[] delaysMillis, int width, int height, boolean hasTransparency) {
+            return new CachedTexture(frameLocations, delaysMillis, width, height, hasTransparency);
+        }
+
+        public /*$ res_loc {*/ResourceLocation/*$}*/ location() {
+            if (cumulativeDelaysMillis == null)
+                return frameLocations[0];
+            long elapsed = System.currentTimeMillis() % totalDurationMillis;
+            for (int i = 0; i < cumulativeDelaysMillis.length; i++)
+                if (elapsed < cumulativeDelaysMillis[i])
+                    return frameLocations[i];
+            return frameLocations[frameLocations.length - 1];
+        }
+
+        public int width() {
+            return width;
+        }
+
+        public int height() {
+            return height;
+        }
+
+        public boolean hasTransparency() {
+            return hasTransparency;
+        }
+
+        // Releases EVERY frame's GPU texture, not just whichever one location() would currently return -
+        // eviction/reset must free the whole animation, not one arbitrarily-picked frame of it.
+        void releaseAll(net.minecraft.client.renderer.texture.TextureManager textureManager) {
+            for (/*$ res_loc {*/ResourceLocation/*$}*/ frameLocation : frameLocations)
+                textureManager.release(frameLocation);
+        }
     }
 
     private record Key(UUID photoId, PhotoResolution resolution) {
@@ -72,7 +142,7 @@ public final class FabricPictureCache {
                 protected boolean removeEldestEntry(Map.Entry<Key, CachedTexture> eldest) {
                     if (size() <= MAX_RESOLVED_TEXTURES)
                         return false;
-                    Minecraft.getInstance().getTextureManager().release(eldest.getValue().location());
+                    eldest.getValue().releaseAll(Minecraft.getInstance().getTextureManager());
                     return true;
                 }
             });
@@ -177,8 +247,9 @@ public final class FabricPictureCache {
     // photoId. Only the in-memory bookkeeping above needs resetting.
     public static void reset() {
         synchronized (RESOLVED) {
+            net.minecraft.client.renderer.texture.TextureManager textureManager = Minecraft.getInstance().getTextureManager();
             for (CachedTexture texture : RESOLVED.values())
-                Minecraft.getInstance().getTextureManager().release(texture.location());
+                texture.releaseAll(textureManager);
             RESOLVED.clear();
         }
         IN_FLIGHT.clear();
@@ -245,6 +316,13 @@ public final class FabricPictureCache {
     // responsible for getting here on the right thread (onBytesReceived already runs there via the packet
     // handler, the disk path hops back via Minecraft.getInstance() as an Executor above).
     private static void decodeAndRegister(Key key, byte[] pngBytes, boolean persistToDisk) {
+        // Only ever produced for FULL (see PhotoImporter#importAnimated) - a THUMBNAIL is always a plain
+        // static PNG of the animation's first frame, so this check would simply never match for one anyway;
+        // spelled out regardless so this branch reads as deliberate, not accidental.
+        if (key.resolution() == PhotoResolution.FULL && AnimatedPhotoCodec.isAnimatedContainer(pngBytes)) {
+            registerAnimated(key, pngBytes, persistToDisk);
+            return;
+        }
         NativeImage image;
         CachedTexture texture;
         try {
@@ -267,6 +345,39 @@ public final class FabricPictureCache {
             writeToDiskAsync(key, pngBytes);
         if (key.resolution() == PhotoResolution.FULL)
             deriveThumbnailFromFull(key.photoId(), image);
+    }
+
+    // Mirrors decodeAndRegister's own static path, just decoding every frame of this mod's own "CPAG"
+    // container (see AnimatedPhotoCodec) instead of one PNG, and registering one DynamicTexture per frame.
+    private static void registerAnimated(Key key, byte[] containerBytes, boolean persistToDisk) {
+        AnimatedPhotoCodec.Animation animation;
+        try {
+            animation = AnimatedPhotoCodec.decodeContainer(containerBytes);
+        } catch (Exception e) {
+            LOGGER.warn("Failed to decode animated photo {}", key.photoId(), e);
+            FAILED.add(key);
+            return;
+        }
+        CachedTexture texture;
+        try {
+            texture = registerAnimatedTexture(key, animation);
+        } catch (Exception e) {
+            LOGGER.warn("Failed to register animated photo {}", key.photoId(), e);
+            // Registration failed part way through - every frame's NativeImage is still ours to close (a
+            // successfully-registered frame's own DynamicTexture would otherwise never get released either,
+            // but registerAnimatedTexture itself is the only thing that hands frames off one at a time, and
+            // it never leaves this method having partially succeeded - see its own doc comment).
+            animation.close();
+            FAILED.add(key);
+            return;
+        }
+        RESOLVED.put(key, texture);
+        if (persistToDisk)
+            writeToDiskAsync(key, containerBytes);
+        // Same "derive the other resolution from pixels already in hand" trick decodeAndRegister's own
+        // static path uses - reads frame 0's pixels, which stay valid until whichever DynamicTexture now
+        // owns them is eventually released (registerAnimatedTexture never closes what it registers).
+        deriveThumbnailFromFull(key.photoId(), animation.frames().get(0).image());
     }
 
     // Skips a real network/disk round trip for the THUMBNAIL resolution entirely when a FULL decode of the
@@ -321,10 +432,44 @@ public final class FabricPictureCache {
     // >=1.21.10 (needs its own real API investigation, not guessed) - left as a known gap there for now.
     private static CachedTexture registerTexture(Key key, NativeImage image, String nameSuffix) {
         String name = "crazyphone-picture-" + key.resolution().name().toLowerCase(Locale.ROOT) + "-" + key.photoId() + nameSuffix;
+        /*$ res_loc {*/ResourceLocation/*$}*/ id = registerDynamicTexture(name, image);
+        return CachedTexture.of(id, image.getWidth(), image.getHeight(), hasTransparency(image));
+    }
+
+    // One DynamicTexture per frame, named so each is unique within the animation (and across animations/
+    // resolutions/photoIds, same "-derived"-suffix trick registerTexture's own nameSuffix already relies on).
+    // Transparency is checked on frame 0 only, not every frame - representative enough for what's ultimately
+    // just a cosmetic frame/backing-border choice (see CrazyPhonePhotoFrameRenderer), not worth an O(frames *
+    // pixels) scan for.
+    private static CachedTexture registerAnimatedTexture(Key key, AnimatedPhotoCodec.Animation animation) {
+        List<AnimatedPhotoCodec.RawFrame> frames = animation.frames();
+        /*$ res_loc {*/ResourceLocation/*$}*/[] locations = new /*$ res_loc {*/ResourceLocation/*$}*/[frames.size()];
+        int[] delaysMillis = new int[frames.size()];
+        for (int i = 0; i < frames.size(); i++) {
+            AnimatedPhotoCodec.RawFrame frame = frames.get(i);
+            String name = "crazyphone-picture-" + key.resolution().name().toLowerCase(Locale.ROOT) + "-" + key.photoId() + "-f" + i;
+            locations[i] = registerDynamicTexture(name, frame.image());
+            delaysMillis[i] = frame.delayMillis();
+        }
+        boolean transparent = hasTransparency(frames.get(0).image());
+        return CachedTexture.animated(locations, delaysMillis, animation.width(), animation.height(), transparent);
+    }
+
+    // Shared wrap-and-register step both registerTexture (one static photo) and registerAnimatedTexture (one
+    // frame of many) delegate to - does NOT close image; DynamicTexture keeps it readable (see this class's
+    // own deriveThumbnailFromFull, which already relied on that before animation existed) until whichever
+    // GPU texture now owns it is eventually released.
+    //
+    // <1.21.10's setFilter(false, false) explicitly disables mipmapping - a freshly uploaded GL texture
+    // defaults to a mip-sampling MIN_FILTER (GL_NEAREST_MIPMAP_LINEAR) even though only the base level ever
+    // gets generated here, an incomplete-texture state vanilla's own batched renderer happens to tolerate
+    // but a heavier third-party render pipeline might not. AbstractTexture has no equivalent method on
+    // >=1.21.10 (needs its own real API investigation, not guessed) - left as a known gap there for now.
+    private static /*$ res_loc {*/ResourceLocation/*$}*/ registerDynamicTexture(String name, NativeImage image) {
         //? if <1.21.10 {
         DynamicTexture texture = new DynamicTexture(image);
         texture.setFilter(false, false);
-        /*$ res_loc {*/ResourceLocation/*$}*/ id = Minecraft.getInstance().getTextureManager().register(name, texture);
+        return Minecraft.getInstance().getTextureManager().register(name, texture);
         //? } else {
         /*// 1.21.10 changed DynamicTexture's constructor (now takes a name Supplier and uploads itself) and
         // TextureManager#register's key type (ResourceLocation, not a plain String) - Identifier paths need
@@ -333,8 +478,8 @@ public final class FabricPictureCache {
         net.minecraft.resources./^$ res_loc {^/ResourceLocation/^$}^/ id = fr.lordfinn.crazyphone.Crazyphone.resource(name);
         DynamicTexture texture = new DynamicTexture(id::toString, image);
         Minecraft.getInstance().getTextureManager().register(id, texture);
+        return id;
         *///?}
-        return new CachedTexture(id, image.getWidth(), image.getHeight(), hasTransparency(image));
     }
 
     // Fire-and-forget - a failed disk write just means this photo re-fetches from the server next session,
@@ -393,5 +538,25 @@ public final class FabricPictureCache {
         return Minecraft.getInstance().gameDirectory.toPath()
                 .resolve("crazyphone").resolve("photocache")
                 .resolve(key.resolution().name().toLowerCase(Locale.ROOT) + "-" + key.photoId() + ".png");
+    }
+
+    /** Reads a photo's own raw disk-cached bytes synchronously - for the one case (the photo editor) that
+     * needs real pixels to mutate, not just a GPU texture handle {@link #getOrRequest} hands back. Only
+     * meaningful once the CORRESPONDING getOrRequest(photoId, resolution) call has already resolved (the
+     * disk cache is only ever written right after a successful decode - see decodeAndRegister/registerAnimated),
+     * which every caller of this is expected to have already checked; returns null otherwise rather than
+     * blocking on a fetch of its own. A synchronous read on the render thread is an acceptable one-off cost
+     * here (a local, already-on-disk file of at most a few MB, read once when the editor screen opens) -
+     * unlike every other path through this class, which is careful to never block the render thread on I/O. */
+    public static byte[] readCachedBytesBlocking(UUID photoId, PhotoResolution resolution) {
+        Path file = cacheFile(new Key(photoId, resolution));
+        if (!Files.isRegularFile(file))
+            return null;
+        try {
+            return Files.readAllBytes(file);
+        } catch (IOException e) {
+            LOGGER.warn("Failed to read disk-cached {} photo {}", resolution, photoId, e);
+            return null;
+        }
     }
 }

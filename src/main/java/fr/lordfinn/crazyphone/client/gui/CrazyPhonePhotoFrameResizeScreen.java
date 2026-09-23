@@ -609,11 +609,12 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
     }
 
     // Moves whichever edges #cornerDragCol/#cornerDragRow currently point at to the mouse's own half-block
-    // boundary position, at half-block resolution - each edge independently clamped to [0, maxHalf], so the
-    // anchor's own cell can never be pushed out of the selection (neither edge can go negative) and a drag
-    // can never exceed the configured max size ("attention ne pas bouger l'autre coin sauf si pas dans la
-    // taille max autorisé" - live request: the OTHER two edges are never touched here at all, and the ones
-    // that are get the same ordinary clamp every other half-block edit in this screen already uses). The
+    // boundary position, at half-block resolution - each edge independently clamped to [0, limitHalf] (the
+    // REAL clamp ceiling, not the display-only maxHalf - see #clampHalfExtent), so the anchor's own cell
+    // can never be pushed out of the selection (neither edge can go negative) and a drag can never exceed
+    // the configured max size ("attention ne pas bouger l'autre coin sauf si pas dans la taille max
+    // autorisé" - live request: the OTHER two edges are never touched here at all, and the ones that are
+    // get the same ordinary clamp every other half-block edit in this screen already uses). The
     // two named handles (#tryBeginCornerDrag) and the double-click nearest-corner jump
     // (#beginNearestCornerDrag) both just set cornerDragCol/cornerDragRow differently before calling this.
     private void updateCornerDrag(double mouseX, double mouseY) {
@@ -650,16 +651,33 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
     // own corner point, sized half a normal cell ("red and yellow corner handle are squares centered on
     // corner with half the size" - live request). The two handles sit on diagonally opposite corners of the
     // selection rectangle, each independently draggable, each moving only the two edges that meet there.
+    // Pixel position clamped to the drawn grid's own bounds ([gridLeft, gridLeft+gridPx], same for Y) -
+    // previewNegCol/posCol/negRow/posRow are only ever clamped against #limitHalf (the REAL, possibly much
+    // larger ceiling), not #maxHalf (the small DISPLAY bound these pixel positions are computed from - see
+    // this class's own field-level doc comment on #DISPLAY_MAX_BLOCKS_CAP), so a selection that's grown
+    // past what's actually drawn used to compute a handle box arbitrarily far outside the grid's own
+    // rectangle with nothing pinning it back - live-reported as "on peut tirer l'handle rouge ou jaune hors
+    // du cadre impose". Pinning the HANDLE's own on-screen position to the grid's edge here doesn't touch
+    // the underlying half-block value at all (still tracked/committed exactly, unclamped display or not) -
+    // it only keeps the little square itself visually anchored to something you can still see and grab.
+    private int clampToGridPxX(int px) {
+        return Math.max(gridLeft, Math.min(gridLeft + gridCells * cellPx, px));
+    }
+
+    private int clampToGridPxY(int py) {
+        return Math.max(gridTop, Math.min(gridTop + gridCells * cellPx, py));
+    }
+
     private int[] topLeftHandleBox() {
-        int px = gridLeft + (-previewNegCol + maxHalf) * halfCellPx;
-        int py = gridTop + (-previewNegRow + maxHalf) * halfCellPx;
+        int px = clampToGridPxX(gridLeft + (-previewNegCol + maxHalf) * halfCellPx);
+        int py = clampToGridPxY(gridTop + (-previewNegRow + maxHalf) * halfCellPx);
         int r = halfCellPx / 2;
         return new int[]{px - r, py - r, px + r, py + r};
     }
 
     private int[] bottomRightHandleBox() {
-        int px = gridLeft + (previewPosCol + 2 + maxHalf) * halfCellPx;
-        int py = gridTop + (previewPosRow + 2 + maxHalf) * halfCellPx;
+        int px = clampToGridPxX(gridLeft + (previewPosCol + 2 + maxHalf) * halfCellPx);
+        int py = clampToGridPxY(gridTop + (previewPosRow + 2 + maxHalf) * halfCellPx);
         int r = halfCellPx / 2;
         return new int[]{px - r, py - r, px + r, py + r};
     }
@@ -763,9 +781,15 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
     //? if <26 {
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        // Corner handles are checked BEFORE insideGrid, not inside it - a handle whose real (possibly
+        // beyond-display, see #clampToGridPxX/Y) value pins it right at the grid's own edge has roughly
+        // half its own hit box (plus HANDLE_HIT_MARGIN on the outward side) sitting just past insideGrid's
+        // exclusive bound, and would otherwise become the ONE handle position that's visible but only
+        // half-clickable (caught in a cleanliness pass) - tryBeginCornerDrag already does its own precise
+        // hit-testing and doesn't actually need this gate at all.
+        if (button == 0 && tryBeginCornerDrag(mouseX, mouseY))
+            return true;
         if (button == 0 && insideGrid(mouseX, mouseY)) {
-            if (tryBeginCornerDrag(mouseX, mouseY))
-                return true;
             beginGesture(mouseX, mouseY, consumeDoubleClick(mouseX, mouseY));
             return true;
         }
@@ -800,9 +824,9 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
     //? if >=26 {
     /*@Override
     public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent event, boolean doubleClick) {
+        if (event.button() == 0 && tryBeginCornerDrag(event.x(), event.y()))
+            return true;
         if (event.button() == 0 && insideGrid(event.x(), event.y())) {
-            if (tryBeginCornerDrag(event.x(), event.y()))
-                return true;
             beginGesture(event.x(), event.y(), doubleClick);
             return true;
         }

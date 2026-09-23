@@ -43,6 +43,10 @@ public class CrazyPhonePhotoViewerScreen extends Screen implements PhoneScreen {
     // buttons directly, since it never has more than that and render() must skip Screen's own widget-render
     // loop anyway (see render()'s own doc comment on why super.render() can't be called here).
     private final List<Button> ownButtons = new ArrayList<>();
+    // Kept as its own field (not just buried in ownButtons) so render() can keep re-checking readiness every
+    // frame - canEdit() depends on the photo's async fetch having resolved, which usually hasn't happened yet
+    // the instant this screen's own init() first builds this button.
+    private Button editButton;
     // Rolled once per screen instance (not per frame) so the tilt stays fixed while this preview is open,
     // and re-rolls the next time a photo is opened - a fresh little "polaroid dropped on a table" touch.
     private final float tiltDegrees;
@@ -74,38 +78,60 @@ public class CrazyPhonePhotoViewerScreen extends Screen implements PhoneScreen {
         // and stale-positioned render (ownButtons) both stuck around alongside the freshly-added ones,
         // showing as the same button doubled up and overlapping at two different positions.
         ownButtons.clear();
-        if (origin == Origin.HELD_ITEM)
-            return;
         int buttonWidth = 90, buttonHeight = 20, spacing = 5;
-        int buttonCount = origin == Origin.CONVERSATION ? 3 : 2;
-        int totalWidth = buttonWidth * buttonCount + spacing * (buttonCount - 1);
-        int startX = (this.width - totalWidth) / 2;
         int y = this.height - 30;
-        // addRenderableWidget (not just addWidget) still matters here for its OTHER effect - registering the
-        // button for click/focus dispatch (Screen#children()) - only its own contribution to the private
-        // renderables list goes unused, since render() below iterates ownButtons instead.
-        Button backButton = Button.builder(Component.translatable("gui.crazyphone.photo_viewer.back"), b -> onClose())
-                .bounds(startX, y, buttonWidth, buttonHeight).build();
-        Button saveButton = Button.builder(Component.translatable("gui.crazyphone.photo_viewer.save"), b -> {
-            NetworkAccess.sendToServer(new CrazyPhoneGivePhotoItemPacket(photoId));
-            Minecraft.getInstance().player.playSound(SoundEvents.ITEM_PICKUP, 1f, 1f);
-        }).bounds(startX + buttonWidth + spacing, y, buttonWidth, buttonHeight).build();
-        addRenderableWidget(backButton);
-        addRenderableWidget(saveButton);
-        ownButtons.add(backButton);
-        ownButtons.add(saveButton);
-        // Only offered from a conversation - the gallery's own photos are already in this exact list by
-        // definition, and a held item has no server-side photoId round trip worth making here.
-        // PhotoSavedData#linkPhotoToOwner is idempotent, so no "already in my photos" check is needed first -
-        // clicking this when it's already there simply does nothing extra.
-        if (origin == Origin.CONVERSATION) {
-            Button addButton = Button.builder(Component.translatable("gui.crazyphone.photo_viewer.add_to_my_photos"), b -> {
-                NetworkAccess.sendToServer(new CrazyPhoneAddPhotoToMyPhotosPacket(photoId));
+        int nextX;
+        // HELD_ITEM still skips Back/Save/Add (Back has nowhere real to go, and Save would just duplicate an
+        // item the player already holds - see this method's own long-standing reasoning below), but NOT
+        // Edit anymore - live-reported as missing there. Editing has neither of those problems: Replace's
+        // own delete-then-reupload (see CrazyPhonePhotoEditScreen) is a plain server action that doesn't
+        // care where the viewer was opened from, and Cancel/closing the editor just returns to this same
+        // Viewer either way.
+        if (origin == Origin.HELD_ITEM) {
+            nextX = (this.width - buttonWidth) / 2;
+        } else {
+            int buttonCount = (origin == Origin.CONVERSATION ? 3 : 2) + 1;
+            int totalWidth = buttonWidth * buttonCount + spacing * (buttonCount - 1);
+            int startX = (this.width - totalWidth) / 2;
+            // addRenderableWidget (not just addWidget) still matters here for its OTHER effect - registering
+            // the button for click/focus dispatch (Screen#children()) - only its own contribution to the
+            // private renderables list goes unused, since render() below iterates ownButtons instead.
+            Button backButton = Button.builder(Component.translatable("gui.crazyphone.photo_viewer.back"), b -> onClose())
+                    .bounds(startX, y, buttonWidth, buttonHeight).build();
+            Button saveButton = Button.builder(Component.translatable("gui.crazyphone.photo_viewer.save"), b -> {
+                NetworkAccess.sendToServer(new CrazyPhoneGivePhotoItemPacket(photoId));
                 Minecraft.getInstance().player.playSound(SoundEvents.ITEM_PICKUP, 1f, 1f);
-            }).bounds(startX + (buttonWidth + spacing) * 2, y, buttonWidth, buttonHeight).build();
-            addRenderableWidget(addButton);
-            ownButtons.add(addButton);
+            }).bounds(startX + buttonWidth + spacing, y, buttonWidth, buttonHeight).build();
+            addRenderableWidget(backButton);
+            addRenderableWidget(saveButton);
+            ownButtons.add(backButton);
+            ownButtons.add(saveButton);
+            nextX = startX + (buttonWidth + spacing) * 2;
+            // Only offered from a conversation - the gallery's own photos are already in this exact list by
+            // definition, and a held item has no server-side photoId round trip worth making here.
+            // PhotoSavedData#linkPhotoToOwner is idempotent, so no "already in my photos" check is needed
+            // first - clicking this when it's already there simply does nothing extra.
+            if (origin == Origin.CONVERSATION) {
+                Button addButton = Button.builder(Component.translatable("gui.crazyphone.photo_viewer.add_to_my_photos"), b -> {
+                    NetworkAccess.sendToServer(new CrazyPhoneAddPhotoToMyPhotosPacket(photoId));
+                    Minecraft.getInstance().player.playSound(SoundEvents.ITEM_PICKUP, 1f, 1f);
+                }).bounds(nextX, y, buttonWidth, buttonHeight).build();
+                addRenderableWidget(addButton);
+                ownButtons.add(addButton);
+                nextX += buttonWidth + spacing;
+            }
         }
+        // Disabled rather than hidden until the exact bytes this screen is displaying are actually available
+        // on disk (the editor needs real pixels, not just a GPU texture handle) - see
+        // CrazyPhonePhotoEditScreen#canEdit's own doc comment; animated (GIF-derived) photos are editable
+        // too now, so this is no longer also gated on that.
+        Button editButton = Button.builder(Component.translatable("gui.crazyphone.photo_viewer.edit"), b ->
+                Minecraft.getInstance()./*$ mc_set_screen {*/setScreen/*$}*/(new fr.lordfinn.crazyphone.client.gui.CrazyPhonePhotoEditScreen(photoId, this)))
+                .bounds(nextX, y, buttonWidth, buttonHeight).build();
+        editButton.active = fr.lordfinn.crazyphone.client.gui.CrazyPhonePhotoEditScreen.canEdit(photoId);
+        addRenderableWidget(editButton);
+        ownButtons.add(editButton);
+        this.editButton = editButton;
     }
 
     // Deliberately NOT calling super.render()/super.extractRenderState() here - Screen's own default render body
@@ -127,6 +153,8 @@ public class CrazyPhonePhotoViewerScreen extends Screen implements PhoneScreen {
             drawFitted(guiGraphics, texture);
         else
             drawLoadingPlaceholder(guiGraphics);
+        if (editButton != null)
+            editButton.active = fr.lordfinn.crazyphone.client.gui.CrazyPhonePhotoEditScreen.canEdit(photoId);
         for (Button button : ownButtons)
             button.extractRenderState(guiGraphics, mouseX, mouseY, partialTick);
     }
@@ -139,6 +167,8 @@ public class CrazyPhonePhotoViewerScreen extends Screen implements PhoneScreen {
             drawFitted(guiGraphics, texture);
         else
             drawLoadingPlaceholder(guiGraphics);
+        if (editButton != null)
+            editButton.active = fr.lordfinn.crazyphone.client.gui.CrazyPhonePhotoEditScreen.canEdit(photoId);
         for (Button button : ownButtons)
             button.render(guiGraphics, mouseX, mouseY, partialTick);
     }
@@ -216,5 +246,12 @@ public class CrazyPhonePhotoViewerScreen extends Screen implements PhoneScreen {
     @Override
     public void onClose() {
         Minecraft.getInstance()./*$ mc_set_screen {*/setScreen/*$}*/(previousScreen);
+    }
+
+    /** The screen THIS viewer itself returns to on Back/Escape - CrazyPhonePhotoEditScreen reads this so its
+     * own Replace/Create Copy actions can close straight past the viewer (which would otherwise still be
+     * showing the pre-edit image for a moment) back to wherever the viewer was originally opened from. */
+    public Screen getPreviousScreen() {
+        return previousScreen;
     }
 }
