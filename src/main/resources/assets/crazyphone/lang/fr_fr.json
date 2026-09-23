@@ -210,9 +210,11 @@
   "gui.crazyphone.photo_edit_screen.processing": "Traitement en cours...",
   "message.crazyphone.photo_edit_not_ready": "Cette photo n'est pas encore complètement chargée",
   "message.crazyphone.photo_edit_replaced": "Photo remplacée",
-  "message.crazyphone.photo_edit_copy_created": "Copie enregistrée dans Mes Photos",
+  "message.crazyphone.photo_edit_copy_created": "Copie créée",
   "message.crazyphone.photo_edit_failed": "Impossible de traiter la photo modifiée",
   "message.crazyphone.photo_edit_no_paper": "Pas de papier - la photo modifiée a été copiée dans le téléphone à la place",
+  "message.crazyphone.photo_edit_copy_saved": "Copie enregistrée dans Mes Photos",
+  "message.crazyphone.photo_edit_no_paper_no_phone": "Pas de papier - la photo modifiée n'a pas pu être imprimée",
   "gui.crazyphone.crazy_phone_calling_screen.title": "Appel en cours...",
   "gui.crazyphone.crazy_phone_calling_screen.button_cancel": "Annuler",
 

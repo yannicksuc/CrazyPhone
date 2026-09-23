@@ -12,12 +12,16 @@ import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.item.crafting.SimpleCraftingRecipeSerializer;
 import fr.lordfinn.crazyphone.Crazyphone;
 import fr.lordfinn.crazyphone.recipe.CrazyPhoneDuplicatePhotoRecipe;
+import fr.lordfinn.crazyphone.recipe.CrazyPhoneAnonymizePhotoRecipe;
 
 public class ModRecipes {
     public static final DeferredRegister<RecipeSerializer<?>> REGISTRY = DeferredRegister.create(Registries.RECIPE_SERIALIZER, Crazyphone.MODID);
 
     public static final DeferredHolder<RecipeSerializer<?>, SimpleCraftingRecipeSerializer<CrazyPhoneDuplicatePhotoRecipe>> DUPLICATE_PHOTO =
             REGISTRY.register("crafting_special_duplicate_photo", () -> new SimpleCraftingRecipeSerializer<>(CrazyPhoneDuplicatePhotoRecipe::new));
+
+    public static final DeferredHolder<RecipeSerializer<?>, SimpleCraftingRecipeSerializer<CrazyPhoneAnonymizePhotoRecipe>> ANONYMIZE_PHOTO =
+            REGISTRY.register("crafting_special_anonymize_photo", () -> new SimpleCraftingRecipeSerializer<>(CrazyPhoneAnonymizePhotoRecipe::new));
 }
 //?}
 // Real, original Forge 1.20.1 - DeferredRegister.register(...) here returns a RegistryObject<T> instead of
@@ -30,12 +34,16 @@ import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.item.crafting.SimpleCraftingRecipeSerializer;
 import fr.lordfinn.crazyphone.Crazyphone;
 import fr.lordfinn.crazyphone.recipe.CrazyPhoneDuplicatePhotoRecipe;
+import fr.lordfinn.crazyphone.recipe.CrazyPhoneAnonymizePhotoRecipe;
 
 public class ModRecipes {
     public static final DeferredRegister<RecipeSerializer<?>> REGISTRY = DeferredRegister.create(Registries.RECIPE_SERIALIZER, Crazyphone.MODID);
 
     public static final RegistryObject<SimpleCraftingRecipeSerializer<CrazyPhoneDuplicatePhotoRecipe>> DUPLICATE_PHOTO =
             REGISTRY.register("crafting_special_duplicate_photo", () -> new SimpleCraftingRecipeSerializer<>(CrazyPhoneDuplicatePhotoRecipe::new));
+
+    public static final RegistryObject<SimpleCraftingRecipeSerializer<CrazyPhoneAnonymizePhotoRecipe>> ANONYMIZE_PHOTO =
+            REGISTRY.register("crafting_special_anonymize_photo", () -> new SimpleCraftingRecipeSerializer<>(CrazyPhoneAnonymizePhotoRecipe::new));
 }
 //?}
 //? if fabric && >=1.20.5 <1.21.10 {
@@ -45,15 +53,20 @@ import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.item.crafting.SimpleCraftingRecipeSerializer;
 import fr.lordfinn.crazyphone.Crazyphone;
 import fr.lordfinn.crazyphone.recipe.CrazyPhoneDuplicatePhotoRecipe;
+import fr.lordfinn.crazyphone.recipe.CrazyPhoneAnonymizePhotoRecipe;
 import fr.lordfinn.crazyphone.utils.RegistryEntry;
 
 public class ModRecipes {
     public static RegistryEntry<SimpleCraftingRecipeSerializer<CrazyPhoneDuplicatePhotoRecipe>> DUPLICATE_PHOTO;
+    public static RegistryEntry<SimpleCraftingRecipeSerializer<CrazyPhoneAnonymizePhotoRecipe>> ANONYMIZE_PHOTO;
 
     public static void register() {
         DUPLICATE_PHOTO = new RegistryEntry<>(Registry.register(BuiltInRegistries.RECIPE_SERIALIZER,
                 Crazyphone.resource("crafting_special_duplicate_photo"),
                 new SimpleCraftingRecipeSerializer<>(CrazyPhoneDuplicatePhotoRecipe::new)));
+        ANONYMIZE_PHOTO = new RegistryEntry<>(Registry.register(BuiltInRegistries.RECIPE_SERIALIZER,
+                Crazyphone.resource("crafting_special_anonymize_photo"),
+                new SimpleCraftingRecipeSerializer<>(CrazyPhoneAnonymizePhotoRecipe::new)));
     }
 }
 *///?}

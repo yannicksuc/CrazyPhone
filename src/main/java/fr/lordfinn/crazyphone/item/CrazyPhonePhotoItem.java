@@ -107,7 +107,7 @@ public class CrazyPhonePhotoItem extends Item {
         net.minecraft.world.item.component.DyedItemColor dyed = stack.get(net.minecraft.core.component.DataComponents.DYED_COLOR);
         int borderRgb = dyed != null ? dyed.rgb() : 0xFFFFFF;
         fr.lordfinn.crazyphone.entity.CrazyPhonePhotoFrameEntity entity = fr.lordfinn.crazyphone.entity.CrazyPhonePhotoFrameEntity.tryPlace(
-                world, context.getClickedPos(), context.getClickedFace(), context.getHorizontalDirection(), photoData, new PhotoFrameData(widthUnits, heightUnits), borderRgb);
+                world, context.getClickedPos(), context.getClickedFace(), context.getClickLocation(), context.getHorizontalDirection(), photoData, new PhotoFrameData(widthUnits, heightUnits), borderRgb);
         if (entity == null)
             return net.minecraft.world.InteractionResult.FAIL;
         world.addFreshEntity(entity);
@@ -165,11 +165,9 @@ public class CrazyPhonePhotoItem extends Item {
 
     @Override
     public void initializeClient(java.util.function.Consumer<IClientItemExtensions> consumer) {
-        org.slf4j.LoggerFactory.getLogger("crazyphone-capture-debug").info("CrazyPhonePhotoItem.initializeClient() called");
         consumer.accept(new IClientItemExtensions() {
             @Override
             public net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer getCustomRenderer() {
-                org.slf4j.LoggerFactory.getLogger("crazyphone-capture-debug").info("CrazyPhonePhotoItem.getCustomRenderer() called, renderer==null? {}", renderer == null);
                 if (renderer == null) {
                     net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
                     renderer = new net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer(mc.getBlockEntityRenderDispatcher(), mc.getEntityModels()) {

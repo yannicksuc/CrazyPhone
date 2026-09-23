@@ -210,9 +210,11 @@
   "gui.crazyphone.photo_edit_screen.processing": "Processing...",
   "message.crazyphone.photo_edit_not_ready": "This photo isn't fully loaded yet",
   "message.crazyphone.photo_edit_replaced": "Photo replaced",
-  "message.crazyphone.photo_edit_copy_created": "Copy saved to My Photos",
+  "message.crazyphone.photo_edit_copy_created": "Copy created",
   "message.crazyphone.photo_edit_failed": "Could not process the edited photo",
   "message.crazyphone.photo_edit_no_paper": "No paper - the edited photo was copied to your phone instead",
+  "message.crazyphone.photo_edit_copy_saved": "Copy saved to My Photos",
+  "message.crazyphone.photo_edit_no_paper_no_phone": "No paper - the edited photo could not be printed",
   "gui.crazyphone.crazy_phone_calling_screen.title": "Calling...",
   "gui.crazyphone.crazy_phone_calling_screen.button_cancel": "Cancel",
 

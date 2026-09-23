@@ -98,6 +98,14 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
     // pushes the same value in here right after (see #tryPlace and both readAdditionalSaveData overloads).
     private static final EntityDataAccessor<Integer> DATA_BORDER_RGB =
             SynchedEntityData.defineId(CrazyPhonePhotoFrameEntity.class, EntityDataSerializers.INT);
+    // The exact plane the player clicked on, along attachFace's axis from attachPos's origin corner, in
+    // 1/FACE_OFFSET_RESOLUTION-block units - so a stair's lower step, a slab-shaped part of a larger shape,
+    // etc. each get their own real surface instead of the block's outermost bound. UNSET_FACE_OFFSET for
+    // frames placed before this existed, which fall back to the shape bounds (see computeFaceOffset).
+    private static final EntityDataAccessor<Integer> DATA_FACE_OFFSET =
+            SynchedEntityData.defineId(CrazyPhonePhotoFrameEntity.class, EntityDataSerializers.INT);
+    private static final int FACE_OFFSET_RESOLUTION = 4096;
+    private static final int UNSET_FACE_OFFSET = -1;
 
     // Not synced - every client already has this block loaded locally (see class doc comment). Set once in
     // the placement constructor / re-derived from DATA_FACE + this entity's own blockPosition() elsewhere
@@ -224,13 +232,16 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
      * own role but with the fuller-block requirement deliberately dropped. Returns null if the face can't
      * hold a frame (fully empty shape, e.g. air, or already occupied - see {@link #spaceFree}). */
     //? if legacyforge {
-    public static CrazyPhonePhotoFrameEntity tryPlace(Level level, BlockPos clickedPos, Direction face,
+    public static CrazyPhonePhotoFrameEntity tryPlace(Level level, BlockPos clickedPos, Direction face, @javax.annotation.Nullable net.minecraft.world.phys.Vec3 clickLocation,
                                                         Direction placerFacing, PhotoItemData photoData, PhotoFrameData frameData, int borderRgb) {
         return null;
     }
     //?}
     //? if fabric || neoforge {
-    public static CrazyPhonePhotoFrameEntity tryPlace(Level level, BlockPos clickedPos, Direction face,
+    /** {@code clickLocation} is the exact point the player's crosshair hit on the block's own geometry - its
+     * coordinate along {@code face}'s axis becomes the frame's surface plane. Null falls back to the block
+     * shape's outermost bound in that direction. */
+    public static CrazyPhonePhotoFrameEntity tryPlace(Level level, BlockPos clickedPos, Direction face, @javax.annotation.Nullable net.minecraft.world.phys.Vec3 clickLocation,
                                                         Direction placerFacing, PhotoItemData photoData, PhotoFrameData frameData, int borderRgb) {
         BlockState state = level.getBlockState(clickedPos);
         // Any non-empty collision shape on the clicked block counts as attachable - deliberately broader
@@ -242,6 +253,15 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
         CrazyPhonePhotoFrameEntity entity = new CrazyPhonePhotoFrameEntity(fr.lordfinn.crazyphone.init.ModEntities.PHOTO_FRAME.get(), level);
         entity.attachPos = clickedPos.immutable();
         entity.entityData.set(DATA_FACE, face.get3DDataValue());
+        if (clickLocation != null) {
+            double along = switch (face.getAxis()) {
+                case X -> clickLocation.x - clickedPos.getX();
+                case Y -> clickLocation.y - clickedPos.getY();
+                case Z -> clickLocation.z - clickedPos.getZ();
+            };
+            along = Math.max(0.0, Math.min(along, 1.0));
+            entity.entityData.set(DATA_FACE_OFFSET, (int) Math.round(along * FACE_OFFSET_RESOLUTION));
+        }
         // Floor/ceiling faces have no natural "up" the way a wall gets one from gravity - "Image placements
         // when on floor and ceiling should be directional" (live request). Seed the initial rotation from
         // the direction the player was actually facing when they placed it, so the image starts oriented
@@ -404,6 +424,9 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
      * item-frame-equivalent) for any block whose shape can't be read in that direction (e.g. air itself,
      * though tryPlace already rejects that case before an entity ever exists). */
     public double computeFaceOffset(Level level) {
+        int stored = this.entityData != null ? this.entityData.get(DATA_FACE_OFFSET) : UNSET_FACE_OFFSET;
+        if (stored != UNSET_FACE_OFFSET)
+            return stored / (double) FACE_OFFSET_RESOLUTION;
         // attachPos can be null very early in construction - see computeBoundingBox's own comment.
         BlockPos pos = attachPos != null ? attachPos : BlockPos.containing(this.position());
         BlockState state = level.getBlockState(pos);
@@ -473,6 +496,7 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
         builder.define(DATA_ROTATION, 0);
         builder.define(DATA_FULLBRIGHT, false);
         builder.define(DATA_BORDER_RGB, 0xFFFFFF);
+        builder.define(DATA_FACE_OFFSET, UNSET_FACE_OFFSET);
     }
     //?}
     // Real 1.20.1 vanilla's Entity#defineSynchedData takes no Builder at all (added later) - the classic
@@ -490,6 +514,7 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
         this.entityData.define(DATA_ROTATION, 0);
         this.entityData.define(DATA_FULLBRIGHT, false);
         this.entityData.define(DATA_BORDER_RGB, 0xFFFFFF);
+        this.entityData.define(DATA_FACE_OFFSET, UNSET_FACE_OFFSET);
     }
     //?}
 
@@ -507,7 +532,7 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
     public void onSyncedDataUpdated(EntityDataAccessor<?> accessor) {
         super.onSyncedDataUpdated(accessor);
         if (accessor.equals(DATA_NEG_U) || accessor.equals(DATA_POS_U) || accessor.equals(DATA_NEG_V)
-                || accessor.equals(DATA_POS_V) || accessor.equals(DATA_FACE))
+                || accessor.equals(DATA_POS_V) || accessor.equals(DATA_FACE) || accessor.equals(DATA_FACE_OFFSET))
             this.refreshDimensions();
     }
 
@@ -803,6 +828,7 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
         this.entityData.set(DATA_POS_V, fr.lordfinn.crazyphone.utils.NbtCompat.getInt(tag, "PosV", DEFAULT_SIZE_UNITS / 2));
         this.entityData.set(DATA_ROTATION, fr.lordfinn.crazyphone.utils.NbtCompat.getInt(tag, "Rotation", 0));
         this.entityData.set(DATA_FULLBRIGHT, fr.lordfinn.crazyphone.utils.NbtCompat.getBoolean(tag, "Fullbright", false));
+        this.entityData.set(DATA_FACE_OFFSET, fr.lordfinn.crazyphone.utils.NbtCompat.getInt(tag, "FaceOffset", UNSET_FACE_OFFSET));
         this.refreshDimensions();
     }
 
@@ -822,6 +848,7 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
         tag.putInt("PosV", this.entityData.get(DATA_POS_V));
         tag.putInt("Rotation", this.entityData.get(DATA_ROTATION));
         tag.putBoolean("Fullbright", this.entityData.get(DATA_FULLBRIGHT));
+        tag.putInt("FaceOffset", this.entityData.get(DATA_FACE_OFFSET));
     }
     //?}
     //? if >=26 {
@@ -840,6 +867,7 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
         this.entityData.set(DATA_POS_V, input.getIntOr("PosV", DEFAULT_SIZE_UNITS / 2));
         this.entityData.set(DATA_ROTATION, input.getIntOr("Rotation", 0));
         this.entityData.set(DATA_FULLBRIGHT, input.getBooleanOr("Fullbright", false));
+        this.entityData.set(DATA_FACE_OFFSET, input.getIntOr("FaceOffset", UNSET_FACE_OFFSET));
         this.refreshDimensions();
     }
 
@@ -859,6 +887,7 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
         output.putInt("PosV", this.entityData.get(DATA_POS_V));
         output.putInt("Rotation", this.entityData.get(DATA_ROTATION));
         output.putBoolean("Fullbright", this.entityData.get(DATA_FULLBRIGHT));
+        output.putInt("FaceOffset", this.entityData.get(DATA_FACE_OFFSET));
     }
     *///?}
 

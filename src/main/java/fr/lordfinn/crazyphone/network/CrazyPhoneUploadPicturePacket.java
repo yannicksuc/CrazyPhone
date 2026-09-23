@@ -70,7 +70,8 @@ import java.util.UUID;
  * whatever id it was already stored under, exactly as before this field existed.
  * <p>
  * {@code preferPhysicalItem} is only ever true for a STANDALONE upload from the photo editor's own Replace/
- * Create Copy (live request) - see {@link #handle}'s own call into {@code givePhysicalItemInsteadOfGallery}
+ * Create Copy when the editor was opened from a held Photo item (edits made from the phone stay in the
+ * phone's gallery) - see {@link #handle}'s own call into {@code givePhysicalItemInsteadOfGallery}
  * for what it actually does (creative or a real Paper consumed turns this into a physical Photo item
  * instead of a phone gallery entry; out of paper in survival falls back to the gallery with an explanatory
  * chat message). A live capture or a PC import always passes false - those are meant to land in the phone,
@@ -149,15 +150,22 @@ public record CrazyPhoneUploadPicturePacket(String conversationId, UUID photoId,
             return;
         }
         Level world = player.level();
-        String senderNumber = GetCrazyPhoneNumberFromMainHandProcedure.execute(player, null);
-        if (senderNumber.isEmpty())
-            return;
-
         // Empty conversationId means a standalone shot (taken via the home screen's Photo icon or the
         // punch-to-shoot shortcut, neither of which has a target conversation) - saved to the phone's own
         // photo list only, never posted as a message anywhere. A real conversationId still needs the usual
         // live-membership check.
         boolean standalone = conversationId.isEmpty();
+        String senderNumber = GetCrazyPhoneNumberFromMainHandProcedure.execute(player, null);
+        // The editor can be opened from a held Photo item, so the main hand holds that item, not a phone.
+        // A physical-item result needs no phone at all: attribute it to the player's own phone if they have
+        // one, otherwise leave it unattributed.
+        if (senderNumber.isEmpty() && standalone && preferPhysicalItem)
+            senderNumber = CrazyPhoneHelper.getOwnedPhoneNumber(world, player.getUUID());
+        if (senderNumber.isEmpty() && !(standalone && preferPhysicalItem)) {
+            LOGGER.warn("Picture upload rejected for {}: no phone number resolved from main hand",
+                    fr.lordfinn.crazyphone.utils.GameProfileCompat.name(player.getGameProfile()));
+            return;
+        }
         if (!standalone && !CrazyPhoneHelper.getGroupMembers(world, conversationId).contains(senderNumber))
             return;
 
@@ -183,7 +191,13 @@ public record CrazyPhoneUploadPicturePacket(String conversationId, UUID photoId,
         if (!creative) {
             int removed = player.getInventory().clearOrCountMatchingItems(stack -> stack.is(Items.PAPER), 1, player.getInventory());
             if (removed < 1) {
-                CrazyPhoneHelper.sendClientMessage(player, Component.translatable("message.crazyphone.photo_edit_no_paper"), true);
+                if (owner.isEmpty()) {
+                    // No phone to fall back to: the gallery entry just stored would belong to nobody.
+                    PhotoSavedData.get(player.level()).deletePhotos(owner, java.util.Set.of(photoId));
+                    CrazyPhoneHelper.sendClientMessage(player, Component.translatable("message.crazyphone.photo_edit_no_paper_no_phone"), true);
+                } else {
+                    CrazyPhoneHelper.sendClientMessage(player, Component.translatable("message.crazyphone.photo_edit_no_paper"), true);
+                }
                 return;
             }
         }

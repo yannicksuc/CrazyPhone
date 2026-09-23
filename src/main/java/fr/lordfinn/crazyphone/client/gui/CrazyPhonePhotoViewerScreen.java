@@ -254,4 +254,8 @@ public class CrazyPhonePhotoViewerScreen extends Screen implements PhoneScreen {
     public Screen getPreviousScreen() {
         return previousScreen;
     }
+
+    public Origin getOrigin() {
+        return origin;
+    }
 }

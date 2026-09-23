@@ -75,18 +75,25 @@ public class CrazyPhoneItemInInventoryTickProcedure {
 				// ItemTooltipCallback is inherently client-only), so Minecraft.getInstance().level is safe -
 				// it's the synced client copy of PhoneRegistrySavedData, always up to date (see that class's
 				// own doc comment on why it's always broadcast in full).
-				Level level = net.minecraft.client.Minecraft.getInstance().level;
-				Contact contact = level != null ? CrazyPhoneHelper.getContact(level, data.owner()) : null;
-				String authorLabel = contact != null && contact.getName() != null && !contact.getName().isEmpty()
-						? contact.getName() + " (" + data.owner() + ")"
-						: data.owner();
-				tooltip.add(Component.translatable("item.crazyphone.crazy_phone_photo.lore_author",
-								Component.literal(authorLabel).withStyle(net.minecraft.ChatFormatting.YELLOW))
-						.withStyle(net.minecraft.ChatFormatting.GRAY));
-				tooltip.add(Component.translatable("item.crazyphone.crazy_phone_photo.lore_date",
-								Component.literal(PHOTO_DATE_FORMATTER.format(Instant.ofEpochSecond(data.createdMinutes() * 60L)))
-										.withStyle(net.minecraft.ChatFormatting.AQUA))
-						.withStyle(net.minecraft.ChatFormatting.GRAY));
+				// Blank owner means this specific item went through the "anonymize" crafting recipe (Photo +
+				// Sponge, sponge not consumed - see CrazyPhoneAnonymizePhotoRecipe) - skip both lines
+				// entirely rather than showing "Taken by: " with nothing after it. This is purely the
+				// ITEM's own displayed attribution; PhotoSavedData's server-side owner/authorization record
+				// for this same photoId is completely untouched by the recipe or this check.
+				if (!data.owner().isEmpty()) {
+					Level level = net.minecraft.client.Minecraft.getInstance().level;
+					Contact contact = level != null ? CrazyPhoneHelper.getContact(level, data.owner()) : null;
+					String authorLabel = contact != null && contact.getName() != null && !contact.getName().isEmpty()
+							? contact.getName() + " (" + data.owner() + ")"
+							: data.owner();
+					tooltip.add(Component.translatable("item.crazyphone.crazy_phone_photo.lore_author",
+									Component.literal(authorLabel).withStyle(net.minecraft.ChatFormatting.YELLOW))
+							.withStyle(net.minecraft.ChatFormatting.GRAY));
+					tooltip.add(Component.translatable("item.crazyphone.crazy_phone_photo.lore_date",
+									Component.literal(PHOTO_DATE_FORMATTER.format(Instant.ofEpochSecond(data.createdMinutes() * 60L)))
+											.withStyle(net.minecraft.ChatFormatting.AQUA))
+							.withStyle(net.minecraft.ChatFormatting.GRAY));
+				}
 				// Only the vanilla item frame (FIXED display context) actually renders the pixel-art THUMBNAIL
 				// by default (see CrazyPhonePhotoItemRenderer#renderFramedCard and ClientConfig#itemPreviewPixelated) -
 				// the custom block-face frame (CrazyPhonePhotoFrameEntity, placed via right-click on a block)

@@ -83,6 +83,9 @@ public class CrazyPhonePhotoFrameRenderer extends EntityRenderer<CrazyPhonePhoto
     // transparent photo skips the box entirely and just floats this far off the face instead (out of the
     // full 1-pixel/DEPTH budget, only a quarter pixel of it is used as a gap).
     private static final float TRANSPARENT_FLOAT_GAP = DEPTH * 0.25f;
+    // The backing would otherwise be exactly coplanar with the face of any block the frame overhangs and
+    // z-fight with it. Lifted slightly toward the photo so that block's face always wins cleanly instead.
+    private static final float BACKING_LIFT = 1f / 512f;
 
     public CrazyPhonePhotoFrameRenderer(EntityRendererProvider.Context context) {
         super(context);
@@ -134,7 +137,7 @@ public class CrazyPhonePhotoFrameRenderer extends EntityRenderer<CrazyPhonePhoto
             /*$ res_loc {*/ResourceLocation/*$}*/ frameTexture = frameTexture(borderRgb);
             int r = (borderRgb >> 16) & 0xFF, g = (borderRgb >> 8) & 0xFF, b = borderRgb & 0xFF;
             drawBoxSides(poseStack, buffer, packedLight, drawW, drawH, depthSign, mirrored, frameTexture, r, g, b);
-            drawBacking(poseStack, buffer, packedLight, drawW, drawH, mirrored, frameTexture, r, g, b);
+            drawBacking(poseStack, buffer, packedLight, drawW, drawH, depthSign, mirrored, frameTexture, r, g, b);
         }
         if (texture != null) {
             float z = depthSign * (boxed ? DEPTH : (transparent ? TRANSPARENT_FLOAT_GAP : DEPTH));
@@ -264,18 +267,29 @@ public class CrazyPhonePhotoFrameRenderer extends EntityRenderer<CrazyPhonePhoto
         sideQuad(consumer, pose, x0, y1, x0, y0, depthSign, mirrored, light, r, g, b); // "west"
     }
 
+    // Split along its length like a nine-slice: fixed-size end caps, only the middle stretches.
     private void sideQuad(VertexConsumer consumer, PoseStack.Pose pose, float xa, float ya, float xb, float yb, float depthSign, boolean mirrored, int light, int r, int g, int b) {
+        float length = (float) Math.hypot(xb - xa, yb - ya);
+        float[] t = nineSliceStops(length);
+        for (int i = 0; i < 3; i++) {
+            float fa = t[i] / length, fb = t[i + 1] / length;
+            sideSegment(consumer, pose, xa + (xb - xa) * fa, ya + (yb - ya) * fa, xa + (xb - xa) * fb, ya + (yb - ya) * fb,
+                    nineSliceUv(t, i, length), nineSliceUv(t, i + 1, length), depthSign, mirrored, light, r, g, b);
+        }
+    }
+
+    private void sideSegment(VertexConsumer consumer, PoseStack.Pose pose, float xa, float ya, float xb, float yb, float ua, float ub, float depthSign, boolean mirrored, int light, int r, int g, int b) {
         float outZ = depthSign * DEPTH;
         if (!mirrored) {
-            vertex(consumer, pose, xa, ya, outZ, 0f, 0f, light, r, g, b);
-            vertex(consumer, pose, xa, ya, 0f, 0f, 1f, light, r, g, b);
-            vertex(consumer, pose, xb, yb, 0f, 1f, 1f, light, r, g, b);
-            vertex(consumer, pose, xb, yb, outZ, 1f, 0f, light, r, g, b);
+            vertex(consumer, pose, xa, ya, outZ, ua, 0f, light, r, g, b);
+            vertex(consumer, pose, xa, ya, 0f, ua, 1f, light, r, g, b);
+            vertex(consumer, pose, xb, yb, 0f, ub, 1f, light, r, g, b);
+            vertex(consumer, pose, xb, yb, outZ, ub, 0f, light, r, g, b);
         } else {
-            vertex(consumer, pose, xa, ya, outZ, 0f, 0f, light, r, g, b);
-            vertex(consumer, pose, xb, yb, outZ, 1f, 0f, light, r, g, b);
-            vertex(consumer, pose, xb, yb, 0f, 1f, 1f, light, r, g, b);
-            vertex(consumer, pose, xa, ya, 0f, 0f, 1f, light, r, g, b);
+            vertex(consumer, pose, xa, ya, outZ, ua, 0f, light, r, g, b);
+            vertex(consumer, pose, xb, yb, outZ, ub, 0f, light, r, g, b);
+            vertex(consumer, pose, xb, yb, 0f, ub, 1f, light, r, g, b);
+            vertex(consumer, pose, xa, ya, 0f, ua, 1f, light, r, g, b);
         }
     }
 
@@ -310,21 +324,54 @@ public class CrazyPhonePhotoFrameRenderer extends EntityRenderer<CrazyPhonePhoto
     // toujours rendu dans le mauvais sens" - live request: this had copied the SAME winding as the outward-
     // facing photo instead of the opposite one, so it faced the wrong way on every face, not just
     // north/south).
-    private void drawBacking(PoseStack poseStack, MultiBufferSource buffer, int light, float w, float h, boolean mirrored, /*$ res_loc {*/ResourceLocation/*$}*/ texture, int r, int g, int b) {
+    // Nine-sliced so the texture's 1px border ring stays 1 texel wide at any frame size instead of
+    // stretching with it.
+    private void drawBacking(PoseStack poseStack, MultiBufferSource buffer, int light, float w, float h, float depthSign, boolean mirrored, /*$ res_loc {*/ResourceLocation/*$}*/ texture, int r, int g, int b) {
         VertexConsumer consumer = buffer.getBuffer(RenderType.entityCutout(texture));
         var pose = poseStack.last();
-        float x0 = -w / 2f, x1 = w / 2f, y0 = -h / 2f, y1 = h / 2f;
-        if (mirrored) {
-            vertex(consumer, pose, x0, y1, 0f, 0f, 0f, light, r, g, b);
-            vertex(consumer, pose, x0, y0, 0f, 0f, 1f, light, r, g, b);
-            vertex(consumer, pose, x1, y0, 0f, 1f, 1f, light, r, g, b);
-            vertex(consumer, pose, x1, y1, 0f, 1f, 0f, light, r, g, b);
-        } else {
-            vertex(consumer, pose, x0, y1, 0f, 0f, 0f, light, r, g, b);
-            vertex(consumer, pose, x1, y1, 0f, 1f, 0f, light, r, g, b);
-            vertex(consumer, pose, x1, y0, 0f, 1f, 1f, light, r, g, b);
-            vertex(consumer, pose, x0, y0, 0f, 0f, 1f, light, r, g, b);
+        float z = depthSign * BACKING_LIFT;
+        float[] tx = nineSliceStops(w), ty = nineSliceStops(h);
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                backingTile(consumer, pose, tx[i] - w / 2f, tx[i + 1] - w / 2f, ty[j] - h / 2f, ty[j + 1] - h / 2f, z,
+                        nineSliceUv(tx, i, w), nineSliceUv(tx, i + 1, w),
+                        1f - nineSliceUv(ty, j + 1, h), 1f - nineSliceUv(ty, j, h), mirrored, light, r, g, b);
+            }
         }
+    }
+
+    // vTop is the texture v at yb (the tile's upper edge), vBottom at ya - v runs top to bottom.
+    private void backingTile(VertexConsumer consumer, PoseStack.Pose pose, float xa, float xb, float ya, float yb, float z, float ua, float ub, float vTop, float vBottom, boolean mirrored, int light, int r, int g, int b) {
+        if (mirrored) {
+            vertex(consumer, pose, xa, yb, z, ua, vTop, light, r, g, b);
+            vertex(consumer, pose, xa, ya, z, ua, vBottom, light, r, g, b);
+            vertex(consumer, pose, xb, ya, z, ub, vBottom, light, r, g, b);
+            vertex(consumer, pose, xb, yb, z, ub, vTop, light, r, g, b);
+        } else {
+            vertex(consumer, pose, xa, yb, z, ua, vTop, light, r, g, b);
+            vertex(consumer, pose, xb, yb, z, ub, vTop, light, r, g, b);
+            vertex(consumer, pose, xb, ya, z, ub, vBottom, light, r, g, b);
+            vertex(consumer, pose, xa, ya, z, ua, vBottom, light, r, g, b);
+        }
+    }
+
+    // Positions (0..size) of the four nine-slice cuts along one axis. The backing textures are 16px wide and
+    // map one texture width to one block, so their 1px border is 1/16 block - shrunk only if the whole axis
+    // is shorter than two borders.
+    private static float[] nineSliceStops(float size) {
+        float border = Math.min(1f / 16f, size / 2f);
+        return new float[]{0f, border, size - border, size};
+    }
+
+    // Texture coordinate for cut `index`: the end caps keep their true 1:1 texel mapping, the middle spans
+    // whatever is left of the texture.
+    private static float nineSliceUv(float[] stops, int index, float size) {
+        return switch (index) {
+            case 0 -> 0f;
+            case 1 -> stops[1];
+            case 2 -> 1f - (size - stops[2]);
+            default -> 1f;
+        };
     }
 
     // Corner order: 0=top-left, 1=bottom-left, 2=bottom-right, 3=top-right (screen-space, front face).
@@ -397,6 +444,9 @@ public class CrazyPhonePhotoFrameRenderer extends EntityRenderer<CrazyPhonePhoto
     // Flush against the photo's own edge, zero gap - see the <26 branch's own comment on this same constant.
     private static final float BORDER_MARGIN = 0f;
     private static final float TRANSPARENT_FLOAT_GAP = DEPTH * 0.25f;
+    // The backing would otherwise be exactly coplanar with the face of any block the frame overhangs and
+    // z-fight with it. Lifted slightly toward the photo so that block's face always wins cleanly instead.
+    private static final float BACKING_LIFT = 1f / 512f;
 
     public CrazyPhonePhotoFrameRenderer(EntityRendererProvider.Context context) {
         super(context);
@@ -474,7 +524,7 @@ public class CrazyPhonePhotoFrameRenderer extends EntityRenderer<CrazyPhonePhoto
             collector.submitCustomGeometry(poseStack, /^$ render_type_import {^/RenderType/^$}^/.entityCutout(frameTexture),
                     (pose, consumer) -> drawBoxSides(consumer, pose, finalW, finalH, depthSign, mirrored, state.lightCoords, r, g, b));
             collector.submitCustomGeometry(poseStack, /^$ render_type_import {^/RenderType/^$}^/.entityCutout(frameTexture),
-                    (pose, consumer) -> drawBacking(consumer, pose, finalW, finalH, mirrored, state.lightCoords, r, g, b));
+                    (pose, consumer) -> drawBacking(consumer, pose, finalW, finalH, depthSign, mirrored, state.lightCoords, r, g, b));
         }
         if (texture != null) {
             float z = depthSign * (boxed ? DEPTH : (transparent ? TRANSPARENT_FLOAT_GAP : DEPTH));
@@ -556,18 +606,29 @@ public class CrazyPhonePhotoFrameRenderer extends EntityRenderer<CrazyPhonePhoto
         sideQuad(consumer, pose, x0, y1, x0, y0, depthSign, mirrored, light, r, g, b);
     }
 
+    // Split along its length like a nine-slice - see the <26 branch's own sideQuad.
     private static void sideQuad(VertexConsumer consumer, PoseStack.Pose pose, float xa, float ya, float xb, float yb, float depthSign, boolean mirrored, int light, int r, int g, int b) {
+        float length = (float) Math.hypot(xb - xa, yb - ya);
+        float[] t = nineSliceStops(length);
+        for (int i = 0; i < 3; i++) {
+            float fa = t[i] / length, fb = t[i + 1] / length;
+            sideSegment(consumer, pose, xa + (xb - xa) * fa, ya + (yb - ya) * fa, xa + (xb - xa) * fb, ya + (yb - ya) * fb,
+                    nineSliceUv(t, i, length), nineSliceUv(t, i + 1, length), depthSign, mirrored, light, r, g, b);
+        }
+    }
+
+    private static void sideSegment(VertexConsumer consumer, PoseStack.Pose pose, float xa, float ya, float xb, float yb, float ua, float ub, float depthSign, boolean mirrored, int light, int r, int g, int b) {
         float outZ = depthSign * DEPTH;
         if (!mirrored) {
-            vertex(consumer, pose, xa, ya, outZ, 0f, 0f, light, r, g, b);
-            vertex(consumer, pose, xa, ya, 0f, 0f, 1f, light, r, g, b);
-            vertex(consumer, pose, xb, yb, 0f, 1f, 1f, light, r, g, b);
-            vertex(consumer, pose, xb, yb, outZ, 1f, 0f, light, r, g, b);
+            vertex(consumer, pose, xa, ya, outZ, ua, 0f, light, r, g, b);
+            vertex(consumer, pose, xa, ya, 0f, ua, 1f, light, r, g, b);
+            vertex(consumer, pose, xb, yb, 0f, ub, 1f, light, r, g, b);
+            vertex(consumer, pose, xb, yb, outZ, ub, 0f, light, r, g, b);
         } else {
-            vertex(consumer, pose, xa, ya, outZ, 0f, 0f, light, r, g, b);
-            vertex(consumer, pose, xb, yb, outZ, 1f, 0f, light, r, g, b);
-            vertex(consumer, pose, xb, yb, 0f, 1f, 1f, light, r, g, b);
-            vertex(consumer, pose, xa, ya, 0f, 0f, 1f, light, r, g, b);
+            vertex(consumer, pose, xa, ya, outZ, ua, 0f, light, r, g, b);
+            vertex(consumer, pose, xb, yb, outZ, ub, 0f, light, r, g, b);
+            vertex(consumer, pose, xb, yb, 0f, ub, 1f, light, r, g, b);
+            vertex(consumer, pose, xa, ya, 0f, ua, 1f, light, r, g, b);
         }
     }
 
@@ -591,19 +652,45 @@ public class CrazyPhonePhotoFrameRenderer extends EntityRenderer<CrazyPhonePhoto
 
     // The plain brown "backing" at the block-flush side (z=0) of a boxed frame - see the <26 branch's own
     // comment on this same method for why `mirrored` is inverted relative to drawImageQuad/drawBoxSides.
-    private static void drawBacking(VertexConsumer consumer, PoseStack.Pose pose, float w, float h, boolean mirrored, int light, int r, int g, int b) {
-        float x0 = -w / 2f, x1 = w / 2f, y0 = -h / 2f, y1 = h / 2f;
-        if (mirrored) {
-            vertex(consumer, pose, x0, y1, 0f, 0f, 0f, light, r, g, b);
-            vertex(consumer, pose, x0, y0, 0f, 0f, 1f, light, r, g, b);
-            vertex(consumer, pose, x1, y0, 0f, 1f, 1f, light, r, g, b);
-            vertex(consumer, pose, x1, y1, 0f, 1f, 0f, light, r, g, b);
-        } else {
-            vertex(consumer, pose, x0, y1, 0f, 0f, 0f, light, r, g, b);
-            vertex(consumer, pose, x1, y1, 0f, 1f, 0f, light, r, g, b);
-            vertex(consumer, pose, x1, y0, 0f, 1f, 1f, light, r, g, b);
-            vertex(consumer, pose, x0, y0, 0f, 0f, 1f, light, r, g, b);
+    // Nine-sliced - see the <26 branch's own drawBacking.
+    private static void drawBacking(VertexConsumer consumer, PoseStack.Pose pose, float w, float h, float depthSign, boolean mirrored, int light, int r, int g, int b) {
+        float z = depthSign * BACKING_LIFT;
+        float[] tx = nineSliceStops(w), ty = nineSliceStops(h);
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                backingTile(consumer, pose, tx[i] - w / 2f, tx[i + 1] - w / 2f, ty[j] - h / 2f, ty[j + 1] - h / 2f, z,
+                        nineSliceUv(tx, i, w), nineSliceUv(tx, i + 1, w),
+                        1f - nineSliceUv(ty, j + 1, h), 1f - nineSliceUv(ty, j, h), mirrored, light, r, g, b);
+            }
         }
+    }
+
+    private static void backingTile(VertexConsumer consumer, PoseStack.Pose pose, float xa, float xb, float ya, float yb, float z, float ua, float ub, float vTop, float vBottom, boolean mirrored, int light, int r, int g, int b) {
+        if (mirrored) {
+            vertex(consumer, pose, xa, yb, z, ua, vTop, light, r, g, b);
+            vertex(consumer, pose, xa, ya, z, ua, vBottom, light, r, g, b);
+            vertex(consumer, pose, xb, ya, z, ub, vBottom, light, r, g, b);
+            vertex(consumer, pose, xb, yb, z, ub, vTop, light, r, g, b);
+        } else {
+            vertex(consumer, pose, xa, yb, z, ua, vTop, light, r, g, b);
+            vertex(consumer, pose, xb, yb, z, ub, vTop, light, r, g, b);
+            vertex(consumer, pose, xb, ya, z, ub, vBottom, light, r, g, b);
+            vertex(consumer, pose, xa, ya, z, ua, vBottom, light, r, g, b);
+        }
+    }
+
+    private static float[] nineSliceStops(float size) {
+        float border = Math.min(1f / 16f, size / 2f);
+        return new float[]{0f, border, size - border, size};
+    }
+
+    private static float nineSliceUv(float[] stops, int index, float size) {
+        return switch (index) {
+            case 0 -> 0f;
+            case 1 -> stops[1];
+            case 2 -> 1f - (size - stops[2]);
+            default -> 1f;
+        };
     }
 
     private static float[] uvForCorner(int corner, int rotation) {

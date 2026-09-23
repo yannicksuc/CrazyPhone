@@ -359,6 +359,10 @@ tasks.named<ProcessResources>("processResources") {
         doLast {
             destinationDir.resolve("data/crazyphone/recipe/duplicate_photo.json").delete()
             destinationDir.resolve("data/crazyphone/recipes/duplicate_photo.json").delete()
+            // Same reasoning, same guard - CrazyPhoneAnonymizePhotoRecipe.java mirrors
+            // CrazyPhoneDuplicatePhotoRecipe.java's own <1.21.10 gate exactly.
+            destinationDir.resolve("data/crazyphone/recipe/anonymize_photo.json").delete()
+            destinationDir.resolve("data/crazyphone/recipes/anonymize_photo.json").delete()
         }
     }
 }

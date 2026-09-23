@@ -424,7 +424,7 @@ public class CrazyPhoneGameTests {
         photoData.writeTo(photo);
 
         fr.lordfinn.crazyphone.entity.CrazyPhonePhotoFrameEntity entity = fr.lordfinn.crazyphone.entity.CrazyPhonePhotoFrameEntity.tryPlace(
-                helper.getLevel(), floorPos, net.minecraft.core.Direction.UP, net.minecraft.core.Direction.WEST, photoData,
+                helper.getLevel(), floorPos, net.minecraft.core.Direction.UP, null, net.minecraft.core.Direction.WEST, photoData,
                 new fr.lordfinn.crazyphone.utils.PhotoFrameData(
                         fr.lordfinn.crazyphone.entity.CrazyPhonePhotoFrameEntity.DEFAULT_SIZE_UNITS,
                         fr.lordfinn.crazyphone.entity.CrazyPhonePhotoFrameEntity.DEFAULT_SIZE_UNITS),
@@ -461,7 +461,7 @@ public class CrazyPhoneGameTests {
         int resizedWidth = fr.lordfinn.crazyphone.entity.CrazyPhonePhotoFrameEntity.DEFAULT_SIZE_UNITS * 2;
         int resizedHeight = fr.lordfinn.crazyphone.entity.CrazyPhonePhotoFrameEntity.DEFAULT_SIZE_UNITS * 3;
         fr.lordfinn.crazyphone.entity.CrazyPhonePhotoFrameEntity entity = fr.lordfinn.crazyphone.entity.CrazyPhonePhotoFrameEntity.tryPlace(
-                helper.getLevel(), floorPos, net.minecraft.core.Direction.UP, net.minecraft.core.Direction.NORTH, photoData,
+                helper.getLevel(), floorPos, net.minecraft.core.Direction.UP, null, net.minecraft.core.Direction.NORTH, photoData,
                 new fr.lordfinn.crazyphone.utils.PhotoFrameData(resizedWidth, resizedHeight), 0xFFFFFF);
         helper.assertTrue(entity != null, "sanity: placement must succeed before this test can break it");
         helper.getLevel().addFreshEntity(entity);

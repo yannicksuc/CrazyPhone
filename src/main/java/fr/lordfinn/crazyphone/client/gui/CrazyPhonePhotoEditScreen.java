@@ -1359,29 +1359,26 @@ public class CrazyPhonePhotoEditScreen extends Screen implements PhoneScreen {
         }
         UUID newPhotoId = UUID.randomUUID();
         FabricPictureCache.seedFromLocalCapture(newPhotoId, result.thumbnailPng(), result.fullPng());
-        // preferPhysicalItem=true - the SERVER decides what actually happens to it (creative or a real Paper
-        // consumed turns this into a physical Photo item in the player's inventory instead of a phone
-        // gallery entry; see CrazyPhoneUploadPicturePacket's own doc comment) - this client can't know which
-        // branch it took ahead of the round trip, which is exactly why the gallery-list patch below no longer
-        // optimistically ADDS the new id (live request: "si papier en creatif alors mettre l'image dans
-        // l'inventaire ... plutot").
-        NetworkAccess.sendToServer(new CrazyPhoneUploadPicturePacket("", newPhotoId, result.thumbnailPng(), result.fullPng(), true));
+        // Edited from a held Photo item: the result becomes a physical item (creative, or one Paper consumed).
+        // Edited from the phone (gallery or conversation): the result stays in the phone's gallery.
+        boolean toPhysicalItem = viewerScreen.getOrigin() == CrazyPhonePhotoViewerScreen.Origin.HELD_ITEM;
+        NetworkAccess.sendToServer(new CrazyPhoneUploadPicturePacket("", newPhotoId, result.thumbnailPng(), result.fullPng(), toPhysicalItem));
         if (replaceOriginal)
             NetworkAccess.sendToServer(new CrazyPhoneMyPhotosActionMessage(CrazyPhoneMyPhotosActionMessage.Action.DELETE, List.of(photoId), ""));
         if (this.minecraft.player != null) {
             this.minecraft.player.playSound(net.minecraft.sounds.SoundEvents.ITEM_PICKUP, 1f, 1f);
-            fr.lordfinn.crazyphone.utils.CrazyPhoneHelper.sendClientMessage(this.minecraft.player,
-                    Component.translatable(replaceOriginal ? "message.crazyphone.photo_edit_replaced" : "message.crazyphone.photo_edit_copy_created"), true);
+            // Sent before the server replies, so for a physical item the wording can't claim where it landed
+            // (paper may be missing in survival - the server then sends its own follow-up message).
+            String messageKey = replaceOriginal ? "message.crazyphone.photo_edit_replaced"
+                    : toPhysicalItem ? "message.crazyphone.photo_edit_copy_created"
+                    : "message.crazyphone.photo_edit_copy_saved";
+            fr.lordfinn.crazyphone.utils.CrazyPhoneHelper.sendClientMessage(this.minecraft.player, Component.translatable(messageKey), true);
         }
         closeTarget = viewerScreen.getPreviousScreen();
-        // Only the REMOVAL of the old id is still patched optimistically here - that part always happens
-        // (Replace unconditionally asks the server to drop the original from the gallery regardless of what
-        // becomes of the new one). Whether the new id ALSO belongs in this list depends on the server's own
-        // paper/creative decision above, so it isn't guessed here anymore; the gallery simply resyncs itself
-        // next time this screen is actually reopened, which normally means "the new physical item just
-        // dropped into your hotbar" is feedback enough in the common case this branch is even reached for.
-        if (closeTarget instanceof CrazyPhoneMyPhotosScreenScreen gallery && replaceOriginal) {
-            gallery.getPhotoIds().remove(photoId);
+        if (closeTarget instanceof CrazyPhoneMyPhotosScreenScreen gallery) {
+            if (replaceOriginal)
+                gallery.getPhotoIds().remove(photoId);
+            gallery.getPhotoIds().add(0, newPhotoId);
         }
         onClose();
     }

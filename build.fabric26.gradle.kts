@@ -378,6 +378,7 @@ sourceSets.main {
         "fr/lordfinn/crazyphone/world/inventory/CrazyPhonePhotoFrameResizeMenu.java",
         "fr/lordfinn/crazyphone/client/gui/CrazyPhonePhotoFrameResizeScreen.java",
         "fr/lordfinn/crazyphone/recipe/CrazyPhoneDuplicatePhotoRecipe.java",
+        "fr/lordfinn/crazyphone/recipe/CrazyPhoneAnonymizePhotoRecipe.java",
         "fr/lordfinn/crazyphone/recipe/CrazyPhoneCraftingCondition.java",
         "fr/lordfinn/crazyphone/init/ModRecipes.java",
         "fr/lordfinn/crazyphone/enchantment/ModEnchantments.java",
@@ -465,6 +466,10 @@ tasks.named<ProcessResources>("processResources") {
         destinationDir.resolve("data/neoforge/loot_modifiers/global_loot_modifiers.json").delete()
         destinationDir.resolve("data/crazyphone/recipe/duplicate_photo.json").delete()
         destinationDir.resolve("data/crazyphone/recipes/duplicate_photo.json").delete()
+        // Same reasoning, same guard - CrazyPhoneAnonymizePhotoRecipe.java mirrors
+        // CrazyPhoneDuplicatePhotoRecipe.java's own <1.21.10 gate exactly.
+        destinationDir.resolve("data/crazyphone/recipe/anonymize_photo.json").delete()
+        destinationDir.resolve("data/crazyphone/recipes/anonymize_photo.json").delete()
 
         // crazy_phone.json's tracked "key" entries use the older {"item": "..."} object form (needed by
         // 1.21.1's own Ingredient codec, which has no bare-string shorthand at all) - NeoForge's own
