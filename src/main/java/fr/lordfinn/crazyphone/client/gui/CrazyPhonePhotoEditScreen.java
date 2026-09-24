@@ -1361,9 +1361,11 @@ public class CrazyPhonePhotoEditScreen extends Screen implements PhoneScreen {
         FabricPictureCache.seedFromLocalCapture(newPhotoId, result.thumbnailPng(), result.fullPng());
         // Edited from a held Photo item: the result becomes a physical item (creative, or one Paper consumed).
         // Edited from the phone (gallery or conversation): the result stays in the phone's gallery.
+        // Replace on a held photo swaps that item over to the edited image; on the phone it swaps the gallery entry.
         boolean toPhysicalItem = viewerScreen.getOrigin() == CrazyPhonePhotoViewerScreen.Origin.HELD_ITEM;
-        NetworkAccess.sendToServer(new CrazyPhoneUploadPicturePacket("", newPhotoId, result.thumbnailPng(), result.fullPng(), toPhysicalItem));
-        if (replaceOriginal)
+        UUID replaceHeldPhotoId = toPhysicalItem && replaceOriginal ? photoId : null;
+        NetworkAccess.sendToServer(new CrazyPhoneUploadPicturePacket("", newPhotoId, result.thumbnailPng(), result.fullPng(), toPhysicalItem, replaceHeldPhotoId));
+        if (replaceOriginal && !toPhysicalItem)
             NetworkAccess.sendToServer(new CrazyPhoneMyPhotosActionMessage(CrazyPhoneMyPhotosActionMessage.Action.DELETE, List.of(photoId), ""));
         if (this.minecraft.player != null) {
             this.minecraft.player.playSound(net.minecraft.sounds.SoundEvents.ITEM_PICKUP, 1f, 1f);

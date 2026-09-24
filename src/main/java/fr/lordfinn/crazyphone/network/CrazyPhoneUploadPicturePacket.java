@@ -38,6 +38,7 @@ import net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
 
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.ItemStack;
 
@@ -78,11 +79,25 @@ import java.util.UUID;
  * never as a surprise item.
  */
 //? if legacyforge {
-/*public record CrazyPhoneUploadPicturePacket(String conversationId, UUID photoId, byte[] thumbnailPng, byte[] fullPng, boolean preferPhysicalItem) {
+/*public record CrazyPhoneUploadPicturePacket(String conversationId, UUID photoId, byte[] thumbnailPng, byte[] fullPng, boolean preferPhysicalItem, @javax.annotation.Nullable UUID replaceHeldPhotoId) {
 *///? } else {
-public record CrazyPhoneUploadPicturePacket(String conversationId, UUID photoId, byte[] thumbnailPng, byte[] fullPng, boolean preferPhysicalItem) implements CustomPacketPayload {
+public record CrazyPhoneUploadPicturePacket(String conversationId, UUID photoId, byte[] thumbnailPng, byte[] fullPng, boolean preferPhysicalItem, @javax.annotation.Nullable UUID replaceHeldPhotoId) implements CustomPacketPayload {
 //?}
     private static final Logger LOGGER = LoggerFactory.getLogger("crazyphone");
+
+    public CrazyPhoneUploadPicturePacket(String conversationId, UUID photoId, byte[] thumbnailPng, byte[] fullPng, boolean preferPhysicalItem) {
+        this(conversationId, photoId, thumbnailPng, fullPng, preferPhysicalItem, null);
+    }
+
+    private static void writeOptionalUuid(FriendlyByteBuf buffer, @javax.annotation.Nullable UUID id) {
+        buffer.writeBoolean(id != null);
+        if (id != null)
+            buffer.writeUUID(id);
+    }
+
+    private static @javax.annotation.Nullable UUID readOptionalUuid(FriendlyByteBuf buffer) {
+        return buffer.readBoolean() ? buffer.readUUID() : null;
+    }
     // Generous but real ceilings - the client already downscales/compresses before sending (see
     // FabricPictureCapture), this is defense in depth against a modified client the same way
     // VoiceMessageUploadPacket caps PCM length. The full-image ceiling is configurable (Config#
@@ -103,13 +118,15 @@ public record CrazyPhoneUploadPicturePacket(String conversationId, UUID photoId,
                         buffer.writeByteArray(message.thumbnailPng);
                         buffer.writeByteArray(message.fullPng);
                         buffer.writeBoolean(message.preferPhysicalItem);
+                        writeOptionalUuid(buffer, message.replaceHeldPhotoId);
                     },
                     (RegistryFriendlyByteBuf buffer) -> new CrazyPhoneUploadPicturePacket(
                             buffer.readUtf(),
                             buffer.readUUID(),
                             buffer.readByteArray(),
                             buffer.readByteArray(),
-                            buffer.readBoolean()
+                            buffer.readBoolean(),
+                            readOptionalUuid(buffer)
                     )
             );
 
@@ -121,7 +138,7 @@ public record CrazyPhoneUploadPicturePacket(String conversationId, UUID photoId,
     public static final /*$ res_loc {*/ResourceLocation/*$}*/ ID = Crazyphone.resource("upload_picture");
 
     public CrazyPhoneUploadPicturePacket(FriendlyByteBuf buffer) {
-        this(buffer.readUtf(), buffer.readUUID(), buffer.readByteArray(), buffer.readByteArray(), buffer.readBoolean());
+        this(buffer.readUtf(), buffer.readUUID(), buffer.readByteArray(), buffer.readByteArray(), buffer.readBoolean(), readOptionalUuid(buffer));
     }
 
     public void write(FriendlyByteBuf buffer) {
@@ -130,6 +147,7 @@ public record CrazyPhoneUploadPicturePacket(String conversationId, UUID photoId,
         buffer.writeByteArray(thumbnailPng);
         buffer.writeByteArray(fullPng);
         buffer.writeBoolean(preferPhysicalItem);
+        writeOptionalUuid(buffer, replaceHeldPhotoId);
     }
 
     //? if fabric || neoforge {
@@ -140,7 +158,7 @@ public record CrazyPhoneUploadPicturePacket(String conversationId, UUID photoId,
     }
     //?}
 
-    private static void handle(ServerPlayer player, String conversationId, UUID clientPhotoId, byte[] thumbnailPng, byte[] fullPng, boolean preferPhysicalItem) {
+    private static void handle(ServerPlayer player, String conversationId, UUID clientPhotoId, byte[] thumbnailPng, byte[] fullPng, boolean preferPhysicalItem, @javax.annotation.Nullable UUID replaceHeldPhotoId) {
         if (thumbnailPng.length == 0 || thumbnailPng.length > THUMBNAIL_MAX_BYTES) {
             LOGGER.warn("Picture upload rejected: thumbnail {} bytes", thumbnailPng.length);
             return;
@@ -175,8 +193,40 @@ public record CrazyPhoneUploadPicturePacket(String conversationId, UUID photoId,
             CrazyPhoneHelper.addImageMessage(world, conversationId, senderNumber, photoId, timestampInMinutes);
             return;
         }
-        if (preferPhysicalItem)
-            givePhysicalItemInsteadOfGallery(player, photoId, senderNumber, timestampInMinutes);
+        if (!preferPhysicalItem)
+            return;
+        if (replaceHeldPhotoId != null && replaceHeldPhoto(player, replaceHeldPhotoId, photoId, senderNumber))
+            return;
+        givePhysicalItemInsteadOfGallery(player, photoId, senderNumber, timestampInMinutes);
+    }
+
+    /** Editor "Replace" opened from a held Photo item: points one held copy of the original at the edited
+     * photo instead, keeping its attribution. No paper cost - it's the same physical print, edited. Returns
+     * false if the player no longer holds that photo, so the caller falls back to printing a new copy. */
+    private static boolean replaceHeldPhoto(ServerPlayer player, UUID originalPhotoId, UUID editedPhotoId, String uploader) {
+        for (InteractionHand hand : InteractionHand.values()) {
+            ItemStack held = player.getItemInHand(hand);
+            if (!held.is(ModItems.CRAZY_PHONE_PHOTO.get()))
+                continue;
+            PhotoItemData data = PhotoItemData.fromStack(held);
+            if (data == null || !data.photoId().equals(originalPhotoId))
+                continue;
+            PhotoItemData edited = new PhotoItemData(editedPhotoId, data.owner(), data.createdMinutes());
+            if (held.getCount() == 1) {
+                edited.writeTo(held);
+            } else {
+                held.shrink(1);
+                ItemStack single = held.copyWithCount(1);
+                edited.writeTo(single);
+                if (!player.getInventory().add(single))
+                    player.drop(single, false);
+            }
+            PhotoSavedData saved = PhotoSavedData.get(player.level());
+            saved.markPhysical(editedPhotoId);
+            saved.deletePhotos(uploader, java.util.Set.of(editedPhotoId));
+            return true;
+        }
+        return false;
     }
 
     /** Editor-commit-only path (live request) - storePhoto above already dropped this standalone upload into
@@ -221,7 +271,7 @@ public record CrazyPhoneUploadPicturePacket(String conversationId, UUID photoId,
         context.enqueueWork(() -> {
             if (!(context.player() instanceof ServerPlayer player))
                 return;
-            handle(player, message.conversationId, message.photoId, message.thumbnailPng, message.fullPng, message.preferPhysicalItem);
+            handle(player, message.conversationId, message.photoId, message.thumbnailPng, message.fullPng, message.preferPhysicalItem, message.replaceHeldPhotoId);
         }).exceptionally(e -> {
             context.connection().disconnect(Component.literal(e.getMessage()));
             return null;
@@ -234,7 +284,7 @@ public record CrazyPhoneUploadPicturePacket(String conversationId, UUID photoId,
         context.workHandler().submitAsync(() -> {
             if (!(context.player().orElse(null) instanceof ServerPlayer player))
                 return;
-            handle(player, message.conversationId, message.photoId, message.thumbnailPng, message.fullPng, message.preferPhysicalItem);
+            handle(player, message.conversationId, message.photoId, message.thumbnailPng, message.fullPng, message.preferPhysicalItem, message.replaceHeldPhotoId);
         }).exceptionally(e -> {
             context.packetHandler().disconnect(Component.literal(e.getMessage()));
             return null;
@@ -244,7 +294,7 @@ public record CrazyPhoneUploadPicturePacket(String conversationId, UUID photoId,
     //?}
     //? if fabric && >=1.20.5 {
     /*public static void handleDataFabric(CrazyPhoneUploadPicturePacket message, net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.Context context) {
-        handle(context.player(), message.conversationId, message.photoId, message.thumbnailPng, message.fullPng, message.preferPhysicalItem);
+        handle(context.player(), message.conversationId, message.photoId, message.thumbnailPng, message.fullPng, message.preferPhysicalItem, message.replaceHeldPhotoId);
     }
 
     public static void registerFabricType() {
