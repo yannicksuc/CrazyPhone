@@ -477,7 +477,7 @@ tasks.named<ProcessResources>("processResources") {
         // vanilla-only codec there does not (confirmed against the real vanilla_client jar's own shipped
         // recipes on 26.1.2, which all use bare item-id strings) - so only this Fabric >=26 node needs its
         // build output patched to match.
-        val recipeFile = destinationDir.resolve("data/crazyphone/recipes/crazy_phone.json")
+        val recipeFile = destinationDir.resolve("data/crazyphone/recipe/crazy_phone.json")
         recipeFile.writeText(
             """{"type":"minecraft:crafting_shaped","category":"misc","fabric:load_conditions":[{"condition":"crazyphone:crafting_enabled"}],"pattern":["GGG","GPG","GRG"],"key":{"G":"minecraft:gold_ingot","P":"minecraft:glass_pane","R":"minecraft:redstone"},"result":{"id":"crazyphone:crazy_phone","count":1}}""" + "\n"
         )

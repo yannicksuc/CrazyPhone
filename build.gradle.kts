@@ -312,7 +312,7 @@ tasks.named<ProcessResources>("processResources") {
             // >=26, but this rewrites the build output to the newer bare-string form anyway rather than
             // relying on that unverified assumption - same "patch the build output, not the tracked shared
             // resource" approach as the two files above.
-            val recipeFile = destinationDir.resolve("data/crazyphone/recipes/crazy_phone.json")
+            val recipeFile = destinationDir.resolve("data/crazyphone/recipe/crazy_phone.json")
             if (recipeFile.exists()) {
                 recipeFile.writeText(
                     """{"type":"minecraft:crafting_shaped","category":"misc","neoforge:conditions":[{"type":"crazyphone:crafting_enabled"}],"pattern":["GGG","GPG","GRG"],"key":{"G":"minecraft:gold_ingot","P":"minecraft:glass_pane","R":"minecraft:redstone"},"result":{"id":"crazyphone:crazy_phone","count":1}}""" + "\n"
