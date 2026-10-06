@@ -142,7 +142,8 @@ sourceSets.main {
         // SavedData/DimensionDataStorage signatures for Fabric (javap-verified against the Loom-remapped
         // vanilla jar - NeoForge's own SavedData.Factory has convenience overloads plain vanilla doesn't).
         "fr/lordfinn/crazyphone/data/ConversationSavedData.java",
-        "fr/lordfinn/crazyphone/data/PhotoSavedData.java"
+        "fr/lordfinn/crazyphone/data/PhotoSavedData.java",
+        "fr/lordfinn/crazyphone/data/PhotoFileStore.java"
     )
     // CustomPacketPayload (and everything built on it: NetworkAccess's send methods, every packet record,
     // FeatureFlag's isEnabledFor gating) doesn't exist before 1.20.5 at all - see NetworkAccess.java's own

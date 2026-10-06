@@ -8,6 +8,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.Mod.EventBusSubscriber;
 //?}
 import net.neoforged.neoforge.event.server.ServerStartedEvent;
+import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 //?}
 //? if fabric {
 /*import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
@@ -19,13 +20,15 @@ import net.neoforged.neoforge.event.server.ServerStartedEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 import net.minecraftforge.event.server.ServerStartedEvent;
+import net.minecraftforge.event.server.ServerStoppedEvent;
 //?}
 
 /**
  * Runs two one-time-per-boot fixups once the server is up: {@link ConversationSavedData#finalizeOrphanedCalls()}
  * (see that method's javadoc for why any "call in progress" entry still on disk at this point is stale
  * rather than genuinely ongoing) and {@link LegacyPhotoMigration#migrate} (backfills any conversation photo
- * that predates {@link PhotoSavedData} itself - see that class's own doc comment).
+ * that predates {@link PhotoSavedData} itself - see that class's own doc comment). Once the server has
+ * stopped, it also waits for the last queued photo file writes (see {@link PhotoFileStore#closeAll()}).
  */
 //? if neoforge || legacyforge {
 @EventBusSubscriber
@@ -37,6 +40,11 @@ public class OrphanedCallCleanup {
         ConversationSavedData.get(event.getServer().overworld()).finalizeOrphanedCalls();
         LegacyPhotoMigration.migrate(event.getServer());
     }
+
+    @SubscribeEvent
+    public static void onServerStopped(ServerStoppedEvent event) {
+        PhotoFileStore.closeAll();
+    }
     //?}
     //? if fabric {
     /*public static void register() {
@@ -44,6 +52,7 @@ public class OrphanedCallCleanup {
             ConversationSavedData.get(server.overworld()).finalizeOrphanedCalls();
             LegacyPhotoMigration.migrate(server);
         });
+        ServerLifecycleEvents.SERVER_STOPPED.register(server -> PhotoFileStore.closeAll());
     }
     *///?}
 }

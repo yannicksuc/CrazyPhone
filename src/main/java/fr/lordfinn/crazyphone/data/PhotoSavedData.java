@@ -25,13 +25,22 @@ import net.minecraft.world.level.saveddata.SavedDataType;
 
 import fr.lordfinn.crazyphone.Config;
 import fr.lordfinn.crazyphone.utils.NbtCompat;
+import fr.lordfinn.crazyphone.utils.PhotoResolution;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.world.level.storage.LevelResource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import javax.annotation.Nullable;
 
 /**
@@ -42,11 +51,21 @@ import javax.annotation.Nullable;
  * you have enough" trade-off {@link ConversationSavedData} already accepts for message history, just scoped
  * to the actor instead of the conversation, since vanilla gives no reliable way to reference-count a
  * duplicated/dropped/shulker-boxed ItemStack.
+ * <p>
+ * This is only the INDEX: the image bytes themselves live in one file per photo, see {@link PhotoFileStore}.
+ * A world save therefore only rewrites a few hundred bytes per photo, never the pixels. Worlds saved by an
+ * older version still carry the bytes inline ("full"/"thumbnail" tags); {@link #bindStorage} moves them out
+ * to files once, after backing up the old file.
  */
 public class PhotoSavedData extends SavedData {
+    private static final Logger LOGGER = LoggerFactory.getLogger("crazyphone");
     public static final String DATA_NAME = "crazyphone_photos";
+    /** Suffix of the untouched copy of the old, bytes-inline {@code crazyphone_photos.dat} kept by the
+     * one-time migration in {@link #bindStorage}. */
+    public static final String MIGRATION_BACKUP_SUFFIX = ".bak-before-migration";
 
-    /** photoId (string) -> {owner, conversationId, created, thumbnail: PNG bytes, full: PNG bytes} */
+    /** photoId (string) -> {owner, conversationId, created, hash, thumb: has a distinct thumbnail file,
+     * size: full image byte count, width/height: PNG dimensions when known, physical} - no image bytes. */
     public CompoundTag photos = new CompoundTag();
     /** owner (phone number) -> ListTag of photoId strings, oldest first - lets eviction find/drop the
      * oldest entry for that owner in O(1) instead of scanning every photo's "created" timestamp. */
@@ -59,6 +78,11 @@ public class PhotoSavedData extends SavedData {
      * needed this) can still repair a world that already ran an earlier, buggier pass - not just worlds
      * that haven't migrated at all yet. */
     public int legacyPhotosMigrationVersion = 0;
+
+    /** Where the image bytes go. Memory-only until {@link #get} binds it to the world folder (unit tests
+     * that build a PhotoSavedData directly never touch the disk). */
+    private PhotoFileStore store = PhotoFileStore.inMemory();
+    private boolean storageBound = false;
 
     //? if >=1.20.5 <1.21.10 {
     /*public static PhotoSavedData load(CompoundTag tag, net.minecraft.core.HolderLookup.Provider lookupProvider) {
@@ -90,7 +114,7 @@ public class PhotoSavedData extends SavedData {
     }
     *///?}
 
-    private CompoundTag writeNbt(CompoundTag nbt) {
+    CompoundTag writeNbt(CompoundTag nbt) {
         nbt.put("photos", this.photos);
         nbt.put("photosByOwner", this.photosByOwner);
         nbt.putInt("legacyPhotosMigrationVersion", this.legacyPhotosMigrationVersion);
@@ -137,10 +161,11 @@ public class PhotoSavedData extends SavedData {
         entry.putString("conversationId", conversationId);
         entry.putInt("created", createdMinutes);
         entry.putString("hash", hash);
-        if (!Arrays.equals(thumbnailPng, fullPng))
-            entry.put("thumbnail", new ByteArrayTag(thumbnailPng));
-        entry.put("full", new ByteArrayTag(fullPng));
+        boolean distinctThumbnail = !Arrays.equals(thumbnailPng, fullPng);
+        putFileMetadata(entry, distinctThumbnail, fullPng);
         photos.put(photoId.toString(), entry);
+        // Queued for an asynchronous write - readable from memory straight away, never part of a world save.
+        store.write(photoId, distinctThumbnail ? thumbnailPng : null, fullPng);
 
         ListTag ownerList = photosByOwner.get(owner) instanceof ListTag t ? t : new ListTag();
         ownerList.add(StringTag.valueOf(photoId.toString()));
@@ -197,7 +222,29 @@ public class PhotoSavedData extends SavedData {
             return;
         if (photos.get(idString) instanceof CompoundTag entry && NbtCompat.getBoolean(entry, "physical"))
             return;
+        if (photos.get(idString) == null)
+            return;
         photos.remove(idString);
+        try {
+            store.delete(UUID.fromString(idString));
+        } catch (IllegalArgumentException ignored) {
+            // not a UUID-shaped key - nothing on disk under it
+        }
+    }
+
+    /** Index-side description of a photo's files - see {@link #photos}. Width/height are read from the PNG
+     * header when the bytes are a PNG (left out otherwise). */
+    private static void putFileMetadata(CompoundTag entry, boolean distinctThumbnail, byte[] full) {
+        entry.putBoolean("thumb", distinctThumbnail);
+        entry.putInt("size", full.length);
+        if (full.length >= 24 && (full[0] & 0xFF) == 0x89 && full[1] == 'P' && full[2] == 'N' && full[3] == 'G') {
+            entry.putInt("width", readInt(full, 16));
+            entry.putInt("height", readInt(full, 20));
+        }
+    }
+
+    private static int readInt(byte[] b, int at) {
+        return ((b[at] & 0xFF) << 24) | ((b[at + 1] & 0xFF) << 16) | ((b[at + 2] & 0xFF) << 8) | (b[at + 3] & 0xFF);
     }
 
     private @Nullable UUID findDuplicate(String owner, String conversationId, String hash) {
@@ -228,18 +275,139 @@ public class PhotoSavedData extends SavedData {
     }
 
     /** Null if the id doesn't exist (evicted, or never existed) - callers must not trust a client-supplied
-     * conversationId, only the one stored here at upload time. */
+     * conversationId, only the one stored here at upload time. Index data only, never touches the disk -
+     * use {@link #readBytes}/{@link #readBytesAsync} for the image itself. */
     public @Nullable PhotoEntry getPhoto(UUID photoId) {
         if (!(photos.get(photoId.toString()) instanceof CompoundTag entry))
             return null;
-        byte[] full = entry.get("full") instanceof ByteArrayTag tag ? tag.getAsByteArray() : new byte[0];
-        // No separate "thumbnail" tag means it was never stored distinct from "full" - see storePhoto.
-        byte[] thumbnail = entry.get("thumbnail") instanceof ByteArrayTag tag ? tag.getAsByteArray() : full;
         return new PhotoEntry(NbtCompat.getString(entry, "owner"), NbtCompat.getString(entry, "conversationId"),
-                NbtCompat.getInt(entry, "created"), thumbnail, full);
+                NbtCompat.getInt(entry, "created"));
     }
 
-    public record PhotoEntry(String owner, String conversationId, int createdMinutes, byte[] thumbnail, byte[] full) {
+    public record PhotoEntry(String owner, String conversationId, int createdMinutes) {
+    }
+
+    /** Image bytes still inline in a not-yet-migrated entry (see {@link #bindStorage}), or null. */
+    private static @Nullable byte[] inlineBytes(CompoundTag entry, PhotoResolution resolution) {
+        if (!(entry.get("full") instanceof ByteArrayTag full))
+            return null;
+        if (resolution == PhotoResolution.THUMBNAIL && entry.get("thumbnail") instanceof ByteArrayTag thumbnail)
+            return thumbnail.getAsByteArray();
+        return full.getAsByteArray();
+    }
+
+    /** Blocking read of a photo's bytes (null if unknown or its file is missing). Prefer
+     * {@link #readBytesAsync} on the server thread. */
+    public @Nullable byte[] readBytes(UUID photoId, PhotoResolution resolution) {
+        if (!(photos.get(photoId.toString()) instanceof CompoundTag entry))
+            return null;
+        byte[] inline = inlineBytes(entry, resolution);
+        if (inline != null)
+            return inline;
+        return store.read(photoId, resolution, NbtCompat.getBoolean(entry, "thumb"));
+    }
+
+    /** Must be called on the server thread (it reads the index); the disk read itself, when needed,
+     * happens on the photo IO thread. Completes with null if unknown or missing. */
+    public CompletableFuture<byte[]> readBytesAsync(UUID photoId, PhotoResolution resolution) {
+        if (!(photos.get(photoId.toString()) instanceof CompoundTag entry))
+            return CompletableFuture.completedFuture(null);
+        byte[] inline = inlineBytes(entry, resolution);
+        if (inline != null)
+            return CompletableFuture.completedFuture(inline);
+        return store.readAsync(photoId, resolution, NbtCompat.getBoolean(entry, "thumb"));
+    }
+
+    /** Points this index at its photo files under {@code <world>/data/crazyphone/photos/}, then moves any
+     * image bytes still stored inline (a world saved by an older version) out to those files - once:
+     * <ol>
+     * <li>the old {@code crazyphone_photos.dat} is copied, untouched, to
+     * {@code crazyphone_photos.dat.bak-before-migration} next to it (an existing backup is never
+     * overwritten - it is the oldest, original one). No backup, no migration: the bytes stay inline and the
+     * mod keeps working as before;</li>
+     * <li>each photo is written synchronously (temp file + move, size checked);</li>
+     * <li>only a photo whose files are confirmed on disk loses its inline bytes; the index is marked dirty so
+     * the next save writes the small version.</li>
+     * </ol>
+     * A crash before that save simply repeats the migration on the next boot. */
+    void bindStorage(Path worldRoot) {
+        storageBound = true;
+        Path dataDir = worldRoot.resolve("data");
+        store = PhotoFileStore.onDisk(dataDir.resolve("crazyphone").resolve("photos"));
+        migrateInlinePhotos(dataDir);
+    }
+
+    private void migrateInlinePhotos(Path dataDir) {
+        List<String> inline = new ArrayList<>();
+        for (String id : NbtCompat.keySet(photos))
+            if (photos.get(id) instanceof CompoundTag entry && entry.get("full") instanceof ByteArrayTag)
+                inline.add(id);
+        if (inline.isEmpty())
+            return;
+
+        Path backup = backupLegacyFile(dataDir);
+        if (backup == null) {
+            LOGGER.error("{} photos are still stored inside {}.dat but no backup of it could be made - leaving them there (world saves stay slow until this is fixed)",
+                    inline.size(), DATA_NAME);
+            return;
+        }
+
+        long startNanos = System.nanoTime();
+        int moved = 0;
+        long movedBytes = 0;
+        for (String id : inline) {
+            CompoundTag entry = (CompoundTag) photos.get(id);
+            byte[] full = ((ByteArrayTag) entry.get("full")).getAsByteArray();
+            byte[] thumbnail = entry.get("thumbnail") instanceof ByteArrayTag t ? t.getAsByteArray() : null;
+            if (thumbnail != null && Arrays.equals(thumbnail, full))
+                thumbnail = null;
+            try {
+                store.writeNow(UUID.fromString(id), thumbnail, full);
+            } catch (IOException | IllegalArgumentException e) {
+                LOGGER.error("Photo {} could not be moved to its own file - left inline", id, e);
+                continue;
+            }
+            entry.remove("full");
+            entry.remove("thumbnail");
+            putFileMetadata(entry, thumbnail != null, full);
+            moved++;
+            movedBytes += full.length + (thumbnail != null ? thumbnail.length : 0);
+        }
+        if (moved > 0)
+            setDirty();
+        LOGGER.info("Moved {}/{} photos ({} KB) out of {}.dat into {} in {} ms - backup of the old file: {}",
+                moved, inline.size(), movedBytes / 1024, DATA_NAME, store.directory(),
+                (System.nanoTime() - startNanos) / 1_000_000, backup);
+    }
+
+    /** Copies the old bytes-inline data file aside, or returns the backup already there. Null if neither
+     * the file nor a backup could be found/made. */
+    private static @Nullable Path backupLegacyFile(Path dataDir) {
+        // Vanilla keeps a plain-string SavedData id at data/<id>.dat; a namespaced one (26.x) at
+        // data/<namespace>/<id>.dat.
+        Path[] candidates = {dataDir.resolve(DATA_NAME + ".dat"), dataDir.resolve("crazyphone").resolve(DATA_NAME + ".dat")};
+        for (Path file : candidates) {
+            Path backup = file.resolveSibling(file.getFileName() + MIGRATION_BACKUP_SUFFIX);
+            if (Files.exists(backup))
+                return backup;
+            if (!Files.exists(file))
+                continue;
+            try {
+                Files.copy(file, backup);
+                if (Files.size(backup) != Files.size(file))
+                    throw new IOException("backup size mismatch");
+                return backup;
+            } catch (IOException e) {
+                LOGGER.error("Could not back up {} to {}", file, backup, e);
+                return null;
+            }
+        }
+        return null;
+    }
+
+    /** Waits for every queued photo write of this world - see {@link PhotoFileStore#flush}. */
+    public void flushStorage() {
+        store.flush();
     }
 
     /** Every photo id owned by this phone number, newest first (for the "My Photos" gallery - reverse of
@@ -307,7 +475,8 @@ public class PhotoSavedData extends SavedData {
 
     public static PhotoSavedData get(LevelAccessor world) {
         if (world instanceof ServerLevelAccessor serverLevelAcc) {
-            return serverLevelAcc.getLevel().getServer().overworld().getDataStorage()
+            MinecraftServer server = serverLevelAcc.getLevel().getServer();
+            PhotoSavedData data = server.overworld().getDataStorage()
                     //? if neoforge && <1.20.5 {
                     .computeIfAbsent(new SavedData.Factory<>(PhotoSavedData::new, PhotoSavedData::load, DataFixTypes.LEVEL), DATA_NAME);
                     //?}
@@ -326,6 +495,9 @@ public class PhotoSavedData extends SavedData {
                     //? if fabric && >=1.20.5 <1.21.10 {
                     /*.computeIfAbsent(new SavedData.Factory<>(PhotoSavedData::new, PhotoSavedData::load, DataFixTypes.LEVEL), DATA_NAME);
                     *///?}
+            if (!data.storageBound)
+                data.bindStorage(server.getWorldPath(LevelResource.ROOT));
+            return data;
         }
         throw new IllegalStateException("PhotoSavedData is server-only");
     }

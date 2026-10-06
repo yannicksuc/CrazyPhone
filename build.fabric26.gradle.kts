@@ -153,6 +153,7 @@ sourceSets.main {
         "fr/lordfinn/crazyphone/client/gui/components/MessageData.java",
         "fr/lordfinn/crazyphone/data/ConversationSavedData.java",
         "fr/lordfinn/crazyphone/data/PhotoSavedData.java",
+        "fr/lordfinn/crazyphone/data/PhotoFileStore.java",
         "fr/lordfinn/crazyphone/utils/NetworkAccess.java",
         "fr/lordfinn/crazyphone/FeatureFlag.java",
         "fr/lordfinn/crazyphone/client/ClientFeatureFlagState.java",

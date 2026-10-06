@@ -85,7 +85,7 @@ class LegacyPhotoMigrationTest {
 
             PhotoSavedData.PhotoEntry entry = photos.getPhoto(imageId);
             assertNotNull(entry, "the native photo's bytes must have been backfilled under its message's own id");
-            assertArrayEquals(pngBytes, entry.full());
+            assertArrayEquals(pngBytes, photos.readBytes(imageId, fr.lordfinn.crazyphone.utils.PhotoResolution.FULL));
             assertEquals("111", entry.owner());
             assertEquals(CONVO, entry.conversationId());
             assertEquals(42, entry.createdMinutes());

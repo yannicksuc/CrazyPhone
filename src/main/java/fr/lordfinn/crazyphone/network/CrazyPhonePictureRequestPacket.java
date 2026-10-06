@@ -35,6 +35,7 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
 
@@ -50,6 +51,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -178,21 +180,37 @@ public record CrazyPhonePictureRequestPacket(List<Entry> entries) implements Cus
         // response can blow past it, which a single-photo-per-packet request never could. Flushed as
         // multiple response packets instead of one, bounded well under the observed failure point so
         // per-entry protocol overhead and a batch that's already close to the limit still can't tip it over.
+        // Viewing a photo only requires knowing its id (the item's own in-hand/GUI/ground renderer and
+        // the full-size viewer all fetch by photoId, never by conversation) - there's no legitimate way
+        // to end up with a photoId you shouldn't be able to look at, so reads carry no ownership/
+        // conversation check. Capturing a NEW photo is still gated elsewhere (an unlocked phone is
+        // required to take one at all) - this is purely about reading bytes for a photo that already
+        // exists. A missing entry sends empty bytes, not silence - FabricPictureCache marks that
+        // (photoId, resolution) FAILED (so it stops retrying) only once it actually gets a response; not
+        // responding at all leaves it stuck IN_FLIGHT forever with no error anywhere to explain why.
+        // The index lookup happens here on the server thread; the file reads (cache misses only) run on
+        // the photo IO thread, and the responses are sent back from the server thread once all are in.
+        List<CompletableFuture<byte[]>> reads = new ArrayList<>(entries.size());
+        for (Entry request : entries)
+            reads.add(data.readBytesAsync(request.photoId(), request.resolution()));
+        MinecraftServer server = player.level().getServer();
+        CompletableFuture.allOf(reads.toArray(new CompletableFuture[0])).whenComplete((ignored, error) -> {
+            if (server == null)
+                return;
+            server.execute(() -> sendResponses(player, entries, reads));
+        });
+    }
+
+    private static void sendResponses(ServerPlayer player, List<Entry> entries, List<CompletableFuture<byte[]>> reads) {
         final int MAX_RESPONSE_PAYLOAD_BYTES = 1_000_000;
         List<CrazyPhonePictureResponsePacket.Entry> batch = new ArrayList<>();
         long batchBytes = 0;
-        for (Entry request : entries) {
-            PhotoSavedData.PhotoEntry entry = data.getPhoto(request.photoId());
-            // Viewing a photo only requires knowing its id (the item's own in-hand/GUI/ground renderer and
-            // the full-size viewer all fetch by photoId, never by conversation) - there's no legitimate way
-            // to end up with a photoId you shouldn't be able to look at, so reads carry no ownership/
-            // conversation check. Capturing a NEW photo is still gated elsewhere (an unlocked phone is
-            // required to take one at all) - this is purely about reading bytes for a photo that already
-            // exists. A missing entry sends empty bytes, not silence - FabricPictureCache marks that
-            // (photoId, resolution) FAILED (so it stops retrying) only once it actually gets a response; not
-            // responding at all leaves it stuck IN_FLIGHT forever with no error anywhere to explain why.
-            byte[] bytes = entry == null ? new byte[0]
-                    : request.resolution() == PhotoResolution.THUMBNAIL ? entry.thumbnail() : entry.full();
+        for (int i = 0; i < entries.size(); i++) {
+            Entry request = entries.get(i);
+            CompletableFuture<byte[]> read = reads.get(i);
+            byte[] bytes = read.isCompletedExceptionally() ? null : read.getNow(null);
+            if (bytes == null)
+                bytes = new byte[0];
             if (!batch.isEmpty() && batchBytes + bytes.length > MAX_RESPONSE_PAYLOAD_BYTES) {
                 NetworkAccess.sendToPlayer(player, new CrazyPhonePictureResponsePacket(batch));
                 batch = new ArrayList<>();
