@@ -144,9 +144,11 @@ public record CrazyPhoneMyPhotosActionMessage(Action action, List<UUID> photoIds
                     return;
                 PhotoSavedData data = PhotoSavedData.get(world);
                 int timestampInMinutes = (int) (Instant.now().getEpochSecond() / 60);
+                // Anything in the sender's own gallery is theirs to send, including photos imported from an
+                // item, which keep their original owner.
+                java.util.List<UUID> gallery = data.getPhotoIdsForOwner(senderNumber);
                 for (UUID photoId : photoIds) {
-                    PhotoSavedData.PhotoEntry entry = data.getPhoto(photoId);
-                    if (entry == null || !entry.owner().equals(senderNumber))
+                    if (data.getPhoto(photoId) == null || !gallery.contains(photoId))
                         continue;
                     CrazyPhoneHelper.addImageMessage(world, conversationId, senderNumber, photoId, timestampInMinutes);
                 }

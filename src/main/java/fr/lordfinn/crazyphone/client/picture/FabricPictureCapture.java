@@ -126,9 +126,34 @@ public final class FabricPictureCapture {
     public static void onClientTick() {
         if (pendingCallback == null || suppressedFramesRendered < 1)
             return;
+        // Second stage: hide the whole HUD like F1 so other mods' overlays (Jade, Xaero's minimap and
+        // waypoints...) stay out of the shot. Can't be done from the start - hideGui also stops the GUI
+        // event the frame signal above relies on - so it's tick-based, given a couple of ticks to render.
+        Minecraft mc = Minecraft.getInstance();
+        if (hideGuiBeforeCapture == null) {
+            hideGuiBeforeCapture = mc.options.hideGui;
+            mc.options.hideGui = true;
+            hideGuiTicksWaited = 0;
+            return;
+        }
+        if (++hideGuiTicksWaited < HIDE_GUI_SETTLE_TICKS)
+            return;
         BiConsumer<byte[], byte[]> callback = pendingCallback;
         pendingCallback = null;
         captureBothResolutions(callback);
+    }
+
+    private static final int HIDE_GUI_SETTLE_TICKS = 2;
+    private static Boolean hideGuiBeforeCapture = null;
+    private static int hideGuiTicksWaited = 0;
+
+    // Called once the real pixel copy has happened (or failed) - see captureBothResolutions's own doc comment.
+    private static void endSuppression() {
+        suppressPhoneRendering = false;
+        if (hideGuiBeforeCapture != null) {
+            Minecraft.getInstance().options.hideGui = hideGuiBeforeCapture;
+            hideGuiBeforeCapture = null;
+        }
     }
 
     // Captures the current frame once and derives both resolutions from it (one screenshot, not two) -
@@ -147,7 +172,7 @@ public final class FabricPictureCapture {
     private static void captureBothResolutions(BiConsumer<byte[], byte[]> callback) {
         Minecraft mc = Minecraft.getInstance();
         try (NativeImage full = Screenshot.takeScreenshot(mc.getMainRenderTarget())) {
-            suppressPhoneRendering = false;
+            endSuppression();
             try (NativeImage fullScaled = downscale(full, Config.photoFullMaxDimension)) {
                 byte[] fullBytes = fullScaled.asByteArray();
                 int targetHeight = Config.photoThumbnailPixelHeight;
@@ -163,7 +188,7 @@ public final class FabricPictureCapture {
                 }
             }
         } catch (IOException e) {
-            suppressPhoneRendering = false;
+            endSuppression();
             org.slf4j.LoggerFactory.getLogger("crazyphone-capture-debug").warn("Screenshot capture failed", e);
             callback.accept(null, null);
         }
@@ -180,7 +205,7 @@ public final class FabricPictureCapture {
                 // The first thing done with the real captured pixels, before any further processing that
                 // could itself take long enough for another frame to render - see this method's own doc
                 // comment on why this can't be reset any earlier.
-                suppressPhoneRendering = false;
+                endSuppression();
                 try (NativeImage fullImg = full; NativeImage fullScaled = downscale(fullImg, Config.photoFullMaxDimension)) {
                     byte[] fullBytes = toPngBytes(fullScaled);
                     int targetHeight = Config.photoThumbnailPixelHeight;
@@ -197,7 +222,7 @@ public final class FabricPictureCapture {
                 }
             });
         } catch (RuntimeException e) {
-            suppressPhoneRendering = false;
+            endSuppression();
             org.slf4j.LoggerFactory.getLogger("crazyphone-capture-debug").warn("Screenshot capture failed", e);
             callback.accept(null, null);
         }
