@@ -363,11 +363,8 @@ public final class FabricPictureCache {
             texture = registerAnimatedTexture(key, animation);
         } catch (Exception e) {
             LOGGER.warn("Failed to register animated photo {}", key.photoId(), e);
-            // Registration failed part way through - every frame's NativeImage is still ours to close (a
-            // successfully-registered frame's own DynamicTexture would otherwise never get released either,
-            // but registerAnimatedTexture itself is the only thing that hands frames off one at a time, and
-            // it never leaves this method having partially succeeded - see its own doc comment).
-            animation.close();
+            // Nothing left to close here - registerAnimatedTexture already released every frame it had
+            // registered and closed the rest before rethrowing (see its own doc comment).
             FAILED.add(key);
             return;
         }
@@ -441,15 +438,30 @@ public final class FabricPictureCache {
     // Transparency is checked on frame 0 only, not every frame - representative enough for what's ultimately
     // just a cosmetic frame/backing-border choice (see CrazyPhonePhotoFrameRenderer), not worth an O(frames *
     // pixels) scan for.
+    //
+    // All-or-nothing: if registering frame i throws, frames 0..i-1 are already owned by registered
+    // DynamicTextures, so they're released through TextureManager (which closes their images), and frames
+    // i..end are closed directly, before rethrowing. The caller owns nothing afterwards. NativeImage#close is
+    // idempotent, so closing frame i is safe even if its DynamicTexture got far enough to take it.
     private static CachedTexture registerAnimatedTexture(Key key, AnimatedPhotoCodec.Animation animation) {
         List<AnimatedPhotoCodec.RawFrame> frames = animation.frames();
         /*$ res_loc {*/ResourceLocation/*$}*/[] locations = new /*$ res_loc {*/ResourceLocation/*$}*/[frames.size()];
         int[] delaysMillis = new int[frames.size()];
-        for (int i = 0; i < frames.size(); i++) {
-            AnimatedPhotoCodec.RawFrame frame = frames.get(i);
-            String name = "crazyphone-picture-" + key.resolution().name().toLowerCase(Locale.ROOT) + "-" + key.photoId() + "-f" + i;
-            locations[i] = registerDynamicTexture(name, frame.image());
-            delaysMillis[i] = frame.delayMillis();
+        int registered = 0;
+        try {
+            for (; registered < frames.size(); registered++) {
+                AnimatedPhotoCodec.RawFrame frame = frames.get(registered);
+                String name = "crazyphone-picture-" + key.resolution().name().toLowerCase(Locale.ROOT) + "-" + key.photoId() + "-f" + registered;
+                locations[registered] = registerDynamicTexture(name, frame.image());
+                delaysMillis[registered] = frame.delayMillis();
+            }
+        } catch (RuntimeException e) {
+            net.minecraft.client.renderer.texture.TextureManager textureManager = Minecraft.getInstance().getTextureManager();
+            for (int i = 0; i < registered; i++)
+                textureManager.release(locations[i]);
+            for (int i = registered; i < frames.size(); i++)
+                frames.get(i).image().close();
+            throw e;
         }
         boolean transparent = hasTransparency(frames.get(0).image());
         return CachedTexture.animated(locations, delaysMillis, animation.width(), animation.height(), transparent);
