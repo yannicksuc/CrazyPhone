@@ -750,11 +750,13 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
 
     // Nothing requests a cursor after this screen closes, so without an explicit reset here the last
     // hand/crosshair cursor #updateCursor set would keep showing over the rest of the game indefinitely -
-    // calling #endFrame() with no request pending applies its own default (plain arrow).
+    // calling #endFrame() with no request pending applies its own default (plain arrow). removed(), not
+    // onClose(): onClose() only runs for a player-initiated close, while removed() also covers the server
+    // closing the menu (the frame was broken or deleted mid-edit) and any other screen replacing this one.
     @Override
-    public void onClose() {
+    public void removed() {
         CursorEffects.endFrame();
-        super.onClose();
+        super.removed();
     }
 
     // previewNegCol/posCol/negRow/posRow count EXTRA half-blocks beyond the anchor's own (0 each = just the
