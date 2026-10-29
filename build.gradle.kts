@@ -306,12 +306,16 @@ tasks.named<ProcessResources>("processResources") {
             val photoItemFile = destinationDir.resolve("assets/crazyphone/items/crazy_phone_photo.json")
             photoItemFile.writeText("""{"model": {"type": "crazyphone:photo_card_model"}}""" + "\n")
 
-            // crazy_phone.json's tracked "key" entries use the older {"item": "..."} object form (needed by
-            // 1.21.1's own Ingredient codec, which has no bare-string shorthand). NeoForge's own
-            // IngredientCodecs wrapper is designed to keep accepting that older form for back-compat even on
-            // >=26, but this rewrites the build output to the newer bare-string form anyway rather than
-            // relying on that unverified assumption - same "patch the build output, not the tracked shared
-            // resource" approach as the two files above.
+        }
+    }
+
+    // crazy_phone.json's tracked "key" entries use the older {"item": "..."} object form (needed by 1.21.1's
+    // own Ingredient codec, which has no bare-string shorthand). 1.21.10's dedicated server rejects that form
+    // outright (confirmed live: "Couldn't parse data file 'crazyphone:crazy_phone'", no phone recipe at all),
+    // and >=26 gets the same rewrite for consistency - same "patch the build output, not the tracked shared
+    // resource" approach as the item model files above.
+    if (minecraftVersion == "1.21.10" || minecraftVersion.startsWith("26.")) {
+        doLast {
             val recipeFile = destinationDir.resolve("data/crazyphone/recipe/crazy_phone.json")
             if (recipeFile.exists()) {
                 recipeFile.writeText(

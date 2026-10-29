@@ -29,12 +29,14 @@ package fr.lordfinn.crazyphone.mixin;
  * this codebase's own established convention of fully separate blocks per version+loader combo instead
  * (e.g. CrazyPhoneItemProperties' own SelfieMode/SelfieModeSelf records). Camera#setup(BlockGetter, Entity,
  * boolean, boolean, float) was restructured into update(DeltaTracker) calling a now-private
- * alignWithEntity(float) internally on >=1.21.10 (confirmed against the real decompiled 26.1.2 source);
+ * alignWithEntity(float) internally on >=26 (confirmed against the real decompiled 26.1.2 source; NeoForge
+ * 1.21.10 still has the old setup(...) shape, checked against its own sources, hence the NeoForge blocks split
+ * at 26 while the Fabric ones, which have no 1.21.10 node, keep their 1.21.10 boundary);
  * setPosition/setRotation(3 args) keep their exact old signatures on both. setRotation's own arity differs
  * by LOADER (3-arg is a NeoForge-only patch onto vanilla Camera - Fabric only has the vanilla 2-arg
  * overload), independently of this version split.
  */
-//? if neoforge && <1.21.10 {
+//? if neoforge && <26 {
 import com.mojang.math.Axis;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
@@ -180,7 +182,7 @@ public abstract class CrazyPhoneSelfieCameraMixin {
     }
 }
 *///?}
-//? if neoforge && >=1.21.10 {
+//? if neoforge && >=26 {
 /*import com.mojang.math.Axis;
 import net.minecraft.client.Camera;
 import net.minecraft.client.DeltaTracker;
