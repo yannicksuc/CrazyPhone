@@ -28,11 +28,35 @@ public final class FakePlayerPreview {
     private FakePlayerPreview() {
     }
 
+    // 26.2 made Entity#getId() throw ("Tried to access entity ID before ID assignment") while the id is still
+    // 0, and its ItemModelResolver#updateForLiving now reads that id for every held/worn item - so drawing a
+    // fake preview player (never added to a real server, so never given an id) crashed the client the moment
+    // the contact info or call screen rendered it. Every fake preview goes through showAllSkinLayers, so the
+    // id is handed out there: negative, counting down, so it can never collide with a real (positive)
+    // server-assigned entity id.
+    private static int nextPreviewId = -1_000_000;
+
+    private static void assignPreviewId(Player player) {
+        //? if >=26.2 {
+        /*player.setId(nextPreviewId--);
+        *///?}
+    }
+
     @SuppressWarnings("unchecked")
     public static void showAllSkinLayers(Player player) {
+        assignPreviewId(player);
         try {
             if (modeCustomisationField == null && !lookupFailed) {
-                modeCustomisationField = Player.class.getDeclaredField("DATA_PLAYER_MODE_CUSTOMISATION");
+                // Walks up from Player: 1.21.9+ moved this field to Player's new Avatar superclass (shared with
+                // mannequins), so Player.class.getDeclaredField alone threw NoSuchFieldException there.
+                for (Class<?> type = Player.class; type != null && modeCustomisationField == null; type = type.getSuperclass()) {
+                    try {
+                        modeCustomisationField = type.getDeclaredField("DATA_PLAYER_MODE_CUSTOMISATION");
+                    } catch (NoSuchFieldException ignored) {
+                    }
+                }
+                if (modeCustomisationField == null)
+                    throw new NoSuchFieldException("DATA_PLAYER_MODE_CUSTOMISATION");
                 modeCustomisationField.setAccessible(true);
             }
             if (modeCustomisationField == null)

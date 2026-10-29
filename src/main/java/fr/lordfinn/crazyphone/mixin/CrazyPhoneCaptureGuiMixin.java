@@ -33,7 +33,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import fr.lordfinn.crazyphone.client.CrazyPhoneCaptureMode;
 
-@Mixin(Gui.class)
+// 26.2 split the in-game HUD out of Gui into its own Hud class (Gui#hud): Hud#extractRenderState(GuiGraphicsExtractor,
+// DeltaTracker) is the exact same hook Gui had on 26.1, so only the target class changes.
+@Mixin(/^$ capture_hud_target {^/Gui/^$}^/.class)
 public abstract class CrazyPhoneCaptureGuiMixin {
     //? if <1.20.5 {
     /^@Inject(method = "render(Lnet/minecraft/client/gui/GuiGraphics;F)V", at = @At("HEAD"), cancellable = true)

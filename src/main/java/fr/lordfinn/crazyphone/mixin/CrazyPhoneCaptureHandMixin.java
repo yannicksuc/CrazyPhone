@@ -24,8 +24,10 @@ public abstract class CrazyPhoneCaptureHandMixin {
     // needed (see its own doc comment for the fuller explanation), confirmed here too via the real runtime
     // mixin-apply error ("Invalid descriptor... Expected ...SubmitNodeCollector... but found
     // ...MultiBufferSource$BufferSource...").
+    // 26.2 renamed renderHandsWithItems to submitHandsWithItems (same descriptor): both names are listed so the
+    // one injection resolves on 26.1 and 26.2+.
     //? if >=26 {
-    /^@Inject(method = "renderHandsWithItems", at = @At("HEAD"), cancellable = true)
+    /^@Inject(method = {"renderHandsWithItems", "submitHandsWithItems"}, at = @At("HEAD"), cancellable = true)
     private void crazyphone$hideHandsWhileCapturing(float partialTicks, PoseStack poseStack, net.minecraft.client.renderer.SubmitNodeCollector submitNodeCollector, LocalPlayer player, int light, CallbackInfo ci) {
         if (CrazyPhoneCaptureMode.isActive())
             ci.cancel();

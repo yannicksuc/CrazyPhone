@@ -19,7 +19,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import fr.lordfinn.crazyphone.client.CrazyPhoneCaptureMode;
 
-@Mixin(Minecraft.class)
+// 26.2 moved setScreen(Screen) off Minecraft onto Gui (see the mc_set_screen swap): every screen open still
+// funnels through it there, so the same HEAD cancel just targets that class instead.
+@Mixin(/^$ capture_escape_target {^/Minecraft/^$}^/.class)
 public abstract class CrazyPhoneCaptureEscapeMixin {
     @Inject(method = "setScreen", at = @At("HEAD"), cancellable = true)
     private void crazyphone$interceptPauseWhileCapturing(Screen screen, CallbackInfo ci) {

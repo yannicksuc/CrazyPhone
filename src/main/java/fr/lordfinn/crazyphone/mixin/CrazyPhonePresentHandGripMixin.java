@@ -210,7 +210,8 @@ public abstract class CrazyPhonePresentHandGripMixin {
     // holding - live-reported as visibly broken (a leftover sword/tool/empty-hand render fighting our own
     // grip arm for the same space) when that hand wasn't cancelled. Only the hand ACTUALLY holding the phone
     // skips the cancel, so vanilla's own subsequent body still renders the card there, completely normally.
-    @Inject(method = "renderArmWithItem", at = @At("HEAD"), cancellable = true, require = 0)
+    // 26.2 renamed renderArmWithItem to submitArmWithItem (same descriptor), hence both names.
+    @Inject(method = {"renderArmWithItem", "submitArmWithItem"}, at = @At("HEAD"), cancellable = true, require = 0)
     private void crazyphone$gripPresentedCard(net.minecraft.client.player.AbstractClientPlayer player, float frameInterp, float xRot,
             net.minecraft.world.InteractionHand hand, float attack, net.minecraft.world.item.ItemStack itemStack, float inverseArmHeight,
             PoseStack poseStack, SubmitNodeCollector submitNodeCollector, int lightCoords, CallbackInfo ci) {
