@@ -518,7 +518,8 @@ publishing {
 // (confirmed live, including the dynamic icon states fix), but 26.2-fabric doesn't yet (see
 // PORTING-26x.md) - publishing it would just fail the release. Flip to minecraftVersion-based once
 // 26.2-fabric is actually ready too, following build.fabric.gradle.kts's own project.name pattern.
-val fabric26ReadyToPublish = minecraftVersion == "26.1.2"
+// 26.2-fabric and 26.3-fabric ship from 1.8.0-beta.6 on (compiled, booted and played live, see PORTING-26x.md).
+val fabric26ReadyToPublish = project.name in setOf("26.1-fabric", "26.2-fabric", "26.3-fabric")
 val fabric26ModrinthProjectId = findProperty("modrinth_project_id") as String? ?: "REPLACE_WITH_MODRINTH_PROJECT_ID"
 val fabric26CurseforgeProjectId = findProperty("curseforge_project_id") as String? ?: "REPLACE_WITH_CURSEFORGE_PROJECT_ID"
 val fabric26ReleaseChangelog = System.getenv("RELEASE_CHANGELOG") ?: "See the GitHub release notes for this version."

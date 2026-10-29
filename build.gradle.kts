@@ -413,7 +413,8 @@ idea {
 // against "26.1.2" instead - same class of mismatch build.fabric.gradle.kts's own project.name-based
 // check was already written to avoid.
 // 1.20.4 deliberately excluded - the user decided to stop maintaining that target (2026-09-03).
-val readyToPublish = thisProject.name in setOf("1.21.1", "26.1")
+// 1.21.10 added back in 1.8.0-beta.6: it now compiles, boots and has the camera and presenting features.
+val readyToPublish = thisProject.name in setOf("1.21.1", "1.21.10", "26.1")
 val modrinthProjectId = findProperty("modrinth_project_id") as String? ?: "REPLACE_WITH_MODRINTH_PROJECT_ID"
 val curseforgeProjectId = findProperty("curseforge_project_id") as String? ?: "REPLACE_WITH_CURSEFORGE_PROJECT_ID"
 val releaseChangelog = System.getenv("RELEASE_CHANGELOG") ?: "See the GitHub release notes for this version."

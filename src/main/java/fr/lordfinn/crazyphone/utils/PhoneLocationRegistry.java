@@ -171,14 +171,14 @@ public final class PhoneLocationRegistry {
         /*net.minecraftforge.items.IItemHandler handler = stack.getCapability(
                 net.minecraftforge.common.capabilities.ForgeCapabilities.ITEM_HANDLER, null).orElse(null);
         return itemsFromLegacyHandler(handler);
-        //? } else if neoforge && >=1.21.10 && <26 {
+        *///? } else if neoforge && >=1.21.10 && <26 {
         /*if (stack.isEmpty())
             return List.of();
         net.neoforged.neoforge.transfer.ResourceHandler<net.neoforged.neoforge.transfer.item.ItemResource> handler =
                 net.neoforged.neoforge.transfer.access.ItemAccess.forStack(stack).getCapability(net.neoforged.neoforge.capabilities.Capabilities.Item.ITEM);
         return itemsFromNeoForgeResourceHandler(handler);
         *///? } else if neoforge && <26 {
-        /*net.neoforged.neoforge.items.IItemHandler handler = net.neoforged.neoforge.capabilities.Capabilities.ItemHandler.ITEM.getCapability(stack, null);
+        net.neoforged.neoforge.items.IItemHandler handler = net.neoforged.neoforge.capabilities.Capabilities.ItemHandler.ITEM.getCapability(stack, null);
         return itemsFromNeoForgeHandler(handler);
         //? } else {
         /*return List.of();
@@ -186,7 +186,7 @@ public final class PhoneLocationRegistry {
     }
 
     //? if legacyforge {
-    private static Iterable<ItemStack> itemsFromLegacyHandler(net.minecraftforge.items.IItemHandler handler) {
+    /*private static Iterable<ItemStack> itemsFromLegacyHandler(net.minecraftforge.items.IItemHandler handler) {
         if (handler == null)
             return List.of();
         List<ItemStack> items = new java.util.ArrayList<>();
@@ -197,7 +197,7 @@ public final class PhoneLocationRegistry {
         }
         return items;
     }
-    //?}
+    *///?}
     //? if neoforge && >=1.21.10 && <26 {
     /*private static Iterable<ItemStack> itemsFromNeoForgeResourceHandler(
             net.neoforged.neoforge.transfer.ResourceHandler<net.neoforged.neoforge.transfer.item.ItemResource> handler) {
@@ -214,7 +214,7 @@ public final class PhoneLocationRegistry {
     }
     *///?}
     //? if neoforge && <1.21.10 {
-    /*private static Iterable<ItemStack> itemsFromNeoForgeHandler(net.neoforged.neoforge.items.IItemHandler handler) {
+    private static Iterable<ItemStack> itemsFromNeoForgeHandler(net.neoforged.neoforge.items.IItemHandler handler) {
         if (handler == null)
             return List.of();
         List<ItemStack> items = new java.util.ArrayList<>();
@@ -225,5 +225,5 @@ public final class PhoneLocationRegistry {
         }
         return items;
     }
-    *///?}
+    //?}
 }

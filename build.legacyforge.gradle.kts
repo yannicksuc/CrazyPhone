@@ -17,6 +17,8 @@ plugins {
     idea
     `jvm-test-suite`
     id("net.neoforged.moddev.legacyforge") version "2.0.91"
+    id("com.modrinth.minotaur") version "2.9.0" apply false
+    id("net.darkhax.curseforgegradle") version "1.1.28" apply false
 }
 
 version = property("mod_version") as String
@@ -296,4 +298,44 @@ tasks.named<ProcessResources>("processResources") {
 
 tasks.withType<JavaCompile>().configureEach {
     options.encoding = "UTF-8"
+}
+
+// --- Modrinth / CurseForge publishing -----------------------------------------------------------
+// Same setup as build.gradle.kts (see its comments), for the single Forge 1.20.1 node. Inert unless
+// the release workflow sets the tokens.
+val legacyMinecraftVersion = property("minecraft_version") as String
+val legacyModrinthProjectId = findProperty("modrinth_project_id") as String? ?: "REPLACE_WITH_MODRINTH_PROJECT_ID"
+val legacyCurseforgeProjectId = findProperty("curseforge_project_id") as String? ?: "REPLACE_WITH_CURSEFORGE_PROJECT_ID"
+val legacyReleaseChangelog = System.getenv("RELEASE_CHANGELOG") ?: "See the GitHub release notes for this version."
+val legacyReleaseType = System.getenv("RELEASE_TYPE") ?: "release"
+
+if (System.getenv("MODRINTH_TOKEN") != null) {
+    apply(plugin = "com.modrinth.minotaur")
+    configure<com.modrinth.minotaur.ModrinthExtension> {
+        token.set(System.getenv("MODRINTH_TOKEN"))
+        projectId.set(legacyModrinthProjectId)
+        versionNumber.set("${property("mod_version")}+forge-$legacyMinecraftVersion")
+        versionName.set("${property("mod_version")} - Forge $legacyMinecraftVersion")
+        versionType.set(legacyReleaseType)
+        uploadFile.set(tasks.named("reobfJar"))
+        gameVersions.add(legacyMinecraftVersion)
+        loaders.add("forge")
+        changelog.set(legacyReleaseChangelog)
+    }
+}
+
+if (System.getenv("CURSEFORGE_TOKEN") != null) {
+    apply(plugin = "net.darkhax.curseforgegradle")
+    tasks.register<net.darkhax.curseforgegradle.TaskPublishCurseForge>("publishCurseForge") {
+        apiToken = System.getenv("CURSEFORGE_TOKEN")
+        val mainFile = upload(legacyCurseforgeProjectId, tasks.named("reobfJar"))
+        mainFile.changelog = legacyReleaseChangelog
+        mainFile.changelogType = "markdown"
+        mainFile.releaseType = legacyReleaseType
+        mainFile.addGameVersion(legacyMinecraftVersion)
+        mainFile.addModLoader("Forge")
+        mainFile.addJavaVersion("Java 17")
+        mainFile.addEnvironment("Client")
+        mainFile.addEnvironment("Server")
+    }
 }
