@@ -141,18 +141,7 @@ public abstract class CrazyPhonePresentHandGripMixin {
     }
 }
 //?}
-// 1.21.10-only inert placeholder: yet another incompatible API shape there (same finding as
-// PlayerPresentPoseMixin/CrazyPhonePresentHandGripInvokerMixin), not worth reconciling a third shape.
-//? if >=1.21.10 <26 {
-/*import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Pseudo;
-
-@Pseudo
-@Mixin(net.minecraft.client.Minecraft.class)
-public abstract class CrazyPhonePresentHandGripMixin {
-}
-*///?}
-//? if >=26 <26.3 {
+//? if >=1.21.10 <26.3 {
 /*import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
@@ -223,7 +212,7 @@ public abstract class CrazyPhonePresentHandGripMixin {
         crazyphone$applyGripTransform(poseStack, arm);
         net.minecraft.client.renderer.entity.player.AvatarRenderer<net.minecraft.client.player.AbstractClientPlayer> avatarRenderer =
                 this.entityRenderDispatcher.getPlayerRenderer(player);
-        net.minecraft.resources.Identifier skinTexture = player.getSkin().body().texturePath();
+        net.minecraft.resources./^$ res_loc {^/ResourceLocation/^$}^/ skinTexture = player.getSkin().body().texturePath();
         // Fabric's own AvatarRenderer#renderRightHand/renderLeftHand (vanilla-shaped, confirmed via the
         // real compiler error's own "required:" signature - no NeoForge patch involved) takes 5 args, no
         // trailing player - NeoForge's patched build adds that 6th AbstractClientPlayer param on top of the

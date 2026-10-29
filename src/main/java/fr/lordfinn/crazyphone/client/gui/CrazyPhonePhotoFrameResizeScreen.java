@@ -775,12 +775,12 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
         this.minecraft.gameMode.handleInventoryButtonClick(menu.containerId, CrazyPhonePhotoFrameResizeMenu.encodeAxisV(negV, posV));
     }
 
-    // Screen's own mouse-event methods took plain (mouseX, mouseY, button) doubles/int through <26; >=26
+    // Screen's own mouse-event methods took plain (mouseX, mouseY, button) doubles/int through <1.21.10; >=1.21.10
     // reworked the whole GuiEventListener contract to pass a single MouseButtonEvent(x, y, buttonInfo)
     // record instead (confirmed against the real decompiled GuiEventListener.java/MouseButtonEvent.java,
     // not guessed) - two full override bodies below rather than trying to bridge one shared shape, same
     // approach every other >=26 API break in this codebase already takes.
-    //? if <26 {
+    //? if <1.21.10 {
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         // Corner handles are checked BEFORE insideGrid, not inside it - a handle whose real (possibly
@@ -823,7 +823,7 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
         return super.mouseReleased(mouseX, mouseY, button);
     }
     //?}
-    //? if >=26 {
+    //? if >=1.21.10 {
     /*@Override
     public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent event, boolean doubleClick) {
         if (event.button() == com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_LEFT && tryBeginCornerDrag(event.x(), event.y()))

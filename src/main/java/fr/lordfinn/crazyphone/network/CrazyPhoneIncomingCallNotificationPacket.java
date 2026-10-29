@@ -111,10 +111,10 @@ public record CrazyPhoneIncomingCallNotificationPacket(String conversationId, St
     //? if (neoforge || legacyforge) && <1.20.5 {
     @OnlyIn(Dist.CLIENT)
     //?}
-    //? if neoforge && >=1.20.5 <26 {
+    //? if neoforge && >=1.20.5 <1.21.10 {
     /*@OnlyIn(Dist.CLIENT)
     *///?}
-    // >=26: @OnlyIn intentionally absent - inert on this version (NeoForge dropped its runtime member
+    // >=1.21.10 (NeoForge 1.21.10 already logs the same OnlyInWarningsHandler error) and >=26: @OnlyIn intentionally absent - inert on this version (NeoForge dropped its runtime member
     // stripping there), and its mere presence in the jar triggers NeoForge's own OnlyInWarningsHandler at
     // mod-load time, popping a warning window for the player at every launch for zero actual effect.
     static class ClientHandler {

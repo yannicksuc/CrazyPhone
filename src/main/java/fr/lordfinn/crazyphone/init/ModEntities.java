@@ -27,11 +27,11 @@ import fr.lordfinn.crazyphone.entity.CrazyPhonePhotoFrameEntity;
  * CrazyPhoneSelfieCameraMixin's own doc comment for why nesting a version toggle inside an already-wrapped
  * loader toggle corrupts Stonecutter's output; this file follows the same established flat-sibling shape.
  */
-// EntityType.Builder#build's own String-id convenience overload is gone on >=26 - confirmed against the
+// EntityType.Builder#build's own String-id convenience overload is gone on >=1.21.10 (NeoForge) and >=26 - confirmed against the
 // real decompiled EntityType.java, only build(ResourceKey<EntityType<?>>) remains there. <26 still accepts
 // either; kept as the simpler .toString() form there to match every other .build(...)/.register(...) call
 // site elsewhere in this codebase.
-//? if neoforge && >=1.20.5 <26 {
+//? if neoforge && >=1.20.5 <1.21.10 {
 /*public class ModEntities {
     public static final DeferredRegister<EntityType<?>> REGISTRY = DeferredRegister.create(Registries.ENTITY_TYPE, Crazyphone.MODID);
 
@@ -42,7 +42,7 @@ import fr.lordfinn.crazyphone.entity.CrazyPhonePhotoFrameEntity;
                     .build(Crazyphone.resource("photo_frame").toString()));
 }
 *///?}
-//? if neoforge && >=26 {
+//? if neoforge && >=1.21.10 {
 /*public class ModEntities {
     public static final DeferredRegister<EntityType<?>> REGISTRY = DeferredRegister.create(Registries.ENTITY_TYPE, Crazyphone.MODID);
 

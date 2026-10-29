@@ -32,7 +32,7 @@ package fr.lordfinn.crazyphone.client.render;
  * its own Polaroid-card frame (see that class's own doc comment) - no baked model, this entity has no
  * block/item model of its own at all.
  *
- * >=26 branch is unproven against a real decompile the way every other >=26 rendering piece in this codebase
+ * The >=1.21.10 branch (shared by 26.x, whose RenderState rework 1.21.10 already has) is unproven against a real decompile the way every other >=26 rendering piece in this codebase
  * was (see PORTING-26x.md's own established practice) - this project has never had a custom entity before
  * (confirmed via a full-repo search before writing this), so there was no existing >=26 entity-render
  * precedent to copy. Written against the same EntityRenderState-based extractRenderState()/submit() split
@@ -40,7 +40,7 @@ package fr.lordfinn.crazyphone.client.render;
  * applies to the whole EntityRenderer hierarchy, not just living entities) - expect this to need real
  * compile-error-driven correction, same as every other >=26 gap this project has closed so far.
  */
-//? if <26 {
+//? if <1.21.10 {
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
@@ -357,7 +357,7 @@ public class CrazyPhonePhotoFrameRenderer extends EntityRenderer<CrazyPhonePhoto
     //?}
 }
 //?}
-//? if >=26 {
+//? if >=1.21.10 {
 /*import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
@@ -367,7 +367,7 @@ import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.state.EntityRenderState;
 import /^$ render_type_import {^/net.minecraft.client.renderer.RenderType/^$}^/;
 import net.minecraft.core.Direction;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources./^$ res_loc {^/ResourceLocation/^$}^/;
 
 import fr.lordfinn.crazyphone.Crazyphone;
 import fr.lordfinn.crazyphone.client.picture.FabricPictureCache;
@@ -375,12 +375,12 @@ import fr.lordfinn.crazyphone.entity.CrazyPhonePhotoFrameEntity;
 import fr.lordfinn.crazyphone.utils.PhotoResolution;
 
 public class CrazyPhonePhotoFrameRenderer extends EntityRenderer<CrazyPhonePhotoFrameEntity, CrazyPhonePhotoFrameRenderer.State> {
-    private static final Identifier GROUND_BACKING_TEXTURE =
+    private static final /^$ res_loc {^/ResourceLocation/^$}^/ GROUND_BACKING_TEXTURE =
             Crazyphone.parseId("crazyphone:textures/entity/photo_frame_ground_backing.png");
     // See the <26 branch's own comment on this same pair of constants - a dedicated, uniformly opaque
     // texture, NOT CrazyPhonePhotoItemRenderer's own FRAME_TEXTURE (which has a transparent middle for an
     // unrelated reason and would silently drop most of every side wall if reused here).
-    private static final Identifier FRAME_TEXTURE =
+    private static final /^$ res_loc {^/ResourceLocation/^$}^/ FRAME_TEXTURE =
             Crazyphone.parseId("crazyphone:textures/entity/photo_frame_dye_base.png");
     private static final float DEPTH = (float) CrazyPhonePhotoFrameEntity.DEPTH;
     // Flush against the photo's own edge, zero gap - see the <26 branch's own comment on this same constant.
@@ -407,7 +407,7 @@ public class CrazyPhonePhotoFrameRenderer extends EntityRenderer<CrazyPhonePhoto
         public int borderRgb = 0xFFFFFF;
     }
 
-    private static Identifier frameTexture(int borderRgb) {
+    private static /^$ res_loc {^/ResourceLocation/^$}^/ frameTexture(int borderRgb) {
         return borderRgb != 0xFFFFFF ? FRAME_TEXTURE : GROUND_BACKING_TEXTURE;
     }
 
@@ -419,11 +419,11 @@ public class CrazyPhonePhotoFrameRenderer extends EntityRenderer<CrazyPhonePhoto
     @Override
     public void extractRenderState(CrazyPhonePhotoFrameEntity entity, State state, float partialTick) {
         super.extractRenderState(entity, state, partialTick);
-        // See the <26 branch's own comment on this same override for why - LightTexture.FULL_BRIGHT moved
-        // to LightCoordsUtil.FULL_BRIGHT on >=26 (same value, 0xF000F0/15728880, confirmed via the real
+        // See the <1.21.10 branch's own comment on this same override for why - LightTexture.FULL_BRIGHT moved
+        // to LightCoordsUtil.FULL_BRIGHT on >=26 (full_bright_const swap) (same value, 0xF000F0/15728880, confirmed via the real
         // decompiled LightCoordsUtil.java, not guessed).
         if (entity.fullbright())
-            state.lightCoords = net.minecraft.util.LightCoordsUtil.FULL_BRIGHT;
+            state.lightCoords = /^$ full_bright_const {^/net.minecraft.client.renderer.LightTexture.FULL_BRIGHT/^$}^/;
         state.face = entity.attachFace();
         state.faceOffset = entity.computeFaceOffset(entity.level());
         state.width = entity.widthBlocks();
@@ -440,7 +440,7 @@ public class CrazyPhonePhotoFrameRenderer extends EntityRenderer<CrazyPhonePhoto
     }
 
     @Override
-    public void submit(State state, PoseStack poseStack, SubmitNodeCollector collector, net.minecraft.client.renderer.state.level.CameraRenderState camera) {
+    public void submit(State state, PoseStack poseStack, SubmitNodeCollector collector, /^$ camera_render_state_cls {^/net.minecraft.client.renderer.state.CameraRenderState/^$}^/ camera) {
         poseStack.pushPose();
         applyFaceTransform(state, poseStack);
 
@@ -459,7 +459,7 @@ public class CrazyPhonePhotoFrameRenderer extends EntityRenderer<CrazyPhonePhoto
 
         if (boxed) {
             float finalW = drawW, finalH = drawH;
-            Identifier frameTexture = frameTexture(state.borderRgb);
+            /^$ res_loc {^/ResourceLocation/^$}^/ frameTexture = frameTexture(state.borderRgb);
             int r = (state.borderRgb >> 16) & 0xFF, g = (state.borderRgb >> 8) & 0xFF, b = state.borderRgb & 0xFF;
             collector.submitCustomGeometry(poseStack, /^$ render_type_import {^/RenderType/^$}^/.entityCutout(frameTexture),
                     (pose, consumer) -> drawBoxSides(consumer, pose, finalW, finalH, state.lightCoords, r, g, b));

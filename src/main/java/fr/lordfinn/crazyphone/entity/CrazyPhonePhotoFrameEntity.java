@@ -560,17 +560,17 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
         }
     }
 
-    // Entity#kill()/spawnAtLocation(ItemStack) both gained an explicit ServerLevel parameter on >=26 (see
+    // Entity#kill()/spawnAtLocation(ItemStack) both gained an explicit ServerLevel parameter on >=1.21.10 (see
     // this method's own two version-specific bodies below) - this.level() is always the same ServerLevel
     // instance at every call site that reaches here (both are only ever invoked after an isClientSide()
     // guard), so the cast is safe.
-    //? if <26 {
+    //? if <1.21.10 {
     private void killAndDrop(ItemStack stack) {
         this.kill();
         this.spawnAtLocation(stack);
     }
     //?}
-    //? if >=26 {
+    //? if >=1.21.10 {
     /*private void killAndDrop(ItemStack stack) {
         net.minecraft.server.level.ServerLevel serverLevel = (net.minecraft.server.level.ServerLevel) this.level();
         this.kill(serverLevel);
@@ -712,7 +712,7 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
         //?}
     }
 
-    //? if <26 {
+    //? if <1.21.10 {
     @Override
     public boolean hurt(DamageSource source, float amount) {
         if (this.level().isClientSide() || this.isRemoved())
@@ -744,7 +744,7 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
         return InteractionResult.SUCCESS;
     }
     //?}
-    //? if >=26 {
+    //? if >=1.21.10 {
     /*@Override
     public boolean hurtServer(net.minecraft.server.level.ServerLevel level, DamageSource source, float amount) {
         if (this.isRemoved())
@@ -754,11 +754,14 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
         playBreakSound();
         return true;
     }
+    *///?}
 
     // interact() gained an explicit Vec3 (the precise clicked point, relative to the entity) parameter on
-    // >=26 - confirmed against the real decompiled Entity.java. Not needed for this resize-dialog use case,
+    // >=26 - confirmed against the real decompiled Entity.java (1.21.10 still has the 2-argument form, see
+    // the (fabric || neoforge) && <26 override above). Not needed for this resize-dialog use case,
     // deliberately unused here.
-    @Override
+    //? if >=26 {
+    /*@Override
     public InteractionResult interact(Player player, InteractionHand hand, net.minecraft.world.phys.Vec3 location) {
         if (!this.level().isClientSide())
             fr.lordfinn.crazyphone.utils.ScreenMenuUtils.openPhotoFrameResizeMenu(player, this);
@@ -777,7 +780,7 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
         // comment on the same boundary) - a dyed frame's dropped stack just carries no color info there.
         //? if (fabric || neoforge) && >=1.20.5 {
         /*if (borderRgb != 0xFFFFFF) {
-            //? if >=26 {
+            //? if >=1.21.10 {
             /^stack.set(net.minecraft.core.component.DataComponents.DYED_COLOR, new net.minecraft.world.item.component.DyedItemColor(borderRgb));
             ^///? } else {
             stack.set(net.minecraft.core.component.DataComponents.DYED_COLOR, new net.minecraft.world.item.component.DyedItemColor(borderRgb, false));
@@ -802,12 +805,12 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
     }
 
     // Entity's save/load NBT hooks moved from plain CompoundTag to a new ValueInput/ValueOutput abstraction
-    // on >=26 (confirmed against the real decompiled Entity.java: readAdditionalSaveData(ValueInput) /
+    // on >=1.21.10 (confirmed against the real decompiled Entity.java: readAdditionalSaveData(ValueInput) /
     // addAdditionalSaveData(ValueOutput), both now abstract) - ValueOutput#putInt/putString and
     // ValueInput#getIntOr/getStringOr are the same names as CompoundTag's own (and NbtCompat's own
     // wrappers), just a different interface entirely, so the >=26 branch below talks to it directly
     // instead of through NbtCompat (which is CompoundTag-specific).
-    //? if <26 {
+    //? if <1.21.10 {
     @Override
     protected void readAdditionalSaveData(CompoundTag tag) {
         attachPos = new BlockPos(
@@ -849,7 +852,7 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
         tag.putInt("FaceOffset", this.entityData.get(DATA_FACE_OFFSET));
     }
     //?}
-    //? if >=26 {
+    //? if >=1.21.10 {
     /*@Override
     protected void readAdditionalSaveData(net.minecraft.world.level.storage.ValueInput input) {
         attachPos = new BlockPos(input.getIntOr("AttachX", 0), input.getIntOr("AttachY", 0), input.getIntOr("AttachZ", 0));

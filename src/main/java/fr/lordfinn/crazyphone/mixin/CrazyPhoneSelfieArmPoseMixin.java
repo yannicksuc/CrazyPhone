@@ -46,25 +46,14 @@ public abstract class CrazyPhoneSelfieArmPoseMixin<T extends LivingEntity, M ext
     }
 }
 //?}
-// 1.21.10-only inert placeholder - same reasoning as PlayerPresentPoseMixin's own placeholder for this
-// version (a third, unreconciled RenderState API shape, not worth chasing in this pass).
-//? if >=1.21.10 <26 {
-/*import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Pseudo;
-
-@Pseudo
-@Mixin(net.minecraft.client.Minecraft.class)
-public abstract class CrazyPhoneSelfieArmPoseMixin {
-}
-*///?}
-//? if >=26 {
+//? if >=1.21.10 {
 /*import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.model.EntityModel;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
 import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
-import net.minecraft.client.renderer.state.level.CameraRenderState;
+import /^$ camera_render_state_cls {^/net.minecraft.client.renderer.state.CameraRenderState/^$}^/;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import org.spongepowered.asm.mixin.Mixin;
@@ -95,7 +84,7 @@ public abstract class CrazyPhoneSelfieArmPoseMixin<T extends LivingEntity, S ext
     // actually declares the method (Model<S>) - same shape PlayerPresentPoseMixin's own >=26 branch
     // already documents and relies on. (First checked this against the decompiled Java source alone,
     // which only shows declaring classes, not INVOKE owners, and got it backwards - reverted.)
-    @Inject(method = "submit(Lnet/minecraft/client/renderer/entity/state/LivingEntityRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;Lnet/minecraft/client/renderer/state/level/CameraRenderState;)V",
+    @Inject(method = /^$ living_submit_desc {^/"submit(Lnet/minecraft/client/renderer/entity/state/LivingEntityRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;Lnet/minecraft/client/renderer/state/CameraRenderState;)V"/^$}^/,
             at = @At(value = "INVOKE", target = "Lnet/minecraft/client/model/EntityModel;setupAnim(Ljava/lang/Object;)V", shift = At.Shift.AFTER),
             require = 0)
     private void crazyphone$applySelfiePose(S state, PoseStack poseStack, SubmitNodeCollector submitNodeCollector, CameraRenderState camera, CallbackInfo ci) {

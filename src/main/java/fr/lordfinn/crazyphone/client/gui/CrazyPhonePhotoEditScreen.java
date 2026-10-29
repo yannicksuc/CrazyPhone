@@ -1121,7 +1121,7 @@ public class CrazyPhonePhotoEditScreen extends Screen implements PhoneScreen {
         return false;
     }
 
-    //? if <26 {
+    //? if <1.21.10 {
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (button == com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_LEFT && tryStartScrollbarDrag(mouseX, mouseY))

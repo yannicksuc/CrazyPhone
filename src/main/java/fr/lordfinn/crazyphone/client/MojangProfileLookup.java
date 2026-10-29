@@ -107,11 +107,11 @@ public final class MojangProfileLookup {
      * (this is a blocking HTTP call), and any failure just yields the id+name profile as before. */
     private static GameProfile withTextures(GameProfile profile) {
         try {
-            // Minecraft#getMinecraftSessionService() is gone on 26 - the session service now hangs off the
+            // Minecraft#getMinecraftSessionService() is gone from 1.21.10 on - the session service now hangs off the
             // client's Services record (Minecraft#services(), confirmed against the real 26.1.2 jar).
             //? if >=26.3 {
             /*com.mojang.authlib.minecraft.SessionService sessionService = Minecraft.getInstance().services().sessionService();
-            *///? } else if >=26 {
+            *///? } else if >=1.21.10 {
             /*com.mojang.authlib.minecraft.MinecraftSessionService sessionService = Minecraft.getInstance().services().sessionService();
             *///? } else {
             com.mojang.authlib.minecraft.MinecraftSessionService sessionService = Minecraft.getInstance().getMinecraftSessionService();

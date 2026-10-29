@@ -297,21 +297,26 @@ sourceSets.main {
 // items/crazy_phone_photo.json's build output on >=26 to reference the custom type directly (no
 // "minecraft:model" indirection, no models/item/ file needed at all there) - crazy_phone.json's own
 // condition-tree wrapper already proves items/*.json's "model" field is parsed through the full dispatch
-// codec directly, same one RegisterItemModelsEvent registers into.
+// codec directly, same one RegisterItemModelsEvent registers into. 1.21.10 gets the same patch: it has the
+// same item model system, and without it the photo rendered as the purple/black missing model there.
 tasks.named<ProcessResources>("processResources") {
-    if (minecraftVersion.startsWith("26.")) {
+    if (minecraftVersion == "1.21.10" || minecraftVersion.startsWith("26.")) {
         doLast {
             val photoModelFile = destinationDir.resolve("assets/crazyphone/models/item/crazy_phone_photo.json")
             photoModelFile.writeText("""{"type": "crazyphone:photo_card_model"}""" + "\n")
             val photoItemFile = destinationDir.resolve("assets/crazyphone/items/crazy_phone_photo.json")
             photoItemFile.writeText("""{"model": {"type": "crazyphone:photo_card_model"}}""" + "\n")
 
-            // crazy_phone.json's tracked "key" entries use the older {"item": "..."} object form (needed by
-            // 1.21.1's own Ingredient codec, which has no bare-string shorthand). NeoForge's own
-            // IngredientCodecs wrapper is designed to keep accepting that older form for back-compat even on
-            // >=26, but this rewrites the build output to the newer bare-string form anyway rather than
-            // relying on that unverified assumption - same "patch the build output, not the tracked shared
-            // resource" approach as the two files above.
+        }
+    }
+
+    // crazy_phone.json's tracked "key" entries use the older {"item": "..."} object form (needed by 1.21.1's
+    // own Ingredient codec, which has no bare-string shorthand). 1.21.10's dedicated server rejects that form
+    // outright (confirmed live: "Couldn't parse data file 'crazyphone:crazy_phone'", no phone recipe at all),
+    // and >=26 gets the same rewrite for consistency - same "patch the build output, not the tracked shared
+    // resource" approach as the item model files above.
+    if (minecraftVersion == "1.21.10" || minecraftVersion.startsWith("26.")) {
+        doLast {
             val recipeFile = destinationDir.resolve("data/crazyphone/recipe/crazy_phone.json")
             if (recipeFile.exists()) {
                 recipeFile.writeText(

@@ -291,7 +291,7 @@ public class CrazyPhoneInCallScreenScreen extends CrazyPhoneDefaultScreenScreen<
         if (videoTooltip == null)
             videoTooltip = voiceModeTooltipAt(mouseX, mouseY);
         if (videoTooltip != null)
-            guiGraphics.renderComponentTooltip(this.font, videoTooltip, mouseX, mouseY);
+            guiGraphics./*$ gui_render_component_tooltip {*/renderComponentTooltip/*$}*/(this.font, videoTooltip, mouseX, mouseY);
         this.renderTooltip(guiGraphics, mouseX, mouseY);
     }
     //?}
@@ -384,8 +384,11 @@ public class CrazyPhoneInCallScreenScreen extends CrazyPhoneDefaultScreenScreen<
         //? if <1.21.10 {
         net.minecraft.client.gui.components.PlayerFaceRenderer.draw(guiGraphics, skin, x + pad, y + pad, faceSize);
         //?}
-        // >=1.21.10 <26: nothing drawn - a frozen/unmaintained target (see CrazyPhoneCaptureMode's own note),
-        // and its vanilla face-drawing helper sits between the two shapes below without being either.
+        // 1.21.10 still has PlayerFaceRenderer#draw(GuiGraphics, PlayerSkin, x, y, size), only its PlayerSkin
+        // moved to net.minecraft.world.entity.player (the faceSkins map above already uses that one there).
+        //? if >=1.21.10 <26 {
+        /*net.minecraft.client.gui.components.PlayerFaceRenderer.draw(guiGraphics, skin, x + pad, y + pad, faceSize);
+        *///?}
         //? if >=26 {
         /*net.minecraft.client.gui.components.PlayerFaceExtractor.extractRenderState(guiGraphics, skin, x + pad, y + pad, faceSize);
         *///?}
@@ -503,7 +506,7 @@ public class CrazyPhoneInCallScreenScreen extends CrazyPhoneDefaultScreenScreen<
         return false;
     }
 
-    //? if <26 {
+    //? if <1.21.10 {
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (handleVideoIconClick(mouseX, mouseY, button) || handleVoiceModeClick(mouseX, mouseY, button))
@@ -511,7 +514,7 @@ public class CrazyPhoneInCallScreenScreen extends CrazyPhoneDefaultScreenScreen<
         return super.mouseClicked(mouseX, mouseY, button);
     }
     //?}
-    //? if >=26 {
+    //? if >=1.21.10 {
     /*@Override
     public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent event, boolean doubleClick) {
         if (handleVideoIconClick(event.x(), event.y(), event.button()) || handleVoiceModeClick(event.x(), event.y(), event.button()))

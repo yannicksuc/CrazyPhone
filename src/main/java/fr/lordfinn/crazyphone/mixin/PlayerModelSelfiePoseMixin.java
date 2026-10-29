@@ -31,8 +31,8 @@ package fr.lordfinn.crazyphone.mixin;
  * failure on its shared >=26 branch - a genuinely different, field-doesn't-exist-on-Fabric problem). Reading
  * partial tick from Minecraft's own DeltaTracker instead sidesteps this - loader-neutral, vanilla API.
  */
-//? if >=26 {
-/*import net.minecraft.client.model.player.PlayerModel;
+//? if >=1.21.10 {
+/*import /^$ player_model_pkg {^/net.minecraft.client.model.PlayerModel/^$}^/;
 import net.minecraft.client.renderer.entity.state.AvatarRenderState;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;

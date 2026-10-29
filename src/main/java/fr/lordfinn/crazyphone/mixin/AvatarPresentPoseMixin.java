@@ -33,7 +33,7 @@ package fr.lordfinn.crazyphone.mixin;
  * CrazyPhoneSelfieAvatarExtractMixin's own doc comment already found and fixed for selfie mode). Widened to
  * both loaders.
  */
-//? if >=26 {
+//? if >=1.21.10 {
 /*import net.minecraft.client.renderer.entity.player.AvatarRenderer;
 import net.minecraft.client.renderer.entity.state.AvatarRenderState;
 import net.minecraft.world.entity.Avatar;
