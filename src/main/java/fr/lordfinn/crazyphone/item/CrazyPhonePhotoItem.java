@@ -3,6 +3,10 @@ package fr.lordfinn.crazyphone.item;
 //? if neoforge && <1.21.10 {
 import net.neoforged.neoforge.client.extensions.common.IClientItemExtensions;
 //?}
+// Forge 1.20.1 has the same client item extension hook at its original package.
+//? if legacyforge {
+/*import net.minecraftforge.client.extensions.common.IClientItemExtensions;
+*///?}
 
 import net.minecraft.world.InteractionHand;
 //? if <1.21.10 {
@@ -156,7 +160,7 @@ public class CrazyPhonePhotoItem extends Item {
                         fr.lordfinn.crazyphone.client.render.CrazyPhonePhotoItemRenderer.render(stack, displayContext, poseStack, buffer, light, overlay));
     }
     *///?}
-    //? if neoforge && <1.21.10 {
+    //? if (neoforge || legacyforge) && <1.21.10 {
     // TODO: 1.21.10 removed BlockEntityWithoutLevelRenderer from net.minecraft.client.renderer entirely
     // (item custom-rendering was reworked into a data-driven "special model" system) - no NeoForge-side
     // photo rendering on that version yet, tracked as a backport follow-up once the rest of this pipeline
