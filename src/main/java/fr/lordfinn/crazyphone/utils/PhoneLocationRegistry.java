@@ -160,7 +160,8 @@ public final class PhoneLocationRegistry {
      * ITEM (not block) expose nested storage" - each mod publishes its own {@code ItemApiLookup} field, and
      * querying it generically would mean a hard dependency on that specific mod's own API after all
      * (checked: {@code fabric-transfer-api-v1} itself only ships {@code ItemStorage.SIDED}, a BLOCK lookup,
-     * no item-level equivalent). Also empty on NeoForge 26+: that version replaced {@code IItemHandler}
+     * no item-level equivalent). On NeoForge 1.21.10 the same lookup goes through the newer {@code ResourceHandler}/{@code ItemAccess}
+     * transfer API ({@code Capabilities.ItemHandler} is already gone there). Still empty on NeoForge 26+: that version replaced {@code IItemHandler}
      * with a whole new {@code ResourceHandler}/{@code ItemAccess} transfer API (javap-verified against the
      * real 26.1 jar - {@code Capabilities.ItemHandler} itself is gone, renamed/reshaped into
      * {@code Capabilities.Item}) - a separate, not-yet-attempted piece of work, and no backpack mod
@@ -170,7 +171,13 @@ public final class PhoneLocationRegistry {
         net.minecraftforge.items.IItemHandler handler = stack.getCapability(
                 net.minecraftforge.common.capabilities.ForgeCapabilities.ITEM_HANDLER, null).orElse(null);
         return itemsFromLegacyHandler(handler);
-        //? } else if neoforge && <26 {
+        //? } else if neoforge && >=1.21.10 && <26 {
+        /*if (stack.isEmpty())
+            return List.of();
+        net.neoforged.neoforge.transfer.ResourceHandler<net.neoforged.neoforge.transfer.item.ItemResource> handler =
+                net.neoforged.neoforge.transfer.access.ItemAccess.forStack(stack).getCapability(net.neoforged.neoforge.capabilities.Capabilities.Item.ITEM);
+        return itemsFromNeoForgeResourceHandler(handler);
+        *///? } else if neoforge && <26 {
         /*net.neoforged.neoforge.items.IItemHandler handler = net.neoforged.neoforge.capabilities.Capabilities.ItemHandler.ITEM.getCapability(stack, null);
         return itemsFromNeoForgeHandler(handler);
         *///? } else {
@@ -191,7 +198,22 @@ public final class PhoneLocationRegistry {
         return items;
     }
     //?}
-    //? if neoforge && <26 {
+    //? if neoforge && >=1.21.10 && <26 {
+    /*private static Iterable<ItemStack> itemsFromNeoForgeResourceHandler(
+            net.neoforged.neoforge.transfer.ResourceHandler<net.neoforged.neoforge.transfer.item.ItemResource> handler) {
+        if (handler == null)
+            return List.of();
+        List<ItemStack> items = new java.util.ArrayList<>();
+        for (int i = 0; i < handler.size(); i++) {
+            net.neoforged.neoforge.transfer.item.ItemResource resource = handler.getResource(i);
+            int amount = handler.getAmountAsInt(i);
+            if (!resource.isEmpty() && amount > 0)
+                items.add(resource.toStack(amount));
+        }
+        return items;
+    }
+    *///?}
+    //? if neoforge && <1.21.10 {
     /*private static Iterable<ItemStack> itemsFromNeoForgeHandler(net.neoforged.neoforge.items.IItemHandler handler) {
         if (handler == null)
             return List.of();

@@ -69,7 +69,9 @@ stonecutter parameters {
     swaps.put("gui_draw_centered_string", if (is26) "centeredText" else "drawCenteredString")
     swaps.put("gui_draw_word_wrap", if (is26) "textWithWordWrap" else "drawWordWrap")
     swaps.put("gui_render_tooltip", if (is26) "setTooltipForNextFrame" else "renderTooltip")
-    swaps.put("gui_render_component_tooltip", if (is26) "setComponentTooltipForNextFrame" else "renderComponentTooltip")
+    // setComponentTooltipForNextFrame already replaced renderComponentTooltip on 1.21.10 (checked against
+    // the real 1.21.10 NeoForge sources), so this one swaps from 1.21.10 on, not only from 26.
+    swaps.put("gui_render_component_tooltip", if (semantics.eval(current.version, ">=1.21.10")) "setComponentTooltipForNextFrame" else "renderComponentTooltip")
     // Real 1.20.1 vanilla has no renderTransparentBackground(GuiGraphics) at all (only the plain
     // renderBackground(GuiGraphics) - the dedicated "transparent" overlay-screen variant was added later,
     // alongside the same 1.20.2-era GuiGraphics rework several other swaps above already branch around).
@@ -116,4 +118,10 @@ stonecutter parameters {
     // prefix, matching the modern accessor convention used elsewhere - confirmed via decompiled source:
     // 26.1 still has getMainCamera(), 26.2 only has mainCamera()).
     swaps.put("gr_main_camera", if (is262) "mainCamera" else "getMainCamera")
+    // The entity RenderState pipeline (EntityRenderer#submit(state, poseStack, collector, camera)) already
+    // exists on 1.21.10, which the >=1.21.10 photo frame renderer shares with 26.x. Two names still differ
+    // between those two (checked against the real 1.21.10 NeoForge sources): 26.x moved CameraRenderState
+    // into a "level" subpackage, and LightTexture.FULL_BRIGHT became LightCoordsUtil.FULL_BRIGHT (same value).
+    swaps.put("camera_render_state_cls", if (is26) "net.minecraft.client.renderer.state.level.CameraRenderState" else "net.minecraft.client.renderer.state.CameraRenderState")
+    swaps.put("full_bright_const", if (is26) "net.minecraft.util.LightCoordsUtil.FULL_BRIGHT" else "net.minecraft.client.renderer.LightTexture.FULL_BRIGHT")
 }

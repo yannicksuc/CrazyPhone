@@ -16,7 +16,7 @@ class PhotoImageOpsTest {
         return new NativeImage(width, height, false);
     }
 
-    //? if <26 {
+    //? if <1.21.10 {
     private static void setPixel(NativeImage image, int x, int y, int a, int r, int g, int b) {
         image.setPixelRGBA(x, y, (a << 24) | (b << 16) | (g << 8) | r);
     }

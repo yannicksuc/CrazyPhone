@@ -20,7 +20,7 @@ public final class PhotoImageOps {
     // drops alpha (a live capture is always opaque); this one must preserve it, since an edited photo can
     // easily be a transparent PNG/GIF frame.
     private static int readPixelARGB(NativeImage image, int x, int y) {
-        //? if <26 {
+        //? if <1.21.10 {
         int p = image.getPixelRGBA(x, y);
         int a = (p >> 24) & 0xFF, r = p & 0xFF, g = (p >> 8) & 0xFF, b = (p >> 16) & 0xFF;
         //? } else {
@@ -33,7 +33,7 @@ public final class PhotoImageOps {
     private static void writePixelARGB(NativeImage image, int x, int y, int argb) {
         int a = (argb >>> 24) & 0xFF, r = (argb >> 16) & 0xFF, g = (argb >> 8) & 0xFF, b = argb & 0xFF;
         int packed = (a << 24) | (b << 16) | (g << 8) | r;
-        //? if <26 {
+        //? if <1.21.10 {
         image.setPixelRGBA(x, y, packed);
         //? } else {
         /*image.setPixelABGR(x, y, packed);

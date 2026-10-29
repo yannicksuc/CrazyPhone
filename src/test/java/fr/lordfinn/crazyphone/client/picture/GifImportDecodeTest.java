@@ -76,7 +76,11 @@ class GifImportDecodeTest {
             assertEquals(64, image.getWidth());
             assertEquals(48, image.getHeight());
             // The transparent corner must come back with alpha < 255 so the frame renderer treats it as such.
+            //? if <1.21.10 {
             int corner = image.getPixelRGBA(0, 0) >>> 24 & 0xFF;
+            //? } else {
+            /*int corner = image.getPixel(0, 0) >>> 24 & 0xFF;
+            *///?}
             assertTrue(corner < 255, "corner alpha was " + corner);
         }
     }

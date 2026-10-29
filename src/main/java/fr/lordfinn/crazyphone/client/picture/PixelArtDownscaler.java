@@ -193,7 +193,7 @@ public final class PixelArtDownscaler {
 
     // ---- NativeImage pixel access (version-gated packed-int layout, not just a method rename) -------------
 
-    // Reading and writing use DIFFERENT method pairs on >=26, not just a renamed pair of the same one -
+    // Reading and writing use DIFFERENT method pairs on >=1.21.10 (same NativeImage API as 26.x), not just a renamed pair of the same one -
     // confirmed against the real decompiled NativeImage.java (26.1.2.100): getPixelABGR is private there
     // (compile-checked live, not guessed - a first attempt at calling it here failed with "has private access
     // in NativeImage"), so reading has to go through the public getPixel(x,y) instead, which returns plain
@@ -202,7 +202,7 @@ public final class PixelArtDownscaler {
     // like <26's setPixelRGBA (R bits 0-7, B bits 16-23, both confirmed via FastColor.ABGR32/NativeImage's own
     // memPutInt call), so the packed int this class builds for writing needs no version-specific shape at all.
     private static int readPixel(NativeImage image, int x, int y) {
-        //? if <26 {
+        //? if <1.21.10 {
         int p = image.getPixelRGBA(x, y);
         int r = p & 0xFF, g = (p >> 8) & 0xFF, b = (p >> 16) & 0xFF;
         //? } else {
@@ -215,7 +215,7 @@ public final class PixelArtDownscaler {
     private static void writePixel(NativeImage image, int x, int y, int rgb) {
         int r = (rgb >> 16) & 0xFF, g = (rgb >> 8) & 0xFF, b = rgb & 0xFF;
         int packed = (0xFF << 24) | (b << 16) | (g << 8) | r;
-        //? if <26 {
+        //? if <1.21.10 {
         image.setPixelRGBA(x, y, packed);
         //? } else {
         /*image.setPixelABGR(x, y, packed);

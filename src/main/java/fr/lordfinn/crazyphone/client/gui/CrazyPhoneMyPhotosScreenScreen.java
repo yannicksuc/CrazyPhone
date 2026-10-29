@@ -146,7 +146,7 @@ public class CrazyPhoneMyPhotosScreenScreen extends CrazyPhoneDefaultScreenScree
         if (importTooltip == null)
             importTooltip = linkTooltipAt(mouseX, mouseY);
         if (importTooltip != null)
-            guiGraphics.renderComponentTooltip(this.font, importTooltip, mouseX, mouseY);
+            guiGraphics./*$ gui_render_component_tooltip {*/renderComponentTooltip/*$}*/(this.font, importTooltip, mouseX, mouseY);
     }
     //?}
 

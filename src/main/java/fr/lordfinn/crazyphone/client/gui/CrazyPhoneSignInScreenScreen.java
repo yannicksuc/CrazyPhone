@@ -72,7 +72,7 @@ public class CrazyPhoneSignInScreenScreen extends CrazyPhoneDefaultScreenScreen<
 		renderAutoLockIcon(guiGraphics, mouseX, mouseY);
 		password.render(guiGraphics, mouseX, mouseY, partialTicks);
 		if (isHoveringAutoLockIcon(mouseX, mouseY))
-			guiGraphics.renderComponentTooltip(this.font, autoLockIconTooltip(), mouseX, mouseY);
+			guiGraphics./*$ gui_render_component_tooltip {*/renderComponentTooltip/*$}*/(this.font, autoLockIconTooltip(), mouseX, mouseY);
 		this.renderTooltip(guiGraphics, mouseX, mouseY);
 	}
 	//?}
@@ -256,7 +256,7 @@ public class CrazyPhoneSignInScreenScreen extends CrazyPhoneDefaultScreenScreen<
 		CrazyphoneHomeScreenButtonMessage.handleButtonAction(entity, AUTO_LOCK_TOGGLE_BUTTON_ID, x, y, z, values);
 	}
 
-	//? if <26 {
+	//? if <1.21.10 {
 	@Override
 	public boolean mouseClicked(double mouseX, double mouseY, int button) {
 		if (button == 0 && isHoveringAutoLockIcon(mouseX, mouseY)) {
@@ -266,7 +266,7 @@ public class CrazyPhoneSignInScreenScreen extends CrazyPhoneDefaultScreenScreen<
 		return super.mouseClicked(mouseX, mouseY, button);
 	}
 	//?}
-	//? if >=26 {
+	//? if >=1.21.10 {
 	/*@Override
 	public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent event, boolean doubleClick) {
 		if (event.button() == 0 && isHoveringAutoLockIcon(event.x(), event.y())) {

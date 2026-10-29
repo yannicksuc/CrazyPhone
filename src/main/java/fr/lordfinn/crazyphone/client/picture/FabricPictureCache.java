@@ -534,7 +534,7 @@ public final class FabricPictureCache {
         int affected = 0;
         for (int y = 0; y < image.getHeight(); y++) {
             for (int x = 0; x < image.getWidth(); x++) {
-                //? if <26 {
+                //? if <1.21.10 {
                 int alpha = image.getPixelRGBA(x, y) >>> 24 & 0xFF;
                 //? } else {
                 /*int alpha = image.getPixel(x, y) >>> 24 & 0xFF;
