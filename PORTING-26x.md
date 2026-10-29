@@ -5,6 +5,58 @@ task turned out to be much bigger than expected once actually attempted - this f
 that progress isn't lost and the next session (or a live human) can pick it up without
 re-discovering everything from scratch.
 
+## Update (2026-10-29): `26.2-fabric` and new `26.3-fabric` build and were live-tested
+
+Branch `port/fabric-26.2-26.3`. Both Fabric nodes compile, boot a dedicated server (zero ERROR
+lines besides the usual Windows Perflib noise) and were played on two dev clients at once, with
+and without Simple Voice Chat.
+
+Versions: 26.2 uses Fabric API `0.161.0+26.2`, 26.3 uses `0.165.0+26.3` (both declare
+`minecraft ~26.x-` in their own fabric.mod.json), Loader 0.19.5, Loom 1.17 (unchanged), Simple Voice
+Chat API 2.6.27 (compile only; real SVC builds `fabric-2.6.27+26.2` / `+26.3` exist on Modrinth).
+
+26.2 fixes (all javap-checked against the real jars, gated so older targets are untouched):
+- `MultiBufferSource` is gone: the pre-ItemModel photo render path (dead on >=26 anyway) is `<26.2`.
+- `Options#hideGui` moved to `Gui#hud` (`isHidden()` / `toggle()` only); `toastManager()` moved to
+  `Gui`; `Minecraft#getMainRenderTarget()` became `GameRenderer#mainRenderTarget()` (swap
+  `mc_main_render_target`).
+- Mixins: `setScreen` lives on `Gui`, the HUD render hook on the new `Hud` class (swaps
+  `capture_escape_target` / `capture_hud_target`), `renderHandsWithItems` / `renderArmWithItem`
+  became `submit*` (both names listed in the injection).
+- Runtime crash found live: `Entity#getId()` now throws before an id is assigned and the item model
+  resolver reads it, so the fake preview players (contact info, call busts) crashed the client on
+  "Add a contact". `FakePlayerPreview` now gives them a negative id. Its skin-layer reflection also
+  walks up to `Avatar` (the field moved there in 1.21.9), so preview skins show all layers again.
+
+26.3 fixes (26.3 swapped GLFW for SDL3 and ships authlib 10):
+- No `org.lwjgl.glfw` / tinyfd any more: key and button checks use `InputConstants` (SDL values
+  differ from GLFW: left button is 1, right 3, escape 41, so every hardcoded `button == 0` /
+  `key == 256` now goes through `InputConstants`), `CursorEffects` uses SDL cursors, the photo
+  import dialog uses SDL3's asynchronous `SDL_ShowOpenFileDialog` (`importFromDiskAsync`).
+- `MojangProfileLookup`: no yggdrasil package, the repository and session service come from
+  `Minecraft#services()`.
+- `PoseStack#mulPose(Quaternionf)` is now `rotate`, `drop(stack, false)` needs a `Prediction`,
+  `clearOrCountMatchingItems` takes a simulate flag, `BundleContents#itemCopyStream` became
+  `itemCopies`, `FriendlyByteBuf#writeCollection/readList` are gone (hand-written, same wire format).
+- `ItemInHandRenderer` was replaced by the render-state based `FirstPersonHandsAndItemsRenderer`:
+  the capture hand-hiding mixin retargets it, the presenting grip mixin has its own 26.3 variant.
+
+Live-tested on both (screenshots in the session, not committed): crafting recipe, phone in hand and
+inventory, registration / unlock, add contact, direct and group messages between two players,
+capture, link import, photo tooltip (translated), photo in main hand, off hand, third person and the
+two-handed presenting pose, vanilla item frames and the mod's own photo frames on N/S/E/W (not
+mirrored), resize screen (cursor back to the default arrow on close, checked through SDL on 26.3),
+calls with SVC (ring, accept, timer, both players in the SVC group, hang up, "Call - hh:mm - 0:12"
+summary in the conversation), clean boot and phone use without SVC.
+Not tested: recording / playing a voice message (no microphone input in a headless dev client) and
+the OS file picker import (would pop a native dialog on the user's desktop).
+
+Dev tooling added for this: `-PquickPlayMultiplayer=host:port` (join a dev server on launch) and
+`-PwithVoicechat` (real SVC in the dev runtime), both opt-in in `build.fabric26.gradle.kts`;
+`26.3-fabric` is in `scripts/dev-launch.ps1` (port 25574). The 26.2 / 26.3 nodes still don't
+publish (the `fabric26ReadyToPublish` gate is 26.1.2 only): build their jars with
+`./gradlew :26.2-fabric:build` / `:26.3-fabric:build`.
+
 ## Update: `:26.1:runServer` boots cleanly - first live 26.x dedicated-server boot, four real runtime bugs found and fixed
 
 Compiling clean and live-testing are different things. Launching `:26.1:runServer` for the first
