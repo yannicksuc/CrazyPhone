@@ -27,16 +27,7 @@ public interface CrazyPhonePresentHandGripInvokerMixin {
     void crazyphone$renderPlayerArm(PoseStack poseStack, MultiBufferSource bufferSource, int light, float equipProgress, float swingProgress, HumanoidArm arm);
 }
 //?}
-//? if >=1.21.10 <26 {
-/*import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Pseudo;
-
-@Pseudo
-@Mixin(net.minecraft.client.Minecraft.class)
-public abstract class CrazyPhonePresentHandGripInvokerMixin {
-}
-*///?}
-//? if >=26 {
+//? if >=1.21.10 {
 /*import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.renderer.ItemInHandRenderer;
 import net.minecraft.client.renderer.SubmitNodeCollector;

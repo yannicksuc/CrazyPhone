@@ -124,4 +124,8 @@ stonecutter parameters {
     // into a "level" subpackage, and LightTexture.FULL_BRIGHT became LightCoordsUtil.FULL_BRIGHT (same value).
     swaps.put("camera_render_state_cls", if (is26) "net.minecraft.client.renderer.state.level.CameraRenderState" else "net.minecraft.client.renderer.state.CameraRenderState")
     swaps.put("full_bright_const", if (is26) "net.minecraft.util.LightCoordsUtil.FULL_BRIGHT" else "net.minecraft.client.renderer.LightTexture.FULL_BRIGHT")
+    // Same CameraRenderState package move, inside the LivingEntityRenderer#submit mixin target descriptor
+    // (a whole string literal, used by the >=1.21.10 present/selfie pose mixins).
+    swaps.put("living_submit_desc", "\"submit(Lnet/minecraft/client/renderer/entity/state/LivingEntityRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;Lnet/minecraft/client/renderer/state/" +
+            (if (is26) "level/" else "") + "CameraRenderState;)V\"")
 }

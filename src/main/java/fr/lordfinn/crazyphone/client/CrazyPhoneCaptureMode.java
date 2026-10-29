@@ -460,23 +460,16 @@ public final class CrazyPhoneCaptureMode {
             event.setCanceled(true);
     }
     *///?}
-    // 1.21.10-only no-op: its own VanillaGuiLayers has neither the <1.21.10 field names (JUMP_METER,
-    // DEBUG_OVERLAY, SAVING_INDICATOR - confirmed gone by the compile error those threw here) nor the >=26
-    // ones yet, a genuinely separate third shape not worth chasing on a now-frozen/unmaintained target (same
-    // status as 1.20.4 - see the project's own README). HUD stays visible during capture on this version,
-    // matching its pre-existing (pre-selfie-work) behavior.
-    //? if >=1.21.10 <26 {
-    /*@SubscribeEvent
-    public static void onRenderGuiLayer(RenderGuiLayerEvent.Pre event) {
-    }
-    *///?}
-    //? if >=26 {
+    // 1.21.10's VanillaGuiLayers already has the >=26 field set (no JUMP_METER/DEBUG_OVERLAY/
+    // SAVING_INDICATOR, EXPERIENCE_LEVEL and the CONTEXTUAL_INFO_BAR pair instead - checked against the real
+    // 1.21.10 NeoForge sources), so it shares the block below.
+    //? if >=1.21.10 {
     /*// VanillaGuiLayers reworked on this version (confirmed against the real decompiled 26.1.2 source):
     // JUMP_METER/DEBUG_OVERLAY/SAVING_INDICATOR no longer exist at all, EXPERIENCE_BAR renamed to
     // EXPERIENCE_LEVEL, and net.minecraft.resources.ResourceLocation was itself renamed to Identifier -
     // live-reported the hotbar/HUD wasn't hidden at all during capture on this version (the prior no-op
     // here), matching the >=1.20.5 <1.21.10 list above field-for-field where a direct equivalent exists.
-    private static final java.util.Set<net.minecraft.resources.Identifier> HIDDEN_LAYERS = java.util.Set.of(
+    private static final java.util.Set<net.minecraft.resources./^$ res_loc {^/ResourceLocation/^$}^/> HIDDEN_LAYERS = java.util.Set.of(
             net.neoforged.neoforge.client.gui.VanillaGuiLayers.HOTBAR, net.neoforged.neoforge.client.gui.VanillaGuiLayers.CROSSHAIR,
             net.neoforged.neoforge.client.gui.VanillaGuiLayers.PLAYER_HEALTH, net.neoforged.neoforge.client.gui.VanillaGuiLayers.ARMOR_LEVEL,
             net.neoforged.neoforge.client.gui.VanillaGuiLayers.FOOD_LEVEL, net.neoforged.neoforge.client.gui.VanillaGuiLayers.AIR_LEVEL,

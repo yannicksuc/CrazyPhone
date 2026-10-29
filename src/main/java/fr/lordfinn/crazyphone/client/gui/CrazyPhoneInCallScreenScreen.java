@@ -384,8 +384,11 @@ public class CrazyPhoneInCallScreenScreen extends CrazyPhoneDefaultScreenScreen<
         //? if <1.21.10 {
         net.minecraft.client.gui.components.PlayerFaceRenderer.draw(guiGraphics, skin, x + pad, y + pad, faceSize);
         //?}
-        // >=1.21.10 <26: nothing drawn - a frozen/unmaintained target (see CrazyPhoneCaptureMode's own note),
-        // and its vanilla face-drawing helper sits between the two shapes below without being either.
+        // 1.21.10 still has PlayerFaceRenderer#draw(GuiGraphics, PlayerSkin, x, y, size), only its PlayerSkin
+        // moved to net.minecraft.world.entity.player (the faceSkins map above already uses that one there).
+        //? if >=1.21.10 <26 {
+        /*net.minecraft.client.gui.components.PlayerFaceRenderer.draw(guiGraphics, skin, x + pad, y + pad, faceSize);
+        *///?}
         //? if >=26 {
         /*net.minecraft.client.gui.components.PlayerFaceExtractor.extractRenderState(guiGraphics, skin, x + pad, y + pad, faceSize);
         *///?}

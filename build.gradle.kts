@@ -297,9 +297,10 @@ sourceSets.main {
 // items/crazy_phone_photo.json's build output on >=26 to reference the custom type directly (no
 // "minecraft:model" indirection, no models/item/ file needed at all there) - crazy_phone.json's own
 // condition-tree wrapper already proves items/*.json's "model" field is parsed through the full dispatch
-// codec directly, same one RegisterItemModelsEvent registers into.
+// codec directly, same one RegisterItemModelsEvent registers into. 1.21.10 gets the same patch: it has the
+// same item model system, and without it the photo rendered as the purple/black missing model there.
 tasks.named<ProcessResources>("processResources") {
-    if (minecraftVersion.startsWith("26.")) {
+    if (minecraftVersion == "1.21.10" || minecraftVersion.startsWith("26.")) {
         doLast {
             val photoModelFile = destinationDir.resolve("assets/crazyphone/models/item/crazy_phone_photo.json")
             photoModelFile.writeText("""{"type": "crazyphone:photo_card_model"}""" + "\n")

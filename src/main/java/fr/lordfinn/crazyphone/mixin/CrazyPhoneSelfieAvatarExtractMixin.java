@@ -20,7 +20,7 @@ package fr.lordfinn.crazyphone.mixin;
  * it) - live-reported as "camera moves now, arm/head still don't" once the camera itself got fixed. Widened
  * to both loaders.
  */
-//? if >=26 {
+//? if >=1.21.10 {
 /*import net.minecraft.client.renderer.entity.player.AvatarRenderer;
 import net.minecraft.client.renderer.entity.state.AvatarRenderState;
 import net.minecraft.client.Minecraft;

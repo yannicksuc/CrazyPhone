@@ -72,28 +72,14 @@ public abstract class PlayerPresentPoseMixin<T extends LivingEntity, M extends E
     }
 }
 //?}
-// 1.21.10-only inert placeholder: that version already has the RenderState-based rendering rework (same
-// broader change CrazyPhonePhotoItemRenderer's own TODOs track), but its exact class/package shape (e.g.
-// CameraRenderState's package) differs from 26.x's - confirmed by literally trying to compile the >=26
-// branch below against it and reading the resulting error, not guessed. Not worth reconciling a THIRD API
-// shape in the same pass; 1.21.10 keeps zero presenting support, unchanged from before this work.
-//? if >=1.21.10 <26 {
-/*import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Pseudo;
-
-@Pseudo
-@Mixin(net.minecraft.client.Minecraft.class)
-public abstract class PlayerPresentPoseMixin {
-}
-*///?}
-//? if >=26 {
+//? if >=1.21.10 {
 /*import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.model.EntityModel;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
 import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
-import net.minecraft.client.renderer.state.level.CameraRenderState;
+import /^$ camera_render_state_cls {^/net.minecraft.client.renderer.state.CameraRenderState/^$}^/;
 import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
@@ -130,7 +116,7 @@ public abstract class PlayerPresentPoseMixin<T extends LivingEntity, S extends L
         ((ICrazyPhonePresentingState) state).crazyphone$setPresenting(presenting);
     }
 
-    @Inject(method = "submit(Lnet/minecraft/client/renderer/entity/state/LivingEntityRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;Lnet/minecraft/client/renderer/state/level/CameraRenderState;)V",
+    @Inject(method = /^$ living_submit_desc {^/"submit(Lnet/minecraft/client/renderer/entity/state/LivingEntityRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;Lnet/minecraft/client/renderer/state/CameraRenderState;)V"/^$}^/,
             at = @At(value = "INVOKE", target = "Lnet/minecraft/client/model/EntityModel;setupAnim(Ljava/lang/Object;)V", shift = At.Shift.AFTER),
             require = 0)
     private void crazyphone$presentPhoto(S state, PoseStack poseStack, SubmitNodeCollector submitNodeCollector, CameraRenderState camera, CallbackInfo ci) {

@@ -773,12 +773,7 @@ public final class CrazyPhonePhotoItemRenderer {
     // 26.x / 1.21.10+ item-rendering model (NeoForge only for now - see PORTING-26x.md for the Fabric
     // side, which needs its own separate investigation): vanilla removed BlockEntityWithoutLevelRenderer
     // entirely, replacing custom item rendering with a data-driven ItemModel + SpecialModelRenderer pair.
-    // Scoped to >=26 only (not the wider >=1.21.10 range where this problem actually starts) - 1.21.10
-    // itself has a meaningfully different ItemModel.Unbaked/SpecialModelRenderer API shape (bake()'s
-    // parameter list, getExtents()'s callback type - confirmed by attempting to compile this exact code
-    // against it) that wasn't worth reconciling in the same pass; 1.21.10 still has no working custom
-    // photo rendering at all on NeoForge, unchanged from before this work - a real follow-up, not
-    // forgotten, just deliberately out of scope here.
+    // Covers 1.21.10 too: its few API differences are gated inline (see the note just above the block).
     // Vanilla's own ready-made SpecialModelWrapper ItemModel (JSON "type": "minecraft:special") was
     // checked and ruled out - its update() only pulls a STATIC per-displayContext transform from a base
     // model's own vanilla display JSON, with no hook for the runtime logic below (live camera-relative
@@ -805,8 +800,14 @@ public final class CrazyPhonePhotoItemRenderer {
     // specific). Fabric has no equivalent event yet, so it reaches this same ModelImpl/SpecialRendererImpl
     // via CrazyPhoneItemModelRegistrationMixin injecting straight into ItemModels#bootstrap() instead - see
     // that mixin's own doc comment.
-    //? if >=26 {
-    /*private record DrawArgument(fr.lordfinn.crazyphone.utils.PhotoItemData data, boolean isHand, int rgb) {
+    // 1.21.10 shares this block (checked against its real NeoForge sources), with three API differences
+    // gated inline below: no LayerRenderState#setLocalTransform (the per-context transform travels in
+    // DrawArgument#localTransform and is applied in SpecialRendererImpl#submit instead, the same spot 26.x's
+    // own applyTransform() multiplies it in, right after the item transform), ItemModel.Unbaked#bake has no
+    // transformation parameter, SpecialModelRenderer#submit/getExtents take an ItemDisplayContext /
+    // a Set<Vector3f>, and SpecialModelRenderer.Unbaked is not generic.
+    //? if >=1.21.10 {
+    /*private record DrawArgument(fr.lordfinn.crazyphone.utils.PhotoItemData data, boolean isHand, int rgb, org.joml.Matrix4fc localTransform) {
     }
 
     public static final class ModelImpl implements net.minecraft.client.renderer.item.ItemModel {
@@ -927,7 +928,9 @@ public final class CrazyPhonePhotoItemRenderer {
                 output.appendModelIdentityElement(borderRgb(item));
             }
             net.minecraft.client.renderer.item.ItemStackRenderState.LayerRenderState layer = output.newLayer();
-            layer.setLocalTransform(poseStack.last().pose());
+            //? if >=26 {
+            /^layer.setLocalTransform(poseStack.last().pose());
+            ^///?}
             // Extents matter beyond shadow/culling: ItemEntityRenderer computes how far to lift a dropped item
             // off the ground from getModelBoundingBox().minY, itself built by aggregating every layer's own
             // reported extents (see ItemStackRenderState#visitExtents/getModelBoundingBox in the real
@@ -941,11 +944,20 @@ public final class CrazyPhonePhotoItemRenderer {
             // here. Roughly matches each style's own local half-size (isHand ~= HAND_HALF_SIZE, everything
             // else ~= FRAME_HALF) - doesn't need to be exact, just no longer degenerate.
             float extentHalf = isHand ? HAND_HALF_SIZE : FRAME_HALF;
-            layer.setExtents(() -> new org.joml.Vector3fc[] {
+            //? if >=26 {
+            /^layer.setExtents(() -> new org.joml.Vector3fc[] {
                     new org.joml.Vector3f(-extentHalf, -extentHalf, -extentHalf),
                     new org.joml.Vector3f(extentHalf, extentHalf, extentHalf)
             });
-            layer.setupSpecialModel(SPECIAL_RENDERER, new DrawArgument(data, isHand, borderRgb(item)));
+            ^///?} else {
+            // No local transform on the layer here, so the points are moved by it up front instead.
+            org.joml.Matrix4f extentTransform = new org.joml.Matrix4f(poseStack.last().pose());
+            layer.setExtents(() -> new org.joml.Vector3f[] {
+                    extentTransform.transformPosition(new org.joml.Vector3f(-extentHalf, -extentHalf, -extentHalf)),
+                    extentTransform.transformPosition(new org.joml.Vector3f(extentHalf, extentHalf, extentHalf))
+            });
+            //?}
+            layer.setupSpecialModel(SPECIAL_RENDERER, new DrawArgument(data, isHand, borderRgb(item), new org.joml.Matrix4f(poseStack.last().pose())));
         }
 
         public static final class Unbaked implements net.minecraft.client.renderer.item.ItemModel.Unbaked {
@@ -955,10 +967,17 @@ public final class CrazyPhonePhotoItemRenderer {
             public void resolveDependencies(net.minecraft.client.resources.model.ResolvableModel.Resolver resolver) {
             }
 
-            @Override
+            //? if >=26 {
+            /^@Override
             public net.minecraft.client.renderer.item.ItemModel bake(net.minecraft.client.renderer.item.ItemModel.BakingContext context, org.joml.Matrix4fc transformation) {
                 return INSTANCE;
             }
+            ^///?} else {
+            @Override
+            public net.minecraft.client.renderer.item.ItemModel bake(net.minecraft.client.renderer.item.ItemModel.BakingContext context) {
+                return INSTANCE;
+            }
+            //?}
 
             @Override
             public com.mojang.serialization.MapCodec<? extends net.minecraft.client.renderer.item.ItemModel.Unbaked> type() {
@@ -968,7 +987,8 @@ public final class CrazyPhonePhotoItemRenderer {
     }
 
     private static final class SpecialRendererImpl implements net.minecraft.client.renderer.special.SpecialModelRenderer<DrawArgument> {
-        @Override
+        //? if >=26 {
+        /^@Override
         public void submit(DrawArgument argument, PoseStack poseStack, net.minecraft.client.renderer.SubmitNodeCollector submitNodeCollector,
                             int lightCoords, int overlayCoords, boolean hasFoil, int outlineColor) {
             if (argument == null)
@@ -987,13 +1007,37 @@ public final class CrazyPhonePhotoItemRenderer {
             output.accept(new org.joml.Vector3f(-h, -h, -h));
             output.accept(new org.joml.Vector3f(h, h, h));
         }
+        ^///?} else {
+        @Override
+        public void submit(DrawArgument argument, ItemDisplayContext displayContext, PoseStack poseStack,
+                            net.minecraft.client.renderer.SubmitNodeCollector submitNodeCollector,
+                            int lightCoords, int overlayCoords, boolean hasFoil, int outlineColor) {
+            if (argument == null)
+                return;
+            poseStack.pushPose();
+            poseStack.mulPose(argument.localTransform());
+            if (argument.isHand())
+                renderHandFramedCardNew(argument.data(), poseStack, submitNodeCollector, lightCoords, overlayCoords, argument.rgb());
+            else
+                renderFramedCardNew(argument.data(), poseStack, submitNodeCollector, lightCoords, overlayCoords, argument.rgb());
+            poseStack.popPose();
+        }
+
+        @Override
+        public void getExtents(java.util.Set<org.joml.Vector3f> output) {
+            float h = FRAME_HALF + PRESENT_SCALE;
+            output.add(new org.joml.Vector3f(-h, -h, -h));
+            output.add(new org.joml.Vector3f(h, h, h));
+        }
+        //?}
 
         @Override
         public @javax.annotation.Nullable DrawArgument extractArgument(ItemStack stack) {
             return null; // Unused - ModelImpl#update() sets the argument directly via setupSpecialModel.
         }
 
-        public static final class Unbaked implements net.minecraft.client.renderer.special.SpecialModelRenderer.Unbaked<DrawArgument> {
+        //? if >=26 {
+        /^public static final class Unbaked implements net.minecraft.client.renderer.special.SpecialModelRenderer.Unbaked<DrawArgument> {
             public static final com.mojang.serialization.MapCodec<Unbaked> MAP_CODEC = com.mojang.serialization.MapCodec.unit(new Unbaked());
             static final SpecialRendererImpl INSTANCE = new SpecialRendererImpl();
 
@@ -1007,6 +1051,23 @@ public final class CrazyPhonePhotoItemRenderer {
                 return MAP_CODEC;
             }
         }
+        ^///?} else {
+        // 1.21.10's SpecialModelRenderer.Unbaked is not generic yet.
+        public static final class Unbaked implements net.minecraft.client.renderer.special.SpecialModelRenderer.Unbaked {
+            public static final com.mojang.serialization.MapCodec<Unbaked> MAP_CODEC = com.mojang.serialization.MapCodec.unit(new Unbaked());
+            static final SpecialRendererImpl INSTANCE = new SpecialRendererImpl();
+
+            @Override
+            public @javax.annotation.Nullable net.minecraft.client.renderer.special.SpecialModelRenderer<?> bake(net.minecraft.client.renderer.special.SpecialModelRenderer.BakingContext context) {
+                return INSTANCE;
+            }
+
+            @Override
+            public com.mojang.serialization.MapCodec<? extends net.minecraft.client.renderer.special.SpecialModelRenderer.Unbaked> type() {
+                return MAP_CODEC;
+            }
+        }
+        //?}
     }
 
     // Adapted from renderFramedCard/renderHandFramedCard above: identical geometry/UV math, just wrapped

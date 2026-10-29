@@ -22,8 +22,8 @@ package fr.lordfinn.crazyphone.mixin;
  * >=26 specifically, dual-photo presenting rendered both cards using the single-photo center position and
  * scale, stacking them on top of each other instead of splitting them one per hand. Widened to both loaders.
  */
-//? if >=26 {
-/*import net.minecraft.client.model.player.PlayerModel;
+//? if >=1.21.10 {
+/*import /^$ player_model_pkg {^/net.minecraft.client.model.PlayerModel/^$}^/;
 import net.minecraft.client.renderer.entity.state.AvatarRenderState;
 import net.minecraft.world.entity.HumanoidArm;
 import org.spongepowered.asm.mixin.Mixin;
