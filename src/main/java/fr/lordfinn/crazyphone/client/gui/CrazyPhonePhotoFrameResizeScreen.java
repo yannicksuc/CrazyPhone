@@ -789,9 +789,9 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
         // exclusive bound, and would otherwise become the ONE handle position that's visible but only
         // half-clickable (caught in a cleanliness pass) - tryBeginCornerDrag already does its own precise
         // hit-testing and doesn't actually need this gate at all.
-        if (button == 0 && tryBeginCornerDrag(mouseX, mouseY))
+        if (button == com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_LEFT && tryBeginCornerDrag(mouseX, mouseY))
             return true;
-        if (button == 0 && insideGrid(mouseX, mouseY)) {
+        if (button == com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_LEFT && insideGrid(mouseX, mouseY)) {
             beginGesture(mouseX, mouseY, consumeDoubleClick(mouseX, mouseY));
             return true;
         }
@@ -826,9 +826,9 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
     //? if >=26 {
     /*@Override
     public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent event, boolean doubleClick) {
-        if (event.button() == 0 && tryBeginCornerDrag(event.x(), event.y()))
+        if (event.button() == com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_LEFT && tryBeginCornerDrag(event.x(), event.y()))
             return true;
-        if (event.button() == 0 && insideGrid(event.x(), event.y())) {
+        if (event.button() == com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_LEFT && insideGrid(event.x(), event.y())) {
             beginGesture(event.x(), event.y(), doubleClick);
             return true;
         }

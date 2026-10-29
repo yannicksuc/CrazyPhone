@@ -63,7 +63,6 @@ import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.network.PacketDistributor;
 //?}
 import fr.lordfinn.crazyphone.utils.NetworkAccess;
-import org.lwjgl.glfw.GLFW;
 
 /**
  * Deviation from the old file: the old menu already held the conversation's entire message history (read
@@ -1324,39 +1323,39 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
         // not just the ones meant to be swallowed - dispatch to whichever of them is actually visible and
         // hovered explicitly, then swallow everything else.
         if (voiceRecordingState != VoiceRecordingState.NONE) {
-            if (button == 0 && button_voicetrash.isMouseOver(mouseX, mouseY)) {
+            if (button == com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_LEFT && button_voicetrash.isMouseOver(mouseX, mouseY)) {
                 pressButton(button_voicetrash, mouseX, mouseY, button);
                 return true;
             }
-            if (button == 0 && button_voicepause.visible && button_voicepause.isMouseOver(mouseX, mouseY)) {
+            if (button == com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_LEFT && button_voicepause.visible && button_voicepause.isMouseOver(mouseX, mouseY)) {
                 pressButton(button_voicepause, mouseX, mouseY, button);
                 return true;
             }
-            if (button == 0 && button_voicesend.visible && button_voicesend.isMouseOver(mouseX, mouseY)) {
+            if (button == com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_LEFT && button_voicesend.visible && button_voicesend.isMouseOver(mouseX, mouseY)) {
                 pressButton(button_voicesend, mouseX, mouseY, button);
                 return true;
             }
             return true;
         }
 
-        if (button == 0 && button_envoyer.isMouseOver(mouseX, mouseY)) {
+        if (button == com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_LEFT && button_envoyer.isMouseOver(mouseX, mouseY)) {
             pressButton(button_envoyer, mouseX, mouseY, button);
             return true;
         }
 
-        if (button == 0 && menu.isGroup() && isHoveringGroupSettingsIcon(mouseX, mouseY)) {
+        if (button == com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_LEFT && menu.isGroup() && isHoveringGroupSettingsIcon(mouseX, mouseY)) {
             HashMap<String, String> textstate = getEditBoxAndCheckBoxValues();
             NetworkAccess.sendToServer(new CrazyPhoneConversationButtonMessage(2, x, y, z, textstate));
             CrazyPhoneConversationButtonMessage.handleButtonAction(entity, 2, x, y, z, textstate);
             return true;
         }
 
-        if (button == 0 && VoicechatIntegration.isAvailable() && isHoveringCallIcon(mouseX, mouseY)) {
+        if (button == com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_LEFT && VoicechatIntegration.isAvailable() && isHoveringCallIcon(mouseX, mouseY)) {
             onCallIconClicked();
             return true;
         }
 
-        if (button == 0 && isHoveringMuteIcon(mouseX, mouseY)) {
+        if (button == com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_LEFT && isHoveringMuteIcon(mouseX, mouseY)) {
             onMuteIconClicked();
             return true;
         }
@@ -1386,7 +1385,7 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
     *///?}
 
     private boolean keyPressedImpl(int key) {
-        if (message.isFocused() && (key == GLFW.GLFW_KEY_ENTER || key == GLFW.GLFW_KEY_KP_ENTER)) {
+        if (message.isFocused() && (key == com.mojang.blaze3d.platform.InputConstants.KEY_RETURN || key == com.mojang.blaze3d.platform.InputConstants.KEY_NUMPADENTER)) {
             sendCurrentMessage();
             return true;
         }

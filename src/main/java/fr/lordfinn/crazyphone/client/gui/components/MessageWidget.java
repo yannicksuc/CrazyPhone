@@ -419,7 +419,7 @@ public class MessageWidget extends AbstractWidget {
             onImageClick(button);
             return true; // prevent further handling
         }
-        if (voiceId != null && button == 0) {
+        if (voiceId != null && button == com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_LEFT) {
             if (isHoveringVoiceSpeedLabel(mouseX, mouseY)) {
                 onSpeedLabelClicked();
                 return true;
@@ -458,7 +458,7 @@ public class MessageWidget extends AbstractWidget {
     }
 
     private void onImageClick(int button) {
-        if (button != 0 || fabricImageId == null) return;
+        if (button != com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_LEFT || fabricImageId == null) return;
         net.minecraft.client.Minecraft.getInstance()./*$ mc_set_screen {*/setScreen/*$}*/(
                 new fr.lordfinn.crazyphone.client.gui.CrazyPhonePhotoViewerScreen(fabricImageId,
                         fr.lordfinn.crazyphone.client.gui.CrazyPhonePhotoViewerScreen.Origin.CONVERSATION, 0xFFFFFF));

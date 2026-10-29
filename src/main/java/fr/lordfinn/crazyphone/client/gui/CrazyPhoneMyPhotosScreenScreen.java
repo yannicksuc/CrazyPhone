@@ -238,9 +238,15 @@ public class CrazyPhoneMyPhotosScreenScreen extends CrazyPhoneDefaultScreenScree
     }
 
     private boolean handleImportClick(double mouseX, double mouseY, int button) {
-        if (button != 0 || !isHoveringImportIcon(mouseX, mouseY))
+        if (button != com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_LEFT || !isHoveringImportIcon(mouseX, mouseY))
             return false;
-        java.util.List<java.util.UUID> imported = fr.lordfinn.crazyphone.client.picture.PhotoImporter.importFromDisk();
+        fr.lordfinn.crazyphone.client.picture.PhotoImporter.importFromDiskAsync(this::onPhotosImported);
+        return true;
+    }
+
+    // Runs on the client thread once the import dialog is closed (straight away below 26.3, whose dialog
+    // blocks; later on 26.3+, whose SDL3 dialog is asynchronous).
+    private void onPhotosImported(java.util.List<java.util.UUID> imported) {
         if (!imported.isEmpty()) {
             // The server-sent list this screen was opened with doesn't know about them yet. It is ordered
             // newest first, so each one goes in at the top (the last imported ends up first), and the grid
@@ -255,7 +261,6 @@ public class CrazyPhoneMyPhotosScreenScreen extends CrazyPhoneDefaultScreenScree
                         Component.translatable("message.crazyphone.photos_imported", imported.size()), true);
             }
         }
-        return true;
     }
 
     // "Import from link" button, left of the import one: imports the image whose http(s) link is currently in
@@ -291,7 +296,7 @@ public class CrazyPhoneMyPhotosScreenScreen extends CrazyPhoneDefaultScreenScree
     }
 
     private boolean handleLinkClick(double mouseX, double mouseY, int button) {
-        if (button != 0 || !isHoveringLinkIcon(mouseX, mouseY))
+        if (button != com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_LEFT || !isHoveringLinkIcon(mouseX, mouseY))
             return false;
         net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
         net.minecraft.client.player.LocalPlayer player = mc.player;
@@ -460,7 +465,7 @@ public class CrazyPhoneMyPhotosScreenScreen extends CrazyPhoneDefaultScreenScree
     private boolean mouseClickedImpl(double mouseX, double mouseY, int button) {
         if (handleImportClick(mouseX, mouseY, button) || handleLinkClick(mouseX, mouseY, button))
             return true;
-        if (button != 0 && button != 1)
+        if (button != com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_LEFT && button != com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_RIGHT)
             return false;
         if (!isWithinGridCropZone(mouseX, mouseY))
             return false;
@@ -479,7 +484,7 @@ public class CrazyPhoneMyPhotosScreenScreen extends CrazyPhoneDefaultScreenScree
                 continue;
 
             UUID photoId = menu.photoIds.get(index);
-            if (button == 0) {
+            if (button == com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_LEFT) {
                 playToggleSound();
                 if (!selectedPhotoIds.add(photoId))
                     selectedPhotoIds.remove(photoId);

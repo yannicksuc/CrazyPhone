@@ -741,12 +741,12 @@ public class CrazyPhoneContactsScreenScreen extends CrazyPhoneDefaultScreenScree
 		if (this.layout == null)
 			this.layout = computeLayout();
 		HashMap<String, String> textstate = getEditBoxAndCheckBoxValues();
-		if (button == 0 && isHoveringAddContactTile(mouseX, mouseY)) {
+		if (button == com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_LEFT && isHoveringAddContactTile(mouseX, mouseY)) {
 			NetworkAccess.sendToServer(new CrazyPhoneContactsScreenButtonMessage(0, x, y, z, textstate));
 			CrazyPhoneContactsScreenButtonMessage.handleButtonAction(entity, 0, x, y, z, textstate);
 			return true;
 		}
-		if (button == 0) { // Left-click on a group entry -> open that group's conversation directly
+		if (button == com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_LEFT) { // Left-click on a group entry -> open that group's conversation directly
 			int groupIndex = hoveredGroupIndex(mouseX, mouseY);
 			if (groupIndex >= 0) {
 				textstate.put("conversationId", menu.getGroups().get(groupIndex).conversationId());
@@ -757,14 +757,14 @@ public class CrazyPhoneContactsScreenScreen extends CrazyPhoneDefaultScreenScree
 		}
 		int personIndex = hoveredPersonIndex(mouseX, mouseY);
 		if (personIndex >= 0) {
-			if (button == 1) { // Right-click -> toggle selection (for group creation / bulk removal / favoriting)
+			if (button == com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_RIGHT) { // Right-click -> toggle selection (for group creation / bulk removal / favoriting)
 				playToggleSound();
 				if (!selectedSlots.add(personIndex)) {
 					selectedSlots.remove(personIndex);
 				}
 				updateActionButtonsState();
 				return true;
-			} else if (button == 0) { // Left-click -> open this contact's conversation directly
+			} else if (button == com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_LEFT) { // Left-click -> open this contact's conversation directly
 				Contact person = personAt(personIndex);
 				if (person != null) {
 					textstate.put("contactNumber", person.getNumber());

@@ -255,7 +255,7 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 	//? if <1.21.10 {
 	@Override
 	public boolean keyPressed(int key, int b, int c) {
-		if (key == 256) {
+		if (key == com.mojang.blaze3d.platform.InputConstants.KEY_ESCAPE) {
 			this.minecraft.player.closeContainer();
 			return true;
 		}
@@ -273,7 +273,7 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 	//? if >=1.21.10 {
 	/*@Override
 	public boolean keyPressed(net.minecraft.client.input.KeyEvent event) {
-		if (event.key() == 256) {
+		if (event.key() == com.mojang.blaze3d.platform.InputConstants.KEY_ESCAPE) {
 			this.minecraft.player.closeContainer();
 			return true;
 		}

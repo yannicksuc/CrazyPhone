@@ -15,7 +15,11 @@ package fr.lordfinn.crazyphone.mixin;
  * separately-annotated int parameter - same underlying GLFW values, just regrouped.
  */
 //? if fabric {
-/*import org.lwjgl.glfw.GLFW;
+/*// 26.3 replaced GLFW with SDL3 (no org.lwjgl.glfw on the classpath any more): the >=26 branch below uses
+// InputConstants, which carries the same values on 26.1/26.2 too.
+//? if <26.3 {
+import org.lwjgl.glfw.GLFW;
+//?}
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -30,11 +34,11 @@ public abstract class CrazyPhoneCapturePressMixin {
     //? if >=26 {
     /^@Inject(method = "onButton", at = @At("HEAD"), cancellable = true)
     private void crazyphone$capturePress(long window, net.minecraft.client.input.MouseButtonInfo buttonInfo, int action, CallbackInfo ci) {
-        if (!CrazyPhoneCaptureMode.isActive() || action != GLFW.GLFW_PRESS)
+        if (!CrazyPhoneCaptureMode.isActive() || action != com.mojang.blaze3d.platform.InputConstants.PRESS)
             return;
         ci.cancel();
         int button = buttonInfo.button();
-        if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT)
+        if (button == com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_RIGHT)
             CrazyPhoneCaptureMode.triggerCapture();
     }
     ^///? } else {

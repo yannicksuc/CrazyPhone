@@ -485,14 +485,14 @@ public class CrazyPhoneInCallScreenScreen extends CrazyPhoneDefaultScreenScreen<
     }
 
     private boolean handleVoiceModeClick(double mouseX, double mouseY, int button) {
-        if (button != 0 || !isHoveringVoiceModeIcon(mouseX, mouseY))
+        if (button != com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_LEFT || !isHoveringVoiceModeIcon(mouseX, mouseY))
             return false;
         NetworkAccess.sendToServer(new CrazyPhoneCallActionMessage(CrazyPhoneCallActionMessage.CYCLE_VOICE_MODE, menu.getConversationId()));
         return true;
     }
 
     private boolean handleVideoIconClick(double mouseX, double mouseY, int button) {
-        if (button != 0 || !ClientCallState.isVideoFeatureEnabled())
+        if (button != com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_LEFT || !ClientCallState.isVideoFeatureEnabled())
             return false;
         for (CellLayout cell : lastLayout) {
             if (cell.self() && isHoveringVideoIcon(cell, mouseX, mouseY)) {

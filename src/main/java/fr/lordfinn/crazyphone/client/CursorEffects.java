@@ -1,8 +1,12 @@
 package fr.lordfinn.crazyphone.client;
 
 import net.minecraft.client.Minecraft;
+// 26.3 swapped GLFW for SDL3 (org.lwjgl.glfw is gone from the classpath): every native cursor call goes
+// through the small setNativeCursor/createSystemCursor/createImageCursor helpers below instead.
+//? if <26.3 {
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWImage;
+//?}
 import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
@@ -62,19 +66,19 @@ public final class CursorEffects {
                 case ZOOM -> {
                     if (zoomCursor == 0L)
                         zoomCursor = createZoomCursor();
-                    GLFW.glfwSetCursor(window, zoomCursor);
+                    setNativeCursor(window, zoomCursor);
                 }
                 case RESIZE -> {
                     if (resizeCursor == 0L)
-                        resizeCursor = GLFW.glfwCreateStandardCursor(GLFW.GLFW_CROSSHAIR_CURSOR);
-                    GLFW.glfwSetCursor(window, resizeCursor);
+                        resizeCursor = createSystemCursor(true);
+                    setNativeCursor(window, resizeCursor);
                 }
                 case POINTER -> {
                     if (handCursor == 0L)
-                        handCursor = GLFW.glfwCreateStandardCursor(GLFW.GLFW_HAND_CURSOR);
-                    GLFW.glfwSetCursor(window, handCursor);
+                        handCursor = createSystemCursor(false);
+                    setNativeCursor(window, handCursor);
                 }
-                default -> GLFW.glfwSetCursor(window, 0L);
+                default -> setNativeCursor(window, 0L);
             }
         }
         requestedThisFrame = Cursor.NONE;
@@ -145,14 +149,49 @@ public final class CursorEffects {
             }
             pixels.flip();
 
-            try (GLFWImage image = GLFWImage.malloc()) {
-                image.set(size, size, pixels);
-                // Hotspot at the lens center, matching where a real click would land on the image.
-                return GLFW.glfwCreateCursor(image, (int) cx, (int) cy);
-            }
+            // Hotspot at the lens center, matching where a real click would land on the image.
+            return createImageCursor(pixels, size, (int) cx, (int) cy);
         } finally {
             MemoryUtil.memFree(pixels);
         }
+    }
+
+    // 0L restores the default arrow on both backends (SDL has no "null cursor", so it asks for its default).
+    private static void setNativeCursor(long window, long cursor) {
+        //? if >=26.3 {
+        /*org.lwjgl.sdl.SDLMouse.SDL_SetCursor(cursor != 0L ? cursor : org.lwjgl.sdl.SDLMouse.SDL_GetDefaultCursor());
+        *///?} else {
+        GLFW.glfwSetCursor(window, cursor);
+        //?}
+    }
+
+    private static long createSystemCursor(boolean crosshair) {
+        //? if >=26.3 {
+        /*return org.lwjgl.sdl.SDLMouse.SDL_CreateSystemCursor(crosshair
+                ? org.lwjgl.sdl.SDLMouse.SDL_SYSTEM_CURSOR_CROSSHAIR : org.lwjgl.sdl.SDLMouse.SDL_SYSTEM_CURSOR_POINTER);
+        *///?} else {
+        return GLFW.glfwCreateStandardCursor(crosshair ? GLFW.GLFW_CROSSHAIR_CURSOR : GLFW.GLFW_HAND_CURSOR);
+        //?}
+    }
+
+    // pixels: size x size, RGBA, one byte per channel.
+    private static long createImageCursor(ByteBuffer pixels, int size, int hotX, int hotY) {
+        //? if >=26.3 {
+        /*org.lwjgl.sdl.SDL_Surface surface = org.lwjgl.sdl.SDLSurface.SDL_CreateSurfaceFrom(size, size,
+                org.lwjgl.sdl.SDLPixels.SDL_PIXELFORMAT_RGBA32, pixels, size * 4);
+        if (surface == null)
+            return 0L;
+        try {
+            return org.lwjgl.sdl.SDLMouse.SDL_CreateColorCursor(surface, hotX, hotY);
+        } finally {
+            org.lwjgl.sdl.SDLSurface.SDL_DestroySurface(surface);
+        }
+        *///?} else {
+        try (GLFWImage image = GLFWImage.malloc()) {
+            image.set(size, size, pixels);
+            return GLFW.glfwCreateCursor(image, hotX, hotY);
+        }
+        //?}
     }
 
     private static float distanceToSegment(float px, float py, float ax, float ay, float bx, float by) {

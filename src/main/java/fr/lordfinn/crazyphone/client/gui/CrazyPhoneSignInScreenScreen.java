@@ -27,7 +27,6 @@ import fr.lordfinn.crazyphone.network.CrazyPhoneSignInScreenButtonMessage;
 import java.util.HashMap;
 import java.util.List;
 
-import org.lwjgl.glfw.GLFW;
 
 public class CrazyPhoneSignInScreenScreen extends CrazyPhoneDefaultScreenScreen<CrazyPhoneSignInScreenMenu> {
 	private final static HashMap<String, Object> guistate = CrazyPhoneSignInScreenMenu.guistate;
@@ -198,7 +197,7 @@ public class CrazyPhoneSignInScreenScreen extends CrazyPhoneDefaultScreenScreen<
 	*///?}
 
 	private boolean keyPressedImpl(int key) {
-		if (password.isFocused() && (key == GLFW.GLFW_KEY_ENTER || key == GLFW.GLFW_KEY_KP_ENTER)) {
+		if (password.isFocused() && (key == com.mojang.blaze3d.platform.InputConstants.KEY_RETURN || key == com.mojang.blaze3d.platform.InputConstants.KEY_NUMPADENTER)) {
 			submitPassword();
 			return true;
 		}
@@ -259,7 +258,7 @@ public class CrazyPhoneSignInScreenScreen extends CrazyPhoneDefaultScreenScreen<
 	//? if <26 {
 	@Override
 	public boolean mouseClicked(double mouseX, double mouseY, int button) {
-		if (button == 0 && isHoveringAutoLockIcon(mouseX, mouseY)) {
+		if (button == com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_LEFT && isHoveringAutoLockIcon(mouseX, mouseY)) {
 			onAutoLockIconClicked();
 			return true;
 		}
@@ -269,7 +268,7 @@ public class CrazyPhoneSignInScreenScreen extends CrazyPhoneDefaultScreenScreen<
 	//? if >=26 {
 	/*@Override
 	public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent event, boolean doubleClick) {
-		if (event.button() == 0 && isHoveringAutoLockIcon(event.x(), event.y())) {
+		if (event.button() == com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_LEFT && isHoveringAutoLockIcon(event.x(), event.y())) {
 			onAutoLockIconClicked();
 			return true;
 		}

@@ -1124,13 +1124,13 @@ public class CrazyPhonePhotoEditScreen extends Screen implements PhoneScreen {
     //? if <26 {
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (button == 0 && tryStartScrollbarDrag(mouseX, mouseY))
+        if (button == com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_LEFT && tryStartScrollbarDrag(mouseX, mouseY))
             return true;
-        if (button == 0 && tryStartCropDrag(mouseX, mouseY))
+        if (button == com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_LEFT && tryStartCropDrag(mouseX, mouseY))
             return true;
-        if (button == 0 && tryStartRotateDrag(mouseX, mouseY))
+        if (button == com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_LEFT && tryStartRotateDrag(mouseX, mouseY))
             return true;
-        if (button == 1 && tryStartImagePanDrag(mouseX, mouseY))
+        if (button == com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_RIGHT && tryStartImagePanDrag(mouseX, mouseY))
             return true;
         return super.mouseClicked(mouseX, mouseY, button);
     }
@@ -1179,13 +1179,13 @@ public class CrazyPhonePhotoEditScreen extends Screen implements PhoneScreen {
     //? } else {
     /*@Override
     public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent event, boolean doubleClick) {
-        if (event.button() == 0 && tryStartScrollbarDrag(event.x(), event.y()))
+        if (event.button() == com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_LEFT && tryStartScrollbarDrag(event.x(), event.y()))
             return true;
-        if (event.button() == 0 && tryStartCropDrag(event.x(), event.y()))
+        if (event.button() == com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_LEFT && tryStartCropDrag(event.x(), event.y()))
             return true;
-        if (event.button() == 0 && tryStartRotateDrag(event.x(), event.y()))
+        if (event.button() == com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_LEFT && tryStartRotateDrag(event.x(), event.y()))
             return true;
-        if (event.button() == 1 && tryStartImagePanDrag(event.x(), event.y()))
+        if (event.button() == com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_RIGHT && tryStartImagePanDrag(event.x(), event.y()))
             return true;
         return super.mouseClicked(event, doubleClick);
     }

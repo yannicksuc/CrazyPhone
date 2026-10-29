@@ -4,9 +4,13 @@ import com.mojang.blaze3d.platform.NativeImage;
 import fr.lordfinn.crazyphone.Config;
 import fr.lordfinn.crazyphone.network.CrazyPhoneUploadPicturePacket;
 import fr.lordfinn.crazyphone.utils.NetworkAccess;
+// 26.3 no longer ships LWJGL's tinyfd binding (GLFW was replaced by SDL3, whose own file dialog is
+// asynchronous): see importFromDiskAsync below.
+//? if <26.3 {
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.util.tinyfd.TinyFileDialogs;
+//?}
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -26,11 +30,21 @@ public final class PhotoImporter {
     private PhotoImporter() {
     }
 
-    /** Opens the file dialog (blocks until closed) and uploads every picked image. Returns the ids of the
-     * photos actually sent, in order - empty if the dialog was cancelled or nothing could be decoded. */
-    public static List<UUID> importFromDisk() {
+    /** Opens the OS file dialog and uploads every picked image, then hands the ids of the photos actually
+     * sent (in order, empty if the dialog was cancelled or nothing could be decoded) to onDone, always on
+     * the client thread. Below 26.3 the tinyfd dialog blocks, so onDone runs before this returns; on 26.3+
+     * SDL3's dialog is asynchronous and onDone runs once the player closes it. */
+    public static void importFromDiskAsync(java.util.function.Consumer<List<UUID>> onDone) {
+        //? if >=26.3 {
+        /*pickFilesAsync(paths -> onDone.accept(importPaths(paths)));
+        *///?} else {
+        onDone.accept(importPaths(pickFiles()));
+        //?}
+    }
+
+    private static List<UUID> importPaths(List<Path> paths) {
         List<UUID> imported = new ArrayList<>();
-        for (Path path : pickFiles()) {
+        for (Path path : paths) {
             UUID id = importOne(path);
             if (id != null)
                 imported.add(id);
@@ -38,6 +52,43 @@ public final class PhotoImporter {
         return imported;
     }
 
+    //? if >=26.3 {
+    /*// SDL keeps pointers to the filter strings and calls back from its own dialog thread, so both stay
+    // allocated (and the callback strongly referenced) until that callback has run.
+    private static org.lwjgl.sdl.SDL_DialogFileCallback pendingDialogCallback;
+
+    private static void pickFilesAsync(java.util.function.Consumer<List<Path>> onPicked) {
+        if (pendingDialogCallback != null)
+            return; // a dialog is already open
+        java.nio.ByteBuffer filterName = org.lwjgl.system.MemoryUtil.memUTF8("Images");
+        java.nio.ByteBuffer filterPattern = org.lwjgl.system.MemoryUtil.memUTF8("png;jpg;jpeg;bmp;gif");
+        org.lwjgl.sdl.SDL_DialogFileFilter.Buffer filters = org.lwjgl.sdl.SDL_DialogFileFilter.calloc(1);
+        filters.get(0).name(filterName).pattern(filterPattern);
+        pendingDialogCallback = org.lwjgl.sdl.SDL_DialogFileCallback.create((userdata, fileList, filter) -> {
+            List<Path> paths = new ArrayList<>();
+            if (fileList != 0L) {
+                for (int i = 0; ; i++) {
+                    long entry = org.lwjgl.system.MemoryUtil.memGetAddress(fileList + (long) i * org.lwjgl.system.Pointer.POINTER_SIZE);
+                    if (entry == 0L)
+                        break;
+                    paths.add(Path.of(org.lwjgl.system.MemoryUtil.memUTF8(entry)));
+                }
+            }
+            net.minecraft.client.Minecraft.getInstance().execute(() -> {
+                filters.free();
+                org.lwjgl.system.MemoryUtil.memFree(filterName);
+                org.lwjgl.system.MemoryUtil.memFree(filterPattern);
+                if (pendingDialogCallback != null) {
+                    pendingDialogCallback.free();
+                    pendingDialogCallback = null;
+                }
+                onPicked.accept(paths);
+            });
+        });
+        org.lwjgl.sdl.SDLDialog.SDL_ShowOpenFileDialog(pendingDialogCallback, 0L,
+                net.minecraft.client.Minecraft.getInstance().getWindow().handle(), filters, (CharSequence) null, true);
+    }
+    *///?} else {
     private static List<Path> pickFiles() {
         String result;
         try (MemoryStack stack = MemoryStack.stackPush()) {
@@ -54,6 +105,7 @@ public final class PhotoImporter {
                     paths.add(Path.of(part));
         return paths;
     }
+    //?}
 
     private static UUID importOne(Path path) {
         try {
