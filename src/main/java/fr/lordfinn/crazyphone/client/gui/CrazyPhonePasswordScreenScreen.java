@@ -126,7 +126,7 @@ public class CrazyPhonePasswordScreenScreen extends CrazyPhoneDefaultScreenScree
     // Real 1.20.1 vanilla has no renderBackground(GuiGraphics, int, int, float) override point (see
     // CrazyPhoneDefaultScreenScreen's own doc comment) - the dim is drawn directly here instead.
     //? if legacyforge {
-    @Override
+    /*@Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
         guiGraphics.fill(0, 0, this.width, this.height, 0x50000000);
         super.render(guiGraphics, mouseX, mouseY, partialTicks);
@@ -142,7 +142,7 @@ public class CrazyPhonePasswordScreenScreen extends CrazyPhoneDefaultScreenScree
         }
         renderTooltip(guiGraphics, mouseX, mouseY);
     }
-    //?}
+    *///?}
     //?}
 
     //? if >=26 {

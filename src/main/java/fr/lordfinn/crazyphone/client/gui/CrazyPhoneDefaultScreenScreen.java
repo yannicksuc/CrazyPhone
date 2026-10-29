@@ -190,13 +190,13 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 	// just done directly in render() here instead, ahead of the super.render() call that triggers renderBg
 	// below.
 	//? if legacyforge {
-	@Override
+	/*@Override
 	public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
 		guiGraphics.fill(0, 0, this.width, this.height, 0x50000000);
 		super.render(guiGraphics, mouseX, mouseY, partialTicks);
 		this.renderTooltip(guiGraphics, mouseX, mouseY);
 	}
-	//?}
+	*///?}
 	//?}
 
 	/** A much lighter dim than vanilla's default (AbstractContainerScreen#renderBackground normally fills a

@@ -26,7 +26,7 @@ import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 // those classes' own legacyforge import blocks) - so the only genuinely new code here is the plumbing,
 // not the data classes themselves.
 //? if legacyforge {
-import net.minecraftforge.common.capabilities.Capability;
+/*import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.CapabilityManager;
 import net.minecraftforge.common.capabilities.CapabilityToken;
 import net.minecraftforge.common.capabilities.ICapabilityProvider;
@@ -39,7 +39,7 @@ import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 import net.minecraft.core.Direction;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
-//?}
+*///?}
 
 import net.minecraft.server.level.ServerPlayer;
 
@@ -114,14 +114,14 @@ public class PhoneAttachmentTypes {
 }
 //?}
 //? if legacyforge {
-@EventBusSubscriber
+/*@EventBusSubscriber
 public class PhoneAttachmentTypes {
     public static final Capability<PlayerPhoneState> PLAYER_PHONE_STATE_CAP =
             CapabilityManager.get(new CapabilityToken<PlayerPhoneState>() {
             });
 
-    /** See {@link SoulboundStash} - only ever non-empty for the brief window between a death that pulled
-     * soulbound items out of the drops and the respawn that reinserts them. */
+    /^* See {@link SoulboundStash} - only ever non-empty for the brief window between a death that pulled
+     * soulbound items out of the drops and the respawn that reinserts them. ^/
     public static final Capability<SoulboundStash> SOULBOUND_STASH_CAP =
             CapabilityManager.get(new CapabilityToken<SoulboundStash>() {
             });
@@ -195,7 +195,7 @@ public class PhoneAttachmentTypes {
         target.crazyPhoneScreenHistory = original.crazyPhoneScreenHistory;
     }
 }
-//?}
+*///?}
 //? if fabric && >=1.20.5 {
 /*// Fabric's data-attachment-api-v1 (net.fabricmc.fabric.api.attachment.v1) is the equivalent of NeoForge's
 // AttachmentType: AttachmentRegistry.createPersistent takes a Codec instead of an INBTSerializable-style

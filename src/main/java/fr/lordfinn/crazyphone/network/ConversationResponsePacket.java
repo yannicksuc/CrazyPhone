@@ -19,10 +19,10 @@ import net.neoforged.bus.api.SubscribeEvent;
 // itself is NOT imported here: this file is in the same package as the same-package compat shim
 // (fr.lordfinn.crazyphone.network.PlayPayloadContext), so it resolves with no import at all.
 //? if legacyforge {
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
+/*import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
-//?}
+*///?}
 
 import net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/;
 //? if fabric || neoforge {
@@ -97,11 +97,11 @@ public record ConversationResponsePacket(String conversationId, int skipFromEnd,
     // Tag) - NbtAccounter itself is a plain constructor here too, not the create(long) factory added later.
     // The ListTag this packet actually carries is wrapped in a single-entry CompoundTag for the trip instead.
     //? if legacyforge {
-    private static ListTag readMessagesList(FriendlyByteBuf buffer) {
+    /*private static ListTag readMessagesList(FriendlyByteBuf buffer) {
         CompoundTag wrapper = buffer.readNbt(new NbtAccounter(2097152L));
         return wrapper != null && wrapper.get("list") instanceof ListTag list ? list : new ListTag();
     }
-    //?}
+    *///?}
 
     //? if fabric || neoforge {
     public void write(FriendlyByteBuf buffer) {
@@ -112,7 +112,7 @@ public record ConversationResponsePacket(String conversationId, int skipFromEnd,
     }
     //?}
     //? if legacyforge {
-    public void write(FriendlyByteBuf buffer) {
+    /*public void write(FriendlyByteBuf buffer) {
         buffer.writeUtf(conversationId);
         buffer.writeVarInt(skipFromEnd);
         CompoundTag wrapper = new CompoundTag();
@@ -120,7 +120,7 @@ public record ConversationResponsePacket(String conversationId, int skipFromEnd,
         buffer.writeNbt(wrapper);
         buffer.writeBoolean(hasMore);
     }
-    //?}
+    *///?}
 
     //? if fabric || neoforge {
     @Override
@@ -204,12 +204,12 @@ public record ConversationResponsePacket(String conversationId, int skipFromEnd,
 
 
     //? if legacyforge {
-    @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
+    /*@EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
     public static class ConversationResponsePacketLegacyForgeRegistration {
         @SubscribeEvent
         public static void register(FMLCommonSetupEvent event) {
             Crazyphone.addNetworkMessage(ConversationResponsePacket.class, 3, ConversationResponsePacket::write, ConversationResponsePacket::new, ConversationResponsePacket::handleData);
         }
     }
-    //?}
+    *///?}
 }

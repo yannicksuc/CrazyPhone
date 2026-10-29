@@ -127,11 +127,11 @@ public class PhoneRegistrySavedData extends SavedData {
     // just without the @NotNull annotation (org.jetbrains.annotations isn't on this classpath, and the
     // annotation itself has no effect on override resolution either way).
     //? if legacyforge {
-    @Override
+    /*@Override
     public CompoundTag save(CompoundTag nbt) {
         return writeNbt(nbt);
     }
-    //?}
+    *///?}
     //? if >=1.20.5 <1.21.10 {
     /*@Override
     public @NotNull CompoundTag save(CompoundTag nbt, HolderLookup.@NotNull Provider lookupProvider) {

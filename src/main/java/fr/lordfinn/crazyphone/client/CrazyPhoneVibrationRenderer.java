@@ -19,11 +19,11 @@ import net.neoforged.neoforge.client.event.RenderHandEvent;
 // Real, original Forge 1.20.1 - RenderHandEvent predates the NeoForge fork entirely and matches exactly,
 // javap-verified (same getItemStack/getPoseStack/getPartialTick shape).
 //? if legacyforge {
-import net.minecraftforge.api.distmarker.Dist;
+/*import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 import net.minecraftforge.client.event.RenderHandEvent;
-//?}
+*///?}
 
 import fr.lordfinn.crazyphone.init.ModItems;
 import fr.lordfinn.crazyphone.network.CrazyPhoneCallStateSyncPacket.State;

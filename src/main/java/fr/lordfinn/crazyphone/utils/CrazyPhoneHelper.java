@@ -655,8 +655,8 @@ public class CrazyPhoneHelper {
         // Real 1.20.1 vanilla predates ComponentSerialization/its Codec entirely - Component.Serializer's
         // classic Gson-based toJson/fromJson round trip stands in instead, stored as a plain string tag.
         //? if legacyforge {
-        tag.putString("systemText", Component.Serializer.toJson(text));
-        //?}
+        /*tag.putString("systemText", Component.Serializer.toJson(text));
+        *///?}
         //?}
         if (icon != null && !icon.isEmpty()) {
             /*$ res_loc {*/ResourceLocation/*$}*/ id = BuiltInRegistries.ITEM.getKey(icon.getItem());
@@ -1278,10 +1278,10 @@ public class CrazyPhoneHelper {
     // ConversationResponsePacket.java's own doc comment on the same NbtAccounter/readNbt boundary) - the
     // ListTag this reads is wrapped in one instead, same as that packet's own write side.
     //? if legacyforge {
-    public static List<MessageData> getMessagesFromBuf(FriendlyByteBuf buffer) {
+    /*public static List<MessageData> getMessagesFromBuf(FriendlyByteBuf buffer) {
         CompoundTag wrapper = buffer.readNbt(new NbtAccounter(2097152L));
         Tag rawTag = wrapper != null ? wrapper.get("list") : null;
-    //?}
+    *///?}
     //?}
         List<MessageData> messageDatas = new ArrayList<>();
 
@@ -1320,10 +1320,10 @@ public class CrazyPhoneHelper {
                     : Component.empty();
             //?}
             //? if legacyforge {
-            Component text = NbtCompat.contains(messageTag, "systemText")
+            /*Component text = NbtCompat.contains(messageTag, "systemText")
                     ? Component.Serializer.fromJson(NbtCompat.getString(messageTag, "systemText"))
                     : Component.empty();
-            //?}
+            *///?}
             ItemStack icon = ItemStack.EMPTY;
             if (NbtCompat.contains(messageTag, "systemIcon")) {
                 /*$ res_loc {*/ResourceLocation/*$}*/ id = /*$ res_loc {*/ResourceLocation/*$}*/.tryParse(NbtCompat.getString(messageTag, "systemIcon"));

@@ -25,14 +25,14 @@ import net.neoforged.bus.api.SubscribeEvent;
 // PacketDistributor/PlayPayloadContext/SubscribeEvent/EventBusSubscriber/FMLCommonSetupEvent all match their
 // neoforge <1.20.5 counterparts one-for-one too (see NetworkAccess.java/PlayPayloadContext.java).
 //? if legacyforge {
-import net.minecraftforge.registries.DeferredRegister;
+/*import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.RegistryObject;
 import net.minecraftforge.common.extensions.IForgeMenuType;
 import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
-//?}
+*///?}
 //? if fabric && >=1.20.5 {
 /*import /^$ fabric_ext_menu_type_import {^/net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerType/^$}^/;
 import net.minecraft.core.Registry;
@@ -87,8 +87,8 @@ import org.jetbrains.annotations.NotNull;
 *///?}
 //?}
 //? if legacyforge {
-@EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
-//?}
+/*@EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
+*///?}
 public class ModMenus {
     //? if neoforge {
 	public static final DeferredRegister<MenuType<?>> REGISTRY = DeferredRegister.create(Registries.MENU, Crazyphone.MODID);
@@ -264,7 +264,7 @@ public class ModMenus {
 	//?}
 
 	//? if legacyforge {
-	public static final DeferredRegister<MenuType<?>> REGISTRY = DeferredRegister.create(Registries.MENU, Crazyphone.MODID);
+	/*public static final DeferredRegister<MenuType<?>> REGISTRY = DeferredRegister.create(Registries.MENU, Crazyphone.MODID);
 
 	public static final RegistryObject<MenuType<CrazyphoneHomeScreenMenu>> CRAZYPHONE_HOME_SCREEN = REGISTRY.register("crazyphone_home_screen", () -> IForgeMenuType.create(CrazyphoneHomeScreenMenu::new));
 	public static final RegistryObject<MenuType<CrazyPhonePasswordScreenMenu>> CRAZY_PHONE_PASSWORD_SCREEN = REGISTRY.register("crazy_phone_password_screen", () -> IForgeMenuType.create(CrazyPhonePasswordScreenMenu::new));
@@ -290,7 +290,7 @@ public class ModMenus {
 	public static final RegistryObject<MenuType<CrazyPhonePhotoFrameResizeMenu>> CRAZY_PHONE_PHOTO_FRAME_RESIZE = REGISTRY.register("crazy_phone_photo_frame_resize",
 			() -> IForgeMenuType.create(CrazyPhonePhotoFrameResizeMenu::new));
 
-	/** Always targeted at one player - a textbox value belongs to whoever is looking at that screen, never broadcast it. */
+	/^* Always targeted at one player - a textbox value belongs to whoever is looking at that screen, never broadcast it. ^/
 	public static void setText(String boxname, String value, ServerPlayer player) {
 		fr.lordfinn.crazyphone.Crazyphone.channel().send(PacketDistributor.PLAYER.with(() -> player), new GuiSyncMessage(boxname, value));
 	}
@@ -321,5 +321,5 @@ public class ModMenus {
 	public static void init(FMLCommonSetupEvent event) {
 		Crazyphone.addNetworkMessage(GuiSyncMessage.class, 35, GuiSyncMessage::write, GuiSyncMessage::new, GuiSyncMessage::handleData);
 	}
-	//?}
+	*///?}
 }

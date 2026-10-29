@@ -43,10 +43,10 @@ public class CrazyPhoneAnonymizePhotoRecipe extends CustomRecipe {
     // Real 1.20.1 vanilla's CustomRecipe still carries an explicit ResourceLocation id - same reasoning as
     // CrazyPhoneDuplicatePhotoRecipe's own matching constructor.
     //? if legacyforge {
-    public CrazyPhoneAnonymizePhotoRecipe(net.minecraft.resources.ResourceLocation id, CraftingBookCategory category) {
+    /*public CrazyPhoneAnonymizePhotoRecipe(net.minecraft.resources.ResourceLocation id, CraftingBookCategory category) {
         super(id, category);
     }
-    //?}
+    *///?}
 
     // Returns the matched photo stack, or null unless the grid holds exactly one Photo + one Sponge and
     // nothing else.

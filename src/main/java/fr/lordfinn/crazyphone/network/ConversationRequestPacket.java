@@ -20,10 +20,10 @@ import net.neoforged.bus.api.SubscribeEvent;
 // itself is NOT imported here: this file is in the same package as the same-package compat shim
 // (fr.lordfinn.crazyphone.network.PlayPayloadContext), so it resolves with no import at all.
 //? if legacyforge {
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
+/*import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
-//?}
+*///?}
 
 import net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/;
 //? if fabric || neoforge {
@@ -175,12 +175,12 @@ public record ConversationRequestPacket(String conversationId, int skipFromEnd) 
 
 
     //? if legacyforge {
-    @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
+    /*@EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
     public static class ConversationRequestPacketLegacyForgeRegistration {
         @SubscribeEvent
         public static void register(FMLCommonSetupEvent event) {
             Crazyphone.addNetworkMessage(ConversationRequestPacket.class, 2, ConversationRequestPacket::write, ConversationRequestPacket::new, ConversationRequestPacket::handleData);
         }
     }
-    //?}
+    *///?}
 }

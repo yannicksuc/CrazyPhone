@@ -45,7 +45,7 @@ import java.util.Map;
 // (that's a NeoForge-only addition) - the well-established old-Forge 1.20.1 pattern is a plain no-arg
 // constructor pulling the mod event bus from FMLJavaModLoadingContext instead.
 //? if legacyforge {
-import net.minecraftforge.eventbus.api.IEventBus;
+/*import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
@@ -68,7 +68,7 @@ import com.mojang.logging.LogUtils;
 
 import java.util.function.BiConsumer;
 import java.util.function.Function;
-//?}
+*///?}
 
 /**
  * MODID/resource()/parseId() are shared across both loaders (referenced from ~everywhere in the codebase
@@ -208,7 +208,7 @@ public class Crazyphone {
     // here, must) be called directly as each packet's own FMLCommonSetupEvent subscriber fires, with no
     // intermediate MESSAGES map/two-phase registerNetworking step needed at all.
     //? if legacyforge {
-    public Crazyphone() {
+    /*public Crazyphone() {
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
 
         ModItems.REGISTRY.register(modEventBus);
@@ -256,5 +256,5 @@ public class Crazyphone {
             ctx.setPacketHandled(true);
         });
     }
-    //?}
+    *///?}
 }

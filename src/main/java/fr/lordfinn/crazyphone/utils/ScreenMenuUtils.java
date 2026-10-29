@@ -78,10 +78,10 @@ public class ScreenMenuUtils {
     }
     *///?}
     //? if legacyforge {
-    private static PlayerPhoneState getPhoneState(Player player) {
+    /*private static PlayerPhoneState getPhoneState(Player player) {
         return PhoneAttachmentTypes.getPlayerPhoneState(player);
     }
-    //?}
+    *///?}
 
     //? if neoforge {
     private static void setPhoneState(Player player, PlayerPhoneState playerData) {
@@ -98,12 +98,12 @@ public class ScreenMenuUtils {
     // PhoneAttachmentTypes.java's own doc comment) - "setting" data means mutating the already-attached
     // instance's own fields in place, not swapping in a whole new instance the way NeoForge's setData does.
     //? if legacyforge {
-    private static void setPhoneState(Player player, PlayerPhoneState playerData) {
+    /*private static void setPhoneState(Player player, PlayerPhoneState playerData) {
         PlayerPhoneState target = PhoneAttachmentTypes.getPlayerPhoneState(player);
         target.currentCrazyPhoneScreenOpened = playerData.currentCrazyPhoneScreenOpened;
         target.crazyPhoneScreenHistory = playerData.crazyPhoneScreenHistory;
     }
-    //?}
+    *///?}
 
     public static void openLastCrazyPhoneMenu(Player player, InteractionHand hand) {
 
@@ -321,7 +321,7 @@ public class ScreenMenuUtils {
     // IForgePlayer here) - NetworkHooks.openScreen(ServerPlayer, MenuProvider, Consumer<FriendlyByteBuf>) is
     // the classic old-Forge equivalent, matching shape exactly.
     //? if legacyforge {
-    public static void openPhoneCustomMenu(Player player, InteractionHand hand,
+    /*public static void openPhoneCustomMenu(Player player, InteractionHand hand,
             Class<? extends AbstractContainerMenu> menuClass) {
         if (player instanceof ServerPlayer serverPlayer) {
             net.minecraftforge.network.NetworkHooks.openScreen(serverPlayer, new MenuProvider() {
@@ -349,7 +349,7 @@ public class ScreenMenuUtils {
             });
         }
     }
-    //?}
+    *///?}
     //? if fabric && >=1.20.5 {
     /*public static void openPhoneCustomMenu(Player player, InteractionHand hand,
             Class<? extends AbstractContainerMenu> menuClass) {
@@ -496,7 +496,7 @@ public class ScreenMenuUtils {
             }, buf -> populateBufferWithMyPhotosData(buf, player, hand, conversationId, photoIds));
             //?}
     //? if legacyforge {
-            net.minecraftforge.network.NetworkHooks.openScreen((ServerPlayer) player, new MenuProvider() {
+            /*net.minecraftforge.network.NetworkHooks.openScreen((ServerPlayer) player, new MenuProvider() {
                 @Override
                 public Component getDisplayName() {
                     return Component.translatable("item.crazyphone.crazy_phone");
@@ -505,8 +505,8 @@ public class ScreenMenuUtils {
                 @Override
                 public AbstractContainerMenu createMenu(int id, Inventory inventory, Player player) {
                     //? if >=1.20.5 {
-                    /*RegistryFriendlyByteBuf packetBuffer = new RegistryFriendlyByteBuf(Unpooled.buffer(), registryAccess);
-                    *///? } else {
+                    /^RegistryFriendlyByteBuf packetBuffer = new RegistryFriendlyByteBuf(Unpooled.buffer(), registryAccess);
+                    ^///? } else {
                     FriendlyByteBuf packetBuffer = new FriendlyByteBuf(Unpooled.buffer());
                     //?}
                     populateBufferWithMyPhotosData(packetBuffer, player, hand, conversationId, photoIds);
@@ -517,7 +517,7 @@ public class ScreenMenuUtils {
                     }
                 }
             }, buf -> populateBufferWithMyPhotosData(buf, player, hand, conversationId, photoIds));
-    //?}
+    *///?}
             //? if fabric && >=1.20.5 {
             /*player.openMenu(new /^$ fabric_ext_menu_provider {^/net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory/^$}^/<RegistryFriendlyByteBuf>() {
                 @Override
@@ -610,7 +610,7 @@ public class ScreenMenuUtils {
             }, buf -> populateBufferWithMenuData(buf, player, hand, favorites, contacts, groups));
             //?}
     //? if legacyforge {
-            net.minecraftforge.network.NetworkHooks.openScreen((ServerPlayer) player, new MenuProvider() {
+            /*net.minecraftforge.network.NetworkHooks.openScreen((ServerPlayer) player, new MenuProvider() {
                 @Override
                 public Component getDisplayName() {
                     return Component.translatable("item.crazyphone.crazy_phone");
@@ -628,7 +628,7 @@ public class ScreenMenuUtils {
                     }
                 }
             }, buf -> populateBufferWithMenuData(buf, player, hand, favorites, contacts, groups));
-    //?}
+    *///?}
             //? if fabric && >=1.20.5 {
             /*player.openMenu(new /^$ fabric_ext_menu_provider {^/net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory/^$}^/<RegistryFriendlyByteBuf>() {
                 @Override
@@ -736,7 +736,7 @@ public class ScreenMenuUtils {
             }, buf -> populateBufferWithGroupSettingsData(buf, player, conversationId));
             //?}
     //? if legacyforge {
-            net.minecraftforge.network.NetworkHooks.openScreen((ServerPlayer) player, new MenuProvider() {
+            /*net.minecraftforge.network.NetworkHooks.openScreen((ServerPlayer) player, new MenuProvider() {
                 @Override
                 public Component getDisplayName() {
                     return Component.translatable("item.crazyphone.crazy_phone");
@@ -754,7 +754,7 @@ public class ScreenMenuUtils {
                     }
                 }
             }, buf -> populateBufferWithGroupSettingsData(buf, player, conversationId));
-    //?}
+    *///?}
             //? if fabric && >=1.20.5 {
             /*player.openMenu(new /^$ fabric_ext_menu_provider {^/net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory/^$}^/<RegistryFriendlyByteBuf>() {
                 @Override
@@ -893,7 +893,7 @@ public class ScreenMenuUtils {
                 }, buf -> populateBufferWithConversationData(buf, player, hand, conversationId));
                 //?}
     //? if legacyforge {
-                net.minecraftforge.network.NetworkHooks.openScreen((ServerPlayer) player, new MenuProvider() {
+                /*net.minecraftforge.network.NetworkHooks.openScreen((ServerPlayer) player, new MenuProvider() {
                     @Override
                     public Component getDisplayName() {
                         return Component.translatable("item.crazyphone.crazy_phone");
@@ -902,8 +902,8 @@ public class ScreenMenuUtils {
                     @Override
                     public AbstractContainerMenu createMenu(int id, Inventory inventory, Player player) {
                         //? if >=1.20.5 {
-                        /*RegistryFriendlyByteBuf packetBuffer = new RegistryFriendlyByteBuf(Unpooled.buffer(), registryAccess, connectionType);
-                        *///? } else {
+                        /^RegistryFriendlyByteBuf packetBuffer = new RegistryFriendlyByteBuf(Unpooled.buffer(), registryAccess, connectionType);
+                        ^///? } else {
                         FriendlyByteBuf packetBuffer = new FriendlyByteBuf(Unpooled.buffer());
                         //?}
                         populateBufferWithConversationData(packetBuffer, player, hand, conversationId);
@@ -915,7 +915,7 @@ public class ScreenMenuUtils {
                         }
                     }
                 }, buf -> populateBufferWithConversationData(buf, player, hand, conversationId));
-    //?}
+    *///?}
                 //? if fabric && >=1.20.5 {
                 /*// Real vanilla RegistryFriendlyByteBuf only ever takes (ByteBuf, RegistryAccess) - the
                 // 3-arg overload above (with a ConnectionType) is a NeoForge-only addition, javap-confirmed
@@ -1093,7 +1093,7 @@ public class ScreenMenuUtils {
             }, buf -> populateCallScreenBuffer(buf, player, conversationId, callId, displayTitle, participantIds));
             //?}
     //? if legacyforge {
-            net.minecraftforge.network.NetworkHooks.openScreen((ServerPlayer) player, new MenuProvider() {
+            /*net.minecraftforge.network.NetworkHooks.openScreen((ServerPlayer) player, new MenuProvider() {
                 @Override
                 public Component getDisplayName() {
                     return Component.translatable("item.crazyphone.crazy_phone");
@@ -1110,7 +1110,7 @@ public class ScreenMenuUtils {
                     }
                 }
             }, buf -> populateCallScreenBuffer(buf, player, conversationId, callId, displayTitle, participantIds));
-    //?}
+    *///?}
             //? if fabric && >=1.20.5 {
             /*player.openMenu(new /^$ fabric_ext_menu_provider {^/net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory/^$}^/<RegistryFriendlyByteBuf>() {
                 @Override
@@ -1165,7 +1165,7 @@ public class ScreenMenuUtils {
             }, buf -> populateCallScreenBuffer(buf, player, conversationId, callId, displayTitle, participantIds));
             //?}
     //? if legacyforge {
-            net.minecraftforge.network.NetworkHooks.openScreen((ServerPlayer) player, new MenuProvider() {
+            /*net.minecraftforge.network.NetworkHooks.openScreen((ServerPlayer) player, new MenuProvider() {
                 @Override
                 public Component getDisplayName() {
                     return Component.translatable("item.crazyphone.crazy_phone");
@@ -1182,7 +1182,7 @@ public class ScreenMenuUtils {
                     }
                 }
             }, buf -> populateCallScreenBuffer(buf, player, conversationId, callId, displayTitle, participantIds));
-    //?}
+    *///?}
             //? if fabric && >=1.20.5 {
             /*player.openMenu(new /^$ fabric_ext_menu_provider {^/net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory/^$}^/<RegistryFriendlyByteBuf>() {
                 @Override
@@ -1237,7 +1237,7 @@ public class ScreenMenuUtils {
             }, buf -> populateCallScreenBuffer(buf, player, conversationId, callId, displayTitle, participantIds));
             //?}
     //? if legacyforge {
-            net.minecraftforge.network.NetworkHooks.openScreen((ServerPlayer) player, new MenuProvider() {
+            /*net.minecraftforge.network.NetworkHooks.openScreen((ServerPlayer) player, new MenuProvider() {
                 @Override
                 public Component getDisplayName() {
                     return Component.translatable("item.crazyphone.crazy_phone");
@@ -1254,7 +1254,7 @@ public class ScreenMenuUtils {
                     }
                 }
             }, buf -> populateCallScreenBuffer(buf, player, conversationId, callId, displayTitle, participantIds));
-    //?}
+    *///?}
             //? if fabric && >=1.20.5 {
             /*player.openMenu(new /^$ fabric_ext_menu_provider {^/net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory/^$}^/<RegistryFriendlyByteBuf>() {
                 @Override

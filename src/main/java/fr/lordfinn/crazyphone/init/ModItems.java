@@ -26,7 +26,7 @@ import fr.lordfinn.crazyphone.utils.RegistryEntry;
 // AttachCapabilitiesEvent<ItemStack>, wrapping the same CrazyPhoneInventoryCapability (an ItemStackHandler)
 // in an ICapabilityProvider keyed off ForgeCapabilities.ITEM_HANDLER.
 //? if legacyforge {
-import net.minecraftforge.registries.DeferredRegister;
+/*import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.RegistryObject;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.event.AttachCapabilitiesEvent;
@@ -38,7 +38,7 @@ import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
 import net.minecraft.core.Direction;
-//?}
+*///?}
 
 import net.minecraft.world.item.Item;
 
@@ -67,8 +67,8 @@ import fr.lordfinn.crazyphone.item.inventory.CrazyPhoneInventoryCapability;
 // the hard way: Bus.MOD here failed mod loading with "takes an argument that is not a subtype of ...
 // IModBusEvent" at actual server startup.
 //? if legacyforge {
-@EventBusSubscriber
-//?}
+/*@EventBusSubscriber
+*///?}
 public class ModItems {
     //? if neoforge {
     public static final DeferredRegister.Items REGISTRY = DeferredRegister.createItems(Crazyphone.MODID);
@@ -86,7 +86,7 @@ public class ModItems {
     }
     //?}
     //? if legacyforge {
-    public static final DeferredRegister<Item> REGISTRY = DeferredRegister.create(ForgeRegistries.ITEMS, Crazyphone.MODID);
+    /*public static final DeferredRegister<Item> REGISTRY = DeferredRegister.create(ForgeRegistries.ITEMS, Crazyphone.MODID);
 
     public static final RegistryObject<Item> CRAZY_PHONE = REGISTRY.register("crazy_phone", () -> new CrazyPhoneItem(new Item.Properties()));
     public static final RegistryObject<Item> CRAZY_PHONE_PHOTO = REGISTRY.register("crazy_phone_photo", () -> new CrazyPhonePhotoItem(new Item.Properties()));
@@ -105,7 +105,7 @@ public class ModItems {
             }
         });
     }
-    //?}
+    *///?}
     // Fabric has no deferred-registration lifecycle - Registry#register just performs the registration
     // immediately, so this needs to run during CrazyphoneFabric#onInitialize (not at class-init/static-field
     // time, which can run too early relative to Fabric's own registry-freeze ordering). RegistryEntry wraps

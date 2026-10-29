@@ -9,11 +9,11 @@ import net.minecraft.core.registries.Registries;
 // Real, original Forge 1.20.1 - DeferredRegister.register(...) here returns a RegistryObject<T> instead of
 // a DeferredHolder (same .get()), everything else matches the neoforge branch unchanged.
 //? if legacyforge {
-import net.minecraftforge.registries.DeferredRegister;
+/*import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.RegistryObject;
 
 import net.minecraft.core.registries.Registries;
-//?}
+*///?}
 //? if fabric {
 /*import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -46,7 +46,7 @@ public class ModSounds {
             () -> SoundEvent.createVariableRangeEvent(Crazyphone.resource("take_picture")));
     //?}
     //? if legacyforge {
-    public static final DeferredRegister<SoundEvent> REGISTRY = DeferredRegister.create(Registries.SOUND_EVENT, Crazyphone.MODID);
+    /*public static final DeferredRegister<SoundEvent> REGISTRY = DeferredRegister.create(Registries.SOUND_EVENT, Crazyphone.MODID);
 
     public static final RegistryObject<SoundEvent> RINGBACK_TONE = REGISTRY.register("ringback_tone",
             () -> SoundEvent.createVariableRangeEvent(Crazyphone.resource("ringback_tone")));
@@ -56,7 +56,7 @@ public class ModSounds {
             () -> SoundEvent.createVariableRangeEvent(Crazyphone.resource("phone_vibrating")));
     public static final RegistryObject<SoundEvent> TAKE_PICTURE = REGISTRY.register("take_picture",
             () -> SoundEvent.createVariableRangeEvent(Crazyphone.resource("take_picture")));
-    //?}
+    *///?}
     //? if fabric {
     /*public static RegistryEntry<SoundEvent> RINGBACK_TONE;
     public static RegistryEntry<SoundEvent> RINGTONE;

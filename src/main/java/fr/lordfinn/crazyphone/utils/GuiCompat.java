@@ -160,11 +160,11 @@ public final class GuiCompat {
         // later, alongside the >=1.21.10 rect-based rework above) - applied as a manual pose translate
         // around the call instead, same net visual effect.
         //? if legacyforge {
-        guiGraphics.pose().pushPose();
+        /*guiGraphics.pose().pushPose();
         guiGraphics.pose().translate(translation.x, translation.y, translation.z);
         net.minecraft.client.gui.screens.inventory.InventoryScreen.renderEntityInInventory(guiGraphics, x, y, scale, rotation, cameraOrientation, entity);
         guiGraphics.pose().popPose();
-        //?}
+        *///?}
         //? if >=1.21.10 <26 {
         /*int half = Math.max(scale * 3, 1);
         net.minecraft.client.gui.screens.inventory.InventoryScreen.renderEntityInInventory(guiGraphics, x - half, y - half, x + half, y + half, scale, translation, rotation, cameraOrientation, entity);

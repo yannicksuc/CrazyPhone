@@ -29,13 +29,13 @@ import net.neoforged.api.distmarker.Dist;
 // pair) as a compile-time-only dependency for exactly this reason. Since the body below (the "<1.20.5"
 // branch) was never loader-gated to begin with, only these imports need a legacyforge counterpart.
 //? if legacyforge {
-import net.minecraftforge.items.ItemStackHandler;
+/*import net.minecraftforge.items.ItemStackHandler;
 import net.minecraftforge.event.entity.item.ItemTossEvent;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.api.distmarker.Dist;
-//?}
+*///?}
 
 import net.minecraft.world.item.ItemStack;
 //? if >=1.20.5 {

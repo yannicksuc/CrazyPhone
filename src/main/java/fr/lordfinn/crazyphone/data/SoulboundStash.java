@@ -17,8 +17,8 @@ import net.minecraft.world.level.storage.ValueOutput;
 // Real, original Forge 1.20.1 - same INBTSerializable shape as NeoForge's own <1.21.10 branch above,
 // javap-verified against the actual 1.20.1 Forge jar, just under net.minecraftforge.
 //? if legacyforge {
-import net.minecraftforge.common.util.INBTSerializable;
-//?}
+/*import net.minecraftforge.common.util.INBTSerializable;
+*///?}
 //? if neoforge && >=1.20.5 {
 /*import net.minecraft.core.RegistryAccess;
 import net.minecraft.nbt.NbtOps;
