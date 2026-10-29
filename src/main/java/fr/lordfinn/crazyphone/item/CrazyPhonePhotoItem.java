@@ -122,8 +122,8 @@ public class CrazyPhonePhotoItem extends Item {
     // customization feature already has no crafting recipe outside its own version scope (see build.gradle.
     // kts's own crazy_phone_photo_dyed.json handling), so the viewer border simply never picks up a tint on
     // this target instead of backporting component lookup.
-    //? if fabric || neoforge {
-    private void openViewerOnClient(Level world, ItemStack stack) {
+    //? if (fabric || neoforge) && >=1.20.5 {
+    /*private void openViewerOnClient(Level world, ItemStack stack) {
         if (world.isClientSide() && clientViewerOpener != null) {
             PhotoItemData data = PhotoItemData.fromStack(stack);
             if (data != null) {
@@ -132,8 +132,8 @@ public class CrazyPhonePhotoItem extends Item {
             }
         }
     }
-    //?}
-    //? if legacyforge {
+    *///?}
+    //? if <1.20.5 {
     private void openViewerOnClient(Level world, ItemStack stack) {
         if (world.isClientSide() && clientViewerOpener != null) {
             PhotoItemData data = PhotoItemData.fromStack(stack);
@@ -157,7 +157,7 @@ public class CrazyPhonePhotoItem extends Item {
     }
     *///?}
     //? if neoforge && <1.21.10 {
-    /*// TODO: 1.21.10 removed BlockEntityWithoutLevelRenderer from net.minecraft.client.renderer entirely
+    // TODO: 1.21.10 removed BlockEntityWithoutLevelRenderer from net.minecraft.client.renderer entirely
     // (item custom-rendering was reworked into a data-driven "special model" system) - no NeoForge-side
     // photo rendering on that version yet, tracked as a backport follow-up once the rest of this pipeline
     // is proven on 1.21.1/Fabric first (see the implementation plan's rollout order).
@@ -183,5 +183,5 @@ public class CrazyPhonePhotoItem extends Item {
             }
         });
     }
-    *///?}
+    //?}
 }

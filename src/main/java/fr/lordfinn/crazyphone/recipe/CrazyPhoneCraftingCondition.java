@@ -20,8 +20,8 @@ package fr.lordfinn.crazyphone.recipe;
  * fabric &gt;=26) rather than nesting a version toggle inside the fabric one, which breaks Stonecutter's
  * output the same way CrazyPhoneSelfieCameraMixin's own doc comment already found once for a different file.
  */
-//? if neoforge {
-import com.mojang.serialization.MapCodec;
+//? if neoforge && >=1.20.5 {
+/*import com.mojang.serialization.MapCodec;
 import net.neoforged.neoforge.common.conditions.ICondition;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.neoforged.neoforge.registries.NeoForgeRegistries;
@@ -46,6 +46,38 @@ public record CrazyPhoneCraftingCondition() implements ICondition {
 
     @Override
     public MapCodec<? extends ICondition> codec() {
+        return CODEC;
+    }
+}
+*///?}
+// NeoForge 20.4 (1.20.4): ICondition#codec() and the CONDITION_CODECS registry still take a plain Codec,
+// MapCodec only arrived with NeoForge 20.5.
+//? if neoforge && <1.20.5 {
+import com.mojang.serialization.Codec;
+import net.neoforged.neoforge.common.conditions.ICondition;
+import net.neoforged.neoforge.registries.DeferredRegister;
+import net.neoforged.neoforge.registries.NeoForgeRegistries;
+
+import fr.lordfinn.crazyphone.Config;
+import fr.lordfinn.crazyphone.Crazyphone;
+
+public record CrazyPhoneCraftingCondition() implements ICondition {
+    public static final DeferredRegister<Codec<? extends ICondition>> REGISTRY =
+            DeferredRegister.create(NeoForgeRegistries.Keys.CONDITION_CODECS, Crazyphone.MODID);
+
+    public static final Codec<CrazyPhoneCraftingCondition> CODEC = Codec.unit(CrazyPhoneCraftingCondition::new);
+
+    static {
+        REGISTRY.register("crafting_enabled", () -> CODEC);
+    }
+
+    @Override
+    public boolean test(IContext context) {
+        return Config.crazyPhoneCraftingEnabled;
+    }
+
+    @Override
+    public Codec<? extends ICondition> codec() {
         return CODEC;
     }
 }

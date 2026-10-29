@@ -31,11 +31,11 @@ public final class ForeignPhotoMods {
     public record ForeignPhoto(java.util.UUID id, String owner, int createdMinutes, byte[] bytes) {
     }
 
-    //? if neoforge {
-    private static final net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/ CAMERA_IMAGE_ITEM = net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/.fromNamespaceAndPath("camera", "image");
-    private static final net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/ CAMERA_ALBUM_ITEM = net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/.fromNamespaceAndPath("camera", "album");
-    private static final net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/ CAMERAPTURE_PICTURE_ITEM = net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/.fromNamespaceAndPath("camerapture", "picture");
-    private static final net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/ CAMERAPTURE_ALBUM_ITEM = net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/.fromNamespaceAndPath("camerapture", "album");
+    //? if neoforge && >=1.20.5 {
+    /*private static final net.minecraft.resources./^$ res_loc {^/ResourceLocation/^$}^/ CAMERA_IMAGE_ITEM = net.minecraft.resources./^$ res_loc {^/ResourceLocation/^$}^/.fromNamespaceAndPath("camera", "image");
+    private static final net.minecraft.resources./^$ res_loc {^/ResourceLocation/^$}^/ CAMERA_ALBUM_ITEM = net.minecraft.resources./^$ res_loc {^/ResourceLocation/^$}^/.fromNamespaceAndPath("camera", "album");
+    private static final net.minecraft.resources./^$ res_loc {^/ResourceLocation/^$}^/ CAMERAPTURE_PICTURE_ITEM = net.minecraft.resources./^$ res_loc {^/ResourceLocation/^$}^/.fromNamespaceAndPath("camerapture", "picture");
+    private static final net.minecraft.resources./^$ res_loc {^/ResourceLocation/^$}^/ CAMERAPTURE_ALBUM_ITEM = net.minecraft.resources./^$ res_loc {^/ResourceLocation/^$}^/.fromNamespaceAndPath("camerapture", "album");
 
     public static boolean isForeignPhotoItem(net.minecraft.world.item.ItemStack stack) {
         return matchesItem(stack, CAMERA_IMAGE_ITEM) || matchesItem(stack, CAMERAPTURE_PICTURE_ITEM);
@@ -45,13 +45,13 @@ public final class ForeignPhotoMods {
         return matchesItem(stack, CAMERA_ALBUM_ITEM) || matchesItem(stack, CAMERAPTURE_ALBUM_ITEM);
     }
 
-    private static boolean matchesItem(net.minecraft.world.item.ItemStack stack, net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/ id) {
+    private static boolean matchesItem(net.minecraft.world.item.ItemStack stack, net.minecraft.resources./^$ res_loc {^/ResourceLocation/^$}^/ id) {
         return !stack.isEmpty() && id.equals(net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(stack.getItem()));
     }
 
-    /** A single Camera-mod Image item or Camerapture Picture item, read via whichever mod's format it
+    /^* A single Camera-mod Image item or Camerapture Picture item, read via whichever mod's format it
      * actually matches. Null if neither mod recognizes this stack, the mod isn't installed, or the backing
-     * file is gone. */
+     * file is gone. ^/
     @javax.annotation.Nullable
     public static ForeignPhoto readSingle(net.minecraft.server.MinecraftServer server, net.minecraft.world.item.ItemStack stack) {
         if (matchesItem(stack, CAMERA_IMAGE_ITEM))
@@ -61,10 +61,10 @@ public final class ForeignPhotoMods {
         return null;
     }
 
-    /** Every recoverable photo inside a Camera-mod Album or Camerapture Album item - both are a plain
+    /^* Every recoverable photo inside a Camera-mod Album or Camerapture Album item - both are a plain
      * vanilla {@code ItemContainerContents} of the mod's own photo item (the exact same component bundles
      * and shulker boxes use), so this needs no reflection at all to enumerate slots, only to read each
-     * individual photo inside once found. */
+     * individual photo inside once found. ^/
     public static java.util.List<ForeignPhoto> readAlbum(net.minecraft.server.MinecraftServer server, net.minecraft.world.item.ItemStack stack) {
         java.util.List<ForeignPhoto> result = new java.util.ArrayList<>();
         if (!isForeignAlbumItem(stack))
@@ -152,6 +152,26 @@ public final class ForeignPhotoMods {
             }
         }
         return null;
+    }
+    *///?}
+    // NeoForge 1.20.4 (unmaintained, see the README): no Data Components there, so no Camera-mod or
+    // Camerapture item is ever recognized. Same public surface as above so the callers need no extra gate.
+    //? if neoforge && <1.20.5 {
+    public static boolean isForeignPhotoItem(net.minecraft.world.item.ItemStack stack) {
+        return false;
+    }
+
+    public static boolean isForeignAlbumItem(net.minecraft.world.item.ItemStack stack) {
+        return false;
+    }
+
+    @javax.annotation.Nullable
+    public static ForeignPhoto readSingle(net.minecraft.server.MinecraftServer server, net.minecraft.world.item.ItemStack stack) {
+        return null;
+    }
+
+    public static java.util.List<ForeignPhoto> readAlbum(net.minecraft.server.MinecraftServer server, net.minecraft.world.item.ItemStack stack) {
+        return new java.util.ArrayList<>();
     }
     //?}
 }

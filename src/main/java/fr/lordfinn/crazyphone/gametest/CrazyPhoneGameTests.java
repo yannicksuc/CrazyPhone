@@ -468,9 +468,13 @@ public class CrazyPhoneGameTests {
 
         ServerPlayer player = makeTestPlayer(helper);
         net.minecraft.world.item.ItemStack silkTouchTool = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.DIAMOND_PICKAXE);
-        net.minecraft.core.Holder<net.minecraft.world.item.enchantment.Enchantment> silkTouch = helper.getLevel().registryAccess()
+        //? if >=1.20.5 {
+        /*net.minecraft.core.Holder<net.minecraft.world.item.enchantment.Enchantment> silkTouch = helper.getLevel().registryAccess()
                 .lookupOrThrow(net.minecraft.core.registries.Registries.ENCHANTMENT).getOrThrow(net.minecraft.world.item.enchantment.Enchantments.SILK_TOUCH);
         silkTouchTool.enchant(silkTouch, 1);
+        *///?} else {
+        silkTouchTool.enchant(net.minecraft.world.item.enchantment.Enchantments.SILK_TOUCH, 1);
+        //?}
         player.setItemInHand(InteractionHand.MAIN_HAND, silkTouchTool);
 
         net.minecraft.world.damagesource.DamageSource playerDamage = helper.getLevel().damageSources().playerAttack(player);

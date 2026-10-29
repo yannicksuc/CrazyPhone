@@ -182,18 +182,18 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
         return Math.round(units / (float) HALF_UNITS_PER_BLOCK);
     }
 
-    //? if fabric || neoforge {
-    @Override
+    //? if (fabric || neoforge) && >=1.20.5 {
+    /*@Override
     public net.minecraft.network.protocol.Packet<net.minecraft.network.protocol.game.ClientGamePacketListener> getAddEntityPacket(net.minecraft.server.level.ServerEntity serverEntity) {
         int packed = packSpawnData(attachFace(),
                 roundToHalfBlocks(negUUnits()), roundToHalfBlocks(posUUnits()),
                 roundToHalfBlocks(negVUnits()), roundToHalfBlocks(posVUnits()));
         return new net.minecraft.network.protocol.game.ClientboundAddEntityPacket(this, serverEntity, packed);
     }
-    //?}
+    *///?}
     // Real 1.20.1 vanilla's Entity#getAddEntityPacket takes no ServerEntity argument at all (added later),
     // and ClientboundAddEntityPacket's matching (Entity, int) constructor predates the 3-arg one used above.
-    //? if legacyforge {
+    //? if <1.20.5 {
     @Override
     public net.minecraft.network.protocol.Packet<net.minecraft.network.protocol.game.ClientGamePacketListener> getAddEntityPacket() {
         int packed = packSpawnData(attachFace(),
@@ -231,16 +231,16 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
      * necessarily a full cube) before ever constructing the entity, mirroring HangingEntity#survives()'s
      * own role but with the fuller-block requirement deliberately dropped. Returns null if the face can't
      * hold a frame (fully empty shape, e.g. air, or already occupied - see {@link #spaceFree}). */
-    //? if legacyforge {
+    //? if <1.20.5 {
     public static CrazyPhonePhotoFrameEntity tryPlace(Level level, BlockPos clickedPos, Direction face, @javax.annotation.Nullable net.minecraft.world.phys.Vec3 clickLocation,
                                                         Direction placerFacing, PhotoItemData photoData, PhotoFrameData frameData, int borderRgb) {
         return null;
     }
     //?}
-    //? if fabric || neoforge {
-    /** {@code clickLocation} is the exact point the player's crosshair hit on the block's own geometry - its
+    //? if (fabric || neoforge) && >=1.20.5 {
+    /*/^* {@code clickLocation} is the exact point the player's crosshair hit on the block's own geometry - its
      * coordinate along {@code face}'s axis becomes the frame's surface plane. Null falls back to the block
-     * shape's outermost bound in that direction. */
+     * shape's outermost bound in that direction. ^/
     public static CrazyPhonePhotoFrameEntity tryPlace(Level level, BlockPos clickedPos, Direction face, @javax.annotation.Nullable net.minecraft.world.phys.Vec3 clickLocation,
                                                         Direction placerFacing, PhotoItemData photoData, PhotoFrameData frameData, int borderRgb) {
         BlockState state = level.getBlockState(clickedPos);
@@ -294,7 +294,7 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
             return null;
         return entity;
     }
-    //?}
+    *///?}
 
     private static boolean spaceFree(Level level, CrazyPhonePhotoFrameEntity candidate) {
         return level.getEntities(candidate, candidate.getBoundingBox(), other -> other instanceof CrazyPhonePhotoFrameEntity).isEmpty();
@@ -483,8 +483,8 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
         };
     }
 
-    //? if fabric || neoforge {
-    @Override
+    //? if (fabric || neoforge) && >=1.20.5 {
+    /*@Override
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
         builder.define(DATA_PHOTO_ID, "");
         builder.define(DATA_OWNER, "");
@@ -498,10 +498,10 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
         builder.define(DATA_BORDER_RGB, 0xFFFFFF);
         builder.define(DATA_FACE_OFFSET, UNSET_FACE_OFFSET);
     }
-    //?}
+    *///?}
     // Real 1.20.1 vanilla's Entity#defineSynchedData takes no Builder at all (added later) - the classic
     // no-arg override defining directly against the protected entityData field stands in instead.
-    //? if legacyforge {
+    //? if <1.20.5 {
     @Override
     protected void defineSynchedData() {
         this.entityData.define(DATA_PHOTO_ID, "");
@@ -701,15 +701,15 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
         // mappings (a stricter type than the plain Holder registry lookup below returns) -
         // EnchantmentHelper.getItemEnchantmentLevel takes a plain Holder instead, already the exact
         // pattern SoulboundHandler.java's own Silk Touch check uses (see that class).
-        //? if fabric || neoforge {
-        return net.minecraft.world.item.enchantment.EnchantmentHelper.getItemEnchantmentLevel(this.level().registryAccess()
+        //? if (fabric || neoforge) && >=1.20.5 {
+        /*return net.minecraft.world.item.enchantment.EnchantmentHelper.getItemEnchantmentLevel(this.level().registryAccess()
                 .lookupOrThrow(net.minecraft.core.registries.Registries.ENCHANTMENT).getOrThrow(Enchantments.SILK_TOUCH), tool) > 0;
-        //?}
+        *///?}
         // Real 1.20.1 vanilla predates data-driven enchantments entirely - Enchantments.SILK_TOUCH is a
         // plain Enchantment instance directly (no registry Holder lookup needed at all).
-        //? if legacyforge {
-        /*return net.minecraft.world.item.enchantment.EnchantmentHelper.getItemEnchantmentLevel(Enchantments.SILK_TOUCH, tool) > 0;
-        *///?}
+        //? if <1.20.5 {
+        return net.minecraft.world.item.enchantment.EnchantmentHelper.getItemEnchantmentLevel(Enchantments.SILK_TOUCH, tool) > 0;
+        //?}
     }
 
     //? if <26 {
@@ -727,18 +727,18 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
     /** Right-click - opens the resize menu server-side. Actual menu open lives in ScreenMenuUtils
      * (mirrors every other phone screen's own open call), kept out of this class since Entity subclasses in
      * this codebase don't otherwise reach into world/inventory/ package concerns directly. */
-    //? if (fabric || neoforge) && <26 {
-    @Override
+    //? if (fabric || neoforge) && >=1.20.5 <26 {
+    /*@Override
     public InteractionResult interact(Player player, InteractionHand hand) {
         if (!this.level().isClientSide())
             fr.lordfinn.crazyphone.utils.ScreenMenuUtils.openPhotoFrameResizeMenu(player, this);
         return InteractionResult.SUCCESS;
     }
-    //?}
+    *///?}
     // The resize-menu feature is inert below 1.20.5 (see ScreenMenuUtils#openPhotoFrameResizeMenu's own
     // >=1.20.5-only scope) - a no-op interact here, matching the rest of this entity's own inert-below-
     // 1.20.5 story (ModEntities.java's doc comment, tryPlace's own stub above).
-    //? if legacyforge {
+    //? if <1.20.5 {
     @Override
     public InteractionResult interact(Player player, InteractionHand hand) {
         return InteractionResult.SUCCESS;
@@ -773,19 +773,17 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
         // undyed" convention for DYED_COLOR - see CrazyPhonePhotoItemRenderer#borderRgb's matching read
         // side) - an un-dyed frame's dropped stack stays with no DYED_COLOR at all, same as a plain photo
         // that was never placed.
-        //? if legacyforge {
-        /*// Real 1.20.1 vanilla has no Data Components system at all (see CrazyPhonePhotoItem's own doc
-        // comment on the same boundary) - a dyed frame's dropped stack just carries no color info here.
-        *///?}
-        //? if fabric || neoforge {
-        if (borderRgb != 0xFFFFFF) {
+        // Below 1.20.5 vanilla has no Data Components system at all (see CrazyPhonePhotoItem's own doc
+        // comment on the same boundary) - a dyed frame's dropped stack just carries no color info there.
+        //? if (fabric || neoforge) && >=1.20.5 {
+        /*if (borderRgb != 0xFFFFFF) {
             //? if >=26 {
-            /*stack.set(net.minecraft.core.component.DataComponents.DYED_COLOR, new net.minecraft.world.item.component.DyedItemColor(borderRgb));
-            *///? } else {
+            /^stack.set(net.minecraft.core.component.DataComponents.DYED_COLOR, new net.minecraft.world.item.component.DyedItemColor(borderRgb));
+            ^///? } else {
             stack.set(net.minecraft.core.component.DataComponents.DYED_COLOR, new net.minecraft.world.item.component.DyedItemColor(borderRgb, false));
             //?}
         }
-        //?}
+        *///?}
         return stack;
     }
 
