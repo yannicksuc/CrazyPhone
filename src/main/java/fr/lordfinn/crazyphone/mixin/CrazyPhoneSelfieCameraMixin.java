@@ -112,7 +112,8 @@ public abstract class CrazyPhoneSelfieCameraMixin {
     }
 }
 //?}
-//? if fabric && <1.21.10 {
+// Forge 1.20.1 has only the vanilla 2-arg Camera#setRotation too, so it shares the Fabric block.
+//? if (fabric || legacyforge) && <1.21.10 {
 /*import com.mojang.math.Axis;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;

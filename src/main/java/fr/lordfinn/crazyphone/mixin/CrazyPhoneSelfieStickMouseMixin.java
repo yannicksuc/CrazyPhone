@@ -25,7 +25,12 @@ public abstract class CrazyPhoneSelfieStickMouseMixin {
     @Shadow
     private double accumulatedDY;
 
-    @Inject(method = "handleAccumulatedMovement", at = @At("HEAD"))
+    // Before 1.20.5 vanilla reads (then zeroes) the accumulated delta in turnPlayer() instead.
+    //? if <1.20.5 {
+    @Inject(method = "turnPlayer", at = @At("HEAD"))
+    //?} else {
+    /*@Inject(method = "handleAccumulatedMovement", at = @At("HEAD"))
+    *///?}
     private void crazyphone$captureSelfieStickDelta(CallbackInfo ci) {
         if (CrazyPhoneCaptureMode.isSelfieMode())
             CrazyPhoneSelfieStickPose.addMouseDelta(this.accumulatedDX, this.accumulatedDY);
