@@ -21,6 +21,13 @@ import net.neoforged.bus.api.SubscribeEvent;
 //? if fabric && >=1.20.5 {
 /*import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 *///?}
+// Forge 1.20.1: same FORGE-bus event and fake player, at their original net.minecraftforge.* paths.
+//? if legacyforge {
+/*import net.minecraftforge.event.RegisterCommandsEvent;
+import net.minecraftforge.common.util.FakePlayerFactory;
+import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+*///?}
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
@@ -39,7 +46,7 @@ import fr.lordfinn.crazyphone.data.PhoneRegistrySavedData;
 import fr.lordfinn.crazyphone.network.CrazyPhoneClearPictureCachePacket;
 import fr.lordfinn.crazyphone.network.FeatureFlagSyncPacket;
 import fr.lordfinn.crazyphone.utils.NetworkAccess;
-//? if neoforge {
+//? if neoforge || legacyforge {
 import fr.lordfinn.crazyphone.procedures.CrazyPhoneAddMayorProgramFromMainHandProcedure;
 //?}
 import fr.lordfinn.crazyphone.procedures.CrazyPhoneAddNewMayorCandidateProcedure;
@@ -80,7 +87,7 @@ import fr.lordfinn.crazyphone.procedures.VoteForMayorProcedure;
  * /crazyphone cache clear [player]              (level 4 - defaults to the command's own sender)
  * </pre>
  */
-//? if neoforge {
+//? if neoforge || legacyforge {
 @EventBusSubscriber
 //?}
 public class ModCommands {
@@ -105,7 +112,7 @@ public class ModCommands {
         //?}
     }
 
-    //? if neoforge {
+    //? if neoforge || legacyforge {
     @SubscribeEvent
     public static void registerCommand(RegisterCommandsEvent event) {
         event.getDispatcher().register(buildCommandTree());
@@ -129,7 +136,7 @@ public class ModCommands {
                 .then(Commands.literal("remove")
                         .then(Commands.argument("phoneNumber", IntegerArgumentType.integer(100, 999)).suggests(CANDIDATE_NUMBERS)
                                 .executes(ModCommands::mayorCandidateRemove)));
-        //? if neoforge {
+        //? if neoforge || legacyforge {
         candidate.then(Commands.literal("program")
                 .then(Commands.argument("phoneNumber", IntegerArgumentType.integer(100, 999)).suggests(CANDIDATE_NUMBERS)
                         .executes(ModCommands::mayorCandidateProgram)));
@@ -285,7 +292,7 @@ public class ModCommands {
         return 1;
     }
 
-    //? if neoforge {
+    //? if neoforge || legacyforge {
     private static int mayorCandidateProgram(CommandContext<CommandSourceStack> arguments) {
         Level world = arguments.getSource().getLevel();
         Entity entity = resolveEntity(arguments, world);
@@ -333,7 +340,7 @@ public class ModCommands {
      * player. */
     private static Entity resolveEntity(CommandContext<CommandSourceStack> arguments, Level world) {
         Entity entity = arguments.getSource().getEntity();
-        //? if neoforge {
+        //? if neoforge || legacyforge {
         if (entity == null && world instanceof ServerLevel serverLevel)
             entity = FakePlayerFactory.getMinecraft(serverLevel);
         //?}
