@@ -54,8 +54,10 @@ the OS file picker import (would pop a native dialog on the user's desktop).
 Dev tooling added for this: `-PquickPlayMultiplayer=host:port` (join a dev server on launch) and
 `-PwithVoicechat` (real SVC in the dev runtime), both opt-in in `build.fabric26.gradle.kts`;
 `26.3-fabric` is in `scripts/dev-launch.ps1` (port 25574). The 26.2 / 26.3 nodes still don't
-publish (the `fabric26ReadyToPublish` gate is 26.1.2 only): build their jars with
-`./gradlew :26.2-fabric:build` / `:26.3-fabric:build`.
+publish (the `fabric26ReadyToPublish` gate is 26.1.2 only, and neither node is in the release.yml
+matrix yet): build their jars with `./gradlew :26.2-fabric:assemble` / `:26.3-fabric:assemble`
+(what release.yml runs too). `build` fails on the unit tests, which don't compile on any 26.x Fabric
+node (26.1-fabric included, pre-existing: FeatureFlagTest, GifImportDecodeTest, PlayerPhoneStateTest).
 
 ## Update: `:26.1:runServer` boots cleanly - first live 26.x dedicated-server boot, four real runtime bugs found and fixed
 
