@@ -4,7 +4,9 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
 import org.joml.Quaternionf;
+//? if <26.2 {
 import net.minecraft.client.renderer.MultiBufferSource;
+//?}
 import /*$ render_type_import {*/net.minecraft.client.renderer.RenderType/*$}*/;
 import net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/;
 import net.minecraft.world.item.ItemDisplayContext;
@@ -170,6 +172,10 @@ public final class CrazyPhonePhotoItemRenderer {
     private CrazyPhonePhotoItemRenderer() {
     }
 
+    // 26.2 removed MultiBufferSource entirely. Everything up to the next //?} below is the pre-ItemModel
+    // rendering path, only reached on <26 (>=26 goes through ModelImpl/SpecialRendererImpl further down), so
+    // it is simply left out from 26.2 on instead of being ported.
+    //? if <26.2 {
     // Temporary diagnostic - confirms whether render() is even reached at all on 1.20.4 (vs. never being
     // called in the first place, which would point at custom-renderer registration instead of anything
     // inside this method) and, if reached, whether PhotoItemData actually resolves. Throttled per
@@ -436,6 +442,7 @@ public final class CrazyPhonePhotoItemRenderer {
                 -h, h, 0, 1, 0,
                 0, 0, -1);
     }
+    //?}
 
     private static void tintedQuad(VertexConsumer buffer, PoseStack.Pose pose, int light, int overlay, int r, int g, int b,
                                     float x0, float y0, float z0, float u0, float v0,
@@ -525,6 +532,8 @@ public final class CrazyPhonePhotoItemRenderer {
                 nx, ny, nz);
     }
 
+    // See the <26.2 gate comment above render(): MultiBufferSource no longer exists on 26.2.
+    //? if <26.2 {
     // Same Polaroid-style frame as renderFramedCard (front/back/1px edge, off-white frame texture), but
     // nine-sliced around the real (uncropped) photo aspect ratio instead of a fixed 14x14 square opening -
     // the four 1x1 corner tiles and four edge strips of the frame texture stay a constant physical width,
@@ -687,6 +696,7 @@ public final class CrazyPhonePhotoItemRenderer {
                 p, p, pz, u1, v0,
                 0, 0, 1);
     }
+    //?}
 
     // One nine-slice tile: a front-facing (normal +Z) rectangle from (xLeft,yTop) to (xRight,yBottom),
     // sampling the given UV sub-rectangle of the frame texture.

@@ -226,7 +226,7 @@ public final class CrazyPhoneCaptureMode {
 
     private static void clearToasts(Minecraft mc) {
         //? if >=26.2 {
-        /*mc.toastManager().clear();
+        /*mc.gui.toastManager().clear();
         *///?} else if >=1.21.10 {
         /*mc.getToastManager().clear();
         *///?} else {

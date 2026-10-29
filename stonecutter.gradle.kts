@@ -116,4 +116,11 @@ stonecutter parameters {
     // prefix, matching the modern accessor convention used elsewhere - confirmed via decompiled source:
     // 26.1 still has getMainCamera(), 26.2 only has mainCamera()).
     swaps.put("gr_main_camera", if (is262) "mainCamera" else "getMainCamera")
+    // 26.2 also removed Minecraft#getMainRenderTarget(): the main render target is now only reachable through
+    // GameRenderer#mainRenderTarget() (javap-checked against the real 26.2 jar).
+    swaps.put("mc_main_render_target", if (is262) "gameRenderer.mainRenderTarget" else "getMainRenderTarget")
+    // Mixin target classes that moved on 26.2: Minecraft#setScreen -> Gui#setScreen, and the in-game HUD's
+    // extractRenderState(GuiGraphicsExtractor, DeltaTracker) from Gui -> the new Hud class (javap-checked).
+    swaps.put("capture_escape_target", if (is262) "net.minecraft.client.gui.Gui" else "Minecraft")
+    swaps.put("capture_hud_target", if (is262) "net.minecraft.client.gui.Hud" else "Gui")
 }

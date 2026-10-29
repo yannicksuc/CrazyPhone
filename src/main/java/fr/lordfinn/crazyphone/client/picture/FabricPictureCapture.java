@@ -131,8 +131,8 @@ public final class FabricPictureCapture {
         // event the frame signal above relies on - so it's tick-based, given a couple of ticks to render.
         Minecraft mc = Minecraft.getInstance();
         if (hideGuiBeforeCapture == null) {
-            hideGuiBeforeCapture = mc.options.hideGui;
-            mc.options.hideGui = true;
+            hideGuiBeforeCapture = isHudHidden(mc);
+            setHudHidden(mc, true);
             hideGuiTicksWaited = 0;
             return;
         }
@@ -147,11 +147,30 @@ public final class FabricPictureCapture {
     private static Boolean hideGuiBeforeCapture = null;
     private static int hideGuiTicksWaited = 0;
 
+    // 26.2 dropped Options#hideGui: the F1 state now lives on Gui#hud (Hud#isHidden(), only flippable through
+    // Hud#toggle(), no setter), so both reads and writes go through these two helpers.
+    private static boolean isHudHidden(Minecraft mc) {
+        //? if >=26.2 {
+        /*return mc.gui.hud.isHidden();
+        *///?} else {
+        return mc.options.hideGui;
+        //?}
+    }
+
+    private static void setHudHidden(Minecraft mc, boolean hidden) {
+        //? if >=26.2 {
+        /*if (mc.gui.hud.isHidden() != hidden)
+            mc.gui.hud.toggle();
+        *///?} else {
+        mc.options.hideGui = hidden;
+        //?}
+    }
+
     // Called once the real pixel copy has happened (or failed) - see captureBothResolutions's own doc comment.
     private static void endSuppression() {
         suppressPhoneRendering = false;
         if (hideGuiBeforeCapture != null) {
-            Minecraft.getInstance().options.hideGui = hideGuiBeforeCapture;
+            setHudHidden(Minecraft.getInstance(), hideGuiBeforeCapture);
             hideGuiBeforeCapture = null;
         }
     }
@@ -171,7 +190,7 @@ public final class FabricPictureCapture {
     //? if <1.21.10 {
     private static void captureBothResolutions(BiConsumer<byte[], byte[]> callback) {
         Minecraft mc = Minecraft.getInstance();
-        try (NativeImage full = Screenshot.takeScreenshot(mc.getMainRenderTarget())) {
+        try (NativeImage full = Screenshot.takeScreenshot(mc./*$ mc_main_render_target {*/getMainRenderTarget/*$}*/())) {
             endSuppression();
             try (NativeImage fullScaled = downscale(full, Config.photoFullMaxDimension)) {
                 byte[] fullBytes = fullScaled.asByteArray();
@@ -201,7 +220,7 @@ public final class FabricPictureCapture {
     private static void captureBothResolutions(BiConsumer<byte[], byte[]> callback) {
         Minecraft mc = Minecraft.getInstance();
         try {
-            Screenshot.takeScreenshot(mc.getMainRenderTarget(), full -> {
+            Screenshot.takeScreenshot(mc./^$ mc_main_render_target {^/getMainRenderTarget/^$}^/(), full -> {
                 // The first thing done with the real captured pixels, before any further processing that
                 // could itself take long enough for another frame to render - see this method's own doc
                 // comment on why this can't be reset any earlier.
