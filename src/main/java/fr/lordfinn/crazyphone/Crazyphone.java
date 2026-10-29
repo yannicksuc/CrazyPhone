@@ -250,6 +250,8 @@ public class Crazyphone {
     public static <T> void addNetworkMessage(Class<T> clazz, int id, BiConsumer<T, FriendlyByteBuf> writer,
                                               Function<FriendlyByteBuf, T> reader,
                                               BiConsumer<T, PlayPayloadContext> handler) {
+        // Remembered so oversized messages can be split and rebuilt (see LegacyForgeChunkedPayload).
+        fr.lordfinn.crazyphone.network.LegacyForgeChunkedPayload.remember(clazz, id, writer, reader, handler);
         CHANNEL.registerMessage(id, clazz, writer, reader, (msg, ctxSupplier) -> {
             NetworkEvent.Context ctx = ctxSupplier.get();
             handler.accept(msg, new PlayPayloadContext(ctx));

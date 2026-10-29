@@ -67,7 +67,7 @@ public final class NetworkAccess {
     // target).
     //? if legacyforge {
     /*public static void sendToServer(Object payload) {
-        fr.lordfinn.crazyphone.Crazyphone.channel().sendToServer(payload);
+        fr.lordfinn.crazyphone.network.LegacyForgeChunkedPayload.sendToServer(payload);
     }
     *///?}
 
@@ -88,7 +88,7 @@ public final class NetworkAccess {
     *///?}
     //? if legacyforge {
     /*public static void sendToPlayer(net.minecraft.server.level.ServerPlayer player, Object payload) {
-        fr.lordfinn.crazyphone.Crazyphone.channel().send(net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> player), payload);
+        fr.lordfinn.crazyphone.network.LegacyForgeChunkedPayload.send(net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> player), payload);
     }
     *///?}
 
@@ -113,7 +113,7 @@ public final class NetworkAccess {
     *///?}
     //? if legacyforge {
     /*public static void sendToAllPlayers(MinecraftServer server, Object payload) {
-        fr.lordfinn.crazyphone.Crazyphone.channel().send(net.minecraftforge.network.PacketDistributor.ALL.noArg(), payload);
+        fr.lordfinn.crazyphone.network.LegacyForgeChunkedPayload.send(net.minecraftforge.network.PacketDistributor.ALL.noArg(), payload);
     }
     *///?}
 }
