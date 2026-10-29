@@ -27,7 +27,7 @@ public class ModRecipes {
 // Real, original Forge 1.20.1 - DeferredRegister.register(...) here returns a RegistryObject<T> instead of
 // a DeferredHolder (same .get()), everything else matches the neoforge branch unchanged.
 //? if legacyforge {
-import net.minecraftforge.registries.DeferredRegister;
+/*import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.RegistryObject;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.item.crafting.RecipeSerializer;
@@ -45,7 +45,7 @@ public class ModRecipes {
     public static final RegistryObject<SimpleCraftingRecipeSerializer<CrazyPhoneAnonymizePhotoRecipe>> ANONYMIZE_PHOTO =
             REGISTRY.register("crafting_special_anonymize_photo", () -> new SimpleCraftingRecipeSerializer<>(CrazyPhoneAnonymizePhotoRecipe::new));
 }
-//?}
+*///?}
 //? if fabric && >=1.20.5 <1.21.10 {
 /*import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;

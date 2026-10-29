@@ -45,8 +45,8 @@ public class RegisterNewPhoneFromFormProcedure {
                     // Real 1.20.1 authlib (4.0.43) predates Property's value()/name() record-style
                     // accessors - the classic getValue()/getName() getters stand in instead.
                     //? if legacyforge {
-                    String textureUUID = property.getValue();
-                    //?}
+                    /*String textureUUID = property.getValue();
+                    *///?}
                     //? if fabric || neoforge {
                     String textureUUID = property.value();
                     //?}

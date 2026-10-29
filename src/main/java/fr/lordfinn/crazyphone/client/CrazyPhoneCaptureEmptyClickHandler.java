@@ -10,6 +10,13 @@ import net.neoforged.fml.common.Mod.EventBusSubscriber;
 //?}
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 //?}
+// Forge 1.20.1: the same events at their original net.minecraftforge.* packages.
+//? if legacyforge {
+/*import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
+import net.minecraftforge.event.entity.player.PlayerInteractEvent;
+*///?}
 
 import fr.lordfinn.crazyphone.item.CrazyPhoneCaptureShortcut;
 
@@ -19,11 +26,11 @@ import fr.lordfinn.crazyphone.item.CrazyPhoneCaptureShortcut;
  * server-side signal at all), so this is its own Dist.CLIENT-scoped class rather than a third handler on
  * the common one - safe to call the overlay directly here, unlike the common class.
  */
-//? if neoforge {
+//? if neoforge || legacyforge {
 @EventBusSubscriber(value = Dist.CLIENT)
 //?}
 public class CrazyPhoneCaptureEmptyClickHandler {
-    //? if neoforge {
+    //? if neoforge || legacyforge {
     @SubscribeEvent
     public static void onLeftClickEmpty(PlayerInteractEvent.LeftClickEmpty event) {
         if (!CrazyPhoneCaptureShortcut.isHoldingPhone(event.getEntity()))

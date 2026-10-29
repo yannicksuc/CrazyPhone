@@ -16,11 +16,11 @@ import net.neoforged.neoforge.common.ModConfigSpec;
 // later - a generic ConfigValue<Integer>/ConfigValue<Boolean> (same .get()) stands in for those, and
 // defineInRange needs an explicit trailing Class<V> token that NeoForge's own newer overload infers instead.
 //? if legacyforge {
-import net.minecraftforge.eventbus.api.SubscribeEvent;
+/*import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 import net.minecraftforge.fml.event.config.ModConfigEvent;
 import net.minecraftforge.common.ForgeConfigSpec;
-//?}
+*///?}
 
 //? if neoforge {
 //? if <1.20.5 {
@@ -231,7 +231,7 @@ public class Config {
 }
 //?}
 //? if legacyforge {
-@EventBusSubscriber(modid = Crazyphone.MODID, bus = EventBusSubscriber.Bus.MOD)
+/*@EventBusSubscriber(modid = Crazyphone.MODID, bus = EventBusSubscriber.Bus.MOD)
 public class Config {
     private static final ForgeConfigSpec.Builder BUILDER = new ForgeConfigSpec.Builder();
 
@@ -400,7 +400,7 @@ public class Config {
         SPEC.save();
     }
 }
-//?}
+*///?}
 //? if fabric {
 /*// TODO(#164 follow-up): no real Fabric config file yet - NeoForge's ModConfigSpec (TOML, per-value
 // comments/ranges, live reload) has no Fabric equivalent in this codebase yet. Values below are the

@@ -10,6 +10,12 @@ import net.neoforged.fml.common.Mod.EventBusSubscriber;
 //?}
 import net.neoforged.bus.api.SubscribeEvent;
 //?}
+// Forge 1.20.1: the same events at their original net.minecraftforge.* packages.
+//? if legacyforge {
+/*import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+*///?}
 //? if fabric {
 /*import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 *///?}
@@ -45,7 +51,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * Fabric's {@code ServerTickEvents.END_SERVER_TICK}) just call straight into it, same idiom as
  * {@link CallTerminationListener}.
  */
-//? if neoforge {
+//? if neoforge || legacyforge {
 @EventBusSubscriber
 //?}
 public class CallHeadRotationSync {
@@ -58,7 +64,7 @@ public class CallHeadRotationSync {
      * UUID no longer in any call is harmless and the set of ever-synced players stays small. */
     private static final Map<UUID, Vec3> lastPositions = new ConcurrentHashMap<>();
 
-    //? if neoforge {
+    //? if neoforge || legacyforge {
     //? if >=1.20.5 {
     /*@SubscribeEvent
     public static void onServerTick(ServerTickEvent.Post event) {

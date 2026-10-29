@@ -17,12 +17,12 @@ import net.neoforged.api.distmarker.Dist;
 // MenuScreens.register calls go straight in a plain FMLClientSetupEvent subscriber instead, same vanilla
 // MenuScreens.register calls the Fabric branch below already uses directly.
 //? if legacyforge {
-import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
+/*import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraft.client.gui.screens.MenuScreens;
-//?}
+*///?}
 
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.components.EditBox;
@@ -72,8 +72,8 @@ import java.util.HashMap;
 *///?}
 //?}
 //? if legacyforge {
-@EventBusSubscriber(value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)
-//?}
+/*@EventBusSubscriber(value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)
+*///?}
 public class ModScreens {
 	//? if neoforge {
 	@SubscribeEvent
@@ -117,7 +117,7 @@ public class ModScreens {
 	*///?}
 
 	//? if legacyforge {
-	@SubscribeEvent
+	/*@SubscribeEvent
 	public static void clientSetup(FMLClientSetupEvent event) {
 		event.enqueueWork(() -> {
 			MenuScreens.register(ModMenus.CRAZYPHONE_HOME_SCREEN.get(), CrazyphoneHomeScreenScreen::new);
@@ -136,7 +136,7 @@ public class ModScreens {
 			// Mayor-candidate poster screen stays NeoForge-only, matching the feature itself.
 		});
 	}
-	//?}
+	*///?}
 
 	//? if neoforge || legacyforge {
 	public static void handleTextBoxMessage(GuiSyncMessage message) {

@@ -21,6 +21,19 @@ import net.neoforged.neoforge.client.gui.overlay.VanillaGuiOverlay;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 *///?}
 //?}
+// Forge 1.20.1: the same events at their original net.minecraftforge.* packages.
+//? if legacyforge {
+/*import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
+import net.minecraftforge.client.event.ViewportEvent;
+import net.minecraftforge.client.event.InputEvent;
+import net.minecraftforge.client.event.RenderHandEvent;
+import net.minecraftforge.client.event.RenderGuiEvent;
+import net.minecraftforge.client.event.RenderGuiOverlayEvent;
+import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
+import org.lwjgl.glfw.GLFW;
+*///?}
 
 import net.minecraft.client.CameraType;
 import net.minecraft.client.Minecraft;
@@ -66,7 +79,7 @@ import java.util.UUID;
  * CrazyPhoneCaptureFovMixin/CrazyPhoneCaptureScrollMixin/CrazyPhoneCapturePressMixin/CrazyPhoneCaptureHandMixin/
  * CrazyPhoneCaptureGuiMixin).
  */
-//? if neoforge {
+//? if neoforge || legacyforge {
 //? if <1.20.5 {
 // No bus= here (unlike this project's packet-registration classes, which subscribe to a genuine
 // mod-lifecycle event and belong on Bus.MOD): every @SubscribeEvent below is a regular client
@@ -344,7 +357,7 @@ public final class CrazyPhoneCaptureMode {
         guiGraphics./*$ gui_draw_centered_string {*/drawCenteredString/*$}*/(mc.font, text, width / 2, height - 40, 0xFFFFFFFF);
     }
 
-    //? if neoforge {
+    //? if neoforge || legacyforge {
     @SubscribeEvent
     public static void onComputeFov(ViewportEvent.ComputeFov event) {
         if (active)
@@ -355,7 +368,12 @@ public final class CrazyPhoneCaptureMode {
     public static void onScroll(InputEvent.MouseScrollingEvent event) {
         if (!active)
             return;
+        // Forge 1.20.1's scroll event only carries the one vertical delta.
+        //? if legacyforge {
+        /*adjustZoom(event.getScrollDelta());
+        *///?} else {
         adjustZoom(event.getScrollDeltaY());
+        //?}
         event.setCanceled(true);
     }
 
@@ -390,7 +408,11 @@ public final class CrazyPhoneCaptureMode {
     // actually happens, letting this redirect to a normal exit() (mouse-grab restored, previous screen if
     // any reopened) instead.
     @SubscribeEvent
+    //? if legacyforge {
+    /*public static void onScreenOpening(net.minecraftforge.client.event.ScreenEvent.Opening event) {
+    *///?} else {
     public static void onScreenOpening(net.neoforged.neoforge.client.event.ScreenEvent.Opening event) {
+    //?}
         if (active && event.getNewScreen() instanceof net.minecraft.client.gui.screens.PauseScreen) {
             event.setCanceled(true);
             exit();
@@ -425,7 +447,12 @@ public final class CrazyPhoneCaptureMode {
             VanillaGuiOverlay.SUBTITLES.id(), VanillaGuiOverlay.RECORD_OVERLAY.id(),
             VanillaGuiOverlay.SCOREBOARD.id(), VanillaGuiOverlay.TITLE_TEXT.id(),
             VanillaGuiOverlay.ITEM_NAME.id(), VanillaGuiOverlay.SLEEP_FADE.id(),
+            // Forge 1.20.1 has no demo overlay entry and calls the F3 text DEBUG_TEXT.
+            //? if legacyforge {
+            /*VanillaGuiOverlay.DEBUG_TEXT.id(), VanillaGuiOverlay.FPS_GRAPH.id(),
+            *///?} else {
             VanillaGuiOverlay.DEMO_OVERLAY.id(), VanillaGuiOverlay.DEBUG_SCREEN.id(),
+            //?}
             VanillaGuiOverlay.PLAYER_LIST.id()
     );
 

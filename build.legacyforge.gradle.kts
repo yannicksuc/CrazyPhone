@@ -159,6 +159,24 @@ dependencies {
     // Optional Simple Voice Chat addon API - compileOnly so the mod doesn't require SVC to be present at
     // runtime; availability is checked via ModList at runtime (see VoicechatIntegration.isAvailable()).
     compileOnly("de.maxhenkel.voicechat:voicechat-api:${property("voicechat_api_version")}")
+    // Mixin's annotation processor writes the refmap (Mojang names -> SRG) the reobfuscated jar needs:
+    // production Forge 1.20.1 runs on SRG names, so without a refmap every @Inject target string would
+    // miss at runtime.
+    annotationProcessor("org.spongepowered:mixin:0.8.5:processor")
+}
+
+// Real Forge 1.20.1 never reads NeoForge's [[mixins]] block in mods.toml: it only loads mixin configs
+// listed in the jar manifest's "MixinConfigs" attribute (production) or passed as --mixin.config (dev
+// runs, which mixin.config(...) below wires). Without both, none of crazyphone.mixins.json was applied
+// on 1.20.1 at all (dev or production).
+val mixinConfigName = "${property("mod_id")}.mixins.json"
+val mixinRefmapName = "${property("mod_id")}.refmap.json"
+mixin {
+    add(sourceSets["main"], mixinRefmapName)
+    config(mixinConfigName)
+}
+tasks.named<Jar>("jar") {
+    manifest.attributes("MixinConfigs" to mixinConfigName)
 }
 
 // This block of code expands all declared replace properties in the specified resource targets - same
@@ -247,6 +265,10 @@ sourceSets.main {
 // itself is already skipped for legacyforge - see ModItems.java's own doc comment - so the recipe is simply
 // always enabled here, same as every other loader when the config toggle is on).
 tasks.named<ProcessResources>("processResources") {
+    // Local copies: a doLast lambda reading script-level vals would capture the script object, which
+    // the configuration cache refuses to serialize.
+    val mixinConfigFile = mixinConfigName
+    val refmapFile = mixinRefmapName
     doLast {
         destinationDir.resolve("data/crazyphone/recipe/crazy_phone_photo_dyed.json").delete()
         val craftingRecipe = destinationDir.resolve("data/crazyphone/recipes/crazy_phone.json")
@@ -255,8 +277,20 @@ tasks.named<ProcessResources>("processResources") {
         json.remove("fabric:load_conditions")
         @Suppress("UNCHECKED_CAST")
         val result = json["result"] as MutableMap<String, Any?>
-        result["item"] = result.remove("id")
+        // The tracked recipes/ copy already uses the old {"item": ...} shape: only rename when "id" is
+        // really there, otherwise this turned "item" into null and the phone had no recipe at all.
+        if (result.containsKey("id")) result["item"] = result.remove("id")
         craftingRecipe.writeText(groovy.json.JsonOutput.toJson(json))
+        // The 1.21+ "recipe/" folder is ignored by 1.20.1's RecipeManager (it reads "recipes/"): drop the
+        // duplicates instead of shipping dead files.
+        destinationDir.resolve("data/crazyphone/recipe").deleteRecursively()
+        // Point the mixin config at the refmap the annotation processor generates for this node only
+        // (the shared template has no "refmap" key since no other node needs one).
+        val mixinConfig = destinationDir.resolve(mixinConfigFile)
+        @Suppress("UNCHECKED_CAST")
+        val mixinJson = groovy.json.JsonSlurper().parse(mixinConfig) as MutableMap<String, Any?>
+        mixinJson["refmap"] = refmapFile
+        mixinConfig.writeText(groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(mixinJson)))
     }
 }
 

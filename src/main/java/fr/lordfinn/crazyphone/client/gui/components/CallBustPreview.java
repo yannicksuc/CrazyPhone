@@ -159,7 +159,7 @@ public final class CallBustPreview {
             // model (slim/default) is derived from the profile's own UUID by vanilla automatically either
             // way, so no separate override is needed for that part.
             //? if legacyforge {
-            mc.getSkinManager().registerSkins(profile, (type, location, texture) -> {
+            /*mc.getSkinManager().registerSkins(profile, (type, location, texture) -> {
                 if (type != com.mojang.authlib.minecraft.MinecraftProfileTexture.Type.SKIN)
                     return;
                 RemotePlayer fake = new RemotePlayer(level, profile) {
@@ -176,7 +176,7 @@ public final class CallBustPreview {
                 level.addFreshEntity(fake);
                 fakePlayers.put(id, fake);
             }, false);
-            //?}
+            *///?}
         });
     }
 

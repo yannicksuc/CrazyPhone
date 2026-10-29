@@ -21,12 +21,12 @@ import net.neoforged.api.distmarker.Dist;
 // itself is NOT imported here: this file is in the same package as the same-package compat shim
 // (fr.lordfinn.crazyphone.network.PlayPayloadContext), so it resolves with no import at all.
 //? if legacyforge {
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
+/*import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.api.distmarker.Dist;
-//?}
+*///?}
 
 import net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/;
 //? if fabric || neoforge {
@@ -164,12 +164,12 @@ public record UpdateContactInfoMessage(String name, String uuid, String number) 
 
 
     //? if legacyforge {
-    @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
+    /*@EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
     public static class UpdateContactInfoMessageLegacyForgeRegistration {
         @SubscribeEvent
         public static void register(FMLCommonSetupEvent event) {
             Crazyphone.addNetworkMessage(UpdateContactInfoMessage.class, 31, UpdateContactInfoMessage::write, UpdateContactInfoMessage::new, UpdateContactInfoMessage::handleData);
         }
     }
-    //?}
+    *///?}
 }

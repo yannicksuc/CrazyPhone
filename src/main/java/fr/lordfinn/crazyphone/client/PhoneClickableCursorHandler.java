@@ -13,6 +13,13 @@ import net.neoforged.fml.common.Mod.EventBusSubscriber;
 //?}
 import net.neoforged.neoforge.client.event.ScreenEvent;
 //?}
+// Forge 1.20.1: the same events at their original net.minecraftforge.* packages.
+//? if legacyforge {
+/*import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
+import net.minecraftforge.client.event.ScreenEvent;
+*///?}
 //? if fabric && >=1.20.5 {
 /*import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 *///?}
@@ -29,12 +36,12 @@ import net.neoforged.neoforge.client.event.ScreenEvent;
  * aggregates and applies the final state. Calling endFrame() from more than one place per frame would cause
  * it to reset before those later checks run.
  */
-//? if neoforge {
+//? if neoforge || legacyforge {
 @EventBusSubscriber(value = Dist.CLIENT)
 //?}
 public class PhoneClickableCursorHandler {
 
-    //? if neoforge {
+    //? if neoforge || legacyforge {
     @SubscribeEvent
     public static void onScreenRenderPost(ScreenEvent.Render.Post event) {
         onAfterRender(event.getScreen());

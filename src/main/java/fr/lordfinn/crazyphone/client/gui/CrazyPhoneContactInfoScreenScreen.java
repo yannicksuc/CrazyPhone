@@ -173,14 +173,14 @@ public class CrazyPhoneContactInfoScreenScreen extends CrazyPhoneDefaultScreenSc
 		// same as the newer branches' async trigger did (the resolved skin itself isn't otherwise used here -
 		// RemotePlayer/AbstractClientPlayer resolves its own texture lazily off the profile either way).
 		//? if legacyforge {
-		Minecraft.getInstance().getSkinManager().registerSkins(profile, (type, location, texture) -> {
+		/*Minecraft.getInstance().getSkinManager().registerSkins(profile, (type, location, texture) -> {
 			if (type != com.mojang.authlib.minecraft.MinecraftProfileTexture.Type.SKIN)
 				return;
 			this.fakePlayer = new RemotePlayer(level, profile);
 			fr.lordfinn.crazyphone.client.FakePlayerPreview.showAllSkinLayers(this.fakePlayer);
 			level.addFreshEntity(this.fakePlayer);
 		}, false);
-		//?}
+		*///?}
 		} catch (Exception e) {
 			createGuiDefaultFakePlayer();
 		}

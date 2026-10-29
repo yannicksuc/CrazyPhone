@@ -17,11 +17,11 @@ import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 // PhoneAttachmentTypes.java's own player-lifecycle handlers; ServerStartedEvent itself lives at the same
 // package path old Forge always had it at, which NeoForge's own copy above just carried forward.
 //? if legacyforge {
-import net.minecraftforge.eventbus.api.SubscribeEvent;
+/*import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 import net.minecraftforge.event.server.ServerStartedEvent;
 import net.minecraftforge.event.server.ServerStoppedEvent;
-//?}
+*///?}
 
 /**
  * Runs two one-time-per-boot fixups once the server is up: {@link ConversationSavedData#finalizeOrphanedCalls()}

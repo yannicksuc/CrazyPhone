@@ -13,10 +13,10 @@ import net.neoforged.neoforge.server.permission.events.PermissionGatherEvent;
 // verified (see FeatureFlag.java's own permission-node port for the matching PermissionAPI/PermissionNode
 // story).
 //? if legacyforge {
-import net.minecraftforge.eventbus.api.SubscribeEvent;
+/*import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 import net.minecraftforge.server.permission.events.PermissionGatherEvent;
-//?}
+*///?}
 
 import fr.lordfinn.crazyphone.FeatureFlag;
 

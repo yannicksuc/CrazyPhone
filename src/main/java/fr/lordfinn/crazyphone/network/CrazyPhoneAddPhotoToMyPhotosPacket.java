@@ -19,10 +19,10 @@ import net.neoforged.bus.api.SubscribeEvent;
 // itself is NOT imported here: this file is in the same package as the same-package compat shim
 // (fr.lordfinn.crazyphone.network.PlayPayloadContext), so it resolves with no import at all.
 //? if legacyforge {
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
+/*import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
-//?}
+*///?}
 
 //? if fabric || neoforge {
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -177,12 +177,12 @@ public record CrazyPhoneAddPhotoToMyPhotosPacket(UUID photoId) implements Custom
 
 
     //? if legacyforge {
-    @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
+    /*@EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
     public static class CrazyPhoneAddPhotoToMyPhotosPacketLegacyForgeRegistration {
         @SubscribeEvent
         public static void register(FMLCommonSetupEvent event) {
             Crazyphone.addNetworkMessage(CrazyPhoneAddPhotoToMyPhotosPacket.class, 4, CrazyPhoneAddPhotoToMyPhotosPacket::write, CrazyPhoneAddPhotoToMyPhotosPacket::new, CrazyPhoneAddPhotoToMyPhotosPacket::handleData);
         }
     }
-    //?}
+    *///?}
 }

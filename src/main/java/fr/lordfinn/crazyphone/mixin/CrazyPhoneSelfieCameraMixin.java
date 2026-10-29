@@ -34,8 +34,8 @@ package fr.lordfinn.crazyphone.mixin;
  * by LOADER (3-arg is a NeoForge-only patch onto vanilla Camera - Fabric only has the vanilla 2-arg
  * overload), independently of this version split.
  */
-//? if neoforge && <1.21.10 {
-import com.mojang.math.Axis;
+//? if neoforge && >=1.20.5 <1.21.10 {
+/*import com.mojang.math.Axis;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
@@ -111,9 +111,11 @@ public abstract class CrazyPhoneSelfieCameraMixin {
         this.setRotation(lookYaw, lookPitch, 0f);
     }
 }
-//?}
-//? if fabric && <1.21.10 {
-/*import com.mojang.math.Axis;
+*///?}
+// Forge 1.20.1 and NeoForge 1.20.4 only have the vanilla 2-arg Camera#setRotation too (the roll
+// overload came with NeoForge 20.5), so they share the Fabric block.
+//? if (fabric || legacyforge || (neoforge && <1.20.5)) && <1.21.10 {
+import com.mojang.math.Axis;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
@@ -179,7 +181,7 @@ public abstract class CrazyPhoneSelfieCameraMixin {
         this.setRotation(lookYaw, lookPitch);
     }
 }
-*///?}
+//?}
 //? if neoforge && >=1.21.10 {
 /*import com.mojang.math.Axis;
 import net.minecraft.client.Camera;

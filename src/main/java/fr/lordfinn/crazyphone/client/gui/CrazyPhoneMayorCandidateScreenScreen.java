@@ -156,7 +156,7 @@ public class CrazyPhoneMayorCandidateScreenScreen extends CrazyPhoneDefaultScree
     }
     //?}
     //? if <1.20.4 {
-    @Override
+    /*@Override
     public boolean mouseScrolled(double x, double y, double dy) {
 		if (this.posterHeight > 0) {
 			scrollOffsetY -= (int) (dy * 10); // Scroll speed
@@ -165,7 +165,7 @@ public class CrazyPhoneMayorCandidateScreenScreen extends CrazyPhoneDefaultScree
 		}
         return true;
     }
-    //?}
+    *///?}
 
 	//? if >=26 {
 	/*@Override

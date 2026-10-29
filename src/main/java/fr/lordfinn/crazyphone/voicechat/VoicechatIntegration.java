@@ -4,8 +4,8 @@ package fr.lordfinn.crazyphone.voicechat;
 import net.neoforged.fml.ModList;
 //?}
 //? if legacyforge {
-import net.minecraftforge.fml.ModList;
-//?}
+/*import net.minecraftforge.fml.ModList;
+*///?}
 //? if fabric {
 /*import net.fabricmc.loader.api.FabricLoader;
 *///?}

@@ -18,16 +18,16 @@ import net.neoforged.neoforge.network.PacketDistributor;
 // PacketDistributor shape NeoForge's own <1.21.10 branch above uses, javap-verified against the actual
 // 1.20.1 Forge jar, just under net.minecraftforge instead of net.neoforged.neoforge.
 //? if legacyforge {
-import net.minecraftforge.common.util.INBTSerializable;
+/*import net.minecraftforge.common.util.INBTSerializable;
 import net.minecraftforge.network.PacketDistributor;
-//?}
+*///?}
 //? if fabric && >=1.20.5 {
 /*import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 *///?}
 //? if fabric || legacyforge {
-import fr.lordfinn.crazyphone.utils.NetworkAccess;
-//?}
+/*import fr.lordfinn.crazyphone.utils.NetworkAccess;
+*///?}
 
 import fr.lordfinn.crazyphone.network.PlayerPhoneStateSyncPacket;
 //? if >=1.20.5 <1.21.10 {
@@ -124,8 +124,8 @@ public class PlayerPhoneState {
             PacketDistributor.PLAYER.with(serverPlayer).send(new PlayerPhoneStateSyncPacket(this));
             //?}
             //? if legacyforge {
-            NetworkAccess.sendToPlayer(serverPlayer, new PlayerPhoneStateSyncPacket(this));
-            //?}
+            /*NetworkAccess.sendToPlayer(serverPlayer, new PlayerPhoneStateSyncPacket(this));
+            *///?}
             //? if fabric && >=1.20.5 {
             /*NetworkAccess.sendToPlayer(serverPlayer, new PlayerPhoneStateSyncPacket(this));
             *///?}

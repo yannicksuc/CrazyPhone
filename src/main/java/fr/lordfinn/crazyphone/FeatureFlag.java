@@ -11,10 +11,10 @@ import net.neoforged.neoforge.server.permission.nodes.PermissionTypes;
 // Real, original Forge 1.20.1 - same permission-node API shape as NeoForge's own, javap-verified against
 // the actual 1.20.1 Forge jar, just under net.minecraftforge.
 //? if legacyforge {
-import net.minecraftforge.server.permission.PermissionAPI;
+/*import net.minecraftforge.server.permission.PermissionAPI;
 import net.minecraftforge.server.permission.nodes.PermissionNode;
 import net.minecraftforge.server.permission.nodes.PermissionTypes;
-//?}
+*///?}
 
 import javax.annotation.Nullable;
 import java.util.function.BooleanSupplier;

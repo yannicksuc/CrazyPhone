@@ -167,32 +167,19 @@ public final class PhoneLocationRegistry {
      * realistically targets this bleeding-edge node yet regardless. */
     private static Iterable<ItemStack> genericCapabilityItemsOf(ItemStack stack) {
         //? if legacyforge {
-        net.minecraftforge.items.IItemHandler handler = stack.getCapability(
+        /*net.minecraftforge.items.IItemHandler handler = stack.getCapability(
                 net.minecraftforge.common.capabilities.ForgeCapabilities.ITEM_HANDLER, null).orElse(null);
         return itemsFromLegacyHandler(handler);
-        //? } else if neoforge && <26 {
-        /*net.neoforged.neoforge.items.IItemHandler handler = net.neoforged.neoforge.capabilities.Capabilities.ItemHandler.ITEM.getCapability(stack, null);
+        *///? } else if neoforge && <26 {
+        net.neoforged.neoforge.items.IItemHandler handler = net.neoforged.neoforge.capabilities.Capabilities.ItemHandler.ITEM.getCapability(stack, null);
         return itemsFromNeoForgeHandler(handler);
-        *///? } else {
+        //? } else {
         /*return List.of();
         *///?}
     }
 
     //? if legacyforge {
-    private static Iterable<ItemStack> itemsFromLegacyHandler(net.minecraftforge.items.IItemHandler handler) {
-        if (handler == null)
-            return List.of();
-        List<ItemStack> items = new java.util.ArrayList<>();
-        for (int i = 0; i < handler.getSlots(); i++) {
-            ItemStack slotStack = handler.getStackInSlot(i);
-            if (!slotStack.isEmpty())
-                items.add(slotStack);
-        }
-        return items;
-    }
-    //?}
-    //? if neoforge && <26 {
-    /*private static Iterable<ItemStack> itemsFromNeoForgeHandler(net.neoforged.neoforge.items.IItemHandler handler) {
+    /*private static Iterable<ItemStack> itemsFromLegacyHandler(net.minecraftforge.items.IItemHandler handler) {
         if (handler == null)
             return List.of();
         List<ItemStack> items = new java.util.ArrayList<>();
@@ -204,4 +191,17 @@ public final class PhoneLocationRegistry {
         return items;
     }
     *///?}
+    //? if neoforge && <26 {
+    private static Iterable<ItemStack> itemsFromNeoForgeHandler(net.neoforged.neoforge.items.IItemHandler handler) {
+        if (handler == null)
+            return List.of();
+        List<ItemStack> items = new java.util.ArrayList<>();
+        for (int i = 0; i < handler.getSlots(); i++) {
+            ItemStack slotStack = handler.getStackInSlot(i);
+            if (!slotStack.isEmpty())
+                items.add(slotStack);
+        }
+        return items;
+    }
+    //?}
 }

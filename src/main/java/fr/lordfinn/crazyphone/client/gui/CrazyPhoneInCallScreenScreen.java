@@ -122,8 +122,8 @@ public class CrazyPhoneInCallScreenScreen extends CrazyPhoneDefaultScreenScreen<
     // Real 1.20.1 vanilla has no PlayerSkin object at all - just a plain skin-texture ResourceLocation (see
     // AbstractClientPlayer#getSkinTextureLocation and PlayerFaceRenderer's own <1.20.5-era overload below).
     //? if legacyforge {
-    private final Map<UUID, net.minecraft.resources.ResourceLocation> faceSkins = new ConcurrentHashMap<>();
-    //?}
+    /*private final Map<UUID, net.minecraft.resources.ResourceLocation> faceSkins = new ConcurrentHashMap<>();
+    *///?}
     private final List<CellLayout> lastLayout = new ArrayList<>();
     /** The OTHER participants, straight from the server (never includes the local player - see
      * ScreenMenuUtils#populateCallScreenBuffer). */
@@ -178,8 +178,8 @@ public class CrazyPhoneInCallScreenScreen extends CrazyPhoneDefaultScreenScreen<
         faceSkins.put(id, player.getSkin());
         //?}
         //? if legacyforge {
-        faceSkins.put(id, player.getSkinTextureLocation());
-        //?}
+        /*faceSkins.put(id, player.getSkinTextureLocation());
+        *///?}
         bustPreview.ensure(id, name, self.helmet(), self.chestplate(), self.leggings(), self.boots());
     }
 
@@ -252,11 +252,11 @@ public class CrazyPhoneInCallScreenScreen extends CrazyPhoneDefaultScreenScreen<
             /*mc.getSkinManager().get(profile).thenAccept(skin -> skin.ifPresent(s -> faceSkins.put(id, s)));
             *///?}
             //? if legacyforge {
-            mc.getSkinManager().registerSkins(profile, (type, location, texture) -> {
+            /*mc.getSkinManager().registerSkins(profile, (type, location, texture) -> {
                 if (type == com.mojang.authlib.minecraft.MinecraftProfileTexture.Type.SKIN)
                     faceSkins.put(id, location);
             }, false);
-            //?}
+            *///?}
         });
     }
 

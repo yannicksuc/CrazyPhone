@@ -512,7 +512,7 @@ public class CrazyPhoneMyPhotosScreenScreen extends CrazyPhoneDefaultScreenScree
     }
     //?}
     //? if <1.20.4 {
-    @Override
+    /*@Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollY) {
         int newPosition = Math.max(0, Math.min(maxScrollPosition(), scrollPosition - (int) (scrollY * SCROLL_STEP)));
         if (newPosition != scrollPosition) {
@@ -522,7 +522,7 @@ public class CrazyPhoneMyPhotosScreenScreen extends CrazyPhoneDefaultScreenScree
         }
         return super.mouseScrolled(mouseX, mouseY, scrollY);
     }
-    //?}
+    *///?}
 
     @Override
     public void init() {

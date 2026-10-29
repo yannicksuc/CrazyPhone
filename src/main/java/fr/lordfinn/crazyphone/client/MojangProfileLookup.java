@@ -86,12 +86,12 @@ public final class MojangProfileLookup {
                 // Real 1.20.1 authlib (4.0.43) predates the String-keyed failure callback - it hands back
                 // the (unresolved) GameProfile it was given instead, javap-verified.
                 //? if legacyforge {
-                @Override
+                /*@Override
                 public void onProfileLookupFailed(GameProfile failedProfile, Exception exception) {
                     // Not a real account, or Mojang's API is unreachable - result stays null, handled by
                     // the caller falling back to a synthetic (default-skin) profile.
                 }
-                //?}
+                *///?}
             });
             return result[0] == null ? null : withTextures(result[0]);
         }, Util.backgroundExecutor()));

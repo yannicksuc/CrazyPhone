@@ -10,6 +10,13 @@ import net.neoforged.fml.common.Mod.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.AttackEntityEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 //?}
+// Forge 1.20.1: the same events at their original net.minecraftforge.* packages.
+//? if legacyforge {
+/*import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
+import net.minecraftforge.event.entity.player.AttackEntityEvent;
+import net.minecraftforge.event.entity.player.PlayerInteractEvent;
+*///?}
 
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Player;
@@ -33,13 +40,13 @@ import fr.lordfinn.crazyphone.init.ModItems;
  * comment for why. {@link #clientOpenOverlay} is set once from each loader's own client-only entrypoint, the
  * same indirection pattern used there.
  */
-//? if neoforge {
+//? if neoforge || legacyforge {
 @EventBusSubscriber
 //?}
 public class CrazyPhoneCaptureShortcut {
     public static Runnable clientOpenOverlay = null;
 
-    //? if neoforge {
+    //? if neoforge || legacyforge {
     @SubscribeEvent
     public static void onLeftClickBlock(PlayerInteractEvent.LeftClickBlock event) {
         if (!isHoldingPhone(event.getEntity()))

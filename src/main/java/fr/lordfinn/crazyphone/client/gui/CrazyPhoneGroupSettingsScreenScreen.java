@@ -488,7 +488,7 @@ public class CrazyPhoneGroupSettingsScreenScreen extends CrazyPhoneDefaultScreen
     }
     //?}
     //? if <1.20.4 {
-    @Override
+    /*@Override
     public boolean mouseScrolled(double x, double y, double dy) {
         int totalHeight = (menu.getMembers().size() + menu.getInvitableContacts().size()) * MEMBER_ROW_HEIGHT;
         scrollPosition -= (int) (dy * SCROLL_STEP);
@@ -498,7 +498,7 @@ public class CrazyPhoneGroupSettingsScreenScreen extends CrazyPhoneDefaultScreen
             scrollPosition = totalHeight - MEMBER_LIST_HEIGHT;
         return true;
     }
-    //?}
+    *///?}
 
     private void onCancel() {
         this.minecraft.player.closeContainer();

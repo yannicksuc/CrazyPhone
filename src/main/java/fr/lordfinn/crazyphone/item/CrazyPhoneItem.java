@@ -17,7 +17,7 @@ import net.minecraft.world.InteractionHand;
 // Photo item (and everything referencing it, including this class's own click-to-import override below)
 // only exists on neoforge and fabric >=1.20.5 - see ModItems.java's own doc comment on 1.20.1-fabric's
 // narrower walking-skeleton scope.
-//? if neoforge || (fabric && >=1.20.5) {
+//? if neoforge || legacyforge || (fabric && >=1.20.5) {
 import fr.lordfinn.crazyphone.init.ModItems;
 import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
 //?}
@@ -26,7 +26,7 @@ import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
 import net.minecraft.world.item.component.TooltipDisplay;
 *///?}
 
-//? if neoforge {
+//? if neoforge || legacyforge {
 import fr.lordfinn.crazyphone.procedures.CrazyPhoneOnUseProcedure;
 //?}
 //? if fabric && >=1.20.5 {
@@ -43,8 +43,8 @@ public class CrazyPhoneItem extends Item {
         //?}
     }
 
-    //? if neoforge {
-    // NeoForge-added IItemExtension hook, not real vanilla Item API - no Fabric equivalent wired up yet
+    //? if neoforge || legacyforge {
+    // NeoForge-added IItemExtension hook (IForgeItem on 1.20.1 Forge), not real vanilla Item API - no Fabric equivalent wired up yet
     // (Fabric API's ItemStack merge/reequip suppression works differently; low-priority cosmetic nicety).
     @Override
     public boolean shouldCauseReequipAnimation(ItemStack oldStack, ItemStack newStack, boolean slotChanged) {
@@ -61,7 +61,7 @@ public class CrazyPhoneItem extends Item {
     // own doc comment on why that needs neither mod as a compile-time dependency. NeoForge-only for now:
     // both foreign mods' items are only reflectively recognized against a real, installed copy of them,
     // untested against Fabric's own (still walking-skeleton) build of this class.
-    //? if neoforge || (fabric && >=1.20.5) {
+    //? if neoforge || legacyforge || (fabric && >=1.20.5) {
     @Override
     public boolean overrideStackedOnOther(ItemStack stack, Slot slot, ClickAction action, Player player) {
         ItemStack slotStack = slot.getItem();
@@ -97,7 +97,7 @@ public class CrazyPhoneItem extends Item {
     public InteractionResultHolder<ItemStack> use(Level world, Player entity, InteractionHand hand) {
         InteractionResultHolder<ItemStack> ar = super.use(world, entity, hand);
         if (hand == InteractionHand.MAIN_HAND) {
-            //? if neoforge {
+            //? if neoforge || legacyforge {
             CrazyPhoneOnUseProcedure.execute(world, entity.getX(), entity.getY(), entity.getZ(), entity);
             //?}
             //? if fabric && >=1.20.5 {

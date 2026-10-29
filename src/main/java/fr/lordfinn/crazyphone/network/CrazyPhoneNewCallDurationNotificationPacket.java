@@ -20,12 +20,12 @@ import net.neoforged.api.distmarker.Dist;
 // own doc comment and PlayPayloadContext.java's same-package compat shim - not imported here for the same
 // reason).
 //? if legacyforge {
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
+/*import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.api.distmarker.Dist;
-//?}
+*///?}
 
 import net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/;
 //? if fabric || neoforge {
@@ -167,12 +167,12 @@ public record CrazyPhoneNewCallDurationNotificationPacket(String conversationId,
     //?}
 
     //? if legacyforge {
-    @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
+    /*@EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
     public static class CrazyPhoneNewCallDurationNotificationPacketLegacyForgeRegistration {
         @SubscribeEvent
         public static void register(FMLCommonSetupEvent event) {
             Crazyphone.addNetworkMessage(CrazyPhoneNewCallDurationNotificationPacket.class, 19, CrazyPhoneNewCallDurationNotificationPacket::write, CrazyPhoneNewCallDurationNotificationPacket::new, CrazyPhoneNewCallDurationNotificationPacket::handleData);
         }
     }
-    //?}
+    *///?}
 }

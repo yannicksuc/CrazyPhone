@@ -9,9 +9,9 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 // before the NeoForge fork - only .register(...) returning a RegistryObject<T> instead of a DeferredHolder
 // differs (same .get() either way).
 //? if legacyforge {
-import net.minecraftforge.registries.DeferredRegister;
+/*import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.RegistryObject;
-//?}
+*///?}
 //? if fabric && <26 {
 /*import net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup;
 *///?}
@@ -40,7 +40,7 @@ public class ModTabs {
 }
 //?}
 //? if legacyforge {
-public class ModTabs {
+/*public class ModTabs {
     public static final DeferredRegister<CreativeModeTab> REGISTRY = DeferredRegister.create(Registries.CREATIVE_MODE_TAB, Crazyphone.MODID);
 
     public static final RegistryObject<CreativeModeTab> CRAZY_PHONE_TAB = REGISTRY.register("crazy_phone_tab",
@@ -51,7 +51,7 @@ public class ModTabs {
                     .withSearchBar()
                     .build());
 }
-//?}
+*///?}
 //? if fabric && <26 {
 /*// No DeferredRegister equivalent on Fabric - a plain Registry.register call, same as ModItems. Must run
 // after ModItems.register() (needs ModItems.CRAZY_PHONE populated for the icon/displayItems callbacks).

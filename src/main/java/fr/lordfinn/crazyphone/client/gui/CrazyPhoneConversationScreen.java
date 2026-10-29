@@ -730,7 +730,7 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
     }
     //?}
     //? if <1.20.4 {
-    @Override
+    /*@Override
     public boolean mouseScrolled(double x, double y, double dy) {
         scrollPosition += dy * SCROLL_STEP;
 
@@ -742,7 +742,7 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
         maybeLoadOlderMessages();
         return true;
     }
-    //?}
+    *///?}
 
     /** Fires a "load older" request the moment the player scrolls all the way to the top of what's
      * currently loaded - resetPositions()/setScrollOffset() above don't shift anything already on screen
