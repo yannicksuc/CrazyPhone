@@ -37,6 +37,11 @@ repositories {
     mavenLocal()
     // Simple Voice Chat addon API - same repo as the NeoForge side (build.gradle.kts).
     maven("https://maven.maxhenkel.de/repository/public")
+    // Modrinth's maven, only for the opt-in dev runtime Simple Voice Chat below.
+    exclusiveContent {
+        forRepository { maven("https://api.modrinth.com/maven") }
+        filter { includeGroup("maven.modrinth") }
+    }
 }
 
 base {
@@ -74,6 +79,10 @@ dependencies {
     // Simple Voice Chat addon API - compile-time only, same coordinate/version as the NeoForge side
     // (build.gradle.kts) - see fr.lordfinn.crazyphone.voicechat package.
     compileOnly("de.maxhenkel.voicechat:voicechat-api:${property("voicechat_api_version")}")
+    // Dev-only, opt-in (`-PwithVoicechat`): puts the real Simple Voice Chat mod in runClient/runServer to live-test
+    // calls and voice messages. Off by default, so normal builds and the released jar never depend on it.
+    if (hasProperty("withVoicechat"))
+        runtimeOnly("maven.modrinth:simple-voice-chat:fabric-${property("voicechat_api_version")}+$minecraftVersion")
 }
 
 // See build.fabric.gradle.kts's own doc comment on why runDir is a plain literal, not an interpolation.
@@ -91,6 +100,9 @@ loom {
             // out with "Nothing provided!" instead of proceeding) - once set, DevAuth opens its own
             // embedded-browser login window in the actual game window for the real Microsoft sign-in.
             vmArgs("-Ddevauth.enabled=1", "-Ddevauth.account=LordFinnReal")
+            // Dev-only, opt-in: `-PquickPlayMultiplayer=localhost:25573` joins that dedicated server straight
+            // from launch (no title-screen clicking), for unattended live tests driven through MCP Fabric.
+            (findProperty("quickPlayMultiplayer") as String?)?.let { programArgs("--quickPlayMultiplayer", it) }
             runDir = "run"
         }
         named("server") {
@@ -108,6 +120,8 @@ loom {
             // comment above for why -Ddevauth.account=... is set explicitly (skips DevAuth's interactive
             // console prompt, which this run has no attached terminal for).
             vmArgs("-Ddevauth.enabled=1", "-Ddevauth.account=LordFinnAlt")
+            // Same opt-in -PquickPlayMultiplayer=host:port as the "client" run above.
+            (findProperty("quickPlayMultiplayer") as String?)?.let { programArgs("--quickPlayMultiplayer", it) }
             runDir = "run-client2"
         }
     }
