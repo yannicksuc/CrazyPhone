@@ -152,7 +152,7 @@ import org.spongepowered.asm.mixin.Pseudo;
 public abstract class CrazyPhonePresentHandGripMixin {
 }
 *///?}
-//? if >=26 {
+//? if >=26 <26.3 {
 /*import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
@@ -283,10 +283,65 @@ public abstract class CrazyPhonePresentHandGripMixin {
         // any translate sandwiched between them - only the translation component picks up a contribution
         // from the sandwiched translate, which we're deliberately not replicating. So this reproduces
         // vanilla's exact net orientation while leaving the origin (our tuned position above) untouched.
-        poseStack.mulPose(com.mojang.math.Axis.YP.rotationDegrees(side * 45.0F));
-        poseStack.mulPose(com.mojang.math.Axis.ZP.rotationDegrees(side * 120.0F));
-        poseStack.mulPose(com.mojang.math.Axis.XP.rotationDegrees(200.0F));
-        poseStack.mulPose(com.mojang.math.Axis.YP.rotationDegrees(side * -135.0F));
+        poseStack./^$ pose_rotate {^/mulPose/^$}^/(com.mojang.math.Axis.YP.rotationDegrees(side * 45.0F));
+        poseStack./^$ pose_rotate {^/mulPose/^$}^/(com.mojang.math.Axis.ZP.rotationDegrees(side * 120.0F));
+        poseStack./^$ pose_rotate {^/mulPose/^$}^/(com.mojang.math.Axis.XP.rotationDegrees(200.0F));
+        poseStack./^$ pose_rotate {^/mulPose/^$}^/(com.mojang.math.Axis.YP.rotationDegrees(side * -135.0F));
+    }
+}
+*///?}
+// 26.3 replaced ItemInHandRenderer with the render-state based FirstPersonHandsAndItemsRenderer: same
+// submitArmWithItem HEAD hook and same grip transform as the 26.1/26.2 branch above, but the method now takes
+// the player's render states instead of the player, and the renderer no longer holds an EntityRenderDispatcher.
+// First person is always the local player, so that is who is checked for presenting.
+//? if >=26.3 {
+/*import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.world.entity.HumanoidArm;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+
+import fr.lordfinn.crazyphone.client.CrazyPhonePresentDebug;
+import fr.lordfinn.crazyphone.client.CrazyPhonePresentPose;
+
+@Mixin(net.minecraft.client.renderer.FirstPersonHandsAndItemsRenderer.class)
+public abstract class CrazyPhonePresentHandGripMixin {
+    @Inject(method = "submitArmWithItem", at = @At("HEAD"), cancellable = true, require = 0)
+    private void crazyphone$gripPresentedCard(net.minecraft.client.renderer.state.level.PlayerRenderState playerState,
+            net.minecraft.client.renderer.state.level.FirstPersonHandsAndItemsRenderState handsState, float frameInterp, float xRot,
+            net.minecraft.world.InteractionHand hand, float attack, net.minecraft.world.item.ItemStack itemStack, float inverseArmHeight,
+            PoseStack poseStack, SubmitNodeCollector submitNodeCollector, int lightCoords, CallbackInfo ci) {
+        net.minecraft.client.player.LocalPlayer player = Minecraft.getInstance().player;
+        if (player == null || playerState.avatarRenderState == null || !CrazyPhonePresentPose.isPresenting(player))
+            return;
+        boolean isMainHand = hand == net.minecraft.world.InteractionHand.MAIN_HAND;
+        HumanoidArm arm = isMainHand ? player.getMainArm() : player.getMainArm().getOpposite();
+        poseStack.pushPose();
+        crazyphone$applyGripTransform(poseStack, arm);
+        net.minecraft.client.renderer.entity.player.AvatarRenderer<?> avatarRenderer =
+                Minecraft.getInstance().getEntityRenderDispatcher().getRenderer(playerState.avatarRenderState);
+        net.minecraft.resources.Identifier skinTexture = player.getSkin().body().texturePath();
+        if (arm != HumanoidArm.LEFT)
+            avatarRenderer.renderRightHand(poseStack, submitNodeCollector, lightCoords, skinTexture,
+                    player.isModelPartShown(net.minecraft.world.entity.player.PlayerModelPart.RIGHT_SLEEVE));
+        else
+            avatarRenderer.renderLeftHand(poseStack, submitNodeCollector, lightCoords, skinTexture,
+                    player.isModelPartShown(net.minecraft.world.entity.player.PlayerModelPart.LEFT_SLEEVE));
+        poseStack.popPose();
+        if (!(itemStack.getItem() instanceof fr.lordfinn.crazyphone.item.CrazyPhonePhotoItem))
+            ci.cancel();
+    }
+
+    private static void crazyphone$applyGripTransform(PoseStack poseStack, HumanoidArm arm) {
+        float side = arm == HumanoidArm.RIGHT ? 1f : -1f;
+        poseStack.translate(side * CrazyPhonePresentDebug.handX, CrazyPhonePresentDebug.handY, CrazyPhonePresentDebug.handZ);
+        poseStack.rotate(com.mojang.math.Axis.YP.rotationDegrees(side * 45.0F));
+        poseStack.rotate(com.mojang.math.Axis.ZP.rotationDegrees(side * 120.0F));
+        poseStack.rotate(com.mojang.math.Axis.XP.rotationDegrees(200.0F));
+        poseStack.rotate(com.mojang.math.Axis.YP.rotationDegrees(side * -135.0F));
     }
 }
 *///?}

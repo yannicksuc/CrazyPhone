@@ -219,7 +219,7 @@ public record CrazyPhoneUploadPicturePacket(String conversationId, UUID photoId,
                 ItemStack single = held.copyWithCount(1);
                 edited.writeTo(single);
                 if (!player.getInventory().add(single))
-                    player.drop(single, false);
+                    player.drop(single, /*$ drop_args {*/false/*$}*/);
             }
             PhotoSavedData saved = PhotoSavedData.get(player.level());
             saved.markPhysical(editedPhotoId);
@@ -239,7 +239,7 @@ public record CrazyPhoneUploadPicturePacket(String conversationId, UUID photoId,
     private static void givePhysicalItemInsteadOfGallery(ServerPlayer player, UUID photoId, String owner, int createdMinutes) {
         boolean creative = player.getAbilities().instabuild;
         if (!creative) {
-            int removed = player.getInventory().clearOrCountMatchingItems(stack -> stack.is(Items.PAPER), 1, player.getInventory());
+            int removed = player.getInventory().clearOrCountMatchingItems(stack -> stack.is(Items.PAPER), /*$ clear_or_count_max {*/1/*$}*/, player.getInventory());
             if (removed < 1) {
                 if (owner.isEmpty()) {
                     // No phone to fall back to: the gallery entry just stored would belong to nobody.
@@ -254,7 +254,7 @@ public record CrazyPhoneUploadPicturePacket(String conversationId, UUID photoId,
         ItemStack stack = new ItemStack(ModItems.CRAZY_PHONE_PHOTO.get());
         new PhotoItemData(photoId, owner, createdMinutes).writeTo(stack);
         if (!player.getInventory().add(stack))
-            player.drop(stack, false);
+            player.drop(stack, /*$ drop_args {*/false/*$}*/);
         PhotoSavedData saved = PhotoSavedData.get(player.level());
         // Marked physical BEFORE removing the gallery reference - eraseIfOrphaned (called from within
         // deletePhotos) would otherwise see no owner left referencing this id and no physical flag yet set,

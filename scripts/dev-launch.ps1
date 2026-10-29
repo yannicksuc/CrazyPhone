@@ -124,6 +124,7 @@ $VersionMeta = [ordered]@{
     '1.20.1-fabric' = @{ Loader = 'fabric';   Port = 25571 }
     '26.1-fabric'   = @{ Loader = 'fabric';   Port = 25572 }
     '26.2-fabric'   = @{ Loader = 'fabric';   Port = 25573 }
+    '26.3-fabric'   = @{ Loader = 'fabric';   Port = 25574 }
 }
 $Versions = [ordered]@{}
 foreach ($k in $VersionMeta.Keys) {

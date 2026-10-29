@@ -144,7 +144,7 @@ public class SoulboundHandler {
 
             for (ItemStack stack : stash.items) {
                 if (!newPlayer.getInventory().add(stack))
-                    newPlayer.drop(stack, false);
+                    newPlayer.drop(stack, /^$ drop_args {^/false/^$}^/);
             }
             ((AttachmentTarget) oldPlayer).setAttached(PhoneAttachmentTypes.SOULBOUND_STASH, new SoulboundStash());
         });

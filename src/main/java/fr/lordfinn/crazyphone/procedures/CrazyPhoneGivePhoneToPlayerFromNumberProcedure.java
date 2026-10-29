@@ -23,7 +23,7 @@ public class CrazyPhoneGivePhoneToPlayerFromNumberProcedure {
 		LoadPhoneDataIntoItemstackProcedure.execute(world, entity, phone, number);
 		if (entity instanceof Player _player) {
 			if (!_player.getInventory().add(phone))
-				_player.drop(phone, false);
+				_player.drop(phone, /*$ drop_args {*/false/*$}*/);
 		}
 	}
 }

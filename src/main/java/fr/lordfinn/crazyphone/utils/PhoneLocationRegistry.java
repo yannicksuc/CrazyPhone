@@ -132,7 +132,7 @@ public final class PhoneLocationRegistry {
         if (container != null)
             return container.nonEmptyItemCopyStream().toList();
         net.minecraft.world.item.component.BundleContents bundle = stack.get(net.minecraft.core.component.DataComponents.BUNDLE_CONTENTS);
-        return bundle != null ? bundle.itemCopyStream().toList() : List.of();
+        return bundle != null ? bundle./^$ bundle_item_copies {^/itemCopyStream/^$}^/().toList() : List.of();
         *///?}
         //? if >=1.20.5 <26 {
         /*net.minecraft.world.item.component.ItemContainerContents container = stack.get(net.minecraft.core.component.DataComponents.CONTAINER);

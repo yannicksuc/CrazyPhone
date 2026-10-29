@@ -9,7 +9,6 @@ package fr.lordfinn.crazyphone.mixin;
 //? if fabric {
 /*import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.client.renderer.ItemInHandRenderer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -17,7 +16,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import fr.lordfinn.crazyphone.client.CrazyPhoneCaptureMode;
 
-@Mixin(ItemInHandRenderer.class)
+// 26.3 replaced ItemInHandRenderer with FirstPersonHandsAndItemsRenderer (render-state based, the player and
+// light arguments became render states): the >=26 handler below takes no target arguments at all, so the same
+// injection fits 26.1, 26.2 and 26.3 and only the target class differs.
+@Mixin(/^$ first_person_hands_renderer {^/net.minecraft.client.renderer.ItemInHandRenderer/^$}^/.class)
 public abstract class CrazyPhoneCaptureHandMixin {
     // renderHandsWithItems' own buffer parameter type is MultiBufferSource.BufferSource on <26, replaced by
     // SubmitNodeCollector on >=26 - same rename CrazyPhonePresentHandGripMixin's own >=26 branch already
@@ -28,7 +30,7 @@ public abstract class CrazyPhoneCaptureHandMixin {
     // one injection resolves on 26.1 and 26.2+.
     //? if >=26 {
     /^@Inject(method = {"renderHandsWithItems", "submitHandsWithItems"}, at = @At("HEAD"), cancellable = true)
-    private void crazyphone$hideHandsWhileCapturing(float partialTicks, PoseStack poseStack, net.minecraft.client.renderer.SubmitNodeCollector submitNodeCollector, LocalPlayer player, int light, CallbackInfo ci) {
+    private void crazyphone$hideHandsWhileCapturing(CallbackInfo ci) {
         if (CrazyPhoneCaptureMode.isActive())
             ci.cancel();
     }

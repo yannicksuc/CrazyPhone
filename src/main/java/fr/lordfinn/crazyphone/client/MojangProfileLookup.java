@@ -3,7 +3,11 @@ package fr.lordfinn.crazyphone.client;
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.GameProfileRepository;
 import com.mojang.authlib.ProfileLookupCallback;
+// 26.3 ships authlib 10, which dropped the yggdrasil package: the profile repository and session service are
+// only reachable through the client's own Services record there (see repository() and withTextures()).
+//? if <26.3 {
 import com.mojang.authlib.yggdrasil.YggdrasilAuthenticationService;
+//?}
 
 import /*$ util_pkg {*/net.minecraft.Util/*$}*/;
 import net.minecraft.client.Minecraft;
@@ -33,7 +37,11 @@ public final class MojangProfileLookup {
 
     private static synchronized GameProfileRepository repository() {
         if (repository == null)
+            //? if >=26.3 {
+            /*repository = Minecraft.getInstance().services().profileRepository();
+            *///?} else {
             repository = new YggdrasilAuthenticationService(Proxy.NO_PROXY).createProfileRepository();
+            //?}
         return repository;
     }
 
@@ -101,12 +109,17 @@ public final class MojangProfileLookup {
         try {
             // Minecraft#getMinecraftSessionService() is gone on 26 - the session service now hangs off the
             // client's Services record (Minecraft#services(), confirmed against the real 26.1.2 jar).
-            //? if >=26 {
+            //? if >=26.3 {
+            /*com.mojang.authlib.minecraft.SessionService sessionService = Minecraft.getInstance().services().sessionService();
+            *///? } else if >=26 {
             /*com.mojang.authlib.minecraft.MinecraftSessionService sessionService = Minecraft.getInstance().services().sessionService();
             *///? } else {
             com.mojang.authlib.minecraft.MinecraftSessionService sessionService = Minecraft.getInstance().getMinecraftSessionService();
             //?}
-            //? if >=1.20.2 {
+            //? if >=26.3 {
+            /*com.mojang.authlib.services.ProfileResult fetched = sessionService.fetchProfile(GameProfileCompat.id(profile), false);
+            return fetched != null && fetched.profile() != null ? fetched.profile() : profile;
+            *///? } else if >=1.20.2 {
             com.mojang.authlib.yggdrasil.ProfileResult fetched = sessionService.fetchProfile(GameProfileCompat.id(profile), false);
             return fetched != null && fetched.profile() != null ? fetched.profile() : profile;
             //? } else {

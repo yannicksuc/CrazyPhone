@@ -89,10 +89,10 @@ public record CrazyPhoneCallStateSyncPacket(String conversationId, UUID callId, 
                         buffer.writeUtf(message.conversationId);
                         buffer.writeUUID(message.callId);
                         buffer.writeEnum(message.state);
-                        buffer.writeCollection(message.callNumbers, (buf, number) -> buf.writeUtf(number));
-                        buffer.writeCollection(message.participantIds, (buf, id) -> buf.writeUUID(id));
-                        buffer.writeCollection(message.participantNames, (buf, name) -> buf.writeUtf(name));
-                        buffer.writeCollection(message.participantVideoEnabled, (buf, enabled) -> buf.writeBoolean(enabled));
+                        writeList(buffer, message.callNumbers, (buf, number) -> buf.writeUtf(number));
+                        writeList(buffer, message.participantIds, (buf, id) -> buf.writeUUID(id));
+                        writeList(buffer, message.participantNames, (buf, name) -> buf.writeUtf(name));
+                        writeList(buffer, message.participantVideoEnabled, (buf, enabled) -> buf.writeBoolean(enabled));
                         buffer.writeBoolean(message.selfVideoEnabled);
                         buffer.writeBoolean(message.videoFeatureEnabled);
                         buffer.writeVarInt(message.voiceMode);
@@ -101,10 +101,10 @@ public record CrazyPhoneCallStateSyncPacket(String conversationId, UUID callId, 
                             buffer.readUtf(),
                             buffer.readUUID(),
                             buffer.readEnum(State.class),
-                            buffer.readList(buf -> buf.readUtf()),
-                            buffer.readList(buf -> buf.readUUID()),
-                            buffer.readList(buf -> buf.readUtf()),
-                            buffer.readList(buf -> buf.readBoolean()),
+                            readList(buffer, buf -> buf.readUtf()),
+                            readList(buffer, buf -> buf.readUUID()),
+                            readList(buffer, buf -> buf.readUtf()),
+                            readList(buffer, buf -> buf.readBoolean()),
                             buffer.readBoolean(),
                             buffer.readBoolean(),
                             buffer.readVarInt()
@@ -123,10 +123,10 @@ public record CrazyPhoneCallStateSyncPacket(String conversationId, UUID callId, 
                 buffer.readUtf(),
                 buffer.readUUID(),
                 buffer.readEnum(State.class),
-                buffer.readList(buf -> buf.readUtf()),
-                buffer.readList(buf -> buf.readUUID()),
-                buffer.readList(buf -> buf.readUtf()),
-                buffer.readList(buf -> buf.readBoolean()),
+                readList(buffer, buf -> buf.readUtf()),
+                readList(buffer, buf -> buf.readUUID()),
+                readList(buffer, buf -> buf.readUtf()),
+                readList(buffer, buf -> buf.readBoolean()),
                 buffer.readBoolean(),
                 buffer.readBoolean(),
                 buffer.readVarInt()
@@ -137,10 +137,10 @@ public record CrazyPhoneCallStateSyncPacket(String conversationId, UUID callId, 
         buffer.writeUtf(conversationId);
         buffer.writeUUID(callId);
         buffer.writeEnum(state);
-        buffer.writeCollection(callNumbers, (buf, number) -> buf.writeUtf(number));
-        buffer.writeCollection(participantIds, (buf, id) -> buf.writeUUID(id));
-        buffer.writeCollection(participantNames, (buf, name) -> buf.writeUtf(name));
-        buffer.writeCollection(participantVideoEnabled, (buf, enabled) -> buf.writeBoolean(enabled));
+        writeList(buffer, callNumbers, (buf, number) -> buf.writeUtf(number));
+        writeList(buffer, participantIds, (buf, id) -> buf.writeUUID(id));
+        writeList(buffer, participantNames, (buf, name) -> buf.writeUtf(name));
+        writeList(buffer, participantVideoEnabled, (buf, enabled) -> buf.writeBoolean(enabled));
         buffer.writeBoolean(selfVideoEnabled);
         buffer.writeBoolean(videoFeatureEnabled);
         buffer.writeVarInt(voiceMode);
@@ -215,4 +215,22 @@ public record CrazyPhoneCallStateSyncPacket(String conversationId, UUID callId, 
         }
     }
     //?}
+
+    // FriendlyByteBuf#writeCollection/#readList were removed in 26.3. Same wire format (VarInt size, then each
+    // element), written by hand so every version shares one encoding without a per-version branch.
+    private static <T> void writeList(net.minecraft.network.FriendlyByteBuf buffer, java.util.List<T> list,
+                                      java.util.function.BiConsumer<net.minecraft.network.FriendlyByteBuf, T> writer) {
+        buffer.writeVarInt(list.size());
+        for (T element : list)
+            writer.accept(buffer, element);
+    }
+
+    private static <T> java.util.List<T> readList(net.minecraft.network.FriendlyByteBuf buffer,
+                                                  java.util.function.Function<net.minecraft.network.FriendlyByteBuf, T> reader) {
+        int size = buffer.readVarInt();
+        java.util.List<T> list = new java.util.ArrayList<>(size);
+        for (int i = 0; i < size; i++)
+            list.add(reader.apply(buffer));
+        return list;
+    }
 }

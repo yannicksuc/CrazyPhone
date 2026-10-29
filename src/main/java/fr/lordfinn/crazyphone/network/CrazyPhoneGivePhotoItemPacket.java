@@ -110,7 +110,7 @@ public record CrazyPhoneGivePhotoItemPacket(UUID photoId) implements CustomPacke
         ItemStack stack = new ItemStack(ModItems.CRAZY_PHONE_PHOTO.get());
         new PhotoItemData(photoId, entry.owner(), entry.createdMinutes()).writeTo(stack);
         if (!player.getInventory().add(stack))
-            player.drop(stack, false);
+            player.drop(stack, /*$ drop_args {*/false/*$}*/);
         // A real physical copy now exists somewhere in the world - PhotoSavedData#eraseIfOrphaned must never
         // drop this photo's bytes again, even once every gallery that ever listed it has deleted it.
         PhotoSavedData.get(world).markPhysical(photoId);

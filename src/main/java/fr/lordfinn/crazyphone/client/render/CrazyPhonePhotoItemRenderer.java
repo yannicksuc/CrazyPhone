@@ -870,11 +870,11 @@ public final class CrazyPhonePhotoItemRenderer {
                             poseStack.scale(CrazyPhonePresentDebug.scale, CrazyPhonePresentDebug.scale, CrazyPhonePresentDebug.scale);
                         }
                         if (CrazyPhonePresentDebug.flipFrontBack)
-                            poseStack.mulPose(Axis.YP.rotationDegrees(180f));
+                            poseStack./^$ pose_rotate {^/mulPose/^$}^/(Axis.YP.rotationDegrees(180f));
                     } else {
                         poseStack.translate(isLeftHand ? -FIRST_PERSON_X_OFFSET : FIRST_PERSON_X_OFFSET, FIRST_PERSON_Y_LIFT, NORMAL_OFFSET + FIRST_PERSON_Z_FORWARD);
-                        poseStack.mulPose(Axis.YP.rotationDegrees(isLeftHand ? FIRST_PERSON_YAW : -FIRST_PERSON_YAW));
-                        poseStack.mulPose(Axis.ZP.rotationDegrees(isLeftHand ? FIRST_PERSON_ROLL : -FIRST_PERSON_ROLL));
+                        poseStack./^$ pose_rotate {^/mulPose/^$}^/(Axis.YP.rotationDegrees(isLeftHand ? FIRST_PERSON_YAW : -FIRST_PERSON_YAW));
+                        poseStack./^$ pose_rotate {^/mulPose/^$}^/(Axis.ZP.rotationDegrees(isLeftHand ? FIRST_PERSON_ROLL : -FIRST_PERSON_ROLL));
                     }
                 } else {
                     boolean presenting = CrazyPhonePresentPose.presentingThisRender;
@@ -899,7 +899,7 @@ public final class CrazyPhonePhotoItemRenderer {
                             poseStack.translate(centerX, PRESENT_Y_LIFT, NORMAL_OFFSET + PRESENT_Z_FORWARD);
                             poseStack.scale(PRESENT_SCALE, PRESENT_SCALE, PRESENT_SCALE);
                         }
-                        poseStack.mulPose(Axis.YP.rotationDegrees(180f));
+                        poseStack./^$ pose_rotate {^/mulPose/^$}^/(Axis.YP.rotationDegrees(180f));
                     } else {
                         poseStack.translate(0, THIRD_PERSON_Y_LIFT, NORMAL_OFFSET);
                     }
@@ -909,7 +909,7 @@ public final class CrazyPhonePhotoItemRenderer {
             } else if (displayContext == ItemDisplayContext.FIXED) {
                 poseStack.translate(0, 0, FIXED_Z_PULL);
                 poseStack.scale(FIXED_SCALE, FIXED_SCALE, FIXED_SCALE * FIXED_DEPTH_SCALE);
-                poseStack.mulPose(Axis.YP.rotationDegrees(180f));
+                poseStack./^$ pose_rotate {^/mulPose/^$}^/(Axis.YP.rotationDegrees(180f));
             }
 
             fr.lordfinn.crazyphone.utils.PhotoItemData data = fr.lordfinn.crazyphone.utils.PhotoItemData.fromStack(item);

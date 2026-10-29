@@ -34,6 +34,7 @@ stonecutter {
         // dependency at all (see build.fabric26.gradle.kts's own doc comment for the full explanation).
         version("26.1-fabric", "26.1").buildscript("build.fabric26.gradle.kts")
         version("26.2-fabric", "26.2").buildscript("build.fabric26.gradle.kts")
+        version("26.3-fabric", "26.3").buildscript("build.fabric26.gradle.kts")
         vcsVersion = "1.21.1"
     }
     create(rootProject)

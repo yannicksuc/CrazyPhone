@@ -76,25 +76,25 @@ public record CallParticipantHeadRotationSyncPacket(String conversationId, List<
             StreamCodec.of(
                     (RegistryFriendlyByteBuf buffer, CallParticipantHeadRotationSyncPacket message) -> {
                         buffer.writeUtf(message.conversationId);
-                        buffer.writeCollection(message.playerIds, (buf, id) -> buf.writeUUID(id));
-                        buffer.writeCollection(message.headYawDeltas, (buf, v) -> buf.writeFloat(v));
-                        buffer.writeCollection(message.pitches, (buf, v) -> buf.writeFloat(v));
-                        buffer.writeCollection(message.poseOrdinals, (buf, v) -> buf.writeVarInt(v));
-                        buffer.writeCollection(message.crouching, (buf, v) -> buf.writeBoolean(v));
-                        buffer.writeCollection(message.sprinting, (buf, v) -> buf.writeBoolean(v));
-                        buffer.writeCollection(message.swimming, (buf, v) -> buf.writeBoolean(v));
-                        buffer.writeCollection(message.walkAnimationSpeeds, (buf, v) -> buf.writeFloat(v));
+                        writeList(buffer, message.playerIds, (buf, id) -> buf.writeUUID(id));
+                        writeList(buffer, message.headYawDeltas, (buf, v) -> buf.writeFloat(v));
+                        writeList(buffer, message.pitches, (buf, v) -> buf.writeFloat(v));
+                        writeList(buffer, message.poseOrdinals, (buf, v) -> buf.writeVarInt(v));
+                        writeList(buffer, message.crouching, (buf, v) -> buf.writeBoolean(v));
+                        writeList(buffer, message.sprinting, (buf, v) -> buf.writeBoolean(v));
+                        writeList(buffer, message.swimming, (buf, v) -> buf.writeBoolean(v));
+                        writeList(buffer, message.walkAnimationSpeeds, (buf, v) -> buf.writeFloat(v));
                     },
                     (RegistryFriendlyByteBuf buffer) -> new CallParticipantHeadRotationSyncPacket(
                             buffer.readUtf(),
-                            buffer.readList(buf -> buf.readUUID()),
-                            buffer.readList(buf -> buf.readFloat()),
-                            buffer.readList(buf -> buf.readFloat()),
-                            buffer.readList(buf -> buf.readVarInt()),
-                            buffer.readList(buf -> buf.readBoolean()),
-                            buffer.readList(buf -> buf.readBoolean()),
-                            buffer.readList(buf -> buf.readBoolean()),
-                            buffer.readList(buf -> buf.readFloat())
+                            readList(buffer, buf -> buf.readUUID()),
+                            readList(buffer, buf -> buf.readFloat()),
+                            readList(buffer, buf -> buf.readFloat()),
+                            readList(buffer, buf -> buf.readVarInt()),
+                            readList(buffer, buf -> buf.readBoolean()),
+                            readList(buffer, buf -> buf.readBoolean()),
+                            readList(buffer, buf -> buf.readBoolean()),
+                            readList(buffer, buf -> buf.readFloat())
                     )
             );
 
@@ -108,27 +108,27 @@ public record CallParticipantHeadRotationSyncPacket(String conversationId, List<
     public CallParticipantHeadRotationSyncPacket(FriendlyByteBuf buffer) {
         this(
                 buffer.readUtf(),
-                buffer.readList(buf -> buf.readUUID()),
-                buffer.readList(buf -> buf.readFloat()),
-                buffer.readList(buf -> buf.readFloat()),
-                buffer.readList(buf -> buf.readVarInt()),
-                buffer.readList(buf -> buf.readBoolean()),
-                buffer.readList(buf -> buf.readBoolean()),
-                buffer.readList(buf -> buf.readBoolean()),
-                buffer.readList(buf -> buf.readFloat())
+                readList(buffer, buf -> buf.readUUID()),
+                readList(buffer, buf -> buf.readFloat()),
+                readList(buffer, buf -> buf.readFloat()),
+                readList(buffer, buf -> buf.readVarInt()),
+                readList(buffer, buf -> buf.readBoolean()),
+                readList(buffer, buf -> buf.readBoolean()),
+                readList(buffer, buf -> buf.readBoolean()),
+                readList(buffer, buf -> buf.readFloat())
         );
     }
 
     public void write(FriendlyByteBuf buffer) {
         buffer.writeUtf(conversationId);
-        buffer.writeCollection(playerIds, (buf, id) -> buf.writeUUID(id));
-        buffer.writeCollection(headYawDeltas, (buf, v) -> buf.writeFloat(v));
-        buffer.writeCollection(pitches, (buf, v) -> buf.writeFloat(v));
-        buffer.writeCollection(poseOrdinals, (buf, v) -> buf.writeVarInt(v));
-        buffer.writeCollection(crouching, (buf, v) -> buf.writeBoolean(v));
-        buffer.writeCollection(sprinting, (buf, v) -> buf.writeBoolean(v));
-        buffer.writeCollection(swimming, (buf, v) -> buf.writeBoolean(v));
-        buffer.writeCollection(walkAnimationSpeeds, (buf, v) -> buf.writeFloat(v));
+        writeList(buffer, playerIds, (buf, id) -> buf.writeUUID(id));
+        writeList(buffer, headYawDeltas, (buf, v) -> buf.writeFloat(v));
+        writeList(buffer, pitches, (buf, v) -> buf.writeFloat(v));
+        writeList(buffer, poseOrdinals, (buf, v) -> buf.writeVarInt(v));
+        writeList(buffer, crouching, (buf, v) -> buf.writeBoolean(v));
+        writeList(buffer, sprinting, (buf, v) -> buf.writeBoolean(v));
+        writeList(buffer, swimming, (buf, v) -> buf.writeBoolean(v));
+        writeList(buffer, walkAnimationSpeeds, (buf, v) -> buf.writeFloat(v));
     }
 
     //? if fabric || neoforge {
@@ -214,4 +214,22 @@ public record CallParticipantHeadRotationSyncPacket(String conversationId, List<
         }
     }
     //?}
+
+    // FriendlyByteBuf#writeCollection/#readList were removed in 26.3. Same wire format (VarInt size, then each
+    // element), written by hand so every version shares one encoding without a per-version branch.
+    private static <T> void writeList(net.minecraft.network.FriendlyByteBuf buffer, java.util.List<T> list,
+                                      java.util.function.BiConsumer<net.minecraft.network.FriendlyByteBuf, T> writer) {
+        buffer.writeVarInt(list.size());
+        for (T element : list)
+            writer.accept(buffer, element);
+    }
+
+    private static <T> java.util.List<T> readList(net.minecraft.network.FriendlyByteBuf buffer,
+                                                  java.util.function.Function<net.minecraft.network.FriendlyByteBuf, T> reader) {
+        int size = buffer.readVarInt();
+        java.util.List<T> list = new java.util.ArrayList<>(size);
+        for (int i = 0; i < size; i++)
+            list.add(reader.apply(buffer));
+        return list;
+    }
 }

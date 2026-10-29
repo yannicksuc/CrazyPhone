@@ -123,4 +123,17 @@ stonecutter parameters {
     // extractRenderState(GuiGraphicsExtractor, DeltaTracker) from Gui -> the new Hud class (javap-checked).
     swaps.put("capture_escape_target", if (is262) "net.minecraft.client.gui.Gui" else "Minecraft")
     swaps.put("capture_hud_target", if (is262) "net.minecraft.client.gui.Hud" else "Gui")
+    // 26.3 API changes (all javap-checked against the real 26.3 jar):
+    // - PoseStack#mulPose(Quaternionf) is gone, rotations go through PoseStack#rotate(Quaternionfc);
+    // - LivingEntity#drop(ItemStack, boolean) lost its 2-arg overload, the third argument is now a Prediction
+    //   (SERVER_ONLY matches the old "no thrower" 2-arg call);
+    // - Inventory#clearOrCountMatchingItems takes an explicit "simulate" flag (was implied by maxCount == 0);
+    // - BundleContents#itemCopyStream() was renamed to itemCopies();
+    // - ItemInHandRenderer was replaced by the render-state based FirstPersonHandsAndItemsRenderer.
+    val is263 = semantics.eval(current.version, ">=26.3")
+    swaps.put("pose_rotate", if (is263) "rotate" else "mulPose")
+    swaps.put("drop_args", if (is263) "false, net.minecraft.util.Prediction.SERVER_ONLY" else "false")
+    swaps.put("clear_or_count_max", if (is263) "false, 1" else "1")
+    swaps.put("bundle_item_copies", if (is263) "itemCopies" else "itemCopyStream")
+    swaps.put("first_person_hands_renderer", if (is263) "net.minecraft.client.renderer.FirstPersonHandsAndItemsRenderer" else "net.minecraft.client.renderer.ItemInHandRenderer")
 }

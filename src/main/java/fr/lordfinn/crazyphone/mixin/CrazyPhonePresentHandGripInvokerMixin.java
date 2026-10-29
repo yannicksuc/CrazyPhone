@@ -36,7 +36,7 @@ import org.spongepowered.asm.mixin.Pseudo;
 public abstract class CrazyPhonePresentHandGripInvokerMixin {
 }
 *///?}
-//? if >=26 {
+//? if >=26 <26.3 {
 /*import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.renderer.ItemInHandRenderer;
 import net.minecraft.client.renderer.SubmitNodeCollector;
@@ -48,5 +48,16 @@ import org.spongepowered.asm.mixin.gen.Invoker;
 public interface CrazyPhonePresentHandGripInvokerMixin {
     @Invoker("renderPlayerArm")
     void crazyphone$renderPlayerArm(PoseStack poseStack, SubmitNodeCollector submitNodeCollector, int light, float equipProgress, float swingProgress, HumanoidArm arm);
+}
+*///?}
+// 26.3 has no ItemInHandRenderer any more (FirstPersonHandsAndItemsRenderer replaced it) and nothing calls this
+// invoker on 26.x anyway: same inert placeholder as the 1.21.10 branch, so the mixin config entry still resolves.
+//? if >=26.3 {
+/*import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Pseudo;
+
+@Pseudo
+@Mixin(net.minecraft.client.Minecraft.class)
+public abstract class CrazyPhonePresentHandGripInvokerMixin {
 }
 *///?}

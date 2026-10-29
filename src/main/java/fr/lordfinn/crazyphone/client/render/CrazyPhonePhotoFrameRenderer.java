@@ -487,24 +487,24 @@ public class CrazyPhonePhotoFrameRenderer extends EntityRenderer<CrazyPhonePhoto
         switch (face) {
             case DOWN -> {
                 poseStack.translate(0, faceOffset - 0.5, 0);
-                poseStack.mulPose(Axis.XP.rotationDegrees(90));
+                poseStack./^$ pose_rotate {^/mulPose/^$}^/(Axis.XP.rotationDegrees(90));
             }
             case UP -> {
                 poseStack.translate(0, faceOffset - 0.5, 0);
-                poseStack.mulPose(Axis.XP.rotationDegrees(-90));
+                poseStack./^$ pose_rotate {^/mulPose/^$}^/(Axis.XP.rotationDegrees(-90));
             }
             case NORTH -> {
                 poseStack.translate(0, 0, faceOffset - 0.5);
-                poseStack.mulPose(Axis.YP.rotationDegrees(180));
+                poseStack./^$ pose_rotate {^/mulPose/^$}^/(Axis.YP.rotationDegrees(180));
             }
             case SOUTH -> poseStack.translate(0, 0, faceOffset - 0.5);
             case WEST -> {
                 poseStack.translate(faceOffset - 0.5, 0, 0);
-                poseStack.mulPose(Axis.YP.rotationDegrees(-90));
+                poseStack./^$ pose_rotate {^/mulPose/^$}^/(Axis.YP.rotationDegrees(-90));
             }
             case EAST -> {
                 poseStack.translate(faceOffset - 0.5, 0, 0);
-                poseStack.mulPose(Axis.YP.rotationDegrees(90));
+                poseStack./^$ pose_rotate {^/mulPose/^$}^/(Axis.YP.rotationDegrees(90));
             }
         }
     }
