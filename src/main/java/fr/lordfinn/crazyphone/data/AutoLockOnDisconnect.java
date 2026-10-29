@@ -9,6 +9,12 @@ import net.neoforged.fml.common.Mod.EventBusSubscriber;
 //?}
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 //?}
+// Forge 1.20.1: the same events at their original net.minecraftforge.* packages.
+//? if legacyforge {
+/*import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
+import net.minecraftforge.event.entity.player.PlayerEvent;
+*///?}
 //? if fabric {
 /*import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 *///?}
@@ -29,11 +35,11 @@ import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
  * still fully valid (inventory intact, not yet removed from the world)" hook - NeoForge's
  * {@code PlayerEvent.PlayerLoggedOutEvent}, Fabric's {@code ServerPlayConnectionEvents.DISCONNECT}.
  */
-//? if neoforge {
+//? if neoforge || legacyforge {
 @EventBusSubscriber
 //?}
 public class AutoLockOnDisconnect {
-    //? if neoforge {
+    //? if neoforge || legacyforge {
     @SubscribeEvent
     public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         if (event.getEntity() instanceof ServerPlayer player)

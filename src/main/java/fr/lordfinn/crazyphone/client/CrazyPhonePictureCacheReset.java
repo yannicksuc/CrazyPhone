@@ -18,6 +18,15 @@ import net.neoforged.fml.common.Mod.EventBusSubscriber;
 /*import net.neoforged.fml.common.EventBusSubscriber;
 *///?}
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
+//?}
+// Forge 1.20.1: the same event at its original net.minecraftforge.* package.
+//? if legacyforge {
+/*import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
+import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
+*///?}
+//? if neoforge || legacyforge {
 
 @EventBusSubscriber(value = Dist.CLIENT)
 public final class CrazyPhonePictureCacheReset {

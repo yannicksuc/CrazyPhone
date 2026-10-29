@@ -11,6 +11,14 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.api.distmarker.Dist;
 //?}
+// Forge 1.20.1: the same events at their original net.minecraftforge.* packages.
+//? if legacyforge {
+/*import net.minecraftforge.event.entity.player.ItemTooltipEvent;
+import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraftforge.api.distmarker.Dist;
+*///?}
 //? if fabric {
 /*import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback;
 *///?}
@@ -30,14 +38,14 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
-//? if neoforge {
+//? if neoforge || legacyforge {
 @EventBusSubscriber(value = {Dist.CLIENT})
 //?}
 public class CrazyPhoneItemInInventoryTickProcedure {
 	private static final DateTimeFormatter PHOTO_DATE_FORMATTER =
 			DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm").withZone(ZoneId.systemDefault());
 
-	//? if neoforge {
+	//? if neoforge || legacyforge {
 	//? if <1.21.10 {
 	@OnlyIn(Dist.CLIENT)
 	//?}

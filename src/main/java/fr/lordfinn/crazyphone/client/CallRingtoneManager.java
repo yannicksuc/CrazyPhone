@@ -14,6 +14,13 @@ import net.neoforged.fml.common.Mod.EventBusSubscriber;
 import net.neoforged.neoforge.event.TickEvent;
 //?}
 //?}
+// Forge 1.20.1: the same events at their original net.minecraftforge.* packages.
+//? if legacyforge {
+/*import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
+import net.minecraftforge.event.TickEvent;
+*///?}
 //? if fabric && >=1.20.5 {
 /*import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 *///?}
@@ -40,7 +47,7 @@ import fr.lordfinn.crazyphone.procedures.GetCrazyPhoneNumberProcedure;
  * retriggers a short buzz every pulse cycle (see CallVibrationTiming), layered on top of the ringtone melody
  * and synced to CrazyPhoneVibrationRenderer's visual hand-shake pulses.
  */
-//? if neoforge {
+//? if neoforge || legacyforge {
 @EventBusSubscriber(value = Dist.CLIENT)
 //?}
 public class CallRingtoneManager {
@@ -48,7 +55,7 @@ public class CallRingtoneManager {
     private static State currentSoundFor;
     private static long lastBuzzCycle = -1;
 
-    //? if neoforge {
+    //? if neoforge || legacyforge {
     @SubscribeEvent
     //? if >=1.20.5 {
     /*public static void onClientTick(ClientTickEvent.Post event) {

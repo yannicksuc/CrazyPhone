@@ -21,6 +21,13 @@ import net.neoforged.fml.common.Mod.EventBusSubscriber;
 import net.neoforged.neoforge.event.TickEvent;
 //?}
 //?}
+// Forge 1.20.1: the same events at their original net.minecraftforge.* packages.
+//? if legacyforge {
+/*import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
+import net.minecraftforge.event.TickEvent;
+*///?}
 
 import com.mojang.blaze3d.platform.NativeImage;
 import net.minecraft.client.Minecraft;
@@ -32,7 +39,7 @@ import fr.lordfinn.crazyphone.client.CrazyPhoneCaptureMode;
 import java.io.IOException;
 import java.util.function.BiConsumer;
 
-//? if neoforge {
+//? if neoforge || legacyforge {
 @EventBusSubscriber(value = Dist.CLIENT)
 //?}
 public final class FabricPictureCapture {
@@ -65,7 +72,7 @@ public final class FabricPictureCapture {
     private FabricPictureCapture() {
     }
 
-    //? if neoforge {
+    //? if neoforge || legacyforge {
     @SubscribeEvent
     //? if >=1.20.5 {
     /*public static void onNeoForgeClientTick(ClientTickEvent.Post event) {

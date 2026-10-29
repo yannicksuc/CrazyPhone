@@ -26,6 +26,13 @@ import net.neoforged.fml.common.Mod.EventBusSubscriber;
 //?}
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 //?}
+// Forge 1.20.1: the same events at their original net.minecraftforge.* packages.
+//? if legacyforge {
+/*import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
+import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
+*///?}
 
 import fr.lordfinn.crazyphone.Crazyphone;
 import fr.lordfinn.crazyphone.init.ModItems;
@@ -48,7 +55,7 @@ import fr.lordfinn.crazyphone.utils.CrazyPhoneHelper;
  * CrazyPhoneDefaultScreenMenu and CallRegistry) makes it visible to bystanders for free, with zero new
  * packets.
  */
-//? if neoforge {
+//? if neoforge || legacyforge {
 //? if <1.20.5 {
 @EventBusSubscriber(value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)
 //?} else {
@@ -165,7 +172,7 @@ public class CrazyPhoneItemProperties {
     }
     *///?}
     //? if <1.21.10 {
-    //? if neoforge {
+    //? if neoforge || legacyforge {
     @SubscribeEvent
     public static void onClientSetup(FMLClientSetupEvent event) {
         event.enqueueWork(CrazyPhoneItemProperties::registerAll);

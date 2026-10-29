@@ -13,6 +13,13 @@ import net.neoforged.fml.common.Mod.EventBusSubscriber;
 //?}
 import net.neoforged.bus.api.SubscribeEvent;
 //?}
+// Forge 1.20.1: the same events at their original net.minecraftforge.* packages.
+//? if legacyforge {
+/*import net.minecraftforge.event.entity.item.ItemTossEvent;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+*///?}
 //? if fabric {
 /*import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 *///?}
@@ -59,7 +66,7 @@ import java.util.UUID;
  * difference is up to one sweep interval (1s) of extra precision on the grace-period start, not a correctness
  * gap.
  */
-//? if neoforge {
+//? if neoforge || legacyforge {
 @EventBusSubscriber
 //?}
 public class CallTerminationListener {
@@ -72,7 +79,7 @@ public class CallTerminationListener {
      * comes back. */
     private static final Map<UUID, Long> phonelessSinceGameTime = new HashMap<>();
 
-    //? if neoforge {
+    //? if neoforge || legacyforge {
     /** Just seeds {@link #phonelessSinceGameTime} with a precise timestamp - does NOT end the call itself
      * (see the class javadoc for why: the periodic sweep owns that decision, after the grace period). */
     @SubscribeEvent
@@ -87,7 +94,7 @@ public class CallTerminationListener {
     }
     //?}
 
-    //? if neoforge {
+    //? if neoforge || legacyforge {
     //? if >=1.20.5 {
     /*@SubscribeEvent
     public static void onServerTick(ServerTickEvent.Post event) {
