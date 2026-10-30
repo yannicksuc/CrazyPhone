@@ -216,6 +216,7 @@ public class Crazyphone {
         ModMenus.REGISTRY.register(modEventBus);
         ModSounds.REGISTRY.register(modEventBus);
         ModRecipes.REGISTRY.register(modEventBus);
+        fr.lordfinn.crazyphone.init.ModEntities.REGISTRY.register(modEventBus);
         // CrazyPhoneCraftingCondition is NOT ported here: it's built on NeoForge's Codec-based ICondition
         // registry (net.neoforged.neoforge.common.conditions), which old Forge 1.20.1 has no equivalent of -
         // its own, older condition system predates the Codec-based rewrite entirely and would need its own

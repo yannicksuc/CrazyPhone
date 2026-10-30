@@ -385,8 +385,8 @@ public class ScreenMenuUtils {
     }
     *///?}
 
-    // >=1.20.5 only, matching the whole photo-frame feature's own floor (see ModEntities.java's own doc
-    // comment) - no extra opening data at all (see CrazyPhonePhotoFrameResizeMenu's own doc comment), so
+    // >=1.20.5 and Forge 1.20.1 only, matching the whole photo-frame feature's own scope (see ModEntities.
+    // java's own doc comment) - no extra opening data at all (see CrazyPhonePhotoFrameResizeMenu's own doc comment), so
     // unlike every openXScreen above there's no packetBuffer to populate, on either loader.
     //? if neoforge && >=1.20.5 {
     /*public static void openPhotoFrameResizeMenu(Player player, fr.lordfinn.crazyphone.entity.CrazyPhonePhotoFrameEntity entity) {
@@ -425,6 +425,26 @@ public class ScreenMenuUtils {
             public RegistryFriendlyByteBuf getScreenOpeningData(ServerPlayer p) {
                 return new RegistryFriendlyByteBuf(Unpooled.buffer(), p.registryAccess());
             }
+        });
+    }
+    *///?}
+    // Forge 1.20.1: NetworkHooks.openScreen is the old-Forge equivalent of NeoForge's openMenu(provider,
+    // bufWriter) above (see openPhoneCustomMenu's own legacyforge branch), with the same empty opening data.
+    //? if legacyforge {
+    /*public static void openPhotoFrameResizeMenu(Player player, fr.lordfinn.crazyphone.entity.CrazyPhonePhotoFrameEntity entity) {
+        if (!(player instanceof ServerPlayer serverPlayer))
+            return;
+        net.minecraftforge.network.NetworkHooks.openScreen(serverPlayer, new MenuProvider() {
+            @Override
+            public Component getDisplayName() {
+                return Component.translatable("gui.crazyphone.photo_frame_resize.title");
+            }
+
+            @Override
+            public AbstractContainerMenu createMenu(int id, Inventory inventory, Player p) {
+                return new fr.lordfinn.crazyphone.world.inventory.CrazyPhonePhotoFrameResizeMenu(id, inventory, entity);
+            }
+        }, buf -> {
         });
     }
     *///?}

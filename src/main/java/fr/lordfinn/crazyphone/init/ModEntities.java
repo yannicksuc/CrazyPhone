@@ -21,7 +21,8 @@ import fr.lordfinn.crazyphone.entity.CrazyPhonePhotoFrameEntity;
  * The mod's first (and so far only) custom entity - see {@link CrazyPhonePhotoFrameEntity}'s own doc comment
  * for why it isn't a vanilla HangingEntity. >=1.20.5-only across both loaders: the wall-photo feature this
  * backs was built directly against the Data Components / registry-based enchantment API (Silk Touch lookup
- * in the entity's own {@code hurt()}), matching this project's own established scope line for new features
+ * in the entity's own {@code hurt()}), plus Forge 1.20.1 (legacyforge), ported with NBT and the plain
+ * Enchantments.SILK_TOUCH instead, matching this project's own established scope line for new features
  * (1.20.4/1.20.1-fabric are frozen/unmaintained anyway - see the README's own maintenance table). Three
  * independent top-level blocks below (not one nested inside another's else) - see
  * CrazyPhoneSelfieCameraMixin's own doc comment for why nesting a version toggle inside an already-wrapped
@@ -79,10 +80,24 @@ import fr.lordfinn.crazyphone.entity.CrazyPhonePhotoFrameEntity;
     }
 }
 *///?}
-// Inert placeholder on every pre-1.20.5 target (1.20.4, 1.20.1-fabric - both frozen/unmaintained, see the
-// README's own maintenance table) - no photo-frame entity there at all, and neither loader's own real
+// Real, original Forge 1.20.1: same entity through Forge's own DeferredRegister (registered from the
+// legacyforge Crazyphone constructor). Builder#build still takes the plain String id there.
+//? if legacyforge {
+/*public class ModEntities {
+    public static final net.minecraftforge.registries.DeferredRegister<EntityType<?>> REGISTRY =
+            net.minecraftforge.registries.DeferredRegister.create(net.minecraftforge.registries.ForgeRegistries.ENTITY_TYPES, Crazyphone.MODID);
+
+    public static final net.minecraftforge.registries.RegistryObject<EntityType<CrazyPhonePhotoFrameEntity>> PHOTO_FRAME =
+            REGISTRY.register("photo_frame", () -> EntityType.Builder.<CrazyPhonePhotoFrameEntity>of(CrazyPhonePhotoFrameEntity::new, MobCategory.MISC)
+                    .sized(1.0f, 1.0f)
+                    .clientTrackingRange(10)
+                    .build(Crazyphone.resource("photo_frame").toString()));
+}
+*///?}
+// Inert placeholder on the two frozen pre-1.20.5 targets (1.20.4 NeoForge, 1.20.1-fabric, see the README's
+// own maintenance table) - no photo-frame entity there at all, and neither loader's own real
 // register()/REGISTRY branch above gets stonecut into the build on those targets.
-//? if <1.20.5 {
+//? if (fabric || neoforge) && <1.20.5 {
 public class ModEntities {
     public static void register() {
     }

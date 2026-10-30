@@ -31,7 +31,18 @@ public class ModEntityRenderers {
     }
 }
 *///?}
-//? if <1.20.5 {
+// Real, original Forge 1.20.1: same EntityRenderersEvent.RegisterRenderers, on the MOD bus (old Forge's
+// @EventBusSubscriber needs the bus spelled out, it does not route mod-bus events on its own).
+//? if legacyforge {
+/*@net.minecraftforge.fml.common.Mod.EventBusSubscriber(value = net.minecraftforge.api.distmarker.Dist.CLIENT, bus = net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus.MOD)
+public class ModEntityRenderers {
+    @net.minecraftforge.eventbus.api.SubscribeEvent
+    public static void registerRenderers(net.minecraftforge.client.event.EntityRenderersEvent.RegisterRenderers event) {
+        event.registerEntityRenderer(ModEntities.PHOTO_FRAME.get(), CrazyPhonePhotoFrameRenderer::new);
+    }
+}
+*///?}
+//? if (fabric || neoforge) && <1.20.5 {
 public class ModEntityRenderers {
 }
 //?}
