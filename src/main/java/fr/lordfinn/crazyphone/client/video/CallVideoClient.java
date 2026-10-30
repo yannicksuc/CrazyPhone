@@ -44,15 +44,9 @@ import fr.lordfinn.crazyphone.voicechat.CallVideoRelay;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -500,40 +494,15 @@ public final class CallVideoClient {
         }
     }
 
-    private static Path prefsFile(Minecraft mc) {
-        return mc.gameDirectory.toPath().resolve("config").resolve("crazyphone-client.properties");
-    }
-
+    // config/crazyphone-client.properties is read and written only by ClientPrefs (shared with the phone
+    // size, emoji and live screen options, so saving here never drops theirs).
     private static void loadPrefs(Minecraft mc) {
         prefsLoaded = true;
-        Path file = prefsFile(mc);
-        if (!Files.isRegularFile(file))
-            return;
-        Properties props = new Properties();
-        try (InputStream in = Files.newInputStream(file)) {
-            props.load(in);
-            ClientConfig.callCameraVideo = !"false".equalsIgnoreCase(props.getProperty("callCameraVideo", "true").trim());
-        } catch (IOException | IllegalArgumentException e) {
-            LOGGER.warn("Could not read {}", file, e);
-        }
+        fr.lordfinn.crazyphone.client.ClientPrefs.ensureLoaded();
     }
 
     private static void savePrefs() {
-        Path file = prefsFile(Minecraft.getInstance());
-        Properties props = new Properties();
-        try {
-            if (Files.isRegularFile(file))
-                try (InputStream in = Files.newInputStream(file)) {
-                    props.load(in);
-                }
-            props.setProperty("callCameraVideo", Boolean.toString(ClientConfig.callCameraVideo));
-            Files.createDirectories(file.getParent());
-            try (OutputStream out = Files.newOutputStream(file)) {
-                props.store(out, "CrazyPhone client settings");
-            }
-        } catch (IOException | IllegalArgumentException e) {
-            LOGGER.warn("Could not write {}", file, e);
-        }
+        fr.lordfinn.crazyphone.client.ClientPrefs.save();
     }
 
     private static void logStats() {

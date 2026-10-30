@@ -1,5 +1,6 @@
 package fr.lordfinn.crazyphone.client;
 
+import fr.lordfinn.crazyphone.ClientConfig;
 import net.minecraft.client.Minecraft;
 
 import org.slf4j.Logger;
@@ -12,7 +13,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.Map;
 import java.util.Properties;
+import java.util.TreeMap;
 
 /**
  * Player-side (client) preferences, persisted to {@code config/crazyphone-client.properties}: a plain
@@ -24,6 +27,13 @@ import java.util.Properties;
  * corrupted or out-of-range value falls back to its default or is clamped, never throws; the file is
  * re-read when it changes on disk (checked at most once a second), so the size can be tuned while the
  * game runs. Nothing here is ever sent to the server.
+ *
+ * This is the ONLY reader and writer of that file: the held phone's live screen (/phonescreen) and the
+ * camera video toggle of the call screen keep their values in ClientConfig, but load them through
+ * {@link #ensureLoaded()} and save them through {@link #save()}, which rewrites every key (and keeps any
+ * key it does not know), so no feature can wipe another one's settings. Those in-game toggles are read
+ * from the file once per game start; the phone size and emoji switch are also re-read when the file
+ * changes on disk.
  */
 public final class ClientPrefs {
     private static final Logger LOGGER = LoggerFactory.getLogger("crazyphone-client-prefs");
@@ -34,6 +44,9 @@ public final class ClientPrefs {
 
     public static final String KEY_PHONE_SIZE = "phoneScreenHeightPercent";
     public static final String KEY_EMOJI_PICKER = "emojiPickerEnabled";
+    public static final String KEY_LIVE_SCREEN_OWN = "liveScreenOwnPhone";
+    public static final String KEY_LIVE_SCREEN_OTHERS = "liveScreenOtherPhones";
+    public static final String KEY_CALL_CAMERA_VIDEO = "callCameraVideo";
 
     /** 0 = keep the vanilla GUI scale size (the phone as it was before this option existed). */
     public static final int PHONE_SIZE_VANILLA = 0;
@@ -45,6 +58,10 @@ public final class ClientPrefs {
     private static boolean emojiPickerEnabled = true;
 
     private static boolean loadedOnce;
+    /** The in-game toggles (ClientConfig) are taken from the file only once: afterwards the game owns them. */
+    private static boolean togglesApplied;
+    /** Keys found in the file that this version does not know: written back untouched by save(). */
+    private static final Map<String, String> unknownKeys = new TreeMap<>();
     private static long lastCheckMillis;
     private static long lastModified = Long.MIN_VALUE;
 
@@ -60,6 +77,23 @@ public final class ClientPrefs {
     public static synchronized boolean emojiPickerEnabled() {
         refreshIfChanged();
         return emojiPickerEnabled;
+    }
+
+    /** Reads the file now if it was never read (creating it with defaults if missing). */
+    public static synchronized void ensureLoaded() {
+        refreshIfChanged();
+    }
+
+    /**
+     * Writes every option to the file: the phone size and emoji switch as currently loaded, the in-game
+     * toggles from ClientConfig, and any unknown key found in the file. Never throws.
+     */
+    public static synchronized void save() {
+        refreshIfChanged();
+        Path path = file();
+        if (path == null)
+            return;
+        write(path);
     }
 
     /** 0 or less means vanilla; anything else is clamped into [MIN, MAX]. */
@@ -87,8 +121,9 @@ public final class ClientPrefs {
                 return;
             if (!Files.exists(path)) {
                 if (!loadedOnce)
-                    writeDefaults(path);
+                    write(path);
                 loadedOnce = true;
+                togglesApplied = true;
                 return;
             }
             long modified = Files.getLastModifiedTime(path).toMillis();
@@ -99,6 +134,7 @@ public final class ClientPrefs {
             load(path);
         } catch (IOException | RuntimeException e) {
             loadedOnce = true;
+            togglesApplied = true;
             LOGGER.warn("Could not read {}, using defaults", FILE_NAME, e);
         }
     }
@@ -114,9 +150,21 @@ public final class ClientPrefs {
             }
             size = parseInt(props.getProperty(KEY_PHONE_SIZE), PHONE_SIZE_DEFAULT);
             picker = parseBoolean(props.getProperty(KEY_EMOJI_PICKER), true);
+            if (!togglesApplied) {
+                ClientConfig.liveScreenOwnPhone = parseBoolean(props.getProperty(KEY_LIVE_SCREEN_OWN), true);
+                ClientConfig.liveScreenOtherPhones = parseBoolean(props.getProperty(KEY_LIVE_SCREEN_OTHERS), true);
+                ClientConfig.callCameraVideo = parseBoolean(props.getProperty(KEY_CALL_CAMERA_VIDEO), true);
+            }
+            unknownKeys.clear();
+            for (String key : props.stringPropertyNames()) {
+                if (!key.equals(KEY_PHONE_SIZE) && !key.equals(KEY_EMOJI_PICKER) && !key.equals(KEY_LIVE_SCREEN_OWN)
+                        && !key.equals(KEY_LIVE_SCREEN_OTHERS) && !key.equals(KEY_CALL_CAMERA_VIDEO))
+                    unknownKeys.put(key, props.getProperty(key));
+            }
         } else {
             LOGGER.warn("{} is unexpectedly large, ignoring it and using defaults", FILE_NAME);
         }
+        togglesApplied = true;
         phoneSizePercent = clampPhoneSizePercent(size);
         emojiPickerEnabled = picker;
     }
@@ -151,21 +199,45 @@ public final class ClientPrefs {
         return fallback;
     }
 
-    private static void writeDefaults(Path path) {
-        String text = "# CrazyPhone client preferences (only affect this game, never sent to the server).\n"
-                + "# No restart needed: changes apply the next time a phone screen opens or the window is resized.\n"
-                + "\n"
-                + "# Height of the phone on screen, in percent of the window height (" + PHONE_SIZE_MIN + " to " + PHONE_SIZE_MAX + ").\n"
-                + "# The phone snaps to whole pixel sizes so it stays crisp, never gets smaller than at your GUI scale\n"
-                + "# and never overflows the window. 0 (or \"vanilla\") keeps the size given by the GUI scale alone.\n"
-                + KEY_PHONE_SIZE + "=" + PHONE_SIZE_DEFAULT + "\n"
-                + "\n"
-                + "# Emoji button next to the message field of a conversation.\n"
-                + KEY_EMOJI_PICKER + "=true\n";
+    private static void write(Path path) {
+        String size = phoneSizePercent == PHONE_SIZE_VANILLA ? "0" : Integer.toString(phoneSizePercent);
+        StringBuilder text = new StringBuilder()
+                .append("# CrazyPhone client preferences (only affect this game, never sent to the server).\n")
+                .append("# The phone size and the emoji button apply without a restart (next phone screen or window resize).\n")
+                .append("# The other options are changed in game and read from here when the game starts.\n")
+                .append("\n")
+                .append("# Height of the phone on screen, in percent of the window height (").append(PHONE_SIZE_MIN).append(" to ").append(PHONE_SIZE_MAX).append(").\n")
+                .append("# The phone snaps to whole pixel sizes so it stays crisp, never gets smaller than at your GUI scale\n")
+                .append("# and never overflows the window. 0 (or \"vanilla\") keeps the size given by the GUI scale alone.\n")
+                .append(KEY_PHONE_SIZE).append('=').append(size).append("\n")
+                .append("\n")
+                .append("# Emoji button next to the message field of a conversation.\n")
+                .append(KEY_EMOJI_PICKER).append('=').append(emojiPickerEnabled).append("\n")
+                .append("\n")
+                .append("# Live screen on the phone in your own hand, and on phones held by other players (/phonescreen).\n")
+                .append(KEY_LIVE_SCREEN_OWN).append('=').append(ClientConfig.liveScreenOwnPhone).append("\n")
+                .append(KEY_LIVE_SCREEN_OTHERS).append('=').append(ClientConfig.liveScreenOtherPhones).append("\n")
+                .append("\n")
+                .append("# Camera video in calls (the video button of the call screen). No frame is ever stored.\n")
+                .append(KEY_CALL_CAMERA_VIDEO).append('=').append(ClientConfig.callCameraVideo).append("\n");
+        if (!unknownKeys.isEmpty()) {
+            Properties extra = new Properties();
+            extra.putAll(unknownKeys);
+            java.io.StringWriter out = new java.io.StringWriter();
+            try {
+                extra.store(out, null);
+            } catch (IOException ignored) {
+            }
+            text.append("\n# Kept as found (not used by this version).\n");
+            for (String line : out.toString().split("\\R")) {
+                if (!line.startsWith("#") && !line.isEmpty())
+                    text.append(line).append("\n");
+            }
+        }
         try {
             Files.createDirectories(path.getParent());
             Path tmp = path.resolveSibling(FILE_NAME + ".tmp");
-            Files.writeString(tmp, text, StandardCharsets.UTF_8);
+            Files.writeString(tmp, text.toString(), StandardCharsets.UTF_8);
             try {
                 Files.move(tmp, path, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
             } catch (IOException atomicUnsupported) {
@@ -173,7 +245,7 @@ public final class ClientPrefs {
             }
             lastModified = Files.getLastModifiedTime(path).toMillis();
         } catch (IOException | RuntimeException e) {
-            LOGGER.debug("Could not write default {}", FILE_NAME, e);
+            LOGGER.warn("Could not write {}", FILE_NAME, e);
         }
     }
 }

@@ -45,13 +45,8 @@ import fr.lordfinn.crazyphone.utils.PhoneTagAccess;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Properties;
 import java.util.UUID;
 
 /**
@@ -266,38 +261,13 @@ public final class LiveScreenClient {
 
     // ---- client options --------------------------------------------------------------------------------
 
-    private static Path configPath() {
-        return Minecraft.getInstance().gameDirectory.toPath().resolve("config").resolve(CONFIG_FILE);
-    }
-
+    // Stored in config/crazyphone-client.properties next to the other client options: ClientPrefs is the
+    // file's only reader and writer, so saving here never drops the phone size, emoji or video settings.
     static void loadConfig() {
-        try {
-            Path path = configPath();
-            if (!Files.isRegularFile(path))
-                return;
-            Properties properties = new Properties();
-            try (InputStream in = Files.newInputStream(path)) {
-                properties.load(in);
-            }
-            ClientConfig.liveScreenOwnPhone = Boolean.parseBoolean(properties.getProperty("liveScreenOwnPhone", "true"));
-            ClientConfig.liveScreenOtherPhones = Boolean.parseBoolean(properties.getProperty("liveScreenOtherPhones", "true"));
-        } catch (Exception e) {
-            LOGGER.warn("CrazyPhone: could not read {}, using defaults", CONFIG_FILE, e);
-        }
+        fr.lordfinn.crazyphone.client.ClientPrefs.ensureLoaded();
     }
 
     static void saveConfig() {
-        try {
-            Path path = configPath();
-            Files.createDirectories(path.getParent());
-            Properties properties = new Properties();
-            properties.setProperty("liveScreenOwnPhone", Boolean.toString(ClientConfig.liveScreenOwnPhone));
-            properties.setProperty("liveScreenOtherPhones", Boolean.toString(ClientConfig.liveScreenOtherPhones));
-            try (OutputStream out = Files.newOutputStream(path)) {
-                properties.store(out, "CrazyPhone client options (also: /phonescreen)");
-            }
-        } catch (Exception e) {
-            LOGGER.warn("CrazyPhone: could not save {}", CONFIG_FILE, e);
-        }
+        fr.lordfinn.crazyphone.client.ClientPrefs.save();
     }
 }
