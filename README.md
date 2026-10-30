@@ -28,10 +28,12 @@ here and only here, so it can't drift out of sync with the wiki), and pointers t
 *Full write-up of every feature, with screenshots and edge cases, on the wiki - linked per feature below.*
 
 - **Phone basics** - two-step registration + PIN sign-in, home screen launcher, lock screen. Craftable or
-  given via `/crazyphone give <number>`.
+  given via `/crazyphone give <number>`. The phone takes about 70% of the window height whatever your GUI
+  scale, snapped to whole pixel sizes so the pixel art stays crisp (adjustable, see below).
 - **[Messaging](https://github.com/yannicksuc/CrazyPhone/wiki/Home)** - contacts, favorites, groups,
   real-time text, sending photos, read badges, and live-converting pixel-art emoji (paste a real emoji,
-  type a `:shortcode:`, or a classic `:)`/`<3` emoticon).
+  type a `:shortcode:`, a classic `:)`/`<3` emoticon, or pick one from the emoji drawer next to the
+  message field: categories, recently used, keyboard navigation).
 - **[Camera & My Photos](https://github.com/yannicksuc/CrazyPhone/wiki/Camera-and-Photos)** - a native,
   dependency-free capture overlay (three ways in: conversation, home screen, or punch-to-shoot), a flat
   photo gallery, and a physical photo item you can dye like leather armor.
@@ -130,6 +132,9 @@ ongoing port - see [PORTING-26x.md](PORTING-26x.md) for its detailed status and 
 - **Configuration & permissions**: every option, its default/range, and the permission-node system are on
   [wiki § Configuration](https://github.com/yannicksuc/CrazyPhone/wiki/Configuration).
 - **Commands**: the full `/crazyphone` tree is on [wiki § Commands](https://github.com/yannicksuc/CrazyPhone/wiki/Commands).
+- **Player-side preferences** (`config/crazyphone-client.properties`, created on first use, no restart needed):
+  `phoneScreenHeightPercent` (phone height in % of the window, 40 to 95, default 70, `0` = plain GUI scale
+  size as before) and `emojiPickerEnabled` (the conversation emoji button, default `true`).
 
 ---
 
