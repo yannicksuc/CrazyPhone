@@ -23,7 +23,6 @@
     "CrazyPhoneSelfieCameraMixin",
     "CrazyPhoneCaptureViewCycleMixin",
     "CallVideoCaptureMixin",
-    "CallVideoMainTargetAccessor",
     "CallVideoFrontCameraMixin"
   ],
   "injectors": {

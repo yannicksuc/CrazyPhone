@@ -206,7 +206,7 @@ public final class CallVideoClient {
             if (front || !captureDue())
                 return;
             long start = System.nanoTime();
-            CallVideoCapture.capture(mc./*$ mc_main_render_target {*/getMainRenderTarget/*$}*/(), frameSide(), (rgb, s) -> onCaptured(rgb, s, false));
+            CallVideoCapture.capture(mc./*$ mc_main_render_target {*/getMainRenderTarget/*$}*/(), frameSide(), 1f, (rgb, s) -> onCaptured(rgb, s, false));
             statCaptureNanos += System.nanoTime() - start;
         } catch (Throwable t) {
             disableForSession(t);

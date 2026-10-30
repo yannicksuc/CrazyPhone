@@ -11,21 +11,27 @@ import org.joml.Vector3f;
 import fr.lordfinn.crazyphone.client.CrazyPhoneSelfieCameraDebug;
 
 /**
- * The selfie ("front") camera of a video call: a second, small, offscreen view of the world from the phone held at
- * arm's length looking back at the player (the very spot the photo mode's selfie camera uses, see
- * CrazyPhoneSelfieCameraMixin), drawn only while it is needed and only at the capped frame rate, before the frame's
- * real world pass starts (so the real pass then sets everything back up for the player's own view).
+ * The selfie ("front") camera of a video call: one extra view of the world from the phone held at arm's length
+ * looking back at the player (the very spot the photo mode's selfie camera uses, see CrazyPhoneSelfieCameraMixin),
+ * drawn only while it is needed and only at the capped frame rate.
  *
- * How: for the duration of one extra GameRenderer#renderLevel call, the main render target is swapped for a small
- * offscreen one, the camera is moved to the selfie spot (CallVideoFrontCameraMixin) and detached so the player's
- * own body is drawn, and the first-person hand is skipped (CallVideoCaptureMixin). The picture is then read back
- * through the same asynchronous path as the back camera.
+ * How: at the very start of a frame's world pass, one extra GameRenderer#renderLevel call is made with the camera
+ * moved to the selfie spot and set up as the third-person front view (CallVideoFrontCameraMixin, so every renderer
+ * draws the player's own body, phone held out on the selfie stick like in the photo mode), and the first-person
+ * hand skipped (CallVideoCaptureMixin). It draws into the main render target, which is read back right away
+ * through the same asynchronous path as the back camera; then the frame's real world pass clears it and draws the
+ * player's own view as usual, so nothing of it is ever shown on screen. (Drawing into a separate small target was
+ * tried first: on 1.21.1 entities then never reached it, so the player was missing from their own selfie.)
  *
  * Not offered (the back camera keeps working) when it cannot work right: with a shader pack (Iris / Oculus render
- * through their own targets), with Fabulous graphics (its post chain is bound to the real main target), on the 26.x
- * renderer (an extract/render split this cannot redo for a second view), or after any failure in this session.
+ * through their own pipeline), with Fabulous graphics (its post chain keeps its own state between passes), on the
+ * 26.x renderer (an extract/render split this cannot redo for a second view), or after any failure in this session.
  */
 public final class CallVideoFrontCamera {
+    /** The selfie spot is a selfie stick's length away: a closer crop of the middle keeps the player's head and
+     * shoulders filling the small picture instead of a tiny figure in a field. */
+    private static final float SELFIE_ZOOM = 1.8f;
+
     private static boolean rendering;
     private static boolean failed;
 
@@ -88,70 +94,35 @@ public final class CallVideoFrontCamera {
     }
 
     //? if <26 {
-    private static com.mojang.blaze3d.pipeline.RenderTarget target;
-
-    /** Draws the selfie view into a small offscreen target with {@code renderLevel} (one more call of the frame's own
-     * GameRenderer#renderLevel with the very same arguments), then starts reading it back. Called right before the
-     * frame's real world pass, never inside it. Returns false if nothing was started. */
+    /** Draws the selfie view with {@code renderLevel} (one more call of the frame's own GameRenderer#renderLevel
+     * with the very same arguments) and starts reading it back. Called right before the frame's real world pass,
+     * never inside it. Returns false if nothing was started. */
     public static boolean renderAndCapture(Minecraft mc, int side, Runnable renderLevel, CallVideoCapture.Sink sink) {
         if (!isAvailable() || rendering || CallVideoCapture.isBusy() || mc.player == null || mc.level == null)
             return false;
         com.mojang.blaze3d.pipeline.RenderTarget main = mc./*$ mc_main_render_target {*/getMainRenderTarget/*$}*/();
-        // Same aspect ratio as the window (the projection uses the window's), short side 3x the frame side;
-        // the capture then cuts the center square, like the back camera.
-        int h = side * 3;
-        int w = Math.max(h, Math.round(h * (float) main.width / Math.max(1, main.height)));
+        net.minecraft.client.CameraType previousView = mc.options.getCameraType();
         try {
-            ensureTarget(w, h);
             rendering = true;
-            ((fr.lordfinn.crazyphone.mixin.CallVideoMainTargetAccessor) mc).crazyphone$setMainRenderTarget(target);
-            //? if <1.21.10 {
-            target.bindWrite(true);
-            //?}
+            mc.options.setCameraType(net.minecraft.client.CameraType.THIRD_PERSON_FRONT);
             try {
                 renderLevel.run();
             } finally {
-                ((fr.lordfinn.crazyphone.mixin.CallVideoMainTargetAccessor) mc).crazyphone$setMainRenderTarget(main);
+                mc.options.setCameraType(previousView);
                 rendering = false;
             }
-            boolean started = CallVideoCapture.capture(target, side, sink);
-            //? if <1.21.10 {
-            main.bindWrite(true);
-            //?}
-            return started;
+            return CallVideoCapture.capture(main, side, SELFIE_ZOOM, sink);
         } catch (Throwable t) {
             failed = true;
             rendering = false;
+            mc.options.setCameraType(previousView);
             org.slf4j.LoggerFactory.getLogger("crazyphone").error("Call video selfie camera failed, only the back camera stays available", t);
-            try {
-                ((fr.lordfinn.crazyphone.mixin.CallVideoMainTargetAccessor) mc).crazyphone$setMainRenderTarget(main);
-                //? if <1.21.10 {
-                main.bindWrite(true);
-                //?}
-            } catch (Throwable ignored) {
-            }
-            release();
             return false;
         }
     }
 
-    private static void ensureTarget(int w, int h) {
-        if (target != null && target.width == w && target.height == h)
-            return;
-        release();
-        //? if <1.21.10 {
-        target = new com.mojang.blaze3d.pipeline.TextureTarget(w, h, true, Minecraft.ON_OSX);
-        //?} else {
-        /*target = new com.mojang.blaze3d.pipeline.TextureTarget("CrazyPhone selfie camera", w, h, true);
-        *///?}
-    }
-
-    /** Frees the offscreen target (camera switched back, stopped, left the call). Render thread only. */
+    /** Nothing to free any more (kept so callers do not care how the selfie view is drawn). */
     public static void release() {
-        if (target != null) {
-            target.destroyBuffers();
-            target = null;
-        }
     }
     //?} else {
     /*public static boolean renderAndCapture(Minecraft mc, int side, Runnable renderLevel, CallVideoCapture.Sink sink) {

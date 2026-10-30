@@ -273,7 +273,6 @@ sourceSets.main {
             "fr/lordfinn/crazyphone/video/**",
             "fr/lordfinn/crazyphone/client/video/**",
             "fr/lordfinn/crazyphone/mixin/CallVideoCaptureMixin.java",
-            "fr/lordfinn/crazyphone/mixin/CallVideoMainTargetAccessor.java",
             "fr/lordfinn/crazyphone/mixin/CallVideoFrontCameraMixin.java",
             "fr/lordfinn/crazyphone/voicechat/CallTerminationListener.java",
             // Only ever fed by CrazyPhoneContainerInsertMixin and read by CallTerminationListener's own
@@ -466,7 +465,6 @@ val fabricClientMixins = (if (minecraftVersion != "1.20.1") listOf(
     "CrazyPhoneCaptureViewCycleMixin",
     "CrazyPhoneSelfieCameraMixin",
     "CallVideoCaptureMixin",
-    "CallVideoMainTargetAccessor",
     "CallVideoFrontCameraMixin"
 ) else emptyList()).joinToString(",\n    ") { "\"$it\"" }
 

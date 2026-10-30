@@ -32,6 +32,7 @@ public final class CallVideoCapture {
 
     private static Sink pendingSink;
     private static int pendingSide;
+    private static float pendingZoom = 1f;
     private static boolean inFlight;
 
     private CallVideoCapture() {
@@ -49,15 +50,16 @@ public final class CallVideoCapture {
     private static int bufferHeight = -1;
     private static long fence;
 
-    /** Starts a capture of {@code target}'s center square. Returns false (and does nothing) if one is already in
+    /** Starts a capture of {@code target}'s center square ({@code zoom} > 1 takes a smaller center square, like a
+     * digital zoom). Returns false (and does nothing) if one is already in
      * flight. Must be called on the render thread, while nothing else is mid-draw. */
-    public static boolean capture(RenderTarget target, int side, Sink sink) {
+    public static boolean capture(RenderTarget target, int side, float zoom, Sink sink) {
         if (inFlight)
             return false;
         int w = side * SUPERSAMPLE;
         int h = side * SUPERSAMPLE;
         ensureBuffers(w, h);
-        int square = Math.min(target.width, target.height);
+        int square = Math.max(1, Math.round(Math.min(target.width, target.height) / Math.max(1f, zoom)));
         int sx = (target.width - square) / 2;
         int sy = (target.height - square) / 2;
         com.mojang.blaze3d.platform.GlStateManager._glBindFramebuffer(org.lwjgl.opengl.GL30.GL_READ_FRAMEBUFFER, target.frameBufferId);
@@ -73,6 +75,7 @@ public final class CallVideoCapture {
         target.bindWrite(false);
         pendingSink = sink;
         pendingSide = side;
+        pendingZoom = zoom;
         inFlight = true;
         return true;
     }
@@ -155,7 +158,7 @@ public final class CallVideoCapture {
     private static int bufferHeight = -1;
     private static volatile boolean copied;
 
-    public static boolean capture(RenderTarget target, int side, Sink sink) {
+    public static boolean capture(RenderTarget target, int side, float zoom, Sink sink) {
         if (inFlight || target.getColorTextureView() == null)
             return false;
         // Keeps the window's aspect ratio (TRACY_BLIT stretches the whole source over the whole output), with
@@ -178,6 +181,7 @@ public final class CallVideoCapture {
         encoder.copyTextureToBuffer(texture, buffer, 0, () -> copied = true, 0);
         pendingSink = sink;
         pendingSide = side;
+        pendingZoom = zoom;
         inFlight = true;
         return true;
     }
@@ -188,7 +192,7 @@ public final class CallVideoCapture {
         copied = false;
         int w = bufferWidth, h = bufferHeight;
         int side = pendingSide;
-        int crop = Math.min(w, h);
+        int crop = Math.max(1, Math.round(Math.min(w, h) / Math.max(1f, pendingZoom)));
         int[] rgb;
         try (var view = com.mojang.blaze3d.systems.RenderSystem.getDevice().createCommandEncoder().mapBuffer(buffer, true, false)) {
             rgb = downsample(view.data(), w, h, (w - crop) / 2, (h - crop) / 2, crop, crop, side, true);
@@ -229,7 +233,7 @@ public final class CallVideoCapture {
     private static int bufferHeight = -1;
     private static volatile boolean copied;
 
-    public static boolean capture(RenderTarget target, int side, Sink sink) {
+    public static boolean capture(RenderTarget target, int side, float zoom, Sink sink) {
         if (inFlight || target.getColorTextureView() == null)
             return false;
         // Keeps the window's aspect ratio (TRACY_BLIT stretches the whole source over the whole output), with
@@ -253,6 +257,7 @@ public final class CallVideoCapture {
         encoder.copyTextureToBuffer(texture, buffer, 0, () -> copied = true, 0);
         pendingSink = sink;
         pendingSide = side;
+        pendingZoom = zoom;
         inFlight = true;
         return true;
     }
@@ -263,7 +268,7 @@ public final class CallVideoCapture {
         copied = false;
         int w = bufferWidth, h = bufferHeight;
         int side = pendingSide;
-        int crop = Math.min(w, h);
+        int crop = Math.max(1, Math.round(Math.min(w, h) / Math.max(1f, pendingZoom)));
         int[] rgb;
         try (var view = com.mojang.blaze3d.systems.RenderSystem.getDevice().createCommandEncoder().mapBuffer(buffer, true, false)) {
             rgb = downsample(view.data(), w, h, (w - crop) / 2, (h - crop) / 2, crop, crop, side, true);
@@ -304,7 +309,7 @@ public final class CallVideoCapture {
     private static int bufferHeight = -1;
     private static volatile boolean copied;
 
-    public static boolean capture(RenderTarget target, int side, Sink sink) {
+    public static boolean capture(RenderTarget target, int side, float zoom, Sink sink) {
         if (inFlight || target.getColorTextureView() == null)
             return false;
         // Keeps the window's aspect ratio (TRACY_BLIT stretches the whole source over the whole output), with
@@ -329,6 +334,7 @@ public final class CallVideoCapture {
         encoder.copyTextureToBuffer(texture, buffer, 0, () -> copied = true, 0);
         pendingSink = sink;
         pendingSide = side;
+        pendingZoom = zoom;
         inFlight = true;
         return true;
     }
@@ -339,7 +345,7 @@ public final class CallVideoCapture {
         copied = false;
         int w = bufferWidth, h = bufferHeight;
         int side = pendingSide;
-        int crop = Math.min(w, h);
+        int crop = Math.max(1, Math.round(Math.min(w, h) / Math.max(1f, pendingZoom)));
         int[] rgb;
         try (var view = buffer.map(true, false)) {
             rgb = downsample(view.data(), w, h, (w - crop) / 2, (h - crop) / 2, crop, crop, side, true);
@@ -380,7 +386,7 @@ public final class CallVideoCapture {
     private static int bufferHeight = -1;
     private static volatile boolean copied;
 
-    public static boolean capture(RenderTarget target, int side, Sink sink) {
+    public static boolean capture(RenderTarget target, int side, float zoom, Sink sink) {
         if (inFlight || target.getColorTextureView() == null)
             return false;
         // Keeps the window's aspect ratio (TRACY_BLIT stretches the whole source over the whole output), with
@@ -405,6 +411,7 @@ public final class CallVideoCapture {
         encoder.copyTextureToBuffer(texture, buffer, 0, () -> copied = true, 0);
         pendingSink = sink;
         pendingSide = side;
+        pendingZoom = zoom;
         inFlight = true;
         return true;
     }
@@ -415,7 +422,7 @@ public final class CallVideoCapture {
         copied = false;
         int w = bufferWidth, h = bufferHeight;
         int side = pendingSide;
-        int crop = Math.min(w, h);
+        int crop = Math.max(1, Math.round(Math.min(w, h) / Math.max(1f, pendingZoom)));
         int[] rgb;
         try (var view = buffer.map(true, false)) {
             rgb = downsample(view.data(), w, h, (w - crop) / 2, (h - crop) / 2, crop, crop, side, true);

@@ -269,7 +269,6 @@ sourceSets.main {
         "fr/lordfinn/crazyphone/video/**",
         "fr/lordfinn/crazyphone/client/video/**",
         "fr/lordfinn/crazyphone/mixin/CallVideoCaptureMixin.java",
-        "fr/lordfinn/crazyphone/mixin/CallVideoMainTargetAccessor.java",
         "fr/lordfinn/crazyphone/mixin/CallVideoFrontCameraMixin.java",
         "fr/lordfinn/crazyphone/voicechat/CallTerminationListener.java",
         // A COMMON (both-sides), server-side-only mixin - not one of the client-only capture-mode mixins
@@ -442,7 +441,6 @@ val fabricClientMixins = listOf(
     "CrazyPhoneSelfieCameraMixin",
     "CrazyPhoneSelfieStickMouseMixin",
     "CallVideoCaptureMixin",
-    "CallVideoMainTargetAccessor",
     "CallVideoFrontCameraMixin"
 ).joinToString(",\n    ") { "\"$it\"" }
 
