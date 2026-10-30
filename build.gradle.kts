@@ -402,10 +402,8 @@ idea {
 // sees these vars, so this adds no behavior change to normal dev builds beyond the two `apply false`
 // plugin declarations above (coordinate resolution only, no plugin logic runs).
 //
-// Deliberately gated to a fixed allowlist, not just "does this node compile" - 1.21.10 compiles but
-// is missing the native camera/sneak-presenting features (see README's own Platforms & versions
-// table), which reads as a worse first impression than not offering it yet at all. Revisit this list
-// once that gap closes or product judgment changes.
+// Deliberately gated to a fixed allowlist, not just "does this node compile": a node is only listed once
+// it has been played live with every feature.
 // project.name (the Stonecutter NODE name), not minecraftVersion - 26.1's own gradle.properties pins
 // minecraft_version=26.1.2 (its real patch version, needed for the actual game/mappings download),
 // which doesn't match the node name "26.1" this list is written against. Confirmed live: the first

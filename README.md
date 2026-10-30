@@ -59,7 +59,7 @@ here and only here, so it can't drift out of sync with the wiki), and pointers t
 ## 🧩 Platforms & versions
 
 One shared `src/main/java` tree, preprocessed per target by [Stonecutter](https://stonecutter.kikugie.dev/)
-(`//? if fabric` / `//? if neoforge`, plus per-version checks) into 9 build targets.
+(`//? if fabric` / `//? if neoforge`, plus per-version checks) into 11 build targets.
 
 ### Maintenance status
 
@@ -69,14 +69,16 @@ still getting updates", separate from the detailed per-feature table below.
 | Target | Status |
 |---|---|
 | Fabric 1.20.1 | ⚪ Not functional - phone networking needs an API absent before 1.20.5, no active work planned |
+| Forge 1.20.1 | 🟢 Actively maintained (since 1.8.0-beta.6) - no hanging photo frame below 1.20.5, photos go in vanilla item frames |
 | NeoForge 1.20.4 | ⚪ Frozen - unmaintained indefinitely (since 2026-09-02), local builds only |
 | NeoForge 1.21.1 | 🟢 Actively maintained - primary NeoForge target |
 | Fabric 1.21.1 | 🟢 Actively maintained - primary Fabric target |
-| NeoForge 1.21.10 | ⚪ Frozen - unmaintained indefinitely (since 2026-09-03) |
+| NeoForge 1.21.10 | 🟢 Actively maintained again (since 1.8.0-beta.6) |
 | NeoForge 26.1 | 🟢 Actively maintained |
 | Fabric 26.1 | 🟢 Actively maintained |
 | NeoForge 26.2 | 🟡 Work in progress - doesn't compile yet, see [PORTING-26x.md](PORTING-26x.md) |
-| Fabric 26.2 | 🟡 Work in progress - doesn't compile yet, see [PORTING-26x.md](PORTING-26x.md) |
+| Fabric 26.2 | 🟢 Actively maintained (since 1.8.0-beta.6) |
+| Fabric 26.3 | 🟢 Actively maintained (since 1.8.0-beta.6) |
 
 Only the 🟢 targets get new features and bugfixes going forward. The 26.x line is otherwise a newer,
 ongoing port - see [PORTING-26x.md](PORTING-26x.md) for its detailed status and remaining work.
