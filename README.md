@@ -191,3 +191,9 @@ ongoing port - see [PORTING-26x.md](PORTING-26x.md) for its detailed status and 
 ## 📄 License
 
 `All Rights Reserved`. See the mod description in [`gradle.properties`](gradle.properties) for authorship details.
+
+What that means in practice:
+
+- **Playing, servers, videos and streams:** go ahead, no need to ask.
+- **Modpacks:** allowed, as long as the mod is downloaded from CurseForge or Modrinth (not re-uploaded) and CrazyPhone is credited.
+- **Modified versions, forks, re-uploads:** ask me first (CurseForge or Modrinth comments, or a GitHub issue). Ideas and additions are welcome, and the best ones can land in the official mod for everyone.
