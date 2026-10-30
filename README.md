@@ -42,6 +42,11 @@ here and only here, so it can't drift out of sync with the wiki), and pointers t
 - **[Voice calls & voice messages](https://github.com/yannicksuc/CrazyPhone/wiki/Voice-Calls-and-Messages)**
   *(optional, needs [Simple Voice Chat](https://modrepo.de/minecraft/voicechat))* - ringing 1:1/group calls
   with dedicated screens, and recorded voice-message clips with waveform playback.
+- **Live screen on the held phone** - instead of a static texture, the phone in your hand shows a pixel-art
+  lock screen (in-game clock, day/night wallpaper, unread badge), the ringing or in-call screen (with a timer),
+  the camera viewfinder, or the header of the app you have open. Other players see a privacy-safe version
+  (the state only, never a message, contact or photo). Server switch: `shareHeldPhoneScreen` /
+  `/crazyphone feature live_screen <true|false>`; client switches: `/phonescreen own|others <true|false>`.
 - **Soulbound enchantment** *(≥1.20.5)* - an Ancient City-only enchantment that survives death.
 - **[Mayor election](https://github.com/yannicksuc/CrazyPhone/wiki/Mayor-Election)** *(optional)* -
   candidates with campaign posters, in-app voting.
