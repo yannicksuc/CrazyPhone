@@ -71,8 +71,20 @@ public class CrazyPhonePhotoViewerScreen extends Screen implements PhoneScreen {
         return false;
     }
 
+    /** Same zoom as the phone screens (see PhoneScale), recomputed on every init(); this full-window
+     * layout always keeps a virtual canvas of at least PhoneScale.FULL_WINDOW_MIN_WIDTH x _HEIGHT. */
+    private double phoneScale = 1.0;
+
+    @Override
+    public double phoneGuiScale() {
+        return phoneScale;
+    }
+
     @Override
     protected void init() {
+        phoneScale = PhoneScale.computeScale(122, PhoneScale.PHONE_HEIGHT,
+                PhoneScale.FULL_WINDOW_MIN_WIDTH, PhoneScale.FULL_WINDOW_MIN_HEIGHT);
+        PhoneScale.applyVirtualSize(this, phoneScale);
         // A window resize re-invokes init() (Screen#resize calls it again with the new width/height) -
         // without clearing here first, the old buttons' still-registered click/focus dispatch (addRenderableWidget)
         // and stale-positioned render (ownButtons) both stuck around alongside the freshly-added ones,

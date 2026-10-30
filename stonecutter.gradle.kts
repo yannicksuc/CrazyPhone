@@ -82,6 +82,11 @@ stonecutter parameters {
     // Button from outside, as opposed to the renderWidget/extractContents hook a widget overrides to draw
     // its own content) - render(...) -> extractRenderState(...), same param order.
     swaps.put("widget_render", if (is26) "extractRenderState" else "render")
+    // Screen's final, top-level per-frame render entry point (the one GameRenderer / the loader's screen
+    // hook calls, wrapping background, render() and deferred tooltips): renderWithTooltip up to 1.21.x,
+    // renderWithTooltipAndSubtitles on 1.21.10, extractRenderStateWithTooltipAndSubtitles on 26.x. Used as a
+    // mixin target name by PhoneScaleScreenMixin (a whole string literal, quotes included).
+    swaps.put("screen_render_entry", if (is26) "\"extractRenderStateWithTooltipAndSubtitles\"" else if (semantics.eval(current.version, ">=1.21.10")) "\"renderWithTooltipAndSubtitles\"" else "\"renderWithTooltip\"")
     // 26.x moved net.minecraft.Util to net.minecraft.util.Util (backgroundExecutor() etc. unchanged).
     swaps.put("util_pkg", if (semantics.eval(current.version, ">=26")) "net.minecraft.util.Util" else "net.minecraft.Util")
     // Fabric API's own 26.x release renamed the "screen handler" module to "menu" (fabric-screen-handler-api-v1

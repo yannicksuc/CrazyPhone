@@ -167,7 +167,11 @@ public final class GuiCompat {
         *///?}
         //? if >=1.21.10 <26 {
         /*int half = Math.max(scale * 3, 1);
-        net.minecraft.client.gui.screens.inventory.InventoryScreen.renderEntityInInventory(guiGraphics, x - half, y - half, x + half, y + half, scale, translation, rotation, cameraOrientation, entity);
+        // Picture-in-picture renders take raw GUI coordinates and ignore the pose, so inside a zoomed phone
+        // screen (see PhoneScale) the destination rectangle and model scale are converted here.
+        int[] box = pipBox(guiGraphics, x - half, y - half, x + half, y + half);
+        float pipScale = (float) (scale * pipScaleFactor(guiGraphics));
+        net.minecraft.client.gui.screens.inventory.InventoryScreen.renderEntityInInventory(guiGraphics, box[0], box[1], box[2], box[3], pipScale, translation, rotation, cameraOrientation, entity);
         *///?}
         //? if >=26 {
         /*// 26.x replaced this exact overload with an angle-driven one (renderEntityInInventoryFollowsAngle,
@@ -186,7 +190,31 @@ public final class GuiCompat {
         net.minecraft.client.renderer.entity.state.EntityRenderState renderState = renderer.createRenderState(entity, 1.0f);
         renderState.shadowPieces.clear();
         renderState.outlineColor = 0;
-        guiGraphics.entity(renderState, scale, translation, rotation, cameraOrientation, x - half, y - half, x + half, y + half);
+        // Same picture-in-picture conversion as the 1.21.10 branch above.
+        int[] box = pipBox(guiGraphics, x - half, y - half, x + half, y + half);
+        float pipScale = (float) (scale * pipScaleFactor(guiGraphics));
+        guiGraphics.entity(renderState, pipScale, translation, rotation, cameraOrientation, box[0], box[1], box[2], box[3]);
         *///?}
     }
+
+    //? if >=1.21.10 {
+    /*// Converts a picture-in-picture destination rectangle from the current pose's space to raw GUI
+    // coordinates, only while a zoomed phone screen renders (otherwise returned unchanged, exactly the old
+    // behavior).
+    private static int[] pipBox(/^$ gui_graphics_type {^/GuiGraphics/^$}^/ guiGraphics, int x0, int y0, int x1, int y1) {
+        if (fr.lordfinn.crazyphone.client.gui.PhoneScale.activeFactor(guiGraphics) <= 1.0)
+            return new int[]{x0, y0, x1, y1};
+        org.joml.Matrix3x2f pose = guiGraphics.pose();
+        return new int[]{
+                (int) Math.floor(pose.m00() * x0 + pose.m20()), (int) Math.floor(pose.m11() * y0 + pose.m21()),
+                (int) Math.ceil(pose.m00() * x1 + pose.m20()), (int) Math.ceil(pose.m11() * y1 + pose.m21())};
+    }
+
+    private static double pipScaleFactor(/^$ gui_graphics_type {^/GuiGraphics/^$}^/ guiGraphics) {
+        if (fr.lordfinn.crazyphone.client.gui.PhoneScale.activeFactor(guiGraphics) <= 1.0)
+            return 1.0;
+        double m00 = guiGraphics.pose().m00();
+        return Double.isFinite(m00) && m00 > 0 ? m00 : 1.0;
+    }
+    *///?}
 }
