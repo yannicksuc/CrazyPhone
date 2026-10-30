@@ -42,6 +42,11 @@ here and only here, so it can't drift out of sync with the wiki), and pointers t
 - **[Voice calls & voice messages](https://github.com/yannicksuc/CrazyPhone/wiki/Voice-Calls-and-Messages)**
   *(optional, needs [Simple Voice Chat](https://modrepo.de/minecraft/voicechat))* - ringing 1:1/group calls
   with dedicated screens, and recorded voice-message clips with waveform playback.
+- **Camera video in calls** *(needs Simple Voice Chat)* - turn your video on and the others see what your
+  phone camera films, back camera or selfie camera, as a small live pixel-art picture. Frames only go to the
+  members of that call, wherever they are, and are never stored. Server settings (NeoForge/Forge config): `callCameraVideoEnabled`,
+  `callCameraVideoMaxFps`, `callCameraVideoMaxResolution`, `callCameraVideoMaxKilobytesPerSecond`; each
+  player can also turn camera video off from the call screen. The selfie camera is not available on 26.x yet.
 - **Soulbound enchantment** *(≥1.20.5)* - an Ancient City-only enchantment that survives death.
 - **[Mayor election](https://github.com/yannicksuc/CrazyPhone/wiki/Mayor-Election)** *(optional)* -
   candidates with campaign posters, in-app voting.
