@@ -53,6 +53,9 @@ public final class LiveScreenPainter {
     static final int HAIR = 0xFF6B4A2B;
     static final int SHIRT = 0xFF2BB5B5;
 
+    // Free columns kept on each side of a line of text, and the width of the "..." drawn after a cut name.
+    private static final int TEXT_MARGIN = 1;
+    private static final int ELLIPSIS_WIDTH = 5;
     // 3x5 font: digits, A-Z and a few symbols. Each glyph is 5 rows of 3 bits, top row first.
     private static final String SMALL_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-_:.+?!";
     private static final String[] SMALL = {
@@ -250,7 +253,7 @@ public final class LiveScreenPainter {
         int shake = v.frame() % 2 == 0 ? -1 : 1;
         icon(ICON_PHONE, cx - 3 + shake, cy - 3, WHITE);
         if (!v.caller().isEmpty())
-            marquee(v.caller(), 26, INK, v.frame());
+            fittedText(v.caller(), 26, INK);
         else
             dots(26, v.frame(), INK_SOFT);
         callButton(9, 38, RED, false);
@@ -264,7 +267,7 @@ public final class LiveScreenPainter {
         disc(cx, cy, 7, TEAL);
         icon(ICON_PHONE, cx - 3, cy - 3, WHITE);
         if (!v.caller().isEmpty())
-            marquee(v.caller(), 26, INK, v.frame());
+            fittedText(v.caller(), 26, INK);
         dots(v.caller().isEmpty() ? 26 : 33, v.frame(), INK_SOFT);
         callButton(16, 39, RED, false);
         homeBar(INK_SOFT);
@@ -522,20 +525,29 @@ public final class LiveScreenPainter {
             rect(11 + i * 4, y - (i == frame % 3 ? 1 : 0), 2, 2, color);
     }
 
-    /** Centered if it fits, otherwise scrolled by one character per animation frame. */
-    private void marquee(String text, int y, int color, int frame) {
-        int width = smallWidth(text);
-        if (width <= WIDTH - 1) {
-            smallText(text, (WIDTH - width + 1) / 2, y, color);
+    /**
+     * A name on one line, always whole characters inside the screen with a 1 px margin on each side: centered
+     * if it fits, otherwise its first characters followed by an ellipsis. (It used to scroll one character per
+     * frame through a fixed window, so most frames showed a name with its first letters missing, such as
+     * "ORDFINN" for LORDFINN, with nothing telling it was cut.)
+     */
+    private void fittedText(String text, int y, int color) {
+        String name = text.trim();
+        int available = WIDTH - 2 * TEXT_MARGIN;
+        int width = smallWidth(name);
+        if (width <= available) {
+            smallText(name, (WIDTH - width + 1) / 2, y, color);
             return;
         }
-        int visibleChars = (WIDTH - 4) / 4;
-        String loop = text + "   ";
-        int start = Math.floorMod(frame, loop.length());
-        StringBuilder window = new StringBuilder();
-        for (int i = 0; i < visibleChars; i++)
-            window.append(loop.charAt((start + i) % loop.length()));
-        smallText(window.toString(), 2, y, color);
+        // Characters are 4 px apart; keep room for a 1 px gap and the ellipsis.
+        int keep = Math.max(1, (available - 1 - ELLIPSIS_WIDTH + 1) / 4);
+        String head = name.substring(0, Math.min(keep, name.length())).stripTrailing();
+        int total = smallWidth(head) + 1 + ELLIPSIS_WIDTH;
+        int x = (WIDTH - total + 1) / 2;
+        smallText(head, x, y, color);
+        int ellipsisX = x + smallWidth(head) + 1;
+        for (int i = 0; i < 3; i++)
+            px(ellipsisX + i * 2, y + 4, color);
     }
 
     private void bezelCorners() {

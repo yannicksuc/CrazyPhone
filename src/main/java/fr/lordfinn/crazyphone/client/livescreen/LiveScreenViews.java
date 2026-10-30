@@ -83,7 +83,7 @@ public final class LiveScreenViews {
             case "RINGING" -> {
                 String caller = own && ClientCallState.numberHasState(number, State.RINGING)
                         ? LiveScreenClient.incomingCaller(ClientCallState.getCallId()) : "";
-                return view(LiveScreenView.Mode.RINGING, PhoneScreenApp.NONE, 0, 0, -1, -1, caller.isEmpty() ? frame : (int) ((gameTime / 5) % 120), caller, 0);
+                return view(LiveScreenView.Mode.RINGING, PhoneScreenApp.NONE, 0, 0, -1, -1, frame, caller, 0);
             }
             case "CALLING" -> {
                 return view(LiveScreenView.Mode.DIALING, PhoneScreenApp.NONE, 0, 0, -1, -1, frame, "", 0);
