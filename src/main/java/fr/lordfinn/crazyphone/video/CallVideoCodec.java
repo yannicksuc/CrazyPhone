@@ -93,6 +93,7 @@ public final class CallVideoCodec {
         private int seq;
         private int sinceKeyframe;
         private double keyframeError = -1;
+        private int keyframeBadPixels;
         private boolean forceKeyframe = true;
         private boolean lastFront;
         private long lastSentNanos;
@@ -114,9 +115,10 @@ public final class CallVideoCodec {
             double error = quantize(rgb, w, h, palette, indices);
             // The picture drifted away from the colors the palette was built for (turned around, walked into a
             // cave, a flower came into view): rebuild it now instead of waiting for the next scheduled keyframe.
-            // Judged on the share of badly matched pixels, not just the mean, so a small but bright new object
-            // (which the mean barely notices) still gets its color.
-            if (!key && keyframeError >= 0 && (error > keyframeError * 2.0 + 60.0 || BAD_PIXELS.get()[0] > Math.max(6, w * h / 400))) {
+            // Judged on how many more pixels are badly matched than on the keyframe, not just the mean, so a small
+            // but bright new object (which the mean barely notices) still gets its color, while a very colorful
+            // scene the palette could never match well does not turn every frame into a keyframe.
+            if (!key && keyframeError >= 0 && (error > keyframeError * 2.0 + 60.0 || BAD_PIXELS.get()[0] > keyframeBadPixels + Math.max(6, w * h / 400))) {
                 key = true;
                 palette = kMeans(rgb, w * h, Math.min(PALETTE_SIZE, w * h), palette);
                 error = quantize(rgb, w, h, palette, indices);
@@ -177,6 +179,7 @@ public final class CallVideoCodec {
                 forceKeyframe = false;
                 sinceKeyframe = 0;
                 keyframeError = error;
+                keyframeBadPixels = BAD_PIXELS.get()[0];
             } else {
                 sinceKeyframe++;
             }
