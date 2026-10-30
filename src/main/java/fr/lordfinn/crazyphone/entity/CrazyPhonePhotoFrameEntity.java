@@ -300,8 +300,17 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
         return level.getEntities(candidate, candidate.getBoundingBox(), other -> other instanceof CrazyPhonePhotoFrameEntity).isEmpty();
     }
 
+    // Stands in for an empty or corrupt PhotoId (hand-edited NBT, or the brief moment on a client before the
+    // entity data sync lands): renders as an unknown photo and still drops a photo item, instead of
+    // UUID.fromString throwing from the renderer or from tick()'s own drop path.
+    private static final UUID MISSING_PHOTO_ID = new UUID(0L, 0L);
+
     public UUID photoId() {
-        return UUID.fromString(this.entityData.get(DATA_PHOTO_ID));
+        try {
+            return UUID.fromString(this.entityData.get(DATA_PHOTO_ID));
+        } catch (IllegalArgumentException e) {
+            return MISSING_PHOTO_ID;
+        }
     }
 
     public String owner() {
@@ -836,13 +845,19 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
         createdMinutes = fr.lordfinn.crazyphone.utils.NbtCompat.getInt(tag, "Created", 0);
         borderRgb = fr.lordfinn.crazyphone.utils.NbtCompat.getInt(tag, "BorderRgb", 0xFFFFFF);
         this.entityData.set(DATA_BORDER_RGB, borderRgb);
-        this.entityData.set(DATA_NEG_U, fr.lordfinn.crazyphone.utils.NbtCompat.getInt(tag, "NegU", DEFAULT_SIZE_UNITS / 2));
-        this.entityData.set(DATA_POS_U, fr.lordfinn.crazyphone.utils.NbtCompat.getInt(tag, "PosU", DEFAULT_SIZE_UNITS / 2));
-        this.entityData.set(DATA_NEG_V, fr.lordfinn.crazyphone.utils.NbtCompat.getInt(tag, "NegV", DEFAULT_SIZE_UNITS / 2));
-        this.entityData.set(DATA_POS_V, fr.lordfinn.crazyphone.utils.NbtCompat.getInt(tag, "PosV", DEFAULT_SIZE_UNITS / 2));
-        this.entityData.set(DATA_ROTATION, fr.lordfinn.crazyphone.utils.NbtCompat.getInt(tag, "Rotation", 0));
+        this.entityData.set(DATA_NEG_U, Math.max(0, fr.lordfinn.crazyphone.utils.NbtCompat.getInt(tag, "NegU", DEFAULT_SIZE_UNITS / 2)));
+        this.entityData.set(DATA_POS_U, Math.max(0, fr.lordfinn.crazyphone.utils.NbtCompat.getInt(tag, "PosU", DEFAULT_SIZE_UNITS / 2)));
+        this.entityData.set(DATA_NEG_V, Math.max(0, fr.lordfinn.crazyphone.utils.NbtCompat.getInt(tag, "NegV", DEFAULT_SIZE_UNITS / 2)));
+        this.entityData.set(DATA_POS_V, Math.max(0, fr.lordfinn.crazyphone.utils.NbtCompat.getInt(tag, "PosV", DEFAULT_SIZE_UNITS / 2)));
+        this.entityData.set(DATA_ROTATION, Math.floorMod(fr.lordfinn.crazyphone.utils.NbtCompat.getInt(tag, "Rotation", 0), 4));
         this.entityData.set(DATA_FULLBRIGHT, fr.lordfinn.crazyphone.utils.NbtCompat.getBoolean(tag, "Fullbright", false));
         this.entityData.set(DATA_FACE_OFFSET, fr.lordfinn.crazyphone.utils.NbtCompat.getInt(tag, "FaceOffset", UNSET_FACE_OFFSET));
+        // A hand-edited or corrupt save can't leave a negative extent behind (clamped above) nor a zero-area
+        // frame nobody can see or hit any more: fall back to the default size on that axis instead.
+        if (negUUnits() + posUUnits() == 0)
+            setExtentsRaw(DEFAULT_SIZE_UNITS / 2, DEFAULT_SIZE_UNITS - DEFAULT_SIZE_UNITS / 2, negVUnits(), posVUnits());
+        if (negVUnits() + posVUnits() == 0)
+            setExtentsRaw(negUUnits(), posUUnits(), DEFAULT_SIZE_UNITS / 2, DEFAULT_SIZE_UNITS - DEFAULT_SIZE_UNITS / 2);
         this.refreshDimensions();
     }
 

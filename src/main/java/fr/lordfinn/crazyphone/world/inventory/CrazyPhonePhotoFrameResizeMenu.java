@@ -137,7 +137,9 @@ public class CrazyPhonePhotoFrameResizeMenu extends AbstractContainerMenu {
             int posV = Math.max(0, Math.min(packed % 1000, maxUnits));
             data.set(2, negV);
             data.set(3, posV);
-            entity.setExtents(data.get(0), data.get(1), negV, posV);
+            // The other axis comes from the entity itself, not this menu's own copy: another player may have
+            // resized the same frame through their own menu since this one last synced.
+            entity.setExtents(entity.negUUnits(), entity.posUUnits(), negV, posV);
             data.set(0, entity.negUUnits());
             data.set(1, entity.posUUnits());
             data.set(2, entity.negVUnits());
@@ -148,7 +150,7 @@ public class CrazyPhonePhotoFrameResizeMenu extends AbstractContainerMenu {
             int packed = id - AXIS_U_BASE;
             int negU = Math.max(0, Math.min(packed / 1000, maxUnits));
             int posU = Math.max(0, Math.min(packed % 1000, maxUnits));
-            entity.setExtents(negU, posU, data.get(2), data.get(3));
+            entity.setExtents(negU, posU, entity.negVUnits(), entity.posVUnits());
             data.set(0, entity.negUUnits());
             data.set(1, entity.posUUnits());
             data.set(2, entity.negVUnits());
@@ -158,6 +160,21 @@ public class CrazyPhonePhotoFrameResizeMenu extends AbstractContainerMenu {
         return false;
     }
 
+    // Server side, every tick the menu is open: mirrors the entity's live values, so two players editing the
+    // same frame (or a frame changed any other way) both see its current state, not their menu's last copy.
+    @Override
+    public void broadcastChanges() {
+        if (entity != null && !entity.isRemoved()) {
+            data.set(0, entity.negUUnits());
+            data.set(1, entity.posUUnits());
+            data.set(2, entity.negVUnits());
+            data.set(3, entity.posVUnits());
+            data.set(4, entity.rotation());
+            data.set(6, entity.fullbright() ? 1 : 0);
+        }
+        super.broadcastChanges();
+    }
+
     @Override
     public ItemStack quickMoveStack(Player player, int index) {
         return ItemStack.EMPTY;
@@ -165,6 +182,14 @@ public class CrazyPhonePhotoFrameResizeMenu extends AbstractContainerMenu {
 
     @Override
     public boolean stillValid(Player player) {
-        return entity == null || (entity.isAlive() && !entity.isRemoved());
+        if (entity == null)
+            return true;
+        // Same reach rule as a vanilla container (8 blocks), measured from the frame's own box so a large
+        // frame clicked near its edge still counts: a crafted button packet can't resize a frame from afar,
+        // and walking away closes the menu.
+        return entity.isAlive() && !entity.isRemoved() && entity.level() == player.level()
+                && entity.getBoundingBox().inflate(STILL_VALID_REACH).contains(player.position());
     }
+
+    private static final double STILL_VALID_REACH = 8.0;
 }
