@@ -27,4 +27,18 @@ public final class ClientFeatureFlagState {
     public static boolean isEnabled(FeatureFlag flag) {
         return enabledStates.getOrDefault(flag.id, true);
     }
+
+    /** Strict variant for features that must stay OFF against a server that never mentioned them (an older
+     * CrazyPhone version, or no sync received yet): true only if the server explicitly sent this flag as
+     * enabled. Used by the live phone screen, which must not send its packet to a server that doesn't know
+     * it, nor render other players' phone states that server never agreed to share. */
+    public static boolean isExplicitlyEnabled(FeatureFlag flag) {
+        return Boolean.TRUE.equals(enabledStates.get(flag.id));
+    }
+
+    /** Forgets every synced state (back to "nothing received yet") - called when the client leaves a world,
+     * so a flag from the previous server can never leak into the next one before its own sync arrives. */
+    public static void clear() {
+        enabledStates.clear();
+    }
 }

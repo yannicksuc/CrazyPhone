@@ -324,6 +324,12 @@ sourceSets.main {
         "fr/lordfinn/crazyphone/client/picture/PhotoEditState.java",
         "fr/lordfinn/crazyphone/client/picture/PhotoImageOps.java",
         "fr/lordfinn/crazyphone/client/CrazyPhoneCaptureMode.java",
+        // Live screen on the held phone (lock screen, calls, app header): see client/livescreen.
+        "fr/lordfinn/crazyphone/client/livescreen/**",
+        "fr/lordfinn/crazyphone/utils/PhoneScreenApp.java",
+        "fr/lordfinn/crazyphone/utils/PhoneLiveScreenData.java",
+        "fr/lordfinn/crazyphone/network/PhoneScreenAppSyncPacket.java",
+        "fr/lordfinn/crazyphone/data/PhoneLiveScreenServer.java",
         "fr/lordfinn/crazyphone/mixin/CrazyPhoneCaptureFovMixin.java",
         "fr/lordfinn/crazyphone/mixin/CrazyPhoneCaptureHandMixin.java",
         "fr/lordfinn/crazyphone/mixin/CrazyPhoneCaptureGuiMixin.java",

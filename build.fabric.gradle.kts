@@ -353,6 +353,13 @@ sourceSets.main {
             // none of which Fabric API has a direct equivalent for. See crazyphone.fabric.mixins.json,
             // referenced only from fabric.mod.json.
             "fr/lordfinn/crazyphone/client/CrazyPhoneCaptureMode.java",
+            // Live screen on the held phone (lock screen, calls, app header): see client/livescreen.
+            "fr/lordfinn/crazyphone/client/livescreen/**",
+            "fr/lordfinn/crazyphone/utils/PhoneScreenApp.java",
+            "fr/lordfinn/crazyphone/utils/PhoneLiveScreenData.java",
+            "fr/lordfinn/crazyphone/network/PhoneScreenAppSyncPacket.java",
+            "fr/lordfinn/crazyphone/data/PhoneLiveScreenServer.java",
+            "fr/lordfinn/crazyphone/mixin/CrazyPhoneLiveScreenItemRenderMixin.java",
             "fr/lordfinn/crazyphone/mixin/CrazyPhoneCaptureFovMixin.java",
             "fr/lordfinn/crazyphone/mixin/CrazyPhoneCaptureHandMixin.java",
             "fr/lordfinn/crazyphone/mixin/CrazyPhoneCaptureGuiMixin.java",
@@ -455,7 +462,8 @@ val fabricClientMixins = (if (minecraftVersion != "1.20.1") listOf(
     "CrazyPhoneSelfieArmPoseMixin",
     "CrazyPhoneSelfieStickMouseMixin",
     "CrazyPhoneCaptureViewCycleMixin",
-    "CrazyPhoneSelfieCameraMixin"
+    "CrazyPhoneSelfieCameraMixin",
+    "CrazyPhoneLiveScreenItemRenderMixin"
 ) else emptyList()).joinToString(",\n    ") { "\"$it\"" }
 
 // Same boundary/bug as fabricClientMixins above, for the COMMON (both-sides) mixin list instead of the

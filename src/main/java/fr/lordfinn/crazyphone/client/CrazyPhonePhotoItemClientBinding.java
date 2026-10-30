@@ -58,6 +58,9 @@ public class CrazyPhonePhotoItemClientBinding {
     public static void onRegisterItemModels(net.neoforged.neoforge.client.event.RegisterItemModelsEvent event) {
         event.register(fr.lordfinn.crazyphone.Crazyphone.resource("photo_card_model"),
                 fr.lordfinn.crazyphone.client.render.CrazyPhonePhotoItemRenderer.ModelImpl.Unbaked.MAP_CODEC);
+        // Live screen on the held phone (items/crazy_phone.json wraps its model tree in this type).
+        event.register(fr.lordfinn.crazyphone.Crazyphone.resource("live_screen"),
+                fr.lordfinn.crazyphone.client.livescreen.LiveScreenItemModel.Unbaked.MAP_CODEC);
     }
     *///?}
 }
