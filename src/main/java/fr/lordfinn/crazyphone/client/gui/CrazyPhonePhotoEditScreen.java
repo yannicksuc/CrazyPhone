@@ -204,8 +204,20 @@ public class CrazyPhonePhotoEditScreen extends Screen implements PhoneScreen {
         return false;
     }
 
+    /** Same zoom as the phone screens (see PhoneScale), recomputed on every init(); this full-window
+     * layout always keeps a virtual canvas of at least PhoneScale.FULL_WINDOW_MIN_WIDTH x _HEIGHT. */
+    private double phoneScale = 1.0;
+
+    @Override
+    public double phoneGuiScale() {
+        return phoneScale;
+    }
+
     @Override
     protected void init() {
+        phoneScale = PhoneScale.computeScale(122, PhoneScale.PHONE_HEIGHT,
+                PhoneScale.FULL_WINDOW_MIN_WIDTH, PhoneScale.FULL_WINDOW_MIN_HEIGHT);
+        PhoneScale.applyVirtualSize(this, phoneScale);
         byte[] bytes = FabricPictureCache.readCachedBytesBlocking(photoId, PhotoResolution.FULL);
         if (bytes == null) {
             // Genuinely shouldn't happen - canEdit() already gates the button on the exact same fetch having

@@ -169,6 +169,14 @@ public final class EmojiShortcodes {
         return text;
     }
 
+    /** The emoji a canonical :shortcode: (as listed in the bundled index) stands for, or null if unknown -
+     * used by the emoji drawer (EmojiCatalog), which only ever offers what this index can produce. */
+    public static String glyphFor(String shortcode) {
+        if (shortcode == null || shortcode.isEmpty())
+            return null;
+        return shortcodes().get(shortcode);
+    }
+
     /** Builds a display {@link Component} for an already-converted message (see {@link #replace}) where
      * every run matching a known Twemoji glyph gets an explicit white color style, so it renders in its own
      * true colors regardless of the surrounding bubble's text color - Twemoji glyphs are pre-rendered color

@@ -184,6 +184,15 @@ sourceSets.main {
             "fr/lordfinn/crazyphone/client/gui/CrazyPhoneContactsScreenScreen.java",
             "fr/lordfinn/crazyphone/client/gui/CrazyPhoneConversationScreen.java",
             "fr/lordfinn/crazyphone/client/EmojiShortcodes.java",
+            // Bigger phone (PhoneScale + its three mixins, registered in fabricClientMixins below) and the
+            // conversation emoji drawer - all client-only, loader-agnostic.
+            "fr/lordfinn/crazyphone/client/gui/PhoneScale.java",
+            "fr/lordfinn/crazyphone/client/ClientPrefs.java",
+            "fr/lordfinn/crazyphone/client/EmojiCatalog.java",
+            "fr/lordfinn/crazyphone/client/gui/components/EmojiDrawer.java",
+            "fr/lordfinn/crazyphone/mixin/PhoneScaleScreenMixin.java",
+            "fr/lordfinn/crazyphone/mixin/PhoneScaleMouseMixin.java",
+            "fr/lordfinn/crazyphone/mixin/PhoneScaleGuiGraphicsMixin.java",
             "fr/lordfinn/crazyphone/client/gui/CrazyPhoneGroupSettingsScreenScreen.java",
             "fr/lordfinn/crazyphone/client/gui/CrazyPhonePasswordScreenScreen.java",
             "fr/lordfinn/crazyphone/client/gui/CrazyPhoneMayorsCandidatesListScreen.java",
@@ -455,7 +464,10 @@ val fabricClientMixins = (if (minecraftVersion != "1.20.1") listOf(
     "CrazyPhoneSelfieArmPoseMixin",
     "CrazyPhoneSelfieStickMouseMixin",
     "CrazyPhoneCaptureViewCycleMixin",
-    "CrazyPhoneSelfieCameraMixin"
+    "CrazyPhoneSelfieCameraMixin",
+    "PhoneScaleScreenMixin",
+    "PhoneScaleMouseMixin",
+    "PhoneScaleGuiGraphicsMixin"
 ) else emptyList()).joinToString(",\n    ") { "\"$it\"" }
 
 // Same boundary/bug as fabricClientMixins above, for the COMMON (both-sides) mixin list instead of the

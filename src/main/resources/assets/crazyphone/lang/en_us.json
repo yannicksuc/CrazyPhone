@@ -327,5 +327,20 @@
   "emoji.crazyphone.alias.heavy_check_mark": "check",
   "emoji.crazyphone.alias.x": "cross",
   "emoji.crazyphone.alias.warning": "warning",
-  "emoji.crazyphone.alias.gift": "gift"
+  "emoji.crazyphone.alias.gift": "gift",
+  "gui.crazyphone.emoji_drawer.button": "Emojis",
+  "gui.crazyphone.emoji_drawer.button.lore": "Pick an emoji to add to your message",
+  "gui.crazyphone.emoji_drawer.insert.lore": "Click to insert",
+  "gui.crazyphone.emoji_drawer.no_recent": "Nothing used yet",
+  "gui.crazyphone.emoji_drawer.empty": "Nothing here",
+  "gui.crazyphone.emoji_drawer.tab.recent": "Recently used",
+  "gui.crazyphone.emoji_drawer.tab.smileys": "Smileys & emotion",
+  "gui.crazyphone.emoji_drawer.tab.people": "People & body",
+  "gui.crazyphone.emoji_drawer.tab.nature": "Animals & nature",
+  "gui.crazyphone.emoji_drawer.tab.food": "Food & drink",
+  "gui.crazyphone.emoji_drawer.tab.travel": "Travel & places",
+  "gui.crazyphone.emoji_drawer.tab.activities": "Activities",
+  "gui.crazyphone.emoji_drawer.tab.objects": "Objects",
+  "gui.crazyphone.emoji_drawer.tab.symbols": "Symbols",
+  "gui.crazyphone.emoji_drawer.tab.flags": "Flags"
 }

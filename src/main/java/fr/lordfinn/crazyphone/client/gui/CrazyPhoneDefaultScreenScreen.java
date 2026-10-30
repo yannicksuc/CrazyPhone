@@ -331,8 +331,20 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 		}
 	}
 
+	/** See {@link PhoneScale}: recomputed on every init() (first open, window resize, GUI scale change,
+	 * fullscreen toggle all re-run it), so the phone always matches the current window. */
+	protected double phoneScale = 1.0;
+
+	@Override
+	public double phoneGuiScale() {
+		return phoneScale;
+	}
+
 	@Override
 	public void init() {
+		// Must run before super.init(): AbstractContainerScreen centers leftPos/topPos from width/height.
+		phoneScale = PhoneScale.computeScale(this.imageWidth, Math.max(this.imageHeight, PhoneScale.PHONE_HEIGHT), 0, 0);
+		PhoneScale.applyVirtualSize(this, phoneScale);
 		super.init();
 		HashMap<String, Object> guistate = getWidgets();
 		//? if legacyforge {

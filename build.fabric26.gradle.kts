@@ -195,6 +195,15 @@ sourceSets.main {
         "fr/lordfinn/crazyphone/client/gui/CrazyPhoneContactsScreenScreen.java",
         "fr/lordfinn/crazyphone/client/gui/CrazyPhoneConversationScreen.java",
         "fr/lordfinn/crazyphone/client/EmojiShortcodes.java",
+        // Bigger phone (PhoneScale + its three mixins, registered in fabricClientMixins below) and the
+        // conversation emoji drawer - all client-only, loader-agnostic.
+        "fr/lordfinn/crazyphone/client/gui/PhoneScale.java",
+        "fr/lordfinn/crazyphone/client/ClientPrefs.java",
+        "fr/lordfinn/crazyphone/client/EmojiCatalog.java",
+        "fr/lordfinn/crazyphone/client/gui/components/EmojiDrawer.java",
+        "fr/lordfinn/crazyphone/mixin/PhoneScaleScreenMixin.java",
+        "fr/lordfinn/crazyphone/mixin/PhoneScaleMouseMixin.java",
+        "fr/lordfinn/crazyphone/mixin/PhoneScaleGuiGraphicsMixin.java",
         "fr/lordfinn/crazyphone/client/gui/CrazyPhoneGroupSettingsScreenScreen.java",
         "fr/lordfinn/crazyphone/client/gui/CrazyPhonePasswordScreenScreen.java",
         "fr/lordfinn/crazyphone/client/gui/CrazyPhoneMayorsCandidatesListScreen.java",
@@ -431,7 +440,10 @@ val fabricClientMixins = listOf(
     "PlayerModelSelfiePoseMixin",
     "CrazyPhoneCaptureViewCycleMixin",
     "CrazyPhoneSelfieCameraMixin",
-    "CrazyPhoneSelfieStickMouseMixin"
+    "CrazyPhoneSelfieStickMouseMixin",
+    "PhoneScaleScreenMixin",
+    "PhoneScaleMouseMixin",
+    "PhoneScaleGuiGraphicsMixin"
 ).joinToString(",\n    ") { "\"$it\"" }
 
 // No 1.20.1 boundary to worry about on this loader (unlike build.fabric.gradle.kts's own conditional

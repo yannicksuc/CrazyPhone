@@ -21,7 +21,10 @@
     "PlayerModelSelfiePoseMixin",
     "CrazyPhoneSelfieStickMouseMixin",
     "CrazyPhoneSelfieCameraMixin",
-    "CrazyPhoneCaptureViewCycleMixin"
+    "CrazyPhoneCaptureViewCycleMixin",
+    "PhoneScaleScreenMixin",
+    "PhoneScaleMouseMixin",
+    "PhoneScaleGuiGraphicsMixin"
   ],
   "injectors": {
     "defaultRequire": 1
