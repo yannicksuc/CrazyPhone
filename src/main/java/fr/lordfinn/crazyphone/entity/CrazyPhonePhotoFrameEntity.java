@@ -223,21 +223,21 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
         this.refreshDimensions();
     }
 
-    // The whole photo-frame ENTITY feature is inert below 1.20.5 (see ModEntities.java's own doc comment -
-    // its real ENTITY_TYPE/register()/REGISTRY branches, PHOTO_FRAME included, only exist there) - tryPlace
-    // is never actually reached from a <1.20.5 target either way, so it's a plain stub there instead of
-    // referencing a field that doesn't exist on that floor.
+    // The whole photo-frame ENTITY feature is inert on the two frozen <1.20.5 targets (1.20.4 NeoForge,
+    // 1.20.1-fabric - see ModEntities.java's own doc comment: its real ENTITY_TYPE/register()/REGISTRY
+    // branches, PHOTO_FRAME included, only exist on >=1.20.5 and Forge 1.20.1) - tryPlace is never reached
+    // there, so it's a plain stub instead of referencing a field that doesn't exist on those targets.
     /** Server-side placement factory - validates the target face has SOME collision geometry (not
      * necessarily a full cube) before ever constructing the entity, mirroring HangingEntity#survives()'s
      * own role but with the fuller-block requirement deliberately dropped. Returns null if the face can't
      * hold a frame (fully empty shape, e.g. air, or already occupied - see {@link #spaceFree}). */
-    //? if <1.20.5 {
+    //? if (fabric || neoforge) && <1.20.5 {
     public static CrazyPhonePhotoFrameEntity tryPlace(Level level, BlockPos clickedPos, Direction face, @javax.annotation.Nullable net.minecraft.world.phys.Vec3 clickLocation,
                                                         Direction placerFacing, PhotoItemData photoData, PhotoFrameData frameData, int borderRgb) {
         return null;
     }
     //?}
-    //? if (fabric || neoforge) && >=1.20.5 {
+    //? if legacyforge || >=1.20.5 {
     /*/^* {@code clickLocation} is the exact point the player's crosshair hit on the block's own geometry - its
      * coordinate along {@code face}'s axis becomes the frame's surface plane. Null falls back to the block
      * shape's outermost bound in that direction. ^/
@@ -300,8 +300,17 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
         return level.getEntities(candidate, candidate.getBoundingBox(), other -> other instanceof CrazyPhonePhotoFrameEntity).isEmpty();
     }
 
+    // Stands in for an empty or corrupt PhotoId (hand-edited NBT, or the brief moment on a client before the
+    // entity data sync lands): renders as an unknown photo and still drops a photo item, instead of
+    // UUID.fromString throwing from the renderer or from tick()'s own drop path.
+    private static final UUID MISSING_PHOTO_ID = new UUID(0L, 0L);
+
     public UUID photoId() {
-        return UUID.fromString(this.entityData.get(DATA_PHOTO_ID));
+        try {
+            return UUID.fromString(this.entityData.get(DATA_PHOTO_ID));
+        } catch (IllegalArgumentException e) {
+            return MISSING_PHOTO_ID;
+        }
     }
 
     public String owner() {
@@ -735,10 +744,19 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
         return InteractionResult.SUCCESS;
     }
     *///?}
-    // The resize-menu feature is inert below 1.20.5 (see ScreenMenuUtils#openPhotoFrameResizeMenu's own
-    // >=1.20.5-only scope) - a no-op interact here, matching the rest of this entity's own inert-below-
-    // 1.20.5 story (ModEntities.java's doc comment, tryPlace's own stub above).
-    //? if <1.20.5 {
+    // Forge 1.20.1 keeps the 2-argument interact() too.
+    //? if legacyforge {
+    /*@Override
+    public InteractionResult interact(Player player, InteractionHand hand) {
+        if (!this.level().isClientSide())
+            fr.lordfinn.crazyphone.utils.ScreenMenuUtils.openPhotoFrameResizeMenu(player, this);
+        return InteractionResult.SUCCESS;
+    }
+    *///?}
+    // The resize-menu feature is inert on the two frozen <1.20.5 targets (see ScreenMenuUtils#
+    // openPhotoFrameResizeMenu's own scope) - a no-op interact here, matching the rest of this entity's own
+    // inert story there (ModEntities.java's doc comment, tryPlace's own stub above).
+    //? if (fabric || neoforge) && <1.20.5 {
     @Override
     public InteractionResult interact(Player player, InteractionHand hand) {
         return InteractionResult.SUCCESS;
@@ -787,6 +805,10 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
             //?}
         }
         *///?}
+        // Forge 1.20.1 keeps the dye as display.color NBT instead (see CrazyPhonePhotoItem#legacySetBorderRgb).
+        //? if legacyforge {
+        /*fr.lordfinn.crazyphone.item.CrazyPhonePhotoItem.legacySetBorderRgb(stack, borderRgb);
+        *///?}
         return stack;
     }
 
@@ -823,13 +845,19 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
         createdMinutes = fr.lordfinn.crazyphone.utils.NbtCompat.getInt(tag, "Created", 0);
         borderRgb = fr.lordfinn.crazyphone.utils.NbtCompat.getInt(tag, "BorderRgb", 0xFFFFFF);
         this.entityData.set(DATA_BORDER_RGB, borderRgb);
-        this.entityData.set(DATA_NEG_U, fr.lordfinn.crazyphone.utils.NbtCompat.getInt(tag, "NegU", DEFAULT_SIZE_UNITS / 2));
-        this.entityData.set(DATA_POS_U, fr.lordfinn.crazyphone.utils.NbtCompat.getInt(tag, "PosU", DEFAULT_SIZE_UNITS / 2));
-        this.entityData.set(DATA_NEG_V, fr.lordfinn.crazyphone.utils.NbtCompat.getInt(tag, "NegV", DEFAULT_SIZE_UNITS / 2));
-        this.entityData.set(DATA_POS_V, fr.lordfinn.crazyphone.utils.NbtCompat.getInt(tag, "PosV", DEFAULT_SIZE_UNITS / 2));
-        this.entityData.set(DATA_ROTATION, fr.lordfinn.crazyphone.utils.NbtCompat.getInt(tag, "Rotation", 0));
+        this.entityData.set(DATA_NEG_U, Math.max(0, fr.lordfinn.crazyphone.utils.NbtCompat.getInt(tag, "NegU", DEFAULT_SIZE_UNITS / 2)));
+        this.entityData.set(DATA_POS_U, Math.max(0, fr.lordfinn.crazyphone.utils.NbtCompat.getInt(tag, "PosU", DEFAULT_SIZE_UNITS / 2)));
+        this.entityData.set(DATA_NEG_V, Math.max(0, fr.lordfinn.crazyphone.utils.NbtCompat.getInt(tag, "NegV", DEFAULT_SIZE_UNITS / 2)));
+        this.entityData.set(DATA_POS_V, Math.max(0, fr.lordfinn.crazyphone.utils.NbtCompat.getInt(tag, "PosV", DEFAULT_SIZE_UNITS / 2)));
+        this.entityData.set(DATA_ROTATION, Math.floorMod(fr.lordfinn.crazyphone.utils.NbtCompat.getInt(tag, "Rotation", 0), 4));
         this.entityData.set(DATA_FULLBRIGHT, fr.lordfinn.crazyphone.utils.NbtCompat.getBoolean(tag, "Fullbright", false));
         this.entityData.set(DATA_FACE_OFFSET, fr.lordfinn.crazyphone.utils.NbtCompat.getInt(tag, "FaceOffset", UNSET_FACE_OFFSET));
+        // A hand-edited or corrupt save can't leave a negative extent behind (clamped above) nor a zero-area
+        // frame nobody can see or hit any more: fall back to the default size on that axis instead.
+        if (negUUnits() + posUUnits() == 0)
+            setExtentsRaw(DEFAULT_SIZE_UNITS / 2, DEFAULT_SIZE_UNITS - DEFAULT_SIZE_UNITS / 2, negVUnits(), posVUnits());
+        if (negVUnits() + posVUnits() == 0)
+            setExtentsRaw(negUUnits(), posUUnits(), DEFAULT_SIZE_UNITS / 2, DEFAULT_SIZE_UNITS - DEFAULT_SIZE_UNITS / 2);
         this.refreshDimensions();
     }
 

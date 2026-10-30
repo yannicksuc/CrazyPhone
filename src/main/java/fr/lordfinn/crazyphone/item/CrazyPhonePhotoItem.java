@@ -38,7 +38,13 @@ import java.util.function.Consumer;
  * Actual per-instance image drawing lives in {@link fr.lordfinn.crazyphone.client.render.CrazyPhonePhotoItemRenderer},
  * shared by both loaders - this class only wires that renderer in.
  */
+// Forge 1.20.1 has no DYED_COLOR component and no "dyeable" item tag: vanilla's ArmorDyeRecipe there only
+// accepts DyeableLeatherItem instances, which store the color as the classic display.color NBT int.
+//? if legacyforge {
+/*public class CrazyPhonePhotoItem extends Item implements net.minecraft.world.item.DyeableLeatherItem {
+*///?} else {
 public class CrazyPhonePhotoItem extends Item {
+//?}
     // Right-click opens the full-size viewer, reading the pointer this specific item instance carries
     // (see PhotoItemData) instead of a message's - same screen a chat-bubble click opens
     // (MessageWidget#onImageClick). This class is common-loaded on BOTH sides (registered from
@@ -123,9 +129,10 @@ public class CrazyPhonePhotoItem extends Item {
     *///?}
 
     // Real 1.20.1 vanilla has no Data Components system at all (added in 1.20.5) - the dyed-photo-frame
-    // customization feature already has no crafting recipe outside its own version scope (see build.gradle.
-    // kts's own crazy_phone_photo_dyed.json handling), so the viewer border simply never picks up a tint on
-    // this target instead of backporting component lookup.
+    // customization feature already has no crafting recipe on the two frozen <1.20.5 targets (see build.
+    // gradle.kts's own crazy_phone_photo_dyed.json handling), so the viewer border simply never picks up a
+    // tint there instead of backporting component lookup. Forge 1.20.1 reads display.color instead (see
+    // legacyBorderRgb below).
     //? if (fabric || neoforge) && >=1.20.5 {
     /*private void openViewerOnClient(Level world, ItemStack stack) {
         if (world.isClientSide() && clientViewerOpener != null) {
@@ -137,7 +144,54 @@ public class CrazyPhonePhotoItem extends Item {
         }
     }
     *///?}
-    //? if <1.20.5 {
+    //? if legacyforge {
+    /*private void openViewerOnClient(Level world, ItemStack stack) {
+        if (world.isClientSide() && clientViewerOpener != null) {
+            PhotoItemData data = PhotoItemData.fromStack(stack);
+            if (data != null)
+                clientViewerOpener.accept(data.photoId(), legacyBorderRgb(stack));
+        }
+    }
+
+    /^* Forge 1.20.1 counterpart of reading DYED_COLOR: the border color a photo was dyed with through
+     * vanilla's ArmorDyeRecipe (display.color NBT), 0xFFFFFF when undyed. Common code, safe on the server. ^/
+    public static int legacyBorderRgb(ItemStack stack) {
+        return stack.getItem() instanceof CrazyPhonePhotoItem item && item.hasCustomColor(stack) ? item.getColor(stack) : 0xFFFFFF;
+    }
+
+    /^* Writes {@code rgb} back as display.color, only when actually dyed (same "absent means undyed"
+     * convention the DYED_COLOR branches follow). ^/
+    public static void legacySetBorderRgb(ItemStack stack, int rgb) {
+        if (rgb != 0xFFFFFF && stack.getItem() instanceof CrazyPhonePhotoItem item)
+            item.setColor(stack, rgb);
+    }
+
+    // Same placement as the >=1.20.5 useOn above, reading the dyed border from display.color instead of
+    // DYED_COLOR.
+    @Override
+    public net.minecraft.world.InteractionResult useOn(UseOnContext context) {
+        Level world = context.getLevel();
+        if (world.isClientSide())
+            return net.minecraft.world.InteractionResult.SUCCESS;
+        ItemStack stack = context.getItemInHand();
+        PhotoItemData photoData = PhotoItemData.fromStack(stack);
+        if (photoData == null)
+            return net.minecraft.world.InteractionResult.PASS;
+        PhotoFrameData frameData = PhotoFrameData.fromStack(stack);
+        int widthUnits = frameData != null ? frameData.widthUnits() : fr.lordfinn.crazyphone.entity.CrazyPhonePhotoFrameEntity.DEFAULT_SIZE_UNITS;
+        int heightUnits = frameData != null ? frameData.heightUnits() : fr.lordfinn.crazyphone.entity.CrazyPhonePhotoFrameEntity.DEFAULT_SIZE_UNITS;
+        fr.lordfinn.crazyphone.entity.CrazyPhonePhotoFrameEntity entity = fr.lordfinn.crazyphone.entity.CrazyPhonePhotoFrameEntity.tryPlace(
+                world, context.getClickedPos(), context.getClickedFace(), context.getClickLocation(), context.getHorizontalDirection(), photoData, new PhotoFrameData(widthUnits, heightUnits), legacyBorderRgb(stack));
+        // The item is only consumed once the frame really exists in the world (never lost on a refused spawn).
+        if (entity == null || !world.addFreshEntity(entity))
+            return net.minecraft.world.InteractionResult.FAIL;
+        entity.playPlaceSound();
+        if (context.getPlayer() != null && !context.getPlayer().getAbilities().instabuild)
+            stack.shrink(1);
+        return net.minecraft.world.InteractionResult.SUCCESS;
+    }
+    *///?}
+    //? if (fabric || neoforge) && <1.20.5 {
     private void openViewerOnClient(Level world, ItemStack stack) {
         if (world.isClientSide() && clientViewerOpener != null) {
             PhotoItemData data = PhotoItemData.fromStack(stack);

@@ -163,11 +163,18 @@ public final class CrazyPhonePhotoItemRenderer {
     // Real 1.20.1 vanilla has no Data Components system at all (see CrazyPhonePhotoItem's own doc comment
     // on the same boundary) - the dyed-photo-frame feature has no recipe on this target either way, so the
     // border simply never picks up a tint here instead of backporting component lookup.
-    //? if <1.20.5 {
+    //? if (fabric || neoforge) && <1.20.5 {
     public static int borderRgb(ItemStack stack) {
         return DEFAULT_BORDER_RGB;
     }
     //?}
+    // Forge 1.20.1 dyes the photo through vanilla's ArmorDyeRecipe (display.color NBT, see
+    // CrazyPhonePhotoItem#legacyBorderRgb).
+    //? if legacyforge {
+    /*public static int borderRgb(ItemStack stack) {
+        return fr.lordfinn.crazyphone.item.CrazyPhonePhotoItem.legacyBorderRgb(stack);
+    }
+    *///?}
 
     private CrazyPhonePhotoItemRenderer() {
     }

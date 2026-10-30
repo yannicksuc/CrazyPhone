@@ -771,9 +771,22 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
         int[][] uv = screenToServer();
         int negU = (uv[0][0] + 1) * HALF_STEP, posU = (uv[0][1] + 1) * HALF_STEP;
         int negV = (uv[1][0] + 1) * HALF_STEP, posV = (uv[1][1] + 1) * HALF_STEP;
-        this.minecraft.gameMode.handleInventoryButtonClick(menu.containerId, CrazyPhonePhotoFrameResizeMenu.encodeAxisU(negU, posU));
-        this.minecraft.gameMode.handleInventoryButtonClick(menu.containerId, CrazyPhonePhotoFrameResizeMenu.encodeAxisV(negV, posV));
+        sendButton(CrazyPhonePhotoFrameResizeMenu.encodeAxisU(negU, posU));
+        sendButton(CrazyPhonePhotoFrameResizeMenu.encodeAxisV(negV, posV));
     }
+
+    // The axis ids are far above 127: real 1.20.1 vanilla sends a container button id as a single byte, so
+    // Forge 1.20.1 routes them through its own int-carrying packet instead (see PhotoFrameResizeButtonPacket).
+    //? if fabric || neoforge {
+    private void sendButton(int id) {
+        this.minecraft.gameMode.handleInventoryButtonClick(menu.containerId, id);
+    }
+    //?}
+    //? if legacyforge {
+    /*private void sendButton(int id) {
+        fr.lordfinn.crazyphone.utils.NetworkAccess.sendToServer(new fr.lordfinn.crazyphone.network.PhotoFrameResizeButtonPacket(menu.containerId, id));
+    }
+    *///?}
 
     // Screen's own mouse-event methods took plain (mouseX, mouseY, button) doubles/int through <1.21.10; >=1.21.10
     // reworked the whole GuiEventListener contract to pass a single MouseButtonEvent(x, y, buttonInfo)

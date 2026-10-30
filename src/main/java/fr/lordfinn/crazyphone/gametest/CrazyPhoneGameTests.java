@@ -497,6 +497,52 @@ public class CrazyPhoneGameTests {
         helper.succeed();
     }
 
+    /** Server-side safeguards of the resize menu: two menus open on the same frame each only change their own
+     * axis (never write back the other axis from a stale copy), every menu mirrors the frame's live size on
+     * broadcastChanges, an out-of-range button id is clamped to the configured maximum, and the menu stops
+     * being valid once its player walks out of reach or the frame is gone. */
+    //? if <26 {
+    @GameTest(template = "platform", batch = "photoFrameResizeMenuSafeguards")
+    //?}
+    public static void photoFrameResizeMenu_safeguards(GameTestHelper helper) {
+        net.minecraft.core.BlockPos floorPos = helper.absolutePos(new net.minecraft.core.BlockPos(1, 1, 1));
+        fr.lordfinn.crazyphone.utils.PhotoItemData photoData = new fr.lordfinn.crazyphone.utils.PhotoItemData(UUID.randomUUID(), "555", 0);
+        fr.lordfinn.crazyphone.entity.CrazyPhonePhotoFrameEntity entity = fr.lordfinn.crazyphone.entity.CrazyPhonePhotoFrameEntity.tryPlace(
+                helper.getLevel(), floorPos, net.minecraft.core.Direction.UP, null, net.minecraft.core.Direction.NORTH, photoData,
+                new fr.lordfinn.crazyphone.utils.PhotoFrameData(
+                        fr.lordfinn.crazyphone.entity.CrazyPhonePhotoFrameEntity.DEFAULT_SIZE_UNITS,
+                        fr.lordfinn.crazyphone.entity.CrazyPhonePhotoFrameEntity.DEFAULT_SIZE_UNITS),
+                0xFFFFFF);
+        helper.assertTrue(entity != null, "sanity: placement must succeed");
+        helper.getLevel().addFreshEntity(entity);
+        ServerPlayer player = makeTestPlayer(helper);
+        player.setPos(floorPos.getX() + 0.5, floorPos.getY() + 1.0, floorPos.getZ() + 0.5);
+
+        fr.lordfinn.crazyphone.world.inventory.CrazyPhonePhotoFrameResizeMenu menuA =
+                new fr.lordfinn.crazyphone.world.inventory.CrazyPhonePhotoFrameResizeMenu(1, player.getInventory(), entity);
+        fr.lordfinn.crazyphone.world.inventory.CrazyPhonePhotoFrameResizeMenu menuB =
+                new fr.lordfinn.crazyphone.world.inventory.CrazyPhonePhotoFrameResizeMenu(2, player.getInventory(), entity);
+        menuA.clickMenuButton(player, fr.lordfinn.crazyphone.world.inventory.CrazyPhonePhotoFrameResizeMenu.encodeAxisU(8, 8));
+        menuB.clickMenuButton(player, fr.lordfinn.crazyphone.world.inventory.CrazyPhonePhotoFrameResizeMenu.encodeAxisV(12, 12));
+        helper.assertTrue(entity.negUUnits() == 8 && entity.posUUnits() == 8 && entity.negVUnits() == 12 && entity.posVUnits() == 12,
+                "two menus resizing different axes must both apply, got " + entity.negUUnits() + "," + entity.posUUnits() + "," + entity.negVUnits() + "," + entity.posVUnits());
+        menuA.broadcastChanges();
+        helper.assertTrue(menuA.negVUnits() == 12 && menuA.posVUnits() == 12, "broadcastChanges must mirror the frame's live size into every open menu");
+
+        int maxUnits = menuA.maxUnits();
+        menuA.clickMenuButton(player, fr.lordfinn.crazyphone.world.inventory.CrazyPhonePhotoFrameResizeMenu.encodeAxisU(999, 999));
+        helper.assertTrue(entity.widthUnits() <= maxUnits && entity.widthUnits() > 0, "an oversized resize must be clamped to the configured maximum, got " + entity.widthUnits());
+        helper.assertTrue(!menuA.clickMenuButton(player, -5), "an unknown (negative) button id must be refused");
+
+        helper.assertTrue(menuA.stillValid(player), "the menu must stay valid while its player stands next to the frame");
+        player.setPos(floorPos.getX() + 40.5, floorPos.getY() + 1.0, floorPos.getZ() + 0.5);
+        helper.assertTrue(!menuA.stillValid(player), "the menu must close once its player is out of reach");
+        player.setPos(floorPos.getX() + 0.5, floorPos.getY() + 1.0, floorPos.getZ() + 0.5);
+        entity.discard();
+        helper.assertTrue(!menuA.stillValid(player), "the menu must close once the frame is gone");
+        helper.succeed();
+    }
+
     //? if >=26 {
     /*
     // 26.x removed @GameTest/@GameTestHolder entirely - vanilla's own annotation scanner is gone, replaced
@@ -530,6 +576,7 @@ public class CrazyPhoneGameTests {
             helper.register(Crazyphone.resource("group_settings_menu_opens_tagged_with_conversation_id"), (java.util.function.Consumer<GameTestHelper>) CrazyPhoneGameTests::groupSettingsMenu_opensViaRealMenuPath_taggedWithConversationId);
             helper.register(Crazyphone.resource("photo_frame_placement_creates_entity_at_default_size"), (java.util.function.Consumer<GameTestHelper>) CrazyPhoneGameTests::photoFramePlacement_createsEntityAtDefaultSize);
             helper.register(Crazyphone.resource("photo_frame_silk_touch_break_preserves_resized_dimensions"), (java.util.function.Consumer<GameTestHelper>) CrazyPhoneGameTests::photoFrameSilkTouchBreak_preservesResizedDimensions);
+            helper.register(Crazyphone.resource("photo_frame_resize_menu_safeguards"), (java.util.function.Consumer<GameTestHelper>) CrazyPhoneGameTests::photoFrameResizeMenu_safeguards);
         });
     }
 
@@ -546,6 +593,7 @@ public class CrazyPhoneGameTests {
         registerTest(event, "group_settings_menu_opens_tagged_with_conversation_id", "open_group_settings_menu");
         registerTest(event, "photo_frame_placement_creates_entity_at_default_size", "photo_frame_placement");
         registerTest(event, "photo_frame_silk_touch_break_preserves_resized_dimensions", "photo_frame_silk_touch_break");
+        registerTest(event, "photo_frame_resize_menu_safeguards", "photo_frame_resize_menu_safeguards");
     }
 
     private static void registerTest(net.neoforged.neoforge.event.RegisterGameTestsEvent event, String testName, String batchName) {
