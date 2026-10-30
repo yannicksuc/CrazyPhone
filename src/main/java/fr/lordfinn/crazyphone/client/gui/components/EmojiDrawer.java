@@ -204,10 +204,10 @@ public class EmojiDrawer {
         *///?}
         // The slide: only the part that has come up above the message field is visible.
         guiGraphics.enableScissor(left, top, left + WIDTH, top + HEIGHT);
+        Emoji hovered = null;
+        Component hoveredTab = null;
         try {
             drawPanel(guiGraphics, y0);
-            Emoji hovered = null;
-            Component hoveredTab = null;
             boolean interactive = open && p >= 0.999f;
 
             // Tabs
@@ -276,14 +276,17 @@ public class EmojiDrawer {
                 guiGraphics.fill(sx, trackTop, sx + 2, trackTop + trackHeight, SCROLL_TRACK);
                 guiGraphics.fill(sx, thumbTop, sx + 2, thumbTop + thumbHeight, SCROLL_THUMB);
             }
-
+        } finally {
+            guiGraphics.disableScissor();
+        }
+        // Outside the slide scissor: a tooltip near the drawer's edge must not be cut off.
+        try {
             if (hovered != null)
                 tooltip(guiGraphics, font, List.of(Component.literal(hovered.shortcode()),
                         Component.translatable("gui.crazyphone.emoji_drawer.insert.lore").withStyle(ChatFormatting.GRAY)), mouseX, mouseY);
             else if (hoveredTab != null)
                 tooltip(guiGraphics, font, List.of(hoveredTab), mouseX, mouseY);
         } finally {
-            guiGraphics.disableScissor();
             //? if <1.21.10 {
             guiGraphics.pose().popPose();
             //?}

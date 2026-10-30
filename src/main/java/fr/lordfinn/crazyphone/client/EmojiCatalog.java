@@ -63,6 +63,7 @@ public final class EmojiCatalog {
     private static volatile List<Category> categories;
     private static List<Emoji> recents;
     private static Map<String, Emoji> byShortcode = Map.of();
+    private static Map<String, Emoji> byGlyph = Map.of();
 
     private EmojiCatalog() {
     }
@@ -104,6 +105,7 @@ public final class EmojiCatalog {
         Set<Integer> fontGlyphs = twemojiFontCodepoints();
         List<Category> result = new ArrayList<>();
         Map<String, Emoji> index = new LinkedHashMap<>();
+        Map<String, Emoji> glyphIndex = new java.util.HashMap<>();
         try (InputStream in = EmojiCatalog.class.getClassLoader().getResourceAsStream(PICKER_RESOURCE)) {
             if (in == null) {
                 LOGGER.warn("Emoji picker data not found at {} - the emoji drawer will be empty", PICKER_RESOURCE);
@@ -131,6 +133,7 @@ public final class EmojiCatalog {
                         }
                         emojis.add(emoji);
                         index.putIfAbsent(emoji.shortcode(), emoji);
+                        glyphIndex.putIfAbsent(emoji.glyph(), emoji);
                     }
                 }
                 if (emojis.isEmpty())
@@ -146,6 +149,7 @@ public final class EmojiCatalog {
         }
         synchronized (EmojiCatalog.class) {
             byShortcode = index;
+            byGlyph = glyphIndex;
         }
         return List.copyOf(result);
     }
@@ -214,13 +218,21 @@ public final class EmojiCatalog {
             if (file == null || !Files.isRegularFile(file) || Files.size(file) > MAX_RECENTS_FILE_BYTES)
                 return loaded;
             Map<String, Emoji> index;
+            Map<String, Emoji> glyphIndex;
             synchronized (EmojiCatalog.class) {
                 index = byShortcode;
+                glyphIndex = byGlyph;
             }
             Set<String> seen = new HashSet<>();
             for (String line : Files.readAllLines(file, StandardCharsets.UTF_8)) {
                 String code = line.trim();
                 Emoji emoji = index.get(code);
+                // Any other valid alias of an offered emoji (e.g. :heart: for :red_heart:) is accepted too.
+                if (emoji == null && SHORTCODE.matcher(code).matches()) {
+                    String glyph = EmojiShortcodes.glyphFor(code);
+                    if (glyph != null)
+                        emoji = glyphIndex.get(glyph);
+                }
                 if (emoji != null && seen.add(emoji.glyph()))
                     loaded.add(emoji);
                 if (loaded.size() >= MAX_RECENTS)
