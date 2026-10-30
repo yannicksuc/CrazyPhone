@@ -71,6 +71,8 @@ public final class CallRegistry {
 
     private static final Map<UUID, CallSession> ACTIVE_CALLS = new HashMap<>();
     private static final Map<UUID, UUID> PLAYER_TO_CALL = new HashMap<>();
+    private static final Map<UUID, Long> LAST_VIDEO_TOGGLE = new HashMap<>();
+    private static final long VIDEO_TOGGLE_COOLDOWN_MILLIS = 250L;
 
     private CallRegistry() {
     }
@@ -231,6 +233,12 @@ public final class CallRegistry {
     public static void toggleVideo(ServerPlayer player, String conversationId) {
         if (!Config.callVideoEnabled)
             return;
+        // Spamming the toggle would otherwise resync every participant (and restart every camera) each click.
+        long now = System.currentTimeMillis();
+        Long last = LAST_VIDEO_TOGGLE.get(player.getUUID());
+        if (last != null && now - last < VIDEO_TOGGLE_COOLDOWN_MILLIS)
+            return;
+        LAST_VIDEO_TOGGLE.put(player.getUUID(), now);
         CallSession session = getSessionFor(player.getUUID()).orElse(null);
         if (session == null || !session.conversationId.equals(conversationId) || !session.participants.contains(player.getUUID()))
             return;
@@ -293,6 +301,7 @@ public final class CallRegistry {
     }
 
     private static void leaveInternal(UUID playerId, @Nullable MinecraftServer server, CallSession session) {
+        LAST_VIDEO_TOGGLE.remove(playerId);
         session.participants.remove(playerId);
         session.ringing.remove(playerId);
         PLAYER_TO_CALL.remove(playerId);
