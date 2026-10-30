@@ -148,6 +148,11 @@ public class Config {
             .comment("Whether registering a new phone requires setting a password. When false, the password step can be left empty - a phone registered without one can never be locked.")
             .define("requirePhonePassword", true);
 
+    private static final ModConfigSpec.BooleanValue SHARE_HELD_PHONE_SCREEN = BUILDER
+            .comment("Whether players share a privacy-safe view of their phone screen with others: the phone in their hand shows that it is ringing, in a call (with a timer), taking a photo, or which app is open (its header only, never any message, contact or photo). When false, other players see the plain static phone textures. Also toggleable at runtime via /crazyphone feature live_screen.")
+            .translation("crazyphone.configuration.shareHeldPhoneScreen")
+            .define("shareHeldPhoneScreen", true);
+
     static final ModConfigSpec SPEC = BUILDER.build();
 
     public static int maxStoredMessagesPerConversation;
@@ -173,6 +178,7 @@ public class Config {
     public static boolean crazyPhoneCraftingEnabled;
     public static int maxPhotoFrameSizeBlocks;
     public static boolean requirePhonePassword;
+    public static boolean shareHeldPhoneScreen;
 
     @SubscribeEvent
     static void onLoad(final ModConfigEvent event) {
@@ -199,6 +205,7 @@ public class Config {
         crazyPhoneCraftingEnabled = CRAZY_PHONE_CRAFTING_ENABLED.get();
         maxPhotoFrameSizeBlocks = MAX_PHOTO_FRAME_SIZE_BLOCKS.get();
         requirePhonePassword = REQUIRE_PHONE_PASSWORD.get();
+        shareHeldPhoneScreen = SHARE_HELD_PHONE_SCREEN.get();
     }
 
     /** Setters for the toggleable features below, used by /crazyphone feature to change them at runtime
@@ -225,6 +232,11 @@ public class Config {
 
     public static void setImagesFeatureEnabled(boolean enabled) {
         IMAGES_FEATURE_ENABLED.set(enabled);
+        SPEC.save();
+    }
+
+    public static void setShareHeldPhoneScreen(boolean enabled) {
+        SHARE_HELD_PHONE_SCREEN.set(enabled);
         SPEC.save();
     }
 
@@ -327,6 +339,11 @@ public class Config {
             .comment("Whether registering a new phone requires setting a password. When false, the password step can be left empty - a phone registered without one can never be locked.")
             .define("requirePhonePassword", true);
 
+    private static final ForgeConfigSpec.ConfigValue<Boolean> SHARE_HELD_PHONE_SCREEN = BUILDER
+            .comment("Whether players share a privacy-safe view of their phone screen with others: the phone in their hand shows that it is ringing, in a call (with a timer), taking a photo, or which app is open (its header only, never any message, contact or photo). When false, other players see the plain static phone textures. Also toggleable at runtime via /crazyphone feature live_screen.")
+            .translation("crazyphone.configuration.shareHeldPhoneScreen")
+            .define("shareHeldPhoneScreen", true);
+
     static final ForgeConfigSpec SPEC = BUILDER.build();
 
     public static int maxStoredMessagesPerConversation;
@@ -352,6 +369,7 @@ public class Config {
     public static boolean crazyPhoneCraftingEnabled;
     public static int maxPhotoFrameSizeBlocks;
     public static boolean requirePhonePassword;
+    public static boolean shareHeldPhoneScreen;
 
     @SubscribeEvent
     static void onLoad(final ModConfigEvent event) {
@@ -378,6 +396,7 @@ public class Config {
         crazyPhoneCraftingEnabled = CRAZY_PHONE_CRAFTING_ENABLED.get();
         maxPhotoFrameSizeBlocks = MAX_PHOTO_FRAME_SIZE_BLOCKS.get();
         requirePhonePassword = REQUIRE_PHONE_PASSWORD.get();
+        shareHeldPhoneScreen = SHARE_HELD_PHONE_SCREEN.get();
     }
 
     public static void setMayorElectionFeatureEnabled(boolean enabled) {
@@ -397,6 +416,11 @@ public class Config {
 
     public static void setImagesFeatureEnabled(boolean enabled) {
         IMAGES_FEATURE_ENABLED.set(enabled);
+        SPEC.save();
+    }
+
+    public static void setShareHeldPhoneScreen(boolean enabled) {
+        SHARE_HELD_PHONE_SCREEN.set(enabled);
         SPEC.save();
     }
 }
@@ -431,6 +455,7 @@ public class Config {
     public static boolean crazyPhoneCraftingEnabled = true;
     public static int maxPhotoFrameSizeBlocks = 32;
     public static boolean requirePhonePassword = true;
+    public static boolean shareHeldPhoneScreen = true;
 
     public static void setMayorElectionFeatureEnabled(boolean enabled) {
         mayorElectionFeatureEnabled = enabled;
@@ -446,6 +471,10 @@ public class Config {
 
     public static void setImagesFeatureEnabled(boolean enabled) {
         imagesFeatureEnabled = enabled;
+    }
+
+    public static void setShareHeldPhoneScreen(boolean enabled) {
+        shareHeldPhoneScreen = enabled;
     }
 }
 *///?}
