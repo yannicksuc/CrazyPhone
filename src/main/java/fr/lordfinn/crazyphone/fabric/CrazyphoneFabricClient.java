@@ -39,6 +39,7 @@ public class CrazyphoneFabricClient implements ClientModInitializer {
         CrazyPhonePhotoItem.clientViewerOpener = (photoId, borderRgb) ->
                 net.minecraft.client.Minecraft.getInstance()./^$ mc_set_screen {^/setScreen/^$}^/(new fr.lordfinn.crazyphone.client.gui.CrazyPhonePhotoViewerScreen(photoId, fr.lordfinn.crazyphone.client.gui.CrazyPhonePhotoViewerScreen.Origin.HELD_ITEM, borderRgb));
         ClientTickEvents.END_CLIENT_TICK.register(client -> FabricPictureCapture.tickAll());
+        fr.lordfinn.crazyphone.client.video.CallVideoClient.register();
         // FabricPictureCache's maps are static and otherwise survive a disconnect - a request still
         // IN_FLIGHT the moment the connection drops never gets its response, permanently blocking that one
         // photo from ever loading again even after reconnecting (see that class's own reset() doc comment).

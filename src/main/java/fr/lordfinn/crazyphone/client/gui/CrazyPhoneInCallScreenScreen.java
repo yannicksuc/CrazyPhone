@@ -23,6 +23,8 @@ import fr.lordfinn.crazyphone.client.CursorEffects;
 import fr.lordfinn.crazyphone.client.MojangProfileLookup;
 import fr.lordfinn.crazyphone.client.gui.components.CallBustPreview;
 import fr.lordfinn.crazyphone.client.gui.components.CrazyPhoneColors;
+import fr.lordfinn.crazyphone.client.video.CallVideoClient;
+import fr.lordfinn.crazyphone.utils.GuiCompat;
 import fr.lordfinn.crazyphone.init.ModItems;
 import fr.lordfinn.crazyphone.network.CrazyPhoneCallActionMessage;
 import fr.lordfinn.crazyphone.network.CrazyPhoneCallStateSyncPacket;
@@ -94,6 +96,15 @@ public class CrazyPhoneInCallScreenScreen extends CrazyPhoneDefaultScreenScreen<
     private static final int VIDEO_ICON_ON_COLOR = 0xFFFFFFFF;
     private static final int VIDEO_ICON_OFF_COLOR = 0xFF9A9A9A;
     private static final int VIDEO_ICON_OFF_BAR_COLOR = 0xFFFF5555;
+    // Camera video (see CallVideoClient): which camera your own tile films with, back ("camera", U+1F4F7) or
+    // selfie ("selfie", U+1F933), clickable like the video toggle; and the per-client camera video switch in the
+    // status row ("television", U+1F4FA). Same bundled emoji font as the icons above.
+    private static final Component CAMERA_BACK_ICON = Component.literal("📷");
+    private static final Component CAMERA_FRONT_ICON = Component.literal("🤳");
+    private static final Component CAMERA_VIDEO_TOGGLE_ICON = Component.literal("📺");
+    private static final int CAMERA_VIDEO_TOGGLE_X = 17;
+    private static final int LIVE_DOT_COLOR = 0xFFFF3030;
+    private static final int LIVE_DOT_OUTLINE_COLOR = 0xFF5A0000;
     // Voice mode button in the yellow header, left of the elapsed timer: open (loudspeaker) / normal (busts) /
     // isolated (lock) - same emoji-font technique as the icons above.
     private static final Component[] VOICE_MODE_ICONS = {Component.literal("📢"), Component.literal("👥"), Component.literal("🔒")};
@@ -270,9 +281,12 @@ public class CrazyPhoneInCallScreenScreen extends CrazyPhoneDefaultScreenScreen<
         renderVoiceModeButton(guiGraphics, mouseX, mouseY);
         renderMuteWarning(guiGraphics);
         renderParticipantGrid(guiGraphics, mouseX, mouseY);
+        renderCameraVideoToggle(guiGraphics, mouseX, mouseY);
         List<Component> videoTooltip = videoIconTooltipAt(mouseX, mouseY);
         if (videoTooltip == null)
             videoTooltip = voiceModeTooltipAt(mouseX, mouseY);
+        if (videoTooltip == null)
+            videoTooltip = cameraTooltipAt(mouseX, mouseY);
         if (videoTooltip != null)
             guiGraphics.setComponentTooltipForNextFrame(this.font, videoTooltip, mouseX, mouseY);
         this.extractTooltip(guiGraphics, mouseX, mouseY);
@@ -287,9 +301,12 @@ public class CrazyPhoneInCallScreenScreen extends CrazyPhoneDefaultScreenScreen<
         renderVoiceModeButton(guiGraphics, mouseX, mouseY);
         renderMuteWarning(guiGraphics);
         renderParticipantGrid(guiGraphics, mouseX, mouseY);
+        renderCameraVideoToggle(guiGraphics, mouseX, mouseY);
         List<Component> videoTooltip = videoIconTooltipAt(mouseX, mouseY);
         if (videoTooltip == null)
             videoTooltip = voiceModeTooltipAt(mouseX, mouseY);
+        if (videoTooltip == null)
+            videoTooltip = cameraTooltipAt(mouseX, mouseY);
         if (videoTooltip != null)
             guiGraphics./*$ gui_render_component_tooltip {*/renderComponentTooltip/*$}*/(this.font, videoTooltip, mouseX, mouseY);
         this.renderTooltip(guiGraphics, mouseX, mouseY);
@@ -348,7 +365,12 @@ public class CrazyPhoneInCallScreenScreen extends CrazyPhoneDefaultScreenScreen<
 
             int inset = talking ? BORDER_INSET : 0;
             boolean video = videoFeature && (isSelf ? ClientCallState.isSelfVideoEnabled() : ClientCallState.isVideoEnabled(participant.id()));
-            if (video) {
+            // A live camera picture when there is one (see CallVideoClient), otherwise exactly what was drawn
+            // before camera video existed: the 3D preview, or the 2D head when video is off.
+            var livePicture = video ? CallVideoClient.liveTexture(participant.id(), isSelf) : null;
+            if (livePicture != null) {
+                GuiCompat.blit(guiGraphics, livePicture, cellX + inset, cellY + inset, 0, cellSize - inset * 2, cellSize - inset * 2);
+            } else if (video) {
                 if (isSelf)
                     pushLocalLiveState();
                 bustPreview.render(guiGraphics, participant.id(), cellX + inset, cellY + inset, cellSize - inset * 2,
@@ -358,7 +380,128 @@ public class CrazyPhoneInCallScreenScreen extends CrazyPhoneDefaultScreenScreen<
             }
             if (videoFeature)
                 renderVideoIcon(guiGraphics, cellX, cellY, cellSize, isSelf, video, mouseX, mouseY);
+            if (isSelf && video && cameraIconsShown())
+                renderCameraIcons(guiGraphics, mouseX, mouseY);
         }
+    }
+
+    /** The camera icons only exist where camera video can actually happen: this server and this client do it, and
+     * the per-client switch is on. */
+    private static boolean cameraIconsShown() {
+        return ClientCallState.isVideoFeatureEnabled() && CallVideoClient.isAvailable() && fr.lordfinn.crazyphone.ClientConfig.callCameraVideo;
+    }
+
+    private Component cameraIcon() {
+        return CallVideoClient.camera() == CallVideoClient.Camera.FRONT ? CAMERA_FRONT_ICON : CAMERA_BACK_ICON;
+    }
+
+    private int cameraIconX(CellLayout cell) {
+        return cell.x() + cell.size() - this.font.width(cameraIcon()) - 2;
+    }
+
+    private int cameraIconY(CellLayout cell) {
+        return cell.y() + cell.size() - this.font.lineHeight - 1;
+    }
+
+    private boolean isHoveringCameraIcon(CellLayout cell, double mouseX, double mouseY) {
+        int iconX = cameraIconX(cell);
+        int iconY = cameraIconY(cell);
+        return cell.self() && mouseX >= iconX - 1 && mouseX < iconX + this.font.width(cameraIcon()) + 1
+                && mouseY >= iconY - 1 && mouseY < iconY + this.font.lineHeight + 1;
+    }
+
+    /** Your own tile only: the back/selfie camera switch in the bottom right corner, and a blinking red dot in the
+     * top left corner for exactly as long as your camera is being sent to someone. */
+    private void renderCameraIcons(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int mouseX, int mouseY) {
+        CellLayout cell = lastLayout.get(lastLayout.size() - 1);
+        int iconX = cameraIconX(cell);
+        int iconY = cameraIconY(cell);
+        int w = this.font.width(cameraIcon());
+        if (isHoveringCameraIcon(cell, mouseX, mouseY)) {
+            CursorEffects.requestPointerCursor();
+            guiGraphics.fill(iconX - 1, iconY - 1, iconX + w + 1, iconY + this.font.lineHeight + 1, 0x80FFFFFF);
+        }
+        guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(this.font, cameraIcon(), iconX, iconY, 0xFFFFFFFF, true);
+        if (CallVideoClient.isSending() && (System.currentTimeMillis() / 600) % 2 == 0) {
+            int dx = cell.x() + 3, dy = cell.y() + 3;
+            guiGraphics.fill(dx, dy + 1, dx + 5, dy + 4, LIVE_DOT_OUTLINE_COLOR);
+            guiGraphics.fill(dx + 1, dy, dx + 4, dy + 5, LIVE_DOT_OUTLINE_COLOR);
+            guiGraphics.fill(dx + 1, dy + 1, dx + 4, dy + 4, LIVE_DOT_COLOR);
+        }
+    }
+
+    private boolean isHoveringLiveDot(CellLayout cell, double mouseX, double mouseY) {
+        return cell.self() && CallVideoClient.isSending() && mouseX >= cell.x() + 2 && mouseX < cell.x() + 9
+                && mouseY >= cell.y() + 2 && mouseY < cell.y() + 9;
+    }
+
+    /** The per-client camera video switch, in the free strip under the header (left side; the mute warning uses
+     * the right side). Only shown when this server does camera video at all. */
+    private boolean cameraVideoToggleShown() {
+        return ClientCallState.isVideoFeatureEnabled() && CallVideoClient.isServerAllowed();
+    }
+
+    private boolean isHoveringCameraVideoToggle(double mouseX, double mouseY) {
+        int iconX = this.leftPos + CAMERA_VIDEO_TOGGLE_X;
+        int iconY = this.topPos + STATUS_ROW_Y;
+        return mouseX >= iconX - 1 && mouseX < iconX + this.font.width(CAMERA_VIDEO_TOGGLE_ICON) + 1
+                && mouseY >= iconY - 1 && mouseY < iconY + this.font.lineHeight + 1;
+    }
+
+    private void renderCameraVideoToggle(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int mouseX, int mouseY) {
+        if (!cameraVideoToggleShown())
+            return;
+        int iconX = this.leftPos + CAMERA_VIDEO_TOGGLE_X;
+        int iconY = this.topPos + STATUS_ROW_Y;
+        int w = this.font.width(CAMERA_VIDEO_TOGGLE_ICON);
+        int h = this.font.lineHeight;
+        boolean on = fr.lordfinn.crazyphone.ClientConfig.callCameraVideo;
+        if (isHoveringCameraVideoToggle(mouseX, mouseY)) {
+            CursorEffects.requestPointerCursor();
+            guiGraphics.fill(iconX - 1, iconY - 1, iconX + w + 1, iconY + h + 1, 0x80FFFFFF);
+        }
+        guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(this.font, CAMERA_VIDEO_TOGGLE_ICON, iconX, iconY, on ? VIDEO_ICON_ON_COLOR : VIDEO_ICON_OFF_COLOR, true);
+        if (!on)
+            guiGraphics.fill(iconX, iconY + h / 2 - 1, iconX + w, iconY + h / 2 + 1, VIDEO_ICON_OFF_BAR_COLOR);
+    }
+
+    private List<Component> cameraTooltipAt(double mouseX, double mouseY) {
+        String base = "gui.crazyphone.crazy_phone_in_call_screen.";
+        if (cameraVideoToggleShown() && isHoveringCameraVideoToggle(mouseX, mouseY)) {
+            String key = base + (fr.lordfinn.crazyphone.ClientConfig.callCameraVideo ? "tooltip_camera_video_on" : "tooltip_camera_video_off");
+            return List.of(Component.translatable(key), Component.translatable(key + ".lore").withStyle(ChatFormatting.GRAY));
+        }
+        if (!cameraIconsShown() || !ClientCallState.isSelfVideoEnabled())
+            return null;
+        for (CellLayout cell : lastLayout) {
+            if (isHoveringCameraIcon(cell, mouseX, mouseY)) {
+                String key = base + (CallVideoClient.camera() == CallVideoClient.Camera.FRONT ? "tooltip_camera_front" : "tooltip_camera_back");
+                String lore = CallVideoClient.isFrontCameraAvailable() ? key + ".lore" : base + "tooltip_camera_back.lore_no_front";
+                return List.of(Component.translatable(key), Component.translatable(lore).withStyle(ChatFormatting.GRAY));
+            }
+            if (isHoveringLiveDot(cell, mouseX, mouseY))
+                return List.of(Component.translatable(base + "tooltip_camera_live"),
+                        Component.translatable(base + "tooltip_camera_live.lore").withStyle(ChatFormatting.GRAY));
+        }
+        return null;
+    }
+
+    private boolean handleCameraClick(double mouseX, double mouseY, int button) {
+        if (button != com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_LEFT)
+            return false;
+        if (cameraVideoToggleShown() && isHoveringCameraVideoToggle(mouseX, mouseY)) {
+            CallVideoClient.toggleEnabled();
+            return true;
+        }
+        if (!cameraIconsShown() || !ClientCallState.isSelfVideoEnabled())
+            return false;
+        for (CellLayout cell : lastLayout) {
+            if (isHoveringCameraIcon(cell, mouseX, mouseY)) {
+                CallVideoClient.toggleCamera();
+                return true;
+            }
+        }
+        return false;
     }
 
     /** The local player's own tile animates straight from their own real entity - the server never sends a
@@ -442,6 +585,8 @@ public class CrazyPhoneInCallScreenScreen extends CrazyPhoneDefaultScreenScreen<
                 boolean on = ClientCallState.isSelfVideoEnabled();
                 String titleKey = on ? "gui.crazyphone.crazy_phone_in_call_screen.tooltip_video_on" : "gui.crazyphone.crazy_phone_in_call_screen.tooltip_video_off";
                 String loreKey = on ? "gui.crazyphone.crazy_phone_in_call_screen.tooltip_video_on.lore" : "gui.crazyphone.crazy_phone_in_call_screen.tooltip_video_off.lore";
+                if (cameraIconsShown())
+                    loreKey += "_camera";
                 return List.of(Component.translatable(titleKey), Component.translatable(loreKey).withStyle(ChatFormatting.GRAY));
             }
             if (!ClientCallState.isVideoEnabled(cell.id()))
@@ -509,7 +654,7 @@ public class CrazyPhoneInCallScreenScreen extends CrazyPhoneDefaultScreenScreen<
     //? if <1.21.10 {
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (handleVideoIconClick(mouseX, mouseY, button) || handleVoiceModeClick(mouseX, mouseY, button))
+        if (handleVideoIconClick(mouseX, mouseY, button) || handleVoiceModeClick(mouseX, mouseY, button) || handleCameraClick(mouseX, mouseY, button))
             return true;
         return super.mouseClicked(mouseX, mouseY, button);
     }
@@ -517,7 +662,8 @@ public class CrazyPhoneInCallScreenScreen extends CrazyPhoneDefaultScreenScreen<
     //? if >=1.21.10 {
     /*@Override
     public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent event, boolean doubleClick) {
-        if (handleVideoIconClick(event.x(), event.y(), event.button()) || handleVoiceModeClick(event.x(), event.y(), event.button()))
+        if (handleVideoIconClick(event.x(), event.y(), event.button()) || handleVoiceModeClick(event.x(), event.y(), event.button())
+                || handleCameraClick(event.x(), event.y(), event.button()))
             return true;
         return super.mouseClicked(event, doubleClick);
     }

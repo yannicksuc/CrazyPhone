@@ -20,4 +20,10 @@ public final class ClientConfig {
 
     public static boolean itemPreviewPixelated = true;
     public static boolean phonePhotoListPixelated = false;
+
+    /** Camera video in calls (see fr.lordfinn.crazyphone.client.video.CallVideoClient): when false this client
+     * neither captures its camera nor shows anyone else's, and tells the server so (nothing is relayed to it);
+     * every tile keeps the 3D preview / 2D head. Toggled from the In Call screen, remembered across sessions in
+     * config/crazyphone-client.properties (the only thing written there: no frame is ever stored). */
+    public static boolean callCameraVideo = true;
 }
