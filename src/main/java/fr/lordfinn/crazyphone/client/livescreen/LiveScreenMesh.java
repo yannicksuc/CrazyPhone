@@ -8,7 +8,7 @@ import java.util.Map;
  * A painted live screen turned into as few solid-color rectangles as possible, ready to be emitted as quads
  * on the phone's screen face. Drawing colored quads instead of uploading a texture means there is no GPU
  * resource to create, refresh or free at all: nothing can leak on a disconnect, a dimension change, a
- * resource reload or a window resize, and shader packs see an ordinary emissive entity quad.
+ * resource reload or a window resize, and shader packs see an ordinary full-bright entity quad.
  *
  * Meshes are cached by {@link LiveScreenView} (a small LRU): a view only changes a few times per second at
  * most (clock minute, call timer second, 4 fps animations), and every phone showing the same view shares one

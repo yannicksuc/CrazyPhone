@@ -134,9 +134,14 @@ public final class LiveScreenItemModel implements ItemModel {
 
         private static void draw(LiveScreenMesh mesh, PoseStack poseStack, net.minecraft.client.renderer.SubmitNodeCollector collector) {
             try {
-                collector.submitCustomGeometry(poseStack,
-                        /^$ render_type_import {^/net.minecraft.client.renderer.RenderType/^$}^/.entityTranslucentEmissive(LiveScreenRenderer.WHITE),
-                        (pose, buffer) -> LiveScreenRenderer.emit(buffer, pose, mesh));
+                // No-cull cutout, full-bright: the emissive translucent type drew nothing on 1.20.1 (checked
+                // live), and 26.x's plain entityCutout is the no-cull one (entityCutoutCull is the culled one).
+                //? if >=26 {
+                /^net.minecraft.client.renderer.rendertype.RenderType type = net.minecraft.client.renderer.rendertype.RenderTypes.entityCutout(LiveScreenRenderer.WHITE);
+                ^///?} else {
+                net.minecraft.client.renderer.RenderType type = net.minecraft.client.renderer.RenderType.entityCutoutNoCull(LiveScreenRenderer.WHITE);
+                //?}
+                collector.submitCustomGeometry(poseStack, type, (pose, buffer) -> LiveScreenRenderer.emit(buffer, pose, mesh));
             } catch (Throwable t) {
                 LiveScreenRenderer.fail(t);
             }

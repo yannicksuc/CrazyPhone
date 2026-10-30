@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 
 /**
- * Draws a {@link LiveScreenMesh} as emissive colored quads right on top of the screen face of the phone
+ * Draws a {@link LiveScreenMesh} as full-bright colored quads right on top of the screen face of the phone
  * item model (crazy_phone.json: the "south" face, texture pixels 10..17 x 9..20 of crazyphone.png).
  *
  * Two entry points, one per item rendering generation:
@@ -86,7 +86,8 @@ public final class LiveScreenRenderer {
         if (mesh == null)
             return;
         try {
-            VertexConsumer buffer = buffers.getBuffer(RenderType.entityTranslucentEmissive(WHITE));
+            // No-cull cutout with full-bright light: entityTranslucentEmissive drew nothing here (checked live).
+            VertexConsumer buffer = buffers.getBuffer(RenderType.entityCutoutNoCull(WHITE));
             emit(buffer, poseStack.last(), mesh);
         } catch (Throwable t) {
             fail(t);
