@@ -66,8 +66,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *
  * Everything that can fail here (a GPU readback, a texture upload, a decoder fed garbage) is caught: a broken
  * frame is dropped, and a capture failure turns this client's own camera off for the rest of the session with one
- * chat message, never a crash. Every buffer is bounded: one capture in flight, one encode in flight, one pending
- * frame per sender (the newest replaces an older one not decoded yet), and at most {@link #MAX_REMOTES} textures.
+ * chat message, never a crash. Every buffer is bounded: one capture in flight, one encode in flight, a short decode
+ * queue per sender (dropped whole, back to the next keyframe, if it ever fills up), one texture upload per sender
+ * per frame, and at most {@link #MAX_REMOTES} textures.
  * Nothing is ever written to disk except the on/off preference.
  */
 //? if neoforge || legacyforge {
@@ -121,6 +122,7 @@ public final class CallVideoClient {
 
     // Stats (only logged with -Dcrazyphone.videoStats=true)
     private static long statFrames, statBytes, statCaptureNanos, statEncodeNanos, statReceived, statReceivedBytes;
+    private static volatile long statDecoded, statUndecodable, statUploaded;
     private static long statSince = System.nanoTime();
 
     private CallVideoClient() {
@@ -536,12 +538,13 @@ public final class CallVideoClient {
 
     private static void logStats() {
         double seconds = (System.nanoTime() - statSince) / 1e9;
-        LOGGER.info("[call video] sent {} frames ({} B, {} B/s, {} B/frame), received {} frames ({} B/s), avg capture {} us, avg encode {} us, demand {} fps, camera {}",
+        LOGGER.info("[call video] sent {} frames ({} B, {} B/s, {} B/frame), received {} frames ({} B/s, {} decoded, {} undecodable, {} shown), avg capture {} us, avg encode {} us, demand {} fps, camera {}",
                 statFrames, statBytes, Math.round(statBytes / seconds), statFrames == 0 ? 0 : statBytes / statFrames,
-                statReceived, Math.round(statReceivedBytes / seconds),
+                statReceived, Math.round(statReceivedBytes / seconds), statDecoded, statUndecodable, statUploaded,
                 statFrames == 0 ? 0 : statCaptureNanos / 1000 / Math.max(1, statFrames), statFrames == 0 ? 0 : statEncodeNanos / 1000 / Math.max(1, statFrames),
                 demandFps, camera);
         statFrames = statBytes = statCaptureNanos = statEncodeNanos = statReceived = statReceivedBytes = 0;
+        statDecoded = statUndecodable = statUploaded = 0;
         statSince = System.nanoTime();
     }
 
@@ -550,7 +553,13 @@ public final class CallVideoClient {
     private static final class Stream {
         private final UUID id;
         private final CallVideoCodec.Decoder decoder = new CallVideoCodec.Decoder();
-        private byte[] pending;
+        /** Frames waiting to be decoded, oldest first. Every frame is decoded, in order: a delta frame only means
+         * something on top of the one before it, so skipping one would freeze the picture until the next keyframe.
+         * Bounded: if decoding ever falls this far behind, the backlog is dropped and decoding resumes at the next
+         * keyframe instead of piling up lag. */
+        private final java.util.ArrayDeque<byte[]> queue = new java.util.ArrayDeque<>();
+        private static final int MAX_QUEUED = 16;
+        private boolean waitingForKeyframe;
         private boolean decoding;
         private boolean closed;
         private DynamicTexture texture;
@@ -562,12 +571,26 @@ public final class CallVideoClient {
             this.id = id;
         }
 
-        /** Render thread. The newest frame replaces any older one still waiting: decoding never falls behind. */
+        /** Render thread. */
         void offer(byte[] data) {
             if (closed)
                 return;
+            CallVideoCodec.Header header = CallVideoCodec.readHeader(data);
+            if (header == null)
+                return;
             synchronized (this) {
-                pending = data;
+                if (queue.size() >= MAX_QUEUED) {
+                    queue.clear();
+                    waitingForKeyframe = true;
+                }
+                if (waitingForKeyframe && !header.keyframe())
+                    return;
+                if (header.keyframe()) {
+                    // Nothing before a keyframe matters any more.
+                    queue.clear();
+                    waitingForKeyframe = false;
+                }
+                queue.add(data);
             }
             if (decoding)
                 return;
@@ -579,30 +602,46 @@ public final class CallVideoClient {
             }
         }
 
+        /** Worker thread: decodes everything queued, in order, then hands only the newest picture to the render
+         * thread (one texture upload, however many frames arrived meanwhile). */
         private void decodeLoop() {
-            byte[] data;
-            synchronized (this) {
-                data = pending;
-                pending = null;
+            CallVideoCodec.Decoder.Frame latest = null;
+            while (true) {
+                byte[] data;
+                synchronized (this) {
+                    data = queue.poll();
+                }
+                if (data == null)
+                    break;
+                try {
+                    CallVideoCodec.Decoder.Frame frame = decoder.decode(data);
+                    if (frame == null) {
+                        statUndecodable++;
+                    } else {
+                        statDecoded++;
+                        latest = frame;
+                    }
+                } catch (Throwable t) {
+                    LOGGER.debug("Call video decode failed", t);
+                }
             }
-            CallVideoCodec.Decoder.Frame frame = null;
-            try {
-                if (data != null)
-                    frame = decoder.decode(data);
-            } catch (Throwable t) {
-                LOGGER.debug("Call video decode failed", t);
-            }
-            CallVideoCodec.Decoder.Frame result = frame;
+            CallVideoCodec.Decoder.Frame result = latest;
             Minecraft.getInstance().execute(() -> {
                 decoding = false;
                 if (result != null && !closed)
                     upload(result);
-                byte[] next;
+                boolean more;
                 synchronized (this) {
-                    next = pending;
+                    more = !queue.isEmpty();
                 }
-                if (next != null && !closed)
-                    offer(next);
+                if (more && !closed && !decoding) {
+                    decoding = true;
+                    try {
+                        WORKER.execute(this::decodeLoop);
+                    } catch (RejectedExecutionException e) {
+                        decoding = false;
+                    }
+                }
             });
         }
 
@@ -641,6 +680,7 @@ public final class CallVideoClient {
                 }
                 texture.upload();
                 lastFrameMillis = System.currentTimeMillis();
+                statUploaded++;
             } catch (Throwable t) {
                 LOGGER.warn("Call video texture upload failed", t);
                 releaseTexture();
@@ -661,7 +701,9 @@ public final class CallVideoClient {
         /** Render thread. */
         void close() {
             closed = true;
-            pending = null;
+            synchronized (this) {
+                queue.clear();
+            }
             releaseTexture();
             submitQuietly(decoder::close);
         }
