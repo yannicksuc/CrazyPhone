@@ -49,6 +49,11 @@ here and only here, so it can't drift out of sync with the wiki), and pointers t
   the camera viewfinder, or the header of the app you have open. Other players see a privacy-safe version
   (the state only, never a message, contact or photo). Server switch: `shareHeldPhoneScreen` /
   `/crazyphone feature live_screen <true|false>`; client switches: `/phonescreen own|others <true|false>`.
+- **Camera video in calls** *(needs Simple Voice Chat)* - turn your video on and the others see what your
+  phone camera films, back camera or selfie camera, as a small live pixel-art picture. Frames only go to the
+  members of that call, wherever they are, and are never stored. Server settings (NeoForge/Forge config): `callCameraVideoEnabled`,
+  `callCameraVideoMaxFps`, `callCameraVideoMaxResolution`, `callCameraVideoMaxKilobytesPerSecond`; each
+  player can also turn camera video off from the call screen. The selfie camera is not available on 26.x yet.
 - **Soulbound enchantment** *(≥1.20.5)* - an Ancient City-only enchantment that survives death.
 - **[Mayor election](https://github.com/yannicksuc/CrazyPhone/wiki/Mayor-Election)** *(optional)* -
   candidates with campaign posters, in-app voting.

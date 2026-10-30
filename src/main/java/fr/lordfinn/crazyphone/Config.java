@@ -107,6 +107,22 @@ public class Config {
             .comment("Whether the In Call screen's live 3D participant previews (\"video\") are available at all. When false, every participant is shown as a flat 2D head and the per-player video toggle is hidden.")
             .define("callVideoEnabled", true);
 
+    private static final ModConfigSpec.BooleanValue CALL_CAMERA_VIDEO_ENABLED = BUILDER
+            .comment("Whether a participant with video on can show what their phone camera sees (a small pixel-art picture, back or selfie camera) instead of their 3D preview. Needs callVideoEnabled. Frames are only relayed between members of the same call, never stored.")
+            .define("callCameraVideoEnabled", true);
+
+    private static final ModConfigSpec.IntValue CALL_CAMERA_VIDEO_MAX_FPS = BUILDER
+            .comment("Maximum camera frames per second a participant may send in a call. Group calls with more than 3 cameras on share 3 times this budget.")
+            .defineInRange("callCameraVideoMaxFps", 8, 1, 15);
+
+    private static final ModConfigSpec.IntValue CALL_CAMERA_VIDEO_MAX_RESOLUTION = BUILDER
+            .comment("Maximum width and height, in pixels, of a call camera frame (frames are square).")
+            .defineInRange("callCameraVideoMaxResolution", 64, 32, 96);
+
+    private static final ModConfigSpec.IntValue CALL_CAMERA_VIDEO_MAX_KILOBYTES_PER_SECOND = BUILDER
+            .comment("Maximum camera video bandwidth, in kilobytes per second, the server sends to each viewer (all cameras of their call together). Frames beyond it are skipped.")
+            .defineInRange("callCameraVideoMaxKilobytesPerSecond", 64, 8, 1024);
+
     private static final ModConfigSpec.IntValue MAX_VOICE_MESSAGES_STORED_PER_CONVERSATION = BUILDER
             .comment("Maximum number of voice messages (with their audio) kept on disk per conversation - voice audio is the heaviest payload, capped separately from text/image messages.")
             .defineInRange("maxVoiceMessagesStoredPerConversation", 30, 5, 500);
@@ -171,6 +187,10 @@ public class Config {
     public static int aloneInCallKickSeconds;
     public static int phoneDropGraceSeconds;
     public static boolean callVideoEnabled;
+    public static boolean callCameraVideoEnabled;
+    public static int callCameraVideoMaxFps;
+    public static int callCameraVideoMaxResolution;
+    public static int callCameraVideoMaxKilobytesPerSecond;
     public static int maxVoiceMessagesStoredPerConversation;
     public static int maxVoiceMessageRecordingSeconds;
     public static boolean soulboundEnchantmentEnabled;
@@ -198,6 +218,10 @@ public class Config {
         aloneInCallKickSeconds = ALONE_IN_CALL_KICK_SECONDS.get();
         phoneDropGraceSeconds = PHONE_DROP_GRACE_SECONDS.get();
         callVideoEnabled = CALL_VIDEO_ENABLED.get();
+        callCameraVideoEnabled = CALL_CAMERA_VIDEO_ENABLED.get();
+        callCameraVideoMaxFps = CALL_CAMERA_VIDEO_MAX_FPS.get();
+        callCameraVideoMaxResolution = CALL_CAMERA_VIDEO_MAX_RESOLUTION.get();
+        callCameraVideoMaxKilobytesPerSecond = CALL_CAMERA_VIDEO_MAX_KILOBYTES_PER_SECOND.get();
         maxVoiceMessagesStoredPerConversation = MAX_VOICE_MESSAGES_STORED_PER_CONVERSATION.get();
         maxVoiceMessageRecordingSeconds = MAX_VOICE_MESSAGE_RECORDING_SECONDS.get();
         soulboundEnchantmentEnabled = SOULBOUND_ENCHANTMENT_ENABLED.get();
@@ -311,6 +335,22 @@ public class Config {
             .comment("Whether the In Call screen's live 3D participant previews (\"video\") are available at all. When false, every participant is shown as a flat 2D head and the per-player video toggle is hidden.")
             .define("callVideoEnabled", true);
 
+    private static final ForgeConfigSpec.ConfigValue<Boolean> CALL_CAMERA_VIDEO_ENABLED = BUILDER
+            .comment("Whether a participant with video on can show what their phone camera sees (a small pixel-art picture, back or selfie camera) instead of their 3D preview. Needs callVideoEnabled. Frames are only relayed between members of the same call, never stored.")
+            .define("callCameraVideoEnabled", true);
+
+    private static final ForgeConfigSpec.ConfigValue<Integer> CALL_CAMERA_VIDEO_MAX_FPS = BUILDER
+            .comment("Maximum camera frames per second a participant may send in a call. Group calls with more than 3 cameras on share 3 times this budget.")
+            .defineInRange("callCameraVideoMaxFps", 8, 1, 15, Integer.class);
+
+    private static final ForgeConfigSpec.ConfigValue<Integer> CALL_CAMERA_VIDEO_MAX_RESOLUTION = BUILDER
+            .comment("Maximum width and height, in pixels, of a call camera frame (frames are square).")
+            .defineInRange("callCameraVideoMaxResolution", 64, 32, 96, Integer.class);
+
+    private static final ForgeConfigSpec.ConfigValue<Integer> CALL_CAMERA_VIDEO_MAX_KILOBYTES_PER_SECOND = BUILDER
+            .comment("Maximum camera video bandwidth, in kilobytes per second, the server sends to each viewer (all cameras of their call together). Frames beyond it are skipped.")
+            .defineInRange("callCameraVideoMaxKilobytesPerSecond", 64, 8, 1024, Integer.class);
+
     private static final ForgeConfigSpec.ConfigValue<Integer> MAX_VOICE_MESSAGES_STORED_PER_CONVERSATION = BUILDER
             .comment("Maximum number of voice messages (with their audio) kept on disk per conversation - voice audio is the heaviest payload, capped separately from text/image messages.")
             .defineInRange("maxVoiceMessagesStoredPerConversation", 30, 5, 500, Integer.class);
@@ -362,6 +402,10 @@ public class Config {
     public static int aloneInCallKickSeconds;
     public static int phoneDropGraceSeconds;
     public static boolean callVideoEnabled;
+    public static boolean callCameraVideoEnabled;
+    public static int callCameraVideoMaxFps;
+    public static int callCameraVideoMaxResolution;
+    public static int callCameraVideoMaxKilobytesPerSecond;
     public static int maxVoiceMessagesStoredPerConversation;
     public static int maxVoiceMessageRecordingSeconds;
     public static boolean soulboundEnchantmentEnabled;
@@ -389,6 +433,10 @@ public class Config {
         aloneInCallKickSeconds = ALONE_IN_CALL_KICK_SECONDS.get();
         phoneDropGraceSeconds = PHONE_DROP_GRACE_SECONDS.get();
         callVideoEnabled = CALL_VIDEO_ENABLED.get();
+        callCameraVideoEnabled = CALL_CAMERA_VIDEO_ENABLED.get();
+        callCameraVideoMaxFps = CALL_CAMERA_VIDEO_MAX_FPS.get();
+        callCameraVideoMaxResolution = CALL_CAMERA_VIDEO_MAX_RESOLUTION.get();
+        callCameraVideoMaxKilobytesPerSecond = CALL_CAMERA_VIDEO_MAX_KILOBYTES_PER_SECOND.get();
         maxVoiceMessagesStoredPerConversation = MAX_VOICE_MESSAGES_STORED_PER_CONVERSATION.get();
         maxVoiceMessageRecordingSeconds = MAX_VOICE_MESSAGE_RECORDING_SECONDS.get();
         soulboundEnchantmentEnabled = SOULBOUND_ENCHANTMENT_ENABLED.get();
@@ -448,6 +496,10 @@ public class Config {
     public static int aloneInCallKickSeconds = 5;
     public static int phoneDropGraceSeconds = 5;
     public static boolean callVideoEnabled = true;
+    public static boolean callCameraVideoEnabled = true;
+    public static int callCameraVideoMaxFps = 8;
+    public static int callCameraVideoMaxResolution = 64;
+    public static int callCameraVideoMaxKilobytesPerSecond = 64;
     public static int maxVoiceMessagesStoredPerConversation = 30;
     public static int maxVoiceMessageRecordingSeconds = 60;
     public static boolean soulboundEnchantmentEnabled = true;

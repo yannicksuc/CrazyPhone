@@ -48,6 +48,8 @@ package fr.lordfinn.crazyphone.fabric;
         fr.lordfinn.crazyphone.network.VoiceMessageUploadPacket.registerFabricType();
         fr.lordfinn.crazyphone.network.CrazyPhoneSelfiePoseSyncPacket.registerFabricType();
         fr.lordfinn.crazyphone.network.PhoneScreenAppSyncPacket.registerFabricType();
+        fr.lordfinn.crazyphone.network.CallVideoC2SPacket.registerFabricType();
+        fr.lordfinn.crazyphone.network.CallVideoS2CPacket.registerFabricType();
     }
 
     // Called from CrazyphoneFabricClient#onInitializeClient - registers every server->client receiver.
@@ -65,6 +67,7 @@ package fr.lordfinn.crazyphone.fabric;
         fr.lordfinn.crazyphone.network.CrazyPhonePictureResponsePacket.registerFabricClientReceiver();
         fr.lordfinn.crazyphone.network.CrazyPhoneClearPictureCachePacket.registerFabricClientReceiver();
         fr.lordfinn.crazyphone.network.ConversationResponsePacket.registerFabricClientReceiver();
+        fr.lordfinn.crazyphone.network.CallVideoS2CPacket.registerFabricClientReceiver();
     }
 
     // Called from CrazyphoneFabric#onInitialize - registers every client->server receiver (safe on
@@ -92,6 +95,7 @@ package fr.lordfinn.crazyphone.fabric;
         fr.lordfinn.crazyphone.network.VoiceMessageUploadPacket.registerFabricServerReceiver();
         fr.lordfinn.crazyphone.network.CrazyPhoneSelfiePoseSyncPacket.registerFabricServerReceiver();
         fr.lordfinn.crazyphone.network.PhoneScreenAppSyncPacket.registerFabricServerReceiver();
+        fr.lordfinn.crazyphone.network.CallVideoC2SPacket.registerFabricServerReceiver();
     }
 }
 *///?}
