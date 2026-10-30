@@ -796,6 +796,10 @@ public class CrazyPhonePhotoFrameEntity extends Entity {
             //?}
         }
         *///?}
+        // Forge 1.20.1 keeps the dye as display.color NBT instead (see CrazyPhonePhotoItem#legacySetBorderRgb).
+        //? if legacyforge {
+        /*fr.lordfinn.crazyphone.item.CrazyPhonePhotoItem.legacySetBorderRgb(stack, borderRgb);
+        *///?}
         return stack;
     }
 
