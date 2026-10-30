@@ -119,6 +119,7 @@ public record CrazyPhoneIncomingCallNotificationPacket(String conversationId, St
     // mod-load time, popping a warning window for the player at every launch for zero actual effect.
     static class ClientHandler {
         static void showToast(CrazyPhoneIncomingCallNotificationPacket messagePacket) {
+            fr.lordfinn.crazyphone.client.livescreen.LiveScreenClient.onIncomingCall(messagePacket.callId, messagePacket.callerName);
             Minecraft mc = Minecraft.getInstance();
             if (mc.player == null)
                 return;

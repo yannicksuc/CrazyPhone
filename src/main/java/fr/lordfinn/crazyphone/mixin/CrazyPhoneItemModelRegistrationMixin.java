@@ -32,6 +32,7 @@ public abstract class CrazyPhoneItemModelRegistrationMixin {
     @Inject(method = "bootstrap", at = @At("TAIL"))
     private static void crazyphone$registerPhotoModel(CallbackInfo ci) {
         ID_MAPPER.put(Crazyphone.resource("photo_card_model"), CrazyPhonePhotoItemRenderer.ModelImpl.Unbaked.MAP_CODEC);
+        ID_MAPPER.put(Crazyphone.resource("live_screen"), fr.lordfinn.crazyphone.client.livescreen.LiveScreenItemModel.Unbaked.MAP_CODEC);
     }
 }
 *///?}

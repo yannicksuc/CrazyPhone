@@ -20,4 +20,10 @@ public final class ClientConfig {
 
     public static boolean itemPreviewPixelated = true;
     public static boolean phonePhotoListPixelated = false;
+
+    /** Live screen on the phone in the local player's own hand (lock screen, call, app header). Persisted by
+     * client/livescreen/LiveScreenClient in config/crazyphone-client.properties, toggled with /phonescreen. */
+    public static boolean liveScreenOwnPhone = true;
+    /** Live screen on phones held by other players (only what their server agreed to share). */
+    public static boolean liveScreenOtherPhones = true;
 }

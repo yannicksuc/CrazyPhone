@@ -15,6 +15,7 @@
     "CrazyPhonePresentHandGripMixin",
     "CrazyPhonePresentHandGripInvokerMixin",
     "CrazyPhonePhotoItemRenderMixin",
+    "CrazyPhoneLiveScreenItemRenderMixin",
     "CrazyPhoneSelfieRenderStateMixin",
     "CrazyPhoneSelfieAvatarExtractMixin",
     "CrazyPhoneSelfieArmPoseMixin",

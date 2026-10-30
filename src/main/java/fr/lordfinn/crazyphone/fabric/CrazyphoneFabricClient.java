@@ -30,6 +30,8 @@ public class CrazyphoneFabricClient implements ClientModInitializer {
         PhoneClickableCursorHandler.register();
         CrazyPhoneItemInInventoryTickProcedure.register();
         CallRingtoneManager.register();
+        fr.lordfinn.crazyphone.client.livescreen.LiveScreenClient.register();
+        fr.lordfinn.crazyphone.client.livescreen.LiveScreenCommand.register();
         //? if <1.21.10 {
         CrazyPhonePhotoItem.registerFabricRenderer();
         //?}

@@ -39,7 +39,8 @@ public enum FeatureFlag {
     CALLS("calls", "Voice calls", () -> Config.callsFeatureEnabled, Config::setCallsFeatureEnabled),
     VOICE_MESSAGES("voice_messages", "Voice messages", () -> Config.voiceMessagesFeatureEnabled, Config::setVoiceMessagesFeatureEnabled),
     IMAGES("images", "Sending images", () -> Config.imagesFeatureEnabled, Config::setImagesFeatureEnabled),
-    MAYOR_VOTING("mayor_voting", "Mayor election/voting", () -> Config.mayorElectionFeatureEnabled, Config::setMayorElectionFeatureEnabled);
+    MAYOR_VOTING("mayor_voting", "Mayor election/voting", () -> Config.mayorElectionFeatureEnabled, Config::setMayorElectionFeatureEnabled),
+    LIVE_SCREEN("live_screen", "Live phone screen shared with others", () -> Config.shareHeldPhoneScreen, Config::setShareHeldPhoneScreen);
     //?}
     //? if fabric {
     /*// TODO(#164 follow-up): Config.java is entirely built on NeoForge's ModConfigSpec - Fabric has no
@@ -49,7 +50,8 @@ public enum FeatureFlag {
     CALLS("calls", "Voice calls", () -> true, v -> {}),
     VOICE_MESSAGES("voice_messages", "Voice messages", () -> true, v -> {}),
     IMAGES("images", "Sending images", () -> true, v -> {}),
-    MAYOR_VOTING("mayor_voting", "Mayor election/voting", () -> true, v -> {});
+    MAYOR_VOTING("mayor_voting", "Mayor election/voting", () -> true, v -> {}),
+    LIVE_SCREEN("live_screen", "Live phone screen shared with others", () -> Config.shareHeldPhoneScreen, Config::setShareHeldPhoneScreen);
     *///?}
 
     public final String id;

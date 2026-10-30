@@ -108,6 +108,12 @@ public final class ClientCallState {
         return videoEnabled.getOrDefault(participantId, false);
     }
 
+    /** How many OTHER players are on the current call (the server excludes the recipient from the list),
+     * as last synced - 0 while there's no call. Only used for the live screen's participant tiles. */
+    public static int getOtherParticipantCount() {
+        return state == State.ENDED ? 0 : videoEnabled.size();
+    }
+
     public static boolean isSelfVideoEnabled() {
         return selfVideoEnabled;
     }

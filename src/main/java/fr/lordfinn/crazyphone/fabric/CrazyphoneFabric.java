@@ -51,6 +51,7 @@ public class CrazyphoneFabric implements ModInitializer {
         SoulboundHandler.register();
         AutoLockOnDisconnect.register();
         CallHeadRotationSync.register();
+        fr.lordfinn.crazyphone.data.PhoneLiveScreenServer.register();
         CallTerminationListener.register();
         LOGGER.info("CrazyPhone (Fabric) initializing");
     }
