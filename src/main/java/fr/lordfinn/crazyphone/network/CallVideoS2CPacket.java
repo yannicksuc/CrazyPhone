@@ -156,7 +156,7 @@ public record CallVideoS2CPacket(int kind, UUID subject, int value, int value2, 
     public static class CallVideoS2CPacketLegacyForgeRegistration {
         @SubscribeEvent
         public static void register(FMLCommonSetupEvent event) {
-            Crazyphone.addNetworkMessage(CallVideoS2CPacket.class, 61, CallVideoS2CPacket::write, CallVideoS2CPacket::new, CallVideoS2CPacket::handleData);
+            Crazyphone.addNetworkMessage(CallVideoS2CPacket.class, 39, CallVideoS2CPacket::write, CallVideoS2CPacket::new, CallVideoS2CPacket::handleData);
         }
     }
     *///?}

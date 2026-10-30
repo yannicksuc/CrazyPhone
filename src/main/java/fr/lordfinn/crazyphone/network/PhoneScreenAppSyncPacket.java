@@ -139,14 +139,14 @@ public record PhoneScreenAppSyncPacket(int app) implements CustomPacketPayload {
     }
     //?}
 
-    // Id 41, not the next free one (36): leaves room for packets other branches add in the meantime, since
-    // a duplicate discriminator would make both registrations collide on Forge 1.20.1.
+    // Id 37 (36 is PhotoFrameResizeButtonPacket, 38/39 the call video packets, 100 the chunk message): a
+    // duplicate discriminator would make both registrations collide on Forge 1.20.1.
     //? if legacyforge {
     /*@EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
     public static class PhoneScreenAppSyncPacketLegacyForgeRegistration {
         @SubscribeEvent
         public static void register(FMLCommonSetupEvent event) {
-            Crazyphone.addNetworkMessage(PhoneScreenAppSyncPacket.class, 41, PhoneScreenAppSyncPacket::write, PhoneScreenAppSyncPacket::new, PhoneScreenAppSyncPacket::handleData);
+            Crazyphone.addNetworkMessage(PhoneScreenAppSyncPacket.class, 37, PhoneScreenAppSyncPacket::write, PhoneScreenAppSyncPacket::new, PhoneScreenAppSyncPacket::handleData);
         }
     }
     *///?}

@@ -148,13 +148,13 @@ public record CallVideoC2SPacket(int kind, int value, byte[] data) implements Cu
     }
     //?}
 
-    // Ids 60/61 leave room for packets other branches may add after the current last one (35).
+    // Ids 38/39 (36 is PhotoFrameResizeButtonPacket, 37 PhoneScreenAppSyncPacket, 100 the chunk message).
     //? if legacyforge {
     /*@EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
     public static class CallVideoC2SPacketLegacyForgeRegistration {
         @SubscribeEvent
         public static void register(FMLCommonSetupEvent event) {
-            Crazyphone.addNetworkMessage(CallVideoC2SPacket.class, 60, CallVideoC2SPacket::write, CallVideoC2SPacket::new, CallVideoC2SPacket::handleData);
+            Crazyphone.addNetworkMessage(CallVideoC2SPacket.class, 38, CallVideoC2SPacket::write, CallVideoC2SPacket::new, CallVideoC2SPacket::handleData);
         }
     }
     *///?}

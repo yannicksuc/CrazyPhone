@@ -28,7 +28,7 @@ import java.util.function.Function;
 // the receiving side decodes the reassembled bytes with that same codec and hands the message to its normal
 // handler, so no packet class needs to know about any of this.
 public final class LegacyForgeChunkedPayload {
-    // Channel discriminator of the Chunk message itself (0-35 are the packets registered so far).
+    // Channel discriminator of the Chunk message itself (0-39 are the packets registered so far).
     public static final int CHUNK_MESSAGE_ID = 100;
     private static final int TO_SERVER_LIMIT = 32000;
     private static final int TO_CLIENT_LIMIT = 1_000_000;
