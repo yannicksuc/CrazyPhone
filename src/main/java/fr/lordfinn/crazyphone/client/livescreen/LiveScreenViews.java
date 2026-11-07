@@ -139,7 +139,7 @@ public final class LiveScreenViews {
 
     private static int participants(boolean own, String number) {
         if (own && ClientCallState.numberHasState(number, State.ACTIVE))
-            return Math.min(4, 1 + ClientCallState.getOtherParticipantCount());
+            return Math.min(99, 1 + ClientCallState.getOtherParticipantCount());
         return 2;
     }
 

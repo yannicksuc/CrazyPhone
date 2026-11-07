@@ -20,9 +20,10 @@ public final class LiveScreenPainter {
 
     // Palette, taken from the phone's own textures (phone-background.png, crazyphone.png,
     // crazyphone-header-background.png, CrazyPhoneColors).
-    static final int SCREEN = 0xFFCCF8FA;
-    static final int SCREEN_MID = 0xFFA9F6F4;
-    static final int SCREEN_DEEP = 0xFF8FF9F3;
+    // Screen bands: the phone GUI's own screen colours (phone-background.png), not a brighter cyan.
+    static final int SCREEN = 0xFFC2F1F3;
+    static final int SCREEN_MID = 0xFFB4EDF0;
+    static final int SCREEN_DEEP = 0xFFA9E8EC;
     static final int GLARE = 0xFFE0F6F5;
     static final int TEAL = 0xFF58D8D1;
     static final int NIGHT_TOP = 0xFF1E2A44;
@@ -38,6 +39,9 @@ public final class LiveScreenPainter {
     static final int YELLOW = 0xFFFFD100;
     static final int YELLOW_SHADE = 0xFFE0A800;
     static final int ACCENT = 0xFFFFC107;
+    // Message bubbles, as in the conversation screen (MessageWidget): mine blue, the others near white.
+    static final int BUBBLE_MINE = 0xFF0084FF;
+    static final int BUBBLE_MINE_LINE = 0xFF8CC8FF;
     static final int GREEN = 0xFF2ECC71;
     static final int GREEN_DARK = 0xFF1E9E55;
     static final int GREEN_LIGHT = 0xFFA8EFC4;
@@ -78,14 +82,16 @@ public final class LiveScreenPainter {
     };
 
     // 7x7 icons ('#' = drawn), used in the app header and scaled up elsewhere.
+    // 8 x 8 (even, like the 32 px screen and the round buttons it sits in), symmetric on its diagonal.
     private static final String[] ICON_PHONE = {
-            "##.....",
-            "###....",
-            ".##....",
-            ".##....",
-            "..##.##",
-            "...####",
-            "....##."};
+            ".##.....",
+            "###.....",
+            "###.....",
+            "##......",
+            ".##.....",
+            "..##.###",
+            "...#####",
+            "....###."};
     private static final String[] ICON_HOME = {
             "...#...",
             "..###..",
@@ -110,14 +116,14 @@ public final class LiveScreenPainter {
             "#######",
             ".##....",
             ".#....."};
+    // Shutter button on the top right, like a real camera; the body (8 px) is what gets centered.
     private static final String[] ICON_CAMERA = {
-            ".......",
-            "..##...",
-            "#######",
-            "##...##",
-            "##.#.##",
-            "##...##",
-            "#######"};
+            ".....##.",
+            "########",
+            "##....##",
+            "##.##.##",
+            "##....##",
+            "########"};
     private static final String[] ICON_PHOTO = {
             "#######",
             "#.....#",
@@ -134,14 +140,17 @@ public final class LiveScreenPainter {
             "###.###",
             "###.###",
             "#######"};
+    // 8 x 8: teeth on all four sides and a round hole, so it reads as a gear (the 7 px one widened looked
+    // like a rectangle).
     private static final String[] ICON_GEAR = {
-            "..#.#..",
-            ".#####.",
-            "##...##",
-            ".#...#.",
-            "##...##",
-            ".#####.",
-            "..#.#.."};
+            ".#.##.#.",
+            "########",
+            ".##..##.",
+            "##....##",
+            "##....##",
+            ".##..##.",
+            "########",
+            ".#.##.#."};
     private static final String[] ICON_BALLOT = {
             "...#...",
             "..#.#..",
@@ -151,13 +160,25 @@ public final class LiveScreenPainter {
             "#.....#",
             "#######"};
     private static final String[] ICON_DOTS = {
-            ".......",
-            ".......",
-            ".......",
-            "#.#.#.#",
-            ".......",
-            ".......",
-            "......."};
+            "##.##.##",
+            "##.##.##"};
+    private static final String[] MOON = {
+            "..####",
+            ".###..",
+            "###...",
+            "###...",
+            ".###..",
+            "..####"};
+    private static final String[] SIGN_ANSWER = {
+            "##....",
+            "##....",
+            "##....",
+            ".##...",
+            "..####",
+            "...###"};
+    private static final String[] SIGN_HANG_UP = {
+            "######",
+            "##..##"};
     private static final String[] ICON_ENVELOPE = {
             "#######",
             "##...##",
@@ -174,7 +195,7 @@ public final class LiveScreenPainter {
             "ssssssss",
             "sssddsss",
             "ssmmmmss",
-            "dsssssss"};
+            "ssssssss"};
 
     private final int[] px = new int[WIDTH * HEIGHT];
 
@@ -213,22 +234,12 @@ public final class LiveScreenPainter {
         bigText(clock, x, clockY, ink);
         // Sun or moon under the clock.
         if (v.dayPhase() == LiveScreenView.NIGHT) {
-            rect(14, 19, 3, 4, SCREEN);
-            px(17, 19, SCREEN);
-            px(17, 22, SCREEN);
-            px(13, 20, SCREEN);
-            px(13, 21, SCREEN);
+            // A crescent in the same 6 x 6 box as the sun (columns 13 to 18).
+            icon(MOON, 13, 18, SCREEN);
         } else {
             int sun = v.dayPhase() == LiveScreenView.DAY ? YELLOW : ACCENT;
-            rect(14, 19, 4, 4, sun);
-            px(15, 18, sun);
-            px(16, 18, sun);
-            px(15, 23, sun);
-            px(16, 23, sun);
-            px(13, 20, sun);
-            px(13, 21, sun);
-            px(18, 20, sun);
-            px(18, 21, sun);
+            // A 6 px disc (corners cut), centered on the screen's middle (columns 13 to 18).
+            roundRect(13, 18, 6, 6, sun);
         }
         if (v.unread() > 0) {
             String count = v.unread() > 9 ? "9+" : Integer.toString(v.unread());
@@ -245,31 +256,34 @@ public final class LiveScreenPainter {
 
     private void ringing(LiveScreenView v) {
         gradient(GREEN_LIGHT, SCREEN, SCREEN);
-        int cx = 16, cy = 15;
+        int cx = 16, cy = 16;
         // Expanding rings, one step per animation frame.
-        int r = 9 + (v.frame() % 3) * 2;
+        int r = 9 + v.frame() % 3;
         ringOutline(cx, cy, r, v.frame() % 3 == 2 ? SCREEN_DEEP : TEAL);
-        disc(cx, cy, 7, GREEN);
-        int shake = v.frame() % 2 == 0 ? -1 : 1;
-        icon(ICON_PHONE, cx - 3 + shake, cy - 3, WHITE);
+        disc(cx, cy, 8, GREEN);
+        // Always centered: the growing rings show it rings (the icon used to shake 1 px left and right).
+        icon(ICON_PHONE, cx - 4, cy - 4, WHITE);
+        // Rows: rings down to 27, the name 28-32, the buttons 35-42.
         if (!v.caller().isEmpty())
-            fittedText(v.caller(), 26, INK);
+            fittedText(v.caller(), 28, INK);
         else
-            dots(26, v.frame(), INK_SOFT);
-        callButton(9, 38, RED, false);
-        callButton(23, 38, GREEN, true);
+            dots(29, v.frame(), INK_SOFT);
+        // Mirror images of each other on the screen (columns 5-12 and 19-26).
+        callButton(9, 39, RED, false);
+        callButton(23, 39, GREEN, true);
         homeBar(INK_SOFT);
     }
 
     private void dialing(LiveScreenView v) {
         gradient(SCREEN, SCREEN_MID, SCREEN_DEEP);
-        int cx = 16, cy = 15;
-        disc(cx, cy, 7, TEAL);
-        icon(ICON_PHONE, cx - 3, cy - 3, WHITE);
+        int cx = 16, cy = 16;
+        disc(cx, cy, 8, TEAL);
+        icon(ICON_PHONE, cx - 4, cy - 4, WHITE);
+        // Rows: disc 8-23, the name 26-30, the dots 32-34, the button 36-43.
         if (!v.caller().isEmpty())
             fittedText(v.caller(), 26, INK);
-        dots(v.caller().isEmpty() ? 26 : 33, v.frame(), INK_SOFT);
-        callButton(16, 39, RED, false);
+        dots(v.caller().isEmpty() ? 28 : 33, v.frame(), INK_SOFT);
+        callButton(16, 40, RED, false);
         homeBar(INK_SOFT);
     }
 
@@ -289,17 +303,26 @@ public final class LiveScreenPainter {
             smallText(timer, (WIDTH - smallWidth(timer)) / 2, 12, INK);
         else
             bigText(timer, (WIDTH - bigWidth(timer)) / 2, 10, INK);
-        int n = Math.max(1, Math.min(4, v.participants()));
+        // At most 3 faces fit (3 x 8 px + 2 gaps of 2 px = columns 2-29); more people show as "+N" below them.
+        int people = Math.max(1, v.participants());
+        int n = Math.min(3, people);
         int tile = 8, gap = 2;
         int total = n * tile + (n - 1) * gap;
         int tx = (WIDTH - total) / 2;
         for (int i = 0; i < n; i++)
-            face(tx + i * (tile + gap), 20);
-        // Voice level bars, gently animated.
-        int[] heights = {2, 4, 3, 5, 2};
-        for (int i = 0; i < 5; i++) {
-            int h = 1 + (heights[(i + v.frame()) % 5]);
-            rect(11 + i * 2, 34 - h, 1, h, TEAL);
+            face(i, tx + i * (tile + gap), 19);
+        if (people > 3) {
+            // Rows 29-33, where the voice bars would be.
+            String more = "+" + Math.min(99, people - 3);
+            smallText(more, (WIDTH - smallWidth(more) + 1) / 2, 29, INK_SOFT);
+        } else {
+            // Voice level bars, gently animated: rows 29-33, between the faces (down to 27) and the button
+            // (from 35). Five 2 px bars, 1 px apart: columns 9-22, centered.
+            int[] heights = {2, 4, 3, 5, 2};
+            for (int i = 0; i < 5; i++) {
+                int h = heights[(i + v.frame()) % 5];
+                rect(9 + i * 3, 34 - h, 2, h, TEAL);
+            }
         }
         callButton(16, 39, RED, false);
     }
@@ -313,8 +336,8 @@ public final class LiveScreenPainter {
             rect(x, top, 1, 36 - top, VIEW_HILL);
         }
         rect(2, 28, 28, 8, VIEW_HILL);
-        // Corner brackets.
-        int l = 2, t = 6, rr = 29, b = 37;
+        // Corner brackets, 2 px inside the picture (columns 2-29, rows 8-35) on all four sides.
+        int l = 4, t = 10, rr = 27, b = 33;
         hline(l, t, 4, WHITE);
         vline(l, t, 4, WHITE);
         hline(rr - 3, t, 4, WHITE);
@@ -323,18 +346,16 @@ public final class LiveScreenPainter {
         vline(l, b - 3, 4, WHITE);
         hline(rr - 3, b, 4, WHITE);
         vline(rr, b - 3, 4, WHITE);
-        // Focus cross.
-        hline(14, 21, 4, GLARE);
-        vline(15, 20, 1, GLARE);
-        vline(16, 22, 1, GLARE);
-        // Recording dot, blinking.
+        // Focus cross in the middle of the picture (rows 8-35: center between rows 21 and 22).
+        focusCross(21, GLARE);
+        // Recording dot (blinking) and "REC", centered as one group: dot 9-10, text 12-22.
         if (v.frame() % 2 == 0)
-            rect(4, 2, 2, 2, RED);
-        smallText("REC", 7, 1, v.frame() % 2 == 0 ? WHITE : LINE);
+            rect(9, 2, 2, 2, RED);
+        smallText("REC", 12, 1, v.frame() % 2 == 0 ? WHITE : LINE);
         // Shutter button.
         disc(16, 42, 3, WHITE);
         disc(16, 42, 2, LINE);
-        px(16, 42, WHITE);
+        rect(15, 41, 2, 2, WHITE);
     }
 
     private void app(LiveScreenView v) {
@@ -344,10 +365,10 @@ public final class LiveScreenPainter {
         int f = v.frame();
         switch (app) {
             case HOME -> {
-                appTile(4, 12, ACCENT, ICON_PERSON, INK);
-                appTile(18, 12, TEAL, ICON_CAMERA, INK);
-                appTile(4, 26, BLUE, ICON_PHOTO, WHITE);
-                appTile(18, 26, GREEN, ICON_CHAT, WHITE);
+                appTile(3, 11, ACCENT, ICON_PERSON, INK);
+                appTile(18, 11, TEAL, ICON_CAMERA, INK);
+                appTile(3, 25, BLUE, ICON_PHOTO, WHITE);
+                appTile(18, 25, GREEN, ICON_CHAT, WHITE);
             }
             case CONTACTS -> {
                 int[] colors = {ACCENT, TEAL, BLUE, GREEN};
@@ -363,10 +384,24 @@ public final class LiveScreenPainter {
                 bubble(14, 18, 16, true);
                 bubble(2, 25, 12, false);
                 // "Someone is typing": the last bubble's dots.
-                roundRect(14, 32, 16, 7, YELLOW);
+                roundRect(2, 32, 13, 7, WHITE);
                 for (int i = 0; i < 3; i++)
-                    rect(18 + i * 3, 35 - (i == f % 3 ? 1 : 0), 2, 2, INK);
+                    rect(4 + i * 3, 35 - (i == f % 3 ? 1 : 0), 2, 2, INK_SOFT);
                 hline(2, 41, 28, WHITE);
+            }
+            case CAMERA -> {
+                // A small viewfinder and the shutter button (it used to fall back to text lines).
+                rect(3, 11, 26, 24, VIEWFINDER);
+                rect(4, 12, 24, 13, VIEW_SKY);
+                for (int x = 4; x < 28; x++) {
+                    int top = 21 + (int) Math.round(2 * Math.sin((x + 2) / 4.0));
+                    rect(x, top, 1, 34 - top, VIEW_HILL);
+                }
+                // Focus cross in the middle of the picture (rows 12-33).
+                focusCross(22, GLARE);
+                disc(16, 40, 3, WHITE);
+                disc(16, 40, 2, LINE);
+                rect(15, 39, 2, 2, f % 2 == 0 ? WHITE : LINE);
             }
             case PHOTOS -> {
                 for (int row = 0; row < 3; row++)
@@ -375,7 +410,7 @@ public final class LiveScreenPainter {
             }
             case CALL -> {
                 disc(16, 22, 8, GREEN);
-                icon(ICON_PHONE, 13, 19, WHITE);
+                icon(ICON_PHONE, 12, 18, WHITE);
                 dots(34, f, INK_SOFT);
             }
             case LOCKED -> {
@@ -386,7 +421,7 @@ public final class LiveScreenPainter {
                 }
             }
             case SETTINGS -> {
-                iconScaled(ICON_GEAR, 9, 11, 2, INK_SOFT);
+                iconScaled(ICON_GEAR, 8, 11, 2, INK_SOFT);
                 hline(4, 29, 24, LINE);
                 hline(4, 32, 18, LINE);
                 roundRect(20, 35, 8, 4, f % 2 == 0 ? GREEN : LINE);
@@ -456,7 +491,17 @@ public final class LiveScreenPainter {
     private void header(int color, int shade, String[] icon, int iconColor) {
         rect(0, 0, WIDTH, 8, color);
         hline(0, 8, WIDTH, shade);
-        icon(icon, (WIDTH - icon[0].length()) / 2, 1, iconColor);
+        String[] even = evenWidth(trim(icon));
+        icon(even, (WIDTH - even[0].length()) / 2, (8 - even.length + 1) / 2, iconColor);
+    }
+
+    /**
+     * The screen is 32 px wide, so an icon of odd width can never sit exactly in the middle (a 7 px icon was
+     * half a pixel to the left, and it showed on the held phone). Doubles the middle column instead: the
+     * icon keeps its symmetry and lands centered.
+     */
+    private static String[] evenWidth(String[] icon) {
+        return icon[0].length() % 2 == 0 ? icon : widenMiddle(icon);
     }
 
     private void statusBar(int color) {
@@ -473,16 +518,64 @@ public final class LiveScreenPainter {
         hline(11, 45, 10, color);
     }
 
+    /** 11 px tiles (odd, like the 7 px icons): the icon is centered on its own drawn pixels, so every
+     * icon sits exactly in the middle of its tile. The two tile columns mirror each other on the screen. */
+    private static final int TILE = 11;
+
     private void appTile(int x, int y, int color, String[] icon, int iconColor) {
-        roundRect(x, y, 10, 10, color);
-        hline(x + 1, y + 10, 8, INK_SOFT);
-        icon(icon, x + 2, y + 2, iconColor);
+        roundRect(x, y, TILE, TILE, color);
+        hline(x + 1, y + TILE, TILE - 2, INK_SOFT);
+        String[] fitted = oddSize(trim(icon));
+        icon(fitted, x + (TILE - fitted[0].length()) / 2, y + (TILE - fitted.length) / 2, iconColor);
+    }
+
+    /** The icon without its empty border rows and columns. */
+    private static String[] trim(String[] icon) {
+        int top = icon.length, bottom = -1, left = icon[0].length(), right = -1;
+        for (int r = 0; r < icon.length; r++)
+            for (int c = 0; c < icon[r].length(); c++)
+                if (icon[r].charAt(c) == '#') {
+                    top = Math.min(top, r);
+                    bottom = Math.max(bottom, r);
+                    left = Math.min(left, c);
+                    right = Math.max(right, c);
+                }
+        if (bottom < 0)
+            return icon;
+        String[] out = new String[bottom - top + 1];
+        for (int r = top; r <= bottom; r++)
+            out[r - top] = icon[r].substring(left, right + 1);
+        return out;
+    }
+
+    /** Odd width and height, for centering in an odd-sized box: doubles the middle column / row if needed. */
+    private static String[] oddSize(String[] icon) {
+        String[] out = icon[0].length() % 2 == 0 ? widenMiddle(icon) : icon;
+        if (out.length % 2 == 0) {
+            int mid = out.length / 2;
+            String[] taller = new String[out.length + 1];
+            for (int r = 0, o = 0; r < out.length; r++) {
+                taller[o++] = out[r];
+                if (r == mid)
+                    taller[o++] = out[r];
+            }
+            out = taller;
+        }
+        return out;
+    }
+
+    private static String[] widenMiddle(String[] icon) {
+        int mid = icon[0].length() / 2;
+        String[] out = new String[icon.length];
+        for (int row = 0; row < icon.length; row++)
+            out[row] = icon[row].substring(0, mid + 1) + icon[row].substring(mid);
+        return out;
     }
 
     private void bubble(int x, int y, int w, boolean mine) {
-        roundRect(x, y, w, 6, mine ? YELLOW : WHITE);
-        hline(x + 2, y + 2, w - 5, mine ? YELLOW_SHADE : LINE);
-        hline(x + 2, y + 4, w / 2, mine ? YELLOW_SHADE : LINE);
+        roundRect(x, y, w, 6, mine ? BUBBLE_MINE : WHITE);
+        hline(x + 2, y + 2, w - 5, mine ? BUBBLE_MINE_LINE : LINE);
+        hline(x + 2, y + 4, w / 2, mine ? BUBBLE_MINE_LINE : LINE);
     }
 
     private void thumbnail(int x, int y, int variant) {
@@ -493,7 +586,15 @@ public final class LiveScreenPainter {
         px(x + 5, y + 2, YELLOW);
     }
 
-    private void face(int x, int y) {
+    /** Call tile {@code index}: one of the game's default skins (see LiveScreenFaces), else the generic face. */
+    private void face(int index, int x, int y) {
+        int[] skin = LiveScreenFaces.face(index);
+        if (skin != null) {
+            for (int row = 0; row < 9; row++)
+                for (int col = 0; col < 8; col++)
+                    px(x + col, y + row, skin[row * 8 + col]);
+            return;
+        }
         for (int row = 0; row < 8; row++)
             for (int col = 0; col < 8; col++) {
                 char c = FACE[row].charAt(col);
@@ -509,15 +610,23 @@ public final class LiveScreenPainter {
         hline(x, y + 8, 8, SHIRT);
     }
 
+    /**
+     * A focus cross: four 2 px thick arms around an empty center, symmetric on both axes. The center is
+     * columns 15-16 (the middle of the screen) and rows cy, cy + 1.
+     */
+    private void focusCross(int cy, int color) {
+        rect(11, cy, 3, 2, color);
+        rect(18, cy, 3, 2, color);
+        rect(15, cy - 4, 2, 3, color);
+        rect(15, cy + 3, 2, 3, color);
+    }
+
+    /** An 8 px round button around (cx, cy) (pixels cx-4 to cx+3, cy-4 to cy+3), its sign centered in it. */
     private void callButton(int cx, int cy, int color, boolean answer) {
         disc(cx, cy, 4, color);
-        if (answer) {
-            rect(cx - 2, cy - 1, 1, 2, WHITE);
-            rect(cx - 1, cy + 1, 3, 1, WHITE);
-            rect(cx + 2, cy - 1, 1, 2, WHITE);
-        } else {
-            rect(cx - 2, cy, 5, 1, WHITE);
-        }
+        // A small handset to answer, the handset lying down to hang up, both 6 px wide, centered.
+        String[] sign = answer ? SIGN_ANSWER : SIGN_HANG_UP;
+        icon(sign, cx - 3, cy - sign.length / 2, WHITE);
     }
 
     private void dots(int y, int frame, int color) {
@@ -643,22 +752,46 @@ public final class LiveScreenPainter {
         rect(x, y + 1, w, h - 2, color);
     }
 
+    /**
+     * Hand-drawn pixel-art circles, as widths per row (top to bottom): smooth, even steps, which a computed
+     * circle does not give at these sizes. Diameters are even, so a circle around x = 16 sits exactly in the
+     * middle of the 32 px screen.
+     */
+    private static final int[][] CIRCLES = {
+            {},
+            {},
+            {2, 4, 4, 2},                                                   // 4
+            {4, 6, 6, 6, 6, 4},                                             // 6
+            {4, 6, 8, 8, 8, 8, 6, 4},                                       // 8
+            {4, 8, 8, 10, 10, 10, 10, 8, 8, 4},                             // 10
+            {},
+            {},
+            {6, 10, 12, 14, 14, 16, 16, 16, 16, 16, 16, 14, 14, 12, 10, 6}, // 16
+            {6, 10, 12, 14, 16, 16, 18, 18, 18, 18, 18, 18, 16, 16, 14, 12, 10, 6}, // 18
+            {8, 12, 14, 16, 16, 18, 18, 20, 20, 20, 20, 20, 20, 18, 18, 16, 16, 14, 12, 8}, // 20
+            {8, 12, 14, 16, 18, 18, 20, 20, 22, 22, 22, 22, 22, 22, 20, 20, 18, 18, 16, 14, 12, 8}}; // 22
+
+    /** Filled circle of radius r (diameter 2r) around (cx, cy): pixels cx-r to cx+r-1, cy-r to cy+r-1. */
     private void disc(int cx, int cy, int r, int color) {
-        for (int y = -r; y <= r; y++)
-            for (int x = -r; x <= r; x++)
-                if (x * x + y * y <= r * r + r)
-                    px(cx + x, cy + y, color);
+        int[] rows = CIRCLES[r];
+        for (int i = 0; i < rows.length; i++)
+            hline(cx - rows[i] / 2, cy - r + i, rows[i], color);
     }
 
+    /** One pixel wide outline of the same circle (the pixels of disc r that are not in disc r - 1). */
     private void ringOutline(int cx, int cy, int r, int color) {
-        int outer = r * r + r;
-        int inner = (r - 1) * (r - 1) + (r - 1);
-        for (int y = -r; y <= r; y++)
-            for (int x = -r; x <= r; x++) {
-                int d = x * x + y * y;
-                if (d <= outer && d > inner)
-                    px(cx + x, cy + y, color);
-            }
+        int[] outer = CIRCLES[r];
+        int[] inner = CIRCLES[r - 1];
+        for (int i = 0; i < outer.length; i++) {
+            int y = cy - r + i;
+            int j = i - 1;
+            int in = j >= 0 && j < inner.length ? inner[j] : 0;
+            int left = cx - outer[i] / 2, right = cx + outer[i] / 2 - 1;
+            int innerLeft = cx - in / 2, innerRight = cx + in / 2 - 1;
+            for (int x = left; x <= right; x++)
+                if (in == 0 || x < innerLeft || x > innerRight)
+                    px(x, y, color);
+        }
     }
 
     private void icon(String[] icon, int x, int y, int color) {
