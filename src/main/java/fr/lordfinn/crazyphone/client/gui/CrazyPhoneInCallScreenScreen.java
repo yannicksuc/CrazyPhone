@@ -10,6 +10,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.gui.components.Button;
+import fr.lordfinn.crazyphone.client.gui.components.PhoneButton;
 import net.minecraft.client.gui./*$ gui_graphics_type {*/GuiGraphics/*$}*/;
 //? if >=26 {
 /*import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -160,7 +161,7 @@ public class CrazyPhoneInCallScreenScreen extends CrazyPhoneDefaultScreenScreen<
         initSelfTile();
         updateParticipants(menu.getParticipants());
 
-        button_hangup = Button.builder(Component.translatable("gui.crazyphone.crazy_phone_in_call_screen.button_hangup"), e -> {
+        button_hangup = PhoneButton.builder(PhoneButton.Style.DANGER, Component.translatable("gui.crazyphone.crazy_phone_in_call_screen.button_hangup"), e -> {
             //? if >=1.20.5 {
             /*NetworkAccess.sendToServer(new CrazyPhoneCallActionMessage(CrazyPhoneCallActionMessage.HANGUP, menu.getConversationId()));
             *///? } else {

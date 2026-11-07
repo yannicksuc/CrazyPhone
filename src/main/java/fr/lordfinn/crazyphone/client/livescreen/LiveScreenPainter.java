@@ -28,6 +28,8 @@ public final class LiveScreenPainter {
     static final int TEAL = 0xFF58D8D1;
     static final int NIGHT_TOP = 0xFF1E2A44;
     static final int MOON_CRATER = 0xFF96B9C8;
+    static final int CLOCK_SHADE_NIGHT = 0xFF0C1222;
+    static final int CLOCK_SHADE_TWILIGHT = 0xFFE59A62;
     static final int NIGHT_MID = 0xFF19223A;
     static final int NIGHT_BOTTOM = 0xFF14161A;
     static final int DUSK_TOP = 0xFFFFB86B;
@@ -226,16 +228,23 @@ public final class LiveScreenPainter {
 
     private void lock(LiveScreenView v) {
         wallpaper(v.dayPhase());
-        int ink = v.dayPhase() == LiveScreenView.DAY ? INK : SCREEN;
-        int soft = v.dayPhase() == LiveScreenView.DAY ? INK_SOFT : LINE;
+        // Dark text on the light day and dusk wallpapers, light text on the night one.
+        int ink = v.dayPhase() == LiveScreenView.NIGHT ? SCREEN : INK;
+        int soft = v.dayPhase() == LiveScreenView.NIGHT ? LINE : INK_SOFT;
         statusBar(soft);
         int minutes = Math.floorMod(v.clockMinutes(), 24 * 60);
         String clock = two(minutes / 60) + ":" + two(minutes % 60);
         int clockY = 9;
         int width = bigWidth(clock);
         int x = (WIDTH - width) / 2;
-        if (v.dayPhase() == LiveScreenView.DAY)
-            bigText(clock, x + 1, clockY + 1, TEAL);
+        // The same 1 px shade under the clock on every wallpaper (it was only drawn by day), straight below so
+        // the clock stays centered.
+        int shade = switch (v.dayPhase()) {
+            case LiveScreenView.NIGHT -> CLOCK_SHADE_NIGHT;
+            case LiveScreenView.TWILIGHT -> CLOCK_SHADE_TWILIGHT;
+            default -> TEAL;
+        };
+        bigText(clock, x, clockY + 1, shade);
         bigText(clock, x, clockY, ink);
         // Sun or moon under the clock.
         if (v.dayPhase() == LiveScreenView.NIGHT) {

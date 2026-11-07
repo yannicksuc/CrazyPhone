@@ -201,6 +201,8 @@ sourceSets.main {
         "fr/lordfinn/crazyphone/client/ClientPrefs.java",
         "fr/lordfinn/crazyphone/client/EmojiCatalog.java",
         "fr/lordfinn/crazyphone/client/gui/components/EmojiDrawer.java",
+        // The phone's own flat, role-coloured buttons.
+        "fr/lordfinn/crazyphone/client/gui/components/PhoneButton.java",
         // First-launch "Sandbox creation" splash over the phone display.
         "fr/lordfinn/crazyphone/client/gui/LaunchSplash.java",
         "fr/lordfinn/crazyphone/mixin/PhoneScaleScreenMixin.java",

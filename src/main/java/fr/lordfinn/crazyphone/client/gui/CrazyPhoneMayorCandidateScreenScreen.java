@@ -16,6 +16,7 @@ import net.minecraft.client.gui./*$ gui_graphics_type {*/GuiGraphics/*$}*/;
 /*import net.minecraft.client.gui.GuiGraphicsExtractor;
 *///?}
 import net.minecraft.client.gui.components.Button;
+import fr.lordfinn.crazyphone.client.gui.components.PhoneButton;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
@@ -78,7 +79,7 @@ public class CrazyPhoneMayorCandidateScreenScreen extends CrazyPhoneDefaultScree
 		boolean votingOpen = PhoneRegistrySavedData.get(world).isMayorVotingOn;
 		boolean votingFeatureEnabled = ClientFeatureFlagState.isEnabled(FeatureFlag.MAYOR_VOTING);
 
-		voteButton = Button.builder(Component.translatable("gui.crazyphone.crazy_phone_mayor_candidate_screen.button_vote"), b -> {
+		voteButton = PhoneButton.builder(PhoneButton.Style.PRIMARY, Component.translatable("gui.crazyphone.crazy_phone_mayor_candidate_screen.button_vote"), b -> {
 			Minecraft.getInstance().player.connection.sendCommand("crazyphone mayor vote " + mayorNumber);
 		}).bounds(this.leftPos + 6, this.topPos + 160, 110, 14)
 				.tooltip(net.minecraft.client.gui.components.Tooltip.create(

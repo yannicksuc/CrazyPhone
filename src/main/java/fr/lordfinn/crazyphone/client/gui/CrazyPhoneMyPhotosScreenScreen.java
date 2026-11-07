@@ -21,6 +21,7 @@ import net.minecraft.client.gui./*$ gui_graphics_type {*/GuiGraphics/*$}*/;
 /*import net.minecraft.client.gui.GuiGraphicsExtractor;
 *///?}
 import net.minecraft.client.gui.components.Button;
+import fr.lordfinn.crazyphone.client.gui.components.PhoneButton;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
@@ -530,19 +531,19 @@ public class CrazyPhoneMyPhotosScreenScreen extends CrazyPhoneDefaultScreenScree
 
         boolean sendMode = !menu.conversationId.isEmpty();
         if (sendMode) {
-            buttonSend = Button.builder(Component.translatable("gui.crazyphone.crazy_phone_my_photos_screen.button_send"), b -> {
+            buttonSend = PhoneButton.builder(PhoneButton.Style.INFO, Component.translatable("gui.crazyphone.crazy_phone_my_photos_screen.button_send"), b -> {
                 sendSelected();
             }).bounds(this.leftPos + 8, this.topPos + 158, 106, 14).build();
             guistate.put("button:button_send", buttonSend);
             this.addRenderableWidget(buttonSend);
         } else {
-            buttonDelete = Button.builder(Component.translatable("gui.crazyphone.crazy_phone_my_photos_screen.button_delete"), b -> {
+            buttonDelete = PhoneButton.builder(PhoneButton.Style.DANGER, Component.translatable("gui.crazyphone.crazy_phone_my_photos_screen.button_delete"), b -> {
                 deleteSelected();
             }).bounds(this.leftPos + 62, this.topPos + 158, 52, 14).build();
             guistate.put("button:button_delete", buttonDelete);
             this.addRenderableWidget(buttonDelete);
 
-            buttonTake = Button.builder(Component.translatable("gui.crazyphone.crazy_phone_my_photos_screen.button_take"), b -> {
+            buttonTake = PhoneButton.builder(PhoneButton.Style.PRIMARY, Component.translatable("gui.crazyphone.crazy_phone_my_photos_screen.button_take"), b -> {
                 takeSelected();
             }).bounds(this.leftPos + 8, this.topPos + 158, 52, 14).build();
             guistate.put("button:button_take", buttonTake);

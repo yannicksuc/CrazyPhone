@@ -5,6 +5,7 @@ import fr.lordfinn.crazyphone.utils.NetworkAccess;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.network.chat.Component;
 import net.minecraft.client.gui.components.Button;
+import fr.lordfinn.crazyphone.client.gui.components.PhoneButton;
 import net.minecraft.client.gui./*$ gui_graphics_type {*/GuiGraphics/*$}*/;
 //? if >=26 {
 /*import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -60,7 +61,7 @@ public class CrazyPhoneCallingScreenScreen extends CrazyPhoneDefaultScreenScreen
         for (CrazyPhoneInCallScreenMenu.CallParticipant callee : menu.getParticipants())
             bustPreview.ensure(callee.id(), callee.name(), callee.helmet(), callee.chestplate(), callee.leggings(), callee.boots());
 
-        button_cancel = Button.builder(Component.translatable("gui.crazyphone.crazy_phone_calling_screen.button_cancel"), e -> {
+        button_cancel = PhoneButton.builder(PhoneButton.Style.DANGER, Component.translatable("gui.crazyphone.crazy_phone_calling_screen.button_cancel"), e -> {
             //? if >=1.20.5 {
             /*NetworkAccess.sendToServer(new CrazyPhoneCallActionMessage(CrazyPhoneCallActionMessage.HANGUP, menu.getConversationId()));
             *///? } else {

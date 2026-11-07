@@ -44,6 +44,7 @@ import net.minecraft.client.gui./*$ gui_graphics_type {*/GuiGraphics/*$}*/;
 *///?}
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Button;
+import fr.lordfinn.crazyphone.client.gui.components.PhoneButton;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -293,7 +294,20 @@ public class CrazyPhonePhotoEditScreen extends Screen implements PhoneScreen {
     /** A Button whose label text is tinted by {@code accentColor} - see the ACCENT_* constants' own doc
      * comment for why text color, not a border. */
     private Button accentButton(Component label, Button.OnPress onPress, int x, int y, int w, int h, int accentColor) {
-        return Button.builder(colorize(label, accentColor), onPress).bounds(x, y, w, h).build();
+        return PhoneButton.builder(styleFor(accentColor), label, onPress).bounds(x, y, w, h).build();
+    }
+
+    /** The phone button style matching each accent (the same roles as the rest of the phone). */
+    private static PhoneButton.Style styleFor(int accentColor) {
+        if (accentColor == ACCENT_CONFIRM)
+            return PhoneButton.Style.CONFIRM;
+        if (accentColor == ACCENT_DANGER)
+            return PhoneButton.Style.DANGER;
+        if (accentColor == ACCENT_RESET)
+            return PhoneButton.Style.PRIMARY;
+        if (accentColor == ACCENT_TOGGLE)
+            return PhoneButton.Style.INFO;
+        return PhoneButton.Style.NEUTRAL;
     }
 
     private static Component colorize(Component label, int rgb) {
@@ -360,7 +374,7 @@ public class CrazyPhonePhotoEditScreen extends Screen implements PhoneScreen {
         // past this button's own edge at this panel width.
         lockRatioButton = accentButton(lockRatioLabel(), b -> {
             state = state.withLockAspectRatio(!state.lockAspectRatio());
-            lockRatioButton.setMessage(colorize(lockRatioLabel(), ACCENT_NEUTRAL));
+            lockRatioButton.setMessage(lockRatioLabel());
         }, panelX + (fieldW + gap) * 2, y, fieldW, rowHeight, ACCENT_NEUTRAL);
         addPanelWidget(lockRatioButton, y);
         y += rowHeight + gap;
@@ -429,7 +443,7 @@ public class CrazyPhonePhotoEditScreen extends Screen implements PhoneScreen {
         Button minus = accentButton(Component.literal("-"), b -> onChange.accept(clampAdjustment(currentValueOf(kind) - step, kind)),
                 xMinus, y, smallButtonW, rowHeight, ACCENT_NEUTRAL);
         addPanelWidget(minus, y);
-        Button valueLabel = Button.builder(Component.literal(formatAdjustment(currentValue)), b -> {
+        Button valueLabel = PhoneButton.builder(PhoneButton.Style.NEUTRAL, Component.literal(formatAdjustment(currentValue)), b -> {
         }).bounds(xValue, y, valueLabelW, rowHeight).build();
         valueLabel.active = false;
         addPanelWidget(valueLabel, y);
@@ -615,7 +629,7 @@ public class CrazyPhonePhotoEditScreen extends Screen implements PhoneScreen {
         refreshPreview();
         updateUndoRedoButtons();
         if (lockRatioButton != null)
-            lockRatioButton.setMessage(colorize(lockRatioLabel(), ACCENT_NEUTRAL));
+            lockRatioButton.setMessage(lockRatioLabel());
         if (widthField != null && heightField != null) {
             suppressResizeFieldFeedback = true;
             widthField.setValue(String.valueOf(currentCroppedWidth()));

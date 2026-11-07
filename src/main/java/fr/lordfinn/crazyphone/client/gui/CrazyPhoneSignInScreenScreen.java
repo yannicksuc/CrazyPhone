@@ -10,6 +10,7 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.network.chat.Component;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.Button;
+import fr.lordfinn.crazyphone.client.gui.components.PhoneButton;
 import net.minecraft.client.gui./*$ gui_graphics_type {*/GuiGraphics/*$}*/;
 //? if >=26 {
 /*import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -167,7 +168,7 @@ public class CrazyPhoneSignInScreenScreen extends CrazyPhoneDefaultScreenScreen<
 		password.setSuggestion(Component.translatable("gui.crazyphone.crazy_phone_sign_in_screen.password").getString());
 		guistate.put("text:password", password);
 		this.addWidget(this.password);
-		button_deverrouiller = Button.builder(Component.translatable("gui.crazyphone.crazy_phone_sign_in_screen.button_deverrouiller"), e -> submitPassword())
+		button_deverrouiller = PhoneButton.builder(PhoneButton.Style.PRIMARY, Component.translatable("gui.crazyphone.crazy_phone_sign_in_screen.button_deverrouiller"), e -> submitPassword())
 				.bounds(this.leftPos + 7, this.topPos + 100, 108, 20)
 				.tooltip(net.minecraft.client.gui.components.Tooltip.create(
 						Component.translatable("gui.crazyphone.crazy_phone_sign_in_screen.tooltip_deverrouiller")))

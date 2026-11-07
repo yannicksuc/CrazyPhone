@@ -5,6 +5,7 @@ import fr.lordfinn.crazyphone.utils.NetworkAccess;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.network.chat.Component;
 import net.minecraft.client.gui.components.Button;
+import fr.lordfinn.crazyphone.client.gui.components.PhoneButton;
 import net.minecraft.client.gui./*$ gui_graphics_type {*/GuiGraphics/*$}*/;
 //? if >=26 {
 /*import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -59,7 +60,7 @@ public class CrazyPhoneIncomingCallScreenScreen extends CrazyPhoneDefaultScreenS
         for (CrazyPhoneInCallScreenMenu.CallParticipant caller : menu.getParticipants())
             bustPreview.ensure(caller.id(), caller.name(), caller.helmet(), caller.chestplate(), caller.leggings(), caller.boots());
 
-        button_accept = Button.builder(Component.translatable("gui.crazyphone.crazy_phone_incoming_call_screen.button_accept"), e -> {
+        button_accept = PhoneButton.builder(PhoneButton.Style.CONFIRM, Component.translatable("gui.crazyphone.crazy_phone_incoming_call_screen.button_accept"), e -> {
             //? if >=1.20.5 {
             /*NetworkAccess.sendToServer(new CrazyPhoneCallActionMessage(CrazyPhoneCallActionMessage.ANSWER, menu.getConversationId()));
             *///? } else {
@@ -68,7 +69,7 @@ public class CrazyPhoneIncomingCallScreenScreen extends CrazyPhoneDefaultScreenS
         }).bounds(this.leftPos + 8, this.topPos + 158, 52, 14).build();
         this.addRenderableWidget(button_accept);
 
-        button_decline = Button.builder(Component.translatable("gui.crazyphone.crazy_phone_incoming_call_screen.button_decline"), e -> {
+        button_decline = PhoneButton.builder(PhoneButton.Style.DANGER, Component.translatable("gui.crazyphone.crazy_phone_incoming_call_screen.button_decline"), e -> {
             //? if >=1.20.5 {
             /*NetworkAccess.sendToServer(new CrazyPhoneCallActionMessage(CrazyPhoneCallActionMessage.HANGUP, menu.getConversationId()));
             *///? } else {

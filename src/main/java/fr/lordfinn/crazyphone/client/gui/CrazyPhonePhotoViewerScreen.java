@@ -15,6 +15,7 @@ import net.minecraft.client.gui./*$ gui_graphics_type {*/GuiGraphics/*$}*/;
 /*import net.minecraft.client.gui.GuiGraphicsExtractor;
 *///?}
 import net.minecraft.client.gui.components.Button;
+import fr.lordfinn.crazyphone.client.gui.components.PhoneButton;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvents;
@@ -108,9 +109,9 @@ public class CrazyPhonePhotoViewerScreen extends Screen implements PhoneScreen {
             // addRenderableWidget (not just addWidget) still matters here for its OTHER effect - registering
             // the button for click/focus dispatch (Screen#children()) - only its own contribution to the
             // private renderables list goes unused, since render() below iterates ownButtons instead.
-            Button backButton = Button.builder(Component.translatable("gui.crazyphone.photo_viewer.back"), b -> onClose())
+            Button backButton = PhoneButton.builder(PhoneButton.Style.NEUTRAL, Component.translatable("gui.crazyphone.photo_viewer.back"), b -> onClose())
                     .bounds(startX, y, buttonWidth, buttonHeight).build();
-            Button saveButton = Button.builder(Component.translatable("gui.crazyphone.photo_viewer.save"), b -> {
+            Button saveButton = PhoneButton.builder(PhoneButton.Style.PRIMARY, Component.translatable("gui.crazyphone.photo_viewer.save"), b -> {
                 NetworkAccess.sendToServer(new CrazyPhoneGivePhotoItemPacket(photoId));
                 Minecraft.getInstance().player.playSound(SoundEvents.ITEM_PICKUP, 1f, 1f);
             }).bounds(startX + buttonWidth + spacing, y, buttonWidth, buttonHeight).build();
@@ -124,7 +125,7 @@ public class CrazyPhonePhotoViewerScreen extends Screen implements PhoneScreen {
             // PhotoSavedData#linkPhotoToOwner is idempotent, so no "already in my photos" check is needed
             // first - clicking this when it's already there simply does nothing extra.
             if (origin == Origin.CONVERSATION) {
-                Button addButton = Button.builder(Component.translatable("gui.crazyphone.photo_viewer.add_to_my_photos"), b -> {
+                Button addButton = PhoneButton.builder(PhoneButton.Style.CONFIRM, Component.translatable("gui.crazyphone.photo_viewer.add_to_my_photos"), b -> {
                     NetworkAccess.sendToServer(new CrazyPhoneAddPhotoToMyPhotosPacket(photoId));
                     Minecraft.getInstance().player.playSound(SoundEvents.ITEM_PICKUP, 1f, 1f);
                 }).bounds(nextX, y, buttonWidth, buttonHeight).build();
@@ -137,7 +138,7 @@ public class CrazyPhonePhotoViewerScreen extends Screen implements PhoneScreen {
         // on disk (the editor needs real pixels, not just a GPU texture handle) - see
         // CrazyPhonePhotoEditScreen#canEdit's own doc comment; animated (GIF-derived) photos are editable
         // too now, so this is no longer also gated on that.
-        Button editButton = Button.builder(Component.translatable("gui.crazyphone.photo_viewer.edit"), b ->
+        Button editButton = PhoneButton.builder(PhoneButton.Style.INFO, Component.translatable("gui.crazyphone.photo_viewer.edit"), b ->
                 Minecraft.getInstance()./*$ mc_set_screen {*/setScreen/*$}*/(new fr.lordfinn.crazyphone.client.gui.CrazyPhonePhotoEditScreen(photoId, this)))
                 .bounds(nextX, y, buttonWidth, buttonHeight).build();
         editButton.active = fr.lordfinn.crazyphone.client.gui.CrazyPhonePhotoEditScreen.canEdit(photoId);

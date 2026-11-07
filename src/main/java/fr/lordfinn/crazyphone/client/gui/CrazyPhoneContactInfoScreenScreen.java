@@ -26,6 +26,7 @@ import net.minecraft.client.resources.PlayerSkin;
 import net.minecraft.client.resources.SkinManager;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.Button;
+import fr.lordfinn.crazyphone.client.gui.components.PhoneButton;
 import net.minecraft.client.gui./*$ gui_graphics_type {*/GuiGraphics/*$}*/;
 //? if >=26 {
 /*import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -251,7 +252,7 @@ public class CrazyPhoneContactInfoScreenScreen extends CrazyPhoneDefaultScreenSc
 		guistate.put("text:number", number);
 		this.addWidget(this.number);
 
-		button_ajouter = Button.builder(Component.translatable("gui.crazyphone.crazy_phone_contact_info_screen.button_ajouter"), e -> {
+		button_ajouter = PhoneButton.builder(PhoneButton.Style.PRIMARY, Component.translatable("gui.crazyphone.crazy_phone_contact_info_screen.button_ajouter"), e -> {
 			NetworkAccess.sendToServer(new CrazyPhoneContactInfoScreenButtonMessage(0, x, y, z, getEditBoxAndCheckBoxValues()));
 			CrazyPhoneContactInfoScreenButtonMessage.handleButtonAction(entity, 0, x, y, z, getEditBoxAndCheckBoxValues());
 		}).bounds(this.leftPos + CONTENT_X, this.topPos + BUTTON_Y, CONTENT_WIDTH, 14)

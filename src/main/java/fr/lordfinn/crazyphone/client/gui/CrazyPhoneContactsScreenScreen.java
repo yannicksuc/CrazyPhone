@@ -17,6 +17,7 @@ import net.minecraft.client.gui./*$ gui_graphics_type {*/GuiGraphics/*$}*/;
 /*import net.minecraft.client.gui.GuiGraphicsExtractor;
 *///?}
 import net.minecraft.client.gui.components.Button;
+import fr.lordfinn.crazyphone.client.gui.components.PhoneButton;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.client.Minecraft;
@@ -146,7 +147,7 @@ public class CrazyPhoneContactsScreenScreen extends CrazyPhoneDefaultScreenScree
 	public void init() {
 		super.init();
 
-		button_creategroup = Button.builder(Component.translatable("gui.crazyphone.crazy_phone_contacts_screen.button_create_group"), e -> {
+		button_creategroup = PhoneButton.builder(PhoneButton.Style.PRIMARY, Component.translatable("gui.crazyphone.crazy_phone_contacts_screen.button_create_group"), e -> {
 			if (selectedSlots.size() >= 2) {
 				HashMap<String, String> textstate = getEditBoxAndCheckBoxValues();
 				textstate.put("selectedNumbers", joinSelectedNumbers());

@@ -7,6 +7,7 @@ import net.minecraft.client.gui./*$ gui_graphics_type {*/GuiGraphics/*$}*/;
 /*import net.minecraft.client.gui.GuiGraphicsExtractor;
 *///?}
 import net.minecraft.client.gui.components.Button;
+import fr.lordfinn.crazyphone.client.gui.components.PhoneButton;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
@@ -109,12 +110,12 @@ public class CrazyPhoneGroupSettingsScreenScreen extends CrazyPhoneDefaultScreen
         this.addRenderableWidget(nameField);
         this.setInitialFocus(nameField);
 
-        Button cancelButton = Button.builder(Component.translatable("gui.crazyphone.crazy_phone_group_settings.button_cancel"), e -> onCancel())
+        Button cancelButton = PhoneButton.builder(PhoneButton.Style.NEUTRAL, Component.translatable("gui.crazyphone.crazy_phone_group_settings.button_cancel"), e -> onCancel())
                 .bounds(this.leftPos + CONTENT_X - PANEL_EDGE_INSET, this.topPos + 158, 52 + PANEL_EDGE_INSET, 14).build();
         guistate.put("button:group_settings_cancel", cancelButton);
         this.addRenderableWidget(cancelButton);
 
-        Button validateButton = Button.builder(Component.translatable("gui.crazyphone.crazy_phone_group_settings.button_validate"), e -> onValidate())
+        Button validateButton = PhoneButton.builder(PhoneButton.Style.CONFIRM, Component.translatable("gui.crazyphone.crazy_phone_group_settings.button_validate"), e -> onValidate())
                 .bounds(this.leftPos + 62, this.topPos + 158, 52 + PANEL_EDGE_INSET, 14).build();
         guistate.put("button:group_settings_validate", validateButton);
         this.addRenderableWidget(validateButton);

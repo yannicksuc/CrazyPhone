@@ -19,6 +19,7 @@ import net.minecraft.client.gui.components.WidgetSprites;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.ImageButton;
 import net.minecraft.client.gui.components.Button;
+import fr.lordfinn.crazyphone.client.gui.components.PhoneButton;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui./*$ gui_graphics_type {*/GuiGraphics/*$}*/;
 //? if >=26 {
@@ -114,7 +115,12 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 	 * accept/decline pair); use {@link #ACTION_BUTTON_X}/{@link #ACTION_BUTTON_FULL_WIDTH} for a lone
 	 * button spanning the row by itself. */
 	protected Button actionButton(Component label, int xOffset, int width, Tooltip tooltip, Button.OnPress onPress) {
-		Button.Builder builder = Button.builder(label, onPress)
+		return actionButton(PhoneButton.Style.PRIMARY, label, xOffset, width, tooltip, onPress);
+	}
+
+	/** {@link #actionButton(Component, int, int, Tooltip, Button.OnPress)} with its role (colour). */
+	protected Button actionButton(PhoneButton.Style style, Component label, int xOffset, int width, Tooltip tooltip, Button.OnPress onPress) {
+		PhoneButton.Builder builder = PhoneButton.builder(style, label, onPress)
 				.bounds(this.leftPos + xOffset, this.topPos + ACTION_BUTTON_Y, width, ACTION_BUTTON_HEIGHT);
 		if (tooltip != null)
 			builder.tooltip(tooltip);

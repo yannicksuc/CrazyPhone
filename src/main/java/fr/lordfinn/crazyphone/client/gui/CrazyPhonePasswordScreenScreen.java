@@ -9,6 +9,7 @@ import net.minecraft.client.gui./*$ gui_graphics_type {*/GuiGraphics/*$}*/;
 /*import net.minecraft.client.gui.GuiGraphicsExtractor;
 *///?}
 import net.minecraft.client.gui.components.Button;
+import fr.lordfinn.crazyphone.client.gui.components.PhoneButton;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.ImageButton;
 import net.minecraft.client.gui.components.Tooltip;
@@ -376,7 +377,7 @@ public class CrazyPhonePasswordScreenScreen extends CrazyPhoneDefaultScreenScree
     }
 
     private void initValidateButton() {
-        buttonAction = actionButton(Component.translatable("gui.crazyphone.crazy_phone_password_screen.button_valider"),
+        buttonAction = actionButton(PhoneButton.Style.CONFIRM, Component.translatable("gui.crazyphone.crazy_phone_password_screen.button_valider"),
                 ACTION_BUTTON_X, ACTION_BUTTON_FULL_WIDTH,
                 Tooltip.create(Component.translatable("gui.crazyphone.crazy_phone_password_screen.tooltip_valider")),
                 e -> {
