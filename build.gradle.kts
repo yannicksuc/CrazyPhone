@@ -80,6 +80,9 @@ neoForge {
 
     // Default run configurations.
     // These can be tweaked, removed, or duplicated as needed.
+    // Dev-only: -PquickPlayMultiplayer=host:port points both client runs at another dedicated server than
+    // localhost:25565 (same opt-in property as build.fabric26.gradle.kts), so two worktrees can test at once.
+    val devQuickPlayTarget = findProperty("quickPlayMultiplayer") as String? ?: "localhost:25565"
     runs {
         // Two-player local testing (calls, group chats): run "server" (a dedicated, offline/cracked-mode
         // server - see run-server/server.properties) alongside "client" and "client2", both of which
@@ -104,7 +107,7 @@ neoForge {
             gameDirectory = thisProject.file("run")
             programArguments.addAll(
                 "--username", "LordFinn", "--uuid", "60b30ab6-a3a3-3980-9bfe-b84bc32ce8d0",
-                "--quickPlayMultiplayer", "localhost:25565"
+                "--quickPlayMultiplayer", devQuickPlayTarget
             )
         }
 
@@ -114,7 +117,7 @@ neoForge {
             gameDirectory = thisProject.file("run-client2")
             programArguments.addAll(
                 "--username", "Bouteilles", "--uuid", "94f877fb-ab97-3a21-a67f-715f0a12f124",
-                "--quickPlayMultiplayer", "localhost:25565"
+                "--quickPlayMultiplayer", devQuickPlayTarget
             )
         }
 
