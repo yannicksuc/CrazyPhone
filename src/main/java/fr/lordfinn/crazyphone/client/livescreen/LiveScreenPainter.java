@@ -27,6 +27,7 @@ public final class LiveScreenPainter {
     static final int GLARE = 0xFFE0F6F5;
     static final int TEAL = 0xFF58D8D1;
     static final int NIGHT_TOP = 0xFF1E2A44;
+    static final int MOON_CRATER = 0xFF96B9C8;
     static final int NIGHT_MID = 0xFF19223A;
     static final int NIGHT_BOTTOM = 0xFF14161A;
     static final int DUSK_TOP = 0xFFFFB86B;
@@ -165,15 +166,14 @@ public final class LiveScreenPainter {
     private static final String[] ICON_DOTS = {
             "##.##.##",
             "##.##.##"};
-    // The sun's own 6 x 6 shape (corners cut by 1 px) with a bite taken on the right: same left edge as the
-    // sun, tips reaching one column further than the middle.
+    // Minecraft's square moon with its craters (c), in the sun's 6 x 6 shape with the corners cut.
     private static final String[] MOON = {
-            ".###..",
-            "###...",
-            "###...",
-            "###...",
-            "###...",
-            ".###.."};
+            ".####.",
+            "#c####",
+            "####c#",
+            "##cc##",
+            "##cc##",
+            ".####."};
     private static final String[] SIGN_ANSWER = {
             "##....",
             "##....",
@@ -240,7 +240,12 @@ public final class LiveScreenPainter {
         // Sun or moon under the clock.
         if (v.dayPhase() == LiveScreenView.NIGHT) {
             // A crescent in the same 6 x 6 box as the sun (columns 13 to 18).
-            icon(MOON, 13, 18, SCREEN);
+            for (int row = 0; row < MOON.length; row++)
+                for (int col = 0; col < MOON[row].length(); col++) {
+                    char c = MOON[row].charAt(col);
+                    if (c != '.')
+                        px(13 + col, 18 + row, c == 'c' ? MOON_CRATER : SCREEN);
+                }
         } else {
             int sun = v.dayPhase() == LiveScreenView.DAY ? YELLOW : ACCENT;
             // A 6 px disc (corners cut), centered on the screen's middle (columns 13 to 18).
