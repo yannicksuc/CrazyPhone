@@ -340,6 +340,19 @@ tasks.named<ProcessResources>("processResources") {
         }
     }
 
+    // NeoForge 26.3's LootModifier takes one optional "condition" (a LootItemCondition holder) instead of the
+    // old "conditions" array (checked against LootModifier.codecStart in the NeoForge 26.3.0.101 sources), so the
+    // array's single entry becomes that field in the 26.3+ build output.
+    if (minecraftVersion.startsWith("26.") && minecraftVersion >= "26.3") {
+        doLast {
+            destinationDir.resolve("data/crazyphone/loot_modifiers").listFiles { f -> f.name.endsWith(".json") }?.forEach { f ->
+                f.writeText(
+                    f.readText().replace(Regex("""("conditions")\s*:\s*\[\s*(\{[^\]]*\})\s*\]"""), "\"condition\": \$2")
+                )
+            }
+        }
+    }
+
     // The photo-dyeing recipe's own "minecraft:crafting_dye" type doesn't exist before 26.x (confirmed live:
     // 1.21.1's own RecipeManager fails the whole reload with "Unknown registry key ... minecraft:crafting_dye"
     // otherwise, not just skip this one recipe) - dyeing still works fine on every earlier version without it,

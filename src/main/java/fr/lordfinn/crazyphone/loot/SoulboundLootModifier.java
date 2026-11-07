@@ -37,7 +37,14 @@ public class SoulboundLootModifier extends LootModifier {
     // fields now: conditions + priority, instead of just conditions) - so the generated codec now feeds this
     // constructor an extra Integer, and the super constructor itself takes it too (confirmed against the
     // real NeoForge 26.1.2.100 sources).
-    //? if >=26 {
+    // NeoForge 26.3 then replaced the conditions array with one optional condition holder ("condition" in the
+    // JSON, rewritten from "conditions" by build.gradle.kts for 26.3 - checked against NeoForge 26.3.0.101).
+    //? if >=26.3 {
+    /^public SoulboundLootModifier(java.util.Optional<net.minecraft.core.Holder<LootItemCondition>> condition, int priority, float chance) {
+        super(condition, priority);
+        this.chance = chance;
+    }^/
+    //? } else if >=26 {
     /^public SoulboundLootModifier(LootItemCondition[] conditions, int priority, float chance) {
         super(conditions, priority);
         this.chance = chance;

@@ -3,7 +3,9 @@ package fr.lordfinn.crazyphone.mixin;
 import fr.lordfinn.crazyphone.client.PhoneCursorStabilizer;
 import net.minecraft.client.MouseHandler;
 import net.minecraft.client.Minecraft;
+//? if <26.3 {
 import org.lwjgl.glfw.GLFW;
+//?}
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -45,7 +47,12 @@ public abstract class MouseHandlerCursorMixin {
         //? } else {
         /*long window = Minecraft.getInstance().getWindow().handle();
         *///?}
+        // 26.3 swapped GLFW for SDL3: same warp vanilla's own InputConstants#releaseMouse does there.
+        //? if >=26.3 {
+        /*org.lwjgl.sdl.SDLMouse.SDL_WarpMouseInWindow(window, (float) pos[0], (float) pos[1]);
+        *///? } else {
         GLFW.glfwSetCursorPos(window, pos[0], pos[1]);
+        //?}
         this.xpos = pos[0];
         this.ypos = pos[1];
     }

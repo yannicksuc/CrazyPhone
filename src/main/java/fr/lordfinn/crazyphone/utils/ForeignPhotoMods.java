@@ -77,7 +77,12 @@ public final class ForeignPhotoMods {
         // Stream-returning nonEmptyItemCopyStream() at 26.x - confirmed via javap on both jars), while these
         // two plain accessors are identical everywhere.
         for (int slot = 0; slot < contents.getSlots(); slot++) {
+            // 26.3 dropped ItemContainerContents#getStackInSlot: slots hold an optional ItemStackTemplate there.
+            //? if >=26.3 {
+            /^net.minecraft.world.item.ItemStack sub = contents.getTemplateInSlot(slot).map(net.minecraft.world.item.ItemStackTemplate::create).orElse(net.minecraft.world.item.ItemStack.EMPTY);^/
+            //? } else {
             net.minecraft.world.item.ItemStack sub = contents.getStackInSlot(slot);
+            //?}
             if (sub.isEmpty())
                 continue;
             ForeignPhoto photo = readSingle(server, sub);
