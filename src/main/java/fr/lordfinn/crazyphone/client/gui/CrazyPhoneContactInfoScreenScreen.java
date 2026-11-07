@@ -25,6 +25,7 @@ import net.minecraft.client.resources.PlayerSkin;
 *///?}
 import net.minecraft.client.resources.SkinManager;
 import net.minecraft.client.gui.components.EditBox;
+import fr.lordfinn.crazyphone.client.gui.components.PhoneEditBox;
 import net.minecraft.client.gui.components.Button;
 import fr.lordfinn.crazyphone.client.gui.components.PhoneButton;
 import net.minecraft.client.gui./*$ gui_graphics_type {*/GuiGraphics/*$}*/;
@@ -218,7 +219,7 @@ public class CrazyPhoneContactInfoScreenScreen extends CrazyPhoneDefaultScreenSc
 	@Override
 	public void init() {
 		super.init();
-		number = new EditBox(this.font, this.leftPos + CONTENT_X, this.topPos + INPUT_Y, CONTENT_WIDTH, 14, Component.translatable("gui.crazyphone.crazy_phone_contact_info_screen.number")) {
+		number = new PhoneEditBox(this.font, this.leftPos + CONTENT_X, this.topPos + INPUT_Y, CONTENT_WIDTH, 14, Component.translatable("gui.crazyphone.crazy_phone_contact_info_screen.number")) {
 			@Override
 			public void insertText(String text) {
 				super.insertText(text);

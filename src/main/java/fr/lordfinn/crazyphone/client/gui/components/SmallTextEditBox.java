@@ -7,7 +7,6 @@ import net.minecraft.client.gui./*$ gui_graphics_type {*/GuiGraphics/*$}*/;
 //? if >=26 {
 /*import net.minecraft.client.gui.GuiGraphicsExtractor;
 *///?}
-import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.network.chat.Component;
 //? if neoforge && <1.21.10 {
 import net.neoforged.api.distmarker.Dist;
@@ -17,7 +16,7 @@ import net.neoforged.api.distmarker.OnlyIn;
 //? if neoforge && <1.21.10 {
 @OnlyIn(Dist.CLIENT)
 //?}
-public class SmallTextEditBox extends EditBox {
+public class SmallTextEditBox extends PhoneEditBox {
 
     private static final float SCALE_FACTOR = 0.75F; // Scale down the font size
 
@@ -30,17 +29,24 @@ public class SmallTextEditBox extends EditBox {
      * still lands exactly where the caller asked for, without changing the (still-integer) click bounds.
      */
     private final int requestedHeight;
+    /** Same for the width: the carved frame is drawn at the size the caller asked for, unscaled, so its
+     * 1 px edges stay sharp; only the text inside is drawn at SCALE_FACTOR. */
+    private final int requestedWidth;
 
     public SmallTextEditBox(Font font, int x, int y, int width, int height, Component message) {
         super(font, x, y, (int)(width * (1/SCALE_FACTOR)), (int)(height * (1/SCALE_FACTOR)), message);
         this.requestedHeight = height;
+        this.requestedWidth = width;
     }
 
     //? if >=26 {
     /*@Override
     public void extractWidgetRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
+        if (!this.isVisible())
+            return;
         int x = this.getX();
         int y = this.getY();
+        PhoneEditBox.drawFrame(guiGraphics, x, y, requestedWidth, requestedHeight, isFocused(), isEditableField());
         float renderedHeight = this.getHeight() * SCALE_FACTOR;
         float bottomAlignOffset = requestedHeight - renderedHeight;
         GuiCompat.pushPose(guiGraphics);
@@ -50,7 +56,7 @@ public class SmallTextEditBox extends EditBox {
         this.setX(0);
         this.setY(0);
 
-        super.extractWidgetRenderState(guiGraphics, (int)(mouseX * (1/SCALE_FACTOR) - x * (1/SCALE_FACTOR)),(int)(mouseY * (1/SCALE_FACTOR) - y * (1/SCALE_FACTOR)), partialTick);
+        drawInner(guiGraphics, (int)(mouseX * (1/SCALE_FACTOR) - x * (1/SCALE_FACTOR)),(int)(mouseY * (1/SCALE_FACTOR) - y * (1/SCALE_FACTOR)), partialTick);
 
         GuiCompat.popPose(guiGraphics);
         this.setX(x);
@@ -59,9 +65,11 @@ public class SmallTextEditBox extends EditBox {
     *///? } else {
     @Override
     public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-
+        if (!this.isVisible())
+            return;
         int x = this.getX();
         int y = this.getY();
+        PhoneEditBox.drawFrame(guiGraphics, x, y, requestedWidth, requestedHeight, isFocused(), isEditableField());
         float renderedHeight = this.getHeight() * SCALE_FACTOR;
         float bottomAlignOffset = requestedHeight - renderedHeight;
         GuiCompat.pushPose(guiGraphics);
@@ -73,7 +81,7 @@ public class SmallTextEditBox extends EditBox {
 		this.setY(0);
 
         // Adjust the rendering position to account for scaling
-        super.renderWidget(guiGraphics, (int)(mouseX * (1/SCALE_FACTOR) - x * (1/SCALE_FACTOR)),(int)(mouseY * (1/SCALE_FACTOR) - y * (1/SCALE_FACTOR)), partialTick);
+        drawInner(guiGraphics, (int)(mouseX * (1/SCALE_FACTOR) - x * (1/SCALE_FACTOR)),(int)(mouseY * (1/SCALE_FACTOR) - y * (1/SCALE_FACTOR)), partialTick);
 
         GuiCompat.popPose(guiGraphics);
         this.setX(x);

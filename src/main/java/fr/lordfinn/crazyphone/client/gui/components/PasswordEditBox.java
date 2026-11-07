@@ -5,7 +5,6 @@ import net.minecraft.client.gui./*$ gui_graphics_type {*/GuiGraphics/*$}*/;
 //? if >=26 {
 /*import net.minecraft.client.gui.GuiGraphicsExtractor;
 *///?}
-import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.network.chat.Component;
 //? if neoforge && <1.21.10 {
 import net.neoforged.api.distmarker.Dist;
@@ -15,7 +14,7 @@ import net.neoforged.api.distmarker.OnlyIn;
 //? if neoforge && <1.21.10 {
 @OnlyIn(Dist.CLIENT)
 //?}
-public class PasswordEditBox extends EditBox {
+public class PasswordEditBox extends PhoneEditBox {
 
     public PasswordEditBox(Font font, int x, int y, int width, int height, Component message) {
         super(font, x, y, width, height, message);

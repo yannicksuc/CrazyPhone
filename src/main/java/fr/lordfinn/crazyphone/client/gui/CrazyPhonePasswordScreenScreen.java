@@ -11,6 +11,7 @@ import net.minecraft.client.gui./*$ gui_graphics_type {*/GuiGraphics/*$}*/;
 import net.minecraft.client.gui.components.Button;
 import fr.lordfinn.crazyphone.client.gui.components.PhoneButton;
 import net.minecraft.client.gui.components.EditBox;
+import fr.lordfinn.crazyphone.client.gui.components.PhoneEditBox;
 import net.minecraft.client.gui.components.ImageButton;
 import net.minecraft.client.gui.components.Tooltip;
 //? if fabric || neoforge {
@@ -252,7 +253,7 @@ public class CrazyPhonePasswordScreenScreen extends CrazyPhoneDefaultScreenScree
     }
 
     private void initNumberField() {
-        number = new EditBox(font, leftPos + 8, topPos + 40, 83, 18, Component.translatable("gui.crazyphone.crazy_phone_password_screen.number"));
+        number = new PhoneEditBox(font, leftPos + 8, topPos + 40, 83, 18, Component.translatable("gui.crazyphone.crazy_phone_password_screen.number"));
         number.setMaxLength(32767);
         guistate.put("text:number", number);
         addWidget(number);
@@ -268,7 +269,7 @@ public class CrazyPhonePasswordScreenScreen extends CrazyPhoneDefaultScreenScree
     }
 
     private void initNameField() {
-        name = new EditBox(font, leftPos + 8, topPos + 72, 106, 18, Component.translatable("gui.crazyphone.crazy_phone_password_screen.name")) {
+        name = new PhoneEditBox(font, leftPos + 8, topPos + 72, 106, 18, Component.translatable("gui.crazyphone.crazy_phone_password_screen.name")) {
             @Override
             public void insertText(String text) {
                 super.insertText(text);

@@ -9,6 +9,7 @@ import net.minecraft.client.gui./*$ gui_graphics_type {*/GuiGraphics/*$}*/;
 import net.minecraft.client.gui.components.Button;
 import fr.lordfinn.crazyphone.client.gui.components.PhoneButton;
 import net.minecraft.client.gui.components.EditBox;
+import fr.lordfinn.crazyphone.client.gui.components.PhoneEditBox;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.Slot;
@@ -100,7 +101,7 @@ public class CrazyPhoneGroupSettingsScreenScreen extends CrazyPhoneDefaultScreen
     public void init() {
         super.init();
 
-        nameField = new EditBox(this.font, this.leftPos + CONTENT_X - PANEL_EDGE_INSET, this.topPos + NAME_FIELD_Y,
+        nameField = new PhoneEditBox(this.font, this.leftPos + CONTENT_X - PANEL_EDGE_INSET, this.topPos + NAME_FIELD_Y,
                 MEMBER_LIST_WIDTH + PANEL_EDGE_INSET * 2, 14,
                 Component.translatable("gui.crazyphone.crazy_phone_group_settings.label_group_name"));
         nameField.setMaxLength(64);

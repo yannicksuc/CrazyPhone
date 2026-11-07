@@ -46,6 +46,7 @@ import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Button;
 import fr.lordfinn.crazyphone.client.gui.components.PhoneButton;
 import net.minecraft.client.gui.components.EditBox;
+import fr.lordfinn.crazyphone.client.gui.components.PhoneEditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/;
@@ -362,11 +363,11 @@ public class CrazyPhonePhotoEditScreen extends Screen implements PhoneScreen {
         y += rowHeight + gap * 2;
 
         int fieldW = (panelWidth - gap * 2) / 3;
-        widthField = new EditBox(this.font, panelX, y, fieldW, rowHeight, Component.translatable("gui.crazyphone.photo_edit_screen.width"));
+        widthField = new PhoneEditBox(this.font, panelX, y, fieldW, rowHeight, Component.translatable("gui.crazyphone.photo_edit_screen.width"));
         widthField.setValue(String.valueOf(currentCroppedWidth()));
         widthField.setResponder(this::onWidthFieldChanged);
         addPanelWidget(widthField, y);
-        heightField = new EditBox(this.font, panelX + fieldW + gap, y, fieldW, rowHeight, Component.translatable("gui.crazyphone.photo_edit_screen.height"));
+        heightField = new PhoneEditBox(this.font, panelX + fieldW + gap, y, fieldW, rowHeight, Component.translatable("gui.crazyphone.photo_edit_screen.height"));
         heightField.setValue(String.valueOf(currentCroppedHeight()));
         heightField.setResponder(this::onHeightFieldChanged);
         addPanelWidget(heightField, y);
