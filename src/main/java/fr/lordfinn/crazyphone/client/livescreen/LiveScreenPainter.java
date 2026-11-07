@@ -124,14 +124,15 @@ public final class LiveScreenPainter {
             "##.##.##",
             "##....##",
             "########"};
+    // A framed landscape: a 2 x 2 sun and a mountain, 8 x 7.
     private static final String[] ICON_PHOTO = {
-            "#######",
-            "#.....#",
-            "#....##",
-            "#..#..#",
-            "#.###.#",
-            "#######",
-            "......."};
+            "########",
+            "#......#",
+            "#...##.#",
+            "#...##.#",
+            "#.#....#",
+            "####..##",
+            "########"};
     private static final String[] ICON_LOCK = {
             "..###..",
             ".#...#.",
@@ -278,14 +279,15 @@ public final class LiveScreenPainter {
 
     private void dialing(LiveScreenView v) {
         gradient(SCREEN, SCREEN_MID, SCREEN_DEEP);
-        int cx = 16, cy = 16;
+        int cx = 16, cy = 15;
         disc(cx, cy, 8, TEAL);
         icon(ICON_PHONE, cx - 4, cy - 4, WHITE);
-        // Rows: disc 8-23, the name 25-29, the dots 31-33, the button 35-44 (one free row between each).
+        // Rows: disc 7-22, the name 24-28, the dots 30-32, the button 34-43, the home bar 45: one free row
+        // between each.
         if (!v.caller().isEmpty())
-            fittedText(v.caller(), 25, INK);
-        dots(v.caller().isEmpty() ? 28 : 32, v.frame(), INK_SOFT);
-        callButton(16, 40, RED, false);
+            fittedText(v.caller(), 24, INK);
+        dots(v.caller().isEmpty() ? 27 : 31, v.frame(), INK_SOFT);
+        callButton(16, 39, RED, false);
         homeBar(INK_SOFT);
     }
 
@@ -312,21 +314,22 @@ public final class LiveScreenPainter {
         int total = n * tile + (n - 1) * gap;
         int tx = (WIDTH - total) / 2;
         for (int i = 0; i < n; i++)
-            face(i, tx + i * (tile + gap), 19);
+            face(i, tx + i * (tile + gap), 18);
         if (people > 3) {
-            // Rows 29-33, where the voice bars would be.
+            // Rows 28-32, where the voice bars would be.
             String more = "+" + Math.min(99, people - 3);
-            smallText(more, (WIDTH - smallWidth(more) + 1) / 2, 29, INK_SOFT);
+            smallText(more, (WIDTH - smallWidth(more) + 1) / 2, 28, INK_SOFT);
         } else {
-            // Voice level bars, gently animated: rows 29-33, between the faces (down to 27) and the button
-            // (from 35, one free row above it). Five 2 px bars, 1 px apart: columns 9-22, centered.
+            // Voice level bars, gently animated: rows 28-32, between the faces (rows 18-26) and the button
+            // (rows 34-43), one free row on each side. Five 2 px bars, 1 px apart: columns 9-22, centered.
             int[] heights = {2, 4, 3, 5, 2};
             for (int i = 0; i < 5; i++) {
                 int h = heights[(i + v.frame()) % 5];
-                rect(9 + i * 3, 34 - h, 2, h, TEAL);
+                rect(9 + i * 3, 33 - h, 2, h, TEAL);
             }
         }
-        callButton(16, 40, RED, false);
+        callButton(16, 39, RED, false);
+        homeBar(INK_SOFT);
     }
 
     private void camera(LiveScreenView v) {
@@ -355,9 +358,11 @@ public final class LiveScreenPainter {
             rect(9, 2, 2, 2, RED);
         smallText("REC", 12, 1, v.frame() % 2 == 0 ? WHITE : LINE);
         // Shutter button.
-        disc(16, 42, 3, WHITE);
-        disc(16, 42, 2, LINE);
-        rect(15, 41, 2, 2, WHITE);
+        disc(16, 41, 3, WHITE);
+        disc(16, 41, 2, LINE);
+        rect(15, 40, 2, 2, WHITE);
+        // The home bar is on every screen (rows 38-43 for the shutter, the bar on row 45).
+        homeBar(LINE);
     }
 
     private void app(LiveScreenView v) {
