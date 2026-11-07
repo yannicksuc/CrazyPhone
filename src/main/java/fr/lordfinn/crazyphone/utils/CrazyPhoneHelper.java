@@ -71,6 +71,8 @@ import net.minecraft.resources.RegistryOps;
 import java.util.concurrent.ThreadLocalRandom;
 //? if neoforge {
 import net.neoforged.neoforge.capabilities.Capabilities;
+//?}
+//? if neoforge && <26.3 {
 import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.IItemHandlerModifiable;
 //?}
@@ -110,7 +112,7 @@ public class CrazyPhoneHelper {
 
     //? if neoforge {
     @Nullable
-    public static IItemHandlerModifiable getPhoneItemHandler(Player player) {
+    public static /*$ phone_item_handler {*/IItemHandlerModifiable/*$}*/ getPhoneItemHandler(Player player) {
         return getPhoneItemHandler(player.getMainHandItem());
     }
 
@@ -120,10 +122,13 @@ public class CrazyPhoneHelper {
      * owns, not just whichever one they happen to be holding at login) can have its own attached inventory
      * read the same way. */
     @Nullable
-    public static IItemHandlerModifiable getPhoneItemHandler(ItemStack held) {
+    public static /*$ phone_item_handler {*/IItemHandlerModifiable/*$}*/ getPhoneItemHandler(ItemStack held) {
         if (!(held.getItem() instanceof CrazyPhoneItem))
             return null;
 
+        //? if >=26.3 {
+        /*return held.getCapability(Capabilities.Item.ITEM, null) instanceof fr.lordfinn.crazyphone.item.inventory.CrazyPhoneInventoryCapability phoneHandler ? phoneHandler : null;
+        *///? } else {
         //? if >=1.21.10 {
         /*net.neoforged.neoforge.transfer.ResourceHandler<net.neoforged.neoforge.transfer.item.ItemResource> handler = held.getCapability(Capabilities.Item.ITEM, null);
         *///? } else {
@@ -134,6 +139,7 @@ public class CrazyPhoneHelper {
             return null;
 
         return modifiableHandler;
+        //?}
     }
     //?}
 

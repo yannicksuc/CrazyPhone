@@ -142,6 +142,9 @@ stonecutter parameters {
     swaps.put("drop_args", if (is263) "false, net.minecraft.util.Prediction.SERVER_ONLY" else "false")
     swaps.put("clear_or_count_max", if (is263) "false, 1" else "1")
     swaps.put("bundle_item_copies", if (is263) "itemCopies" else "itemCopyStream")
+    // NeoForge 26.3 removed the deprecated net.neoforged.neoforge.items package: the phone's own inventory class
+    // carries the slot methods itself there (see CrazyPhoneInventoryCapability).
+    swaps.put("phone_item_handler", if (is263) "fr.lordfinn.crazyphone.item.inventory.CrazyPhoneInventoryCapability" else "net.neoforged.neoforge.items.IItemHandlerModifiable")
     swaps.put("first_person_hands_renderer", if (is263) "net.minecraft.client.renderer.FirstPersonHandsAndItemsRenderer" else "net.minecraft.client.renderer.ItemInHandRenderer")
     // The entity RenderState pipeline (EntityRenderer#submit(state, poseStack, collector, camera)) already
     // exists on 1.21.10, which the >=1.21.10 photo frame renderer shares with 26.x. Two names still differ
