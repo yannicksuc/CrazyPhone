@@ -30,6 +30,11 @@ tasks.withType<JavaCompile>().configureEach {
 repositories {
     mavenLocal()
     maven("https://maven.maxhenkel.de/repository/public")
+    // Only for the dev-only -PwithVoicechat runtime below (same setup as build.fabric26.gradle.kts).
+    exclusiveContent {
+        forRepository { maven("https://api.modrinth.com/maven") }
+        filter { includeGroup("maven.modrinth") }
+    }
 }
 
 base {
@@ -215,6 +220,10 @@ dependencies {
     // Optional Simple Voice Chat addon API - compileOnly so the mod doesn't require SVC to be present at
     // runtime; availability is checked via ModList at runtime (see VoicechatIntegration.isAvailable()).
     compileOnly("de.maxhenkel.voicechat:voicechat-api:${property("voicechat_api_version")}")
+    // Dev-only, opt-in (`-PwithVoicechat`): puts the real Simple Voice Chat mod in runClient/runServer to live-test
+    // calls and voice messages, like the Fabric 26.x nodes. Off by default, the released jar never depends on it.
+    if (hasProperty("withVoicechat"))
+        runtimeOnly("maven.modrinth:simple-voice-chat:neoforge-${property("voicechat_api_version")}+$minecraftVersion")
 }
 
 // SpongePowered Mixin refuses to process a config whose declared compatibilityLevel is higher than the
