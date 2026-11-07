@@ -151,14 +151,16 @@ public final class LiveScreenPainter {
             ".##..##.",
             "########",
             ".#.##.#."};
+    // A ballot box: the rectangular voting paper going into the slot, 8 x 8.
     private static final String[] ICON_BALLOT = {
-            "...#...",
-            "..#.#..",
-            "...#...",
-            "#######",
-            "#.###.#",
-            "#.....#",
-            "#######"};
+            "..####..",
+            "..#..#..",
+            "..#..#..",
+            "##....##",
+            "########",
+            "#......#",
+            "#......#",
+            "########"};
     private static final String[] ICON_DOTS = {
             "##.##.##",
             "##.##.##"};
@@ -263,12 +265,12 @@ public final class LiveScreenPainter {
         disc(cx, cy, 8, GREEN);
         // Always centered: the growing rings show it rings (the icon used to shake 1 px left and right).
         icon(ICON_PHONE, cx - 4, cy - 4, WHITE);
-        // Rows: rings down to 27, the name 28-32, the buttons 35-42.
+        // Rows: rings down to 27, the name 28-32, the buttons 34-43.
         if (!v.caller().isEmpty())
             fittedText(v.caller(), 28, INK);
         else
             dots(29, v.frame(), INK_SOFT);
-        // Mirror images of each other on the screen (columns 5-12 and 19-26).
+        // Mirror images of each other on the screen (columns 4-13 and 18-27).
         callButton(9, 39, RED, false);
         callButton(23, 39, GREEN, true);
         homeBar(INK_SOFT);
@@ -279,10 +281,10 @@ public final class LiveScreenPainter {
         int cx = 16, cy = 16;
         disc(cx, cy, 8, TEAL);
         icon(ICON_PHONE, cx - 4, cy - 4, WHITE);
-        // Rows: disc 8-23, the name 26-30, the dots 32-34, the button 36-43.
+        // Rows: disc 8-23, the name 25-29, the dots 31-33, the button 35-44 (one free row between each).
         if (!v.caller().isEmpty())
-            fittedText(v.caller(), 26, INK);
-        dots(v.caller().isEmpty() ? 28 : 33, v.frame(), INK_SOFT);
+            fittedText(v.caller(), 25, INK);
+        dots(v.caller().isEmpty() ? 28 : 32, v.frame(), INK_SOFT);
         callButton(16, 40, RED, false);
         homeBar(INK_SOFT);
     }
@@ -317,14 +319,14 @@ public final class LiveScreenPainter {
             smallText(more, (WIDTH - smallWidth(more) + 1) / 2, 29, INK_SOFT);
         } else {
             // Voice level bars, gently animated: rows 29-33, between the faces (down to 27) and the button
-            // (from 35). Five 2 px bars, 1 px apart: columns 9-22, centered.
+            // (from 35, one free row above it). Five 2 px bars, 1 px apart: columns 9-22, centered.
             int[] heights = {2, 4, 3, 5, 2};
             for (int i = 0; i < 5; i++) {
                 int h = heights[(i + v.frame()) % 5];
                 rect(9 + i * 3, 34 - h, 2, h, TEAL);
             }
         }
-        callButton(16, 39, RED, false);
+        callButton(16, 40, RED, false);
     }
 
     private void camera(LiveScreenView v) {
@@ -428,7 +430,7 @@ public final class LiveScreenPainter {
                 hline(4, 36, 12, LINE);
             }
             case ELECTION -> {
-                iconScaled(ICON_BALLOT, 9, 11, 2, INK);
+                iconScaled(ICON_BALLOT, 8, 11, 2, INK);
                 int[] votes = {14, 9, 18};
                 int[] colors = {ACCENT, TEAL, BLUE};
                 for (int i = 0; i < 3; i++)
@@ -621,9 +623,9 @@ public final class LiveScreenPainter {
         rect(15, cy + 3, 2, 3, color);
     }
 
-    /** An 8 px round button around (cx, cy) (pixels cx-4 to cx+3, cy-4 to cy+3), its sign centered in it. */
+    /** A 10 px round button around (cx, cy) (pixels cx-5 to cx+4), its 6 px sign centered with a margin. */
     private void callButton(int cx, int cy, int color, boolean answer) {
-        disc(cx, cy, 4, color);
+        disc(cx, cy, 5, color);
         // A small handset to answer, the handset lying down to hang up, both 6 px wide, centered.
         String[] sign = answer ? SIGN_ANSWER : SIGN_HANG_UP;
         icon(sign, cx - 3, cy - sign.length / 2, WHITE);
