@@ -3,7 +3,7 @@ plugins {
     `maven-publish`
     idea
     `jvm-test-suite`
-    id("net.neoforged.moddev") version "2.0.143"
+    id("net.neoforged.moddev") version "2.0.148"
     // Not applied unconditionally - see the MODRINTH_TOKEN/CURSEFORGE_TOKEN checks below. `apply false`
     // here still resolves the plugin coordinate from the Gradle Plugin Portal (settings.gradle.kts's own
     // pluginManagement block) for every node's local dev build too, a small, accepted overhead for keeping

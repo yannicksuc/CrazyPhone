@@ -20,7 +20,7 @@ plugins {
 // stonecutter.gradle.kts for how source files tell the two loaders apart (//? if fabric / //? if neoforge).
 stonecutter {
     shared {
-        versions("1.20.4", "1.21.1", "1.21.10", "26.1", "26.2")
+        versions("1.20.4", "1.21.1", "1.21.10", "26.1", "26.2", "26.3")
         // 1.20.1 predates NeoForge's own fork/rebrand (net.minecraftforge.* -> net.neoforged.neoforge.*,
         // which happened at the 1.20.2 boundary) - NeoForge's own tooling builds it via ModDevGradle's
         // "legacyforge" plugin against the real, original net.minecraftforge:forge:1.20.1-47.1.x artifact,
