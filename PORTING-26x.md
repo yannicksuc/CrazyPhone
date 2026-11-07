@@ -5,6 +5,35 @@ task turned out to be much bigger than expected once actually attempted - this f
 that progress isn't lost and the next session (or a live human) can pick it up without
 re-discovering everything from scratch.
 
+## Update (2026-11-07): NeoForge `26.2` and new NeoForge `26.3`
+
+Branch `port/neoforge-26.2-26.3` (from `feat/next-release`, so camera video, live screen in hand, emoji
+picker and phone size are included). Every node compiles (all 12, checked before and after).
+
+- `26.2` already compiled on the shared tree; it moves to neo `26.2.0.93` and SVC API 2.6.27.
+- `26.3` is new (neo `26.3.0.101`, FML 12). ModDevGradle 2.0.143 couldn't recompile the decompiled 26.3
+  sources, 2.0.148 can (all NeoForge nodes now use it). NeoForge-side changes, all checked against the
+  26.3.0.101 sources:
+  - `net.neoforged.neoforge.items` is gone (ComponentItemHandler, IItemHandler, ItemStackHandler):
+    `CrazyPhoneInventoryCapability` stores its slots in the `CONTAINER` component itself from 26.3 on and
+    still exposes `ResourceHandler<ItemResource>`; swap `phone_item_handler` for its callers.
+  - `ModConfig.Type.COMMON` is gone: LOCAL, with the same `crazyphone-common.toml` file name.
+  - `LootModifier` takes one optional `condition` holder: new constructor, and the build rewrites the
+    loot_modifiers JSON (`conditions` array to `condition`, its inner `condition` key to `type`).
+  - SDL3 instead of GLFW in the NeoForge-only files (capture clicks via `InputConstants`, phone cursor
+    save/restore via `MouseHandler` and `SDL_WarpMouseInWindow`), plus the existing `pose_rotate` /
+    `drop_args` swaps and `ItemContainerContents#getTemplateInSlot`.
+- Live-tested on both (dev server + one client, SVC installed): clean server boot (only the Windows
+  Perflib noise), client join, phone in hand with its live screen, phone GUI opening (registration screen),
+  photo in hand and in a vanilla item frame, Soulbound books from Ancient City ice box loot, feature flags,
+  config file, SVC loading CrazyPhone's plugin, and `runGameTestServer` (13/13 passed). **Not clicked
+  through live**: sign-up, contacts, messages, calls, camera video, photo capture. The dev client runs in
+  the background and SDL3 ignores input sent to an unfocused window, so screens can't be driven without
+  taking the user's focus; MCP Fabric has no GUI click/type tool yet.
+- Dev tooling: `-PwithVoicechat` and `-PquickPlayMultiplayer=host:port` now work on NeoForge nodes too;
+  `26.3` is in `scripts/dev-launch.ps1` and 26.2 moved to port 25565 (the NeoForge clients' default
+  target). Both nodes are in release.yml and the NeoForge publish list.
+
 ## Update (2026-10-29): `26.2-fabric` and new `26.3-fabric` build and were live-tested
 
 Branch `port/fabric-26.2-26.3`. Both Fabric nodes compile, boot a dedicated server (zero ERROR
