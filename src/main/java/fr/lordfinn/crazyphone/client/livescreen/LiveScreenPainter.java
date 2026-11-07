@@ -165,13 +165,15 @@ public final class LiveScreenPainter {
     private static final String[] ICON_DOTS = {
             "##.##.##",
             "##.##.##"};
+    // The sun's own 6 x 6 shape (corners cut by 1 px) with a bite taken on the right: same left edge as the
+    // sun, tips reaching one column further than the middle.
     private static final String[] MOON = {
-            "..####",
             ".###..",
             "###...",
             "###...",
-            ".###..",
-            "..####"};
+            "###...",
+            "###...",
+            ".###.."};
     private static final String[] SIGN_ANSWER = {
             "##....",
             "##....",
