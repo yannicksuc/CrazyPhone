@@ -177,4 +177,9 @@ public class CrazyphoneHomeScreenScreen extends CrazyPhoneDefaultScreenScreen<Cr
     public HashMap<String, Object> getWidgets() {
         return guistate;
     }
+
+    @Override
+    protected boolean isLaunchScreen() {
+        return true;
+    }
 }

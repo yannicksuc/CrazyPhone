@@ -365,5 +365,7 @@
   "gui.crazyphone.emoji_drawer.tab.activities": "Activités",
   "gui.crazyphone.emoji_drawer.tab.objects": "Objets",
   "gui.crazyphone.emoji_drawer.tab.symbols": "Symboles",
-  "gui.crazyphone.emoji_drawer.tab.flags": "Drapeaux"
+  "gui.crazyphone.emoji_drawer.tab.flags": "Drapeaux",
+  "gui.crazyphone.launch_splash.line1": "Une création Sandbox par LordFinn",
+  "gui.crazyphone.launch_splash.line2": "pour Mastu"
 }

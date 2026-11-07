@@ -173,6 +173,10 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 	public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTicks) {
 		this.extractBackground(guiGraphics, mouseX, mouseY, partialTicks);
 		super.extractRenderState(guiGraphics, mouseX, mouseY, partialTicks);
+		if (LaunchSplash.isActive()) {
+			LaunchSplash.render(guiGraphics, this.leftPos, this.topPos);
+			return;
+		}
 		this.extractTooltip(guiGraphics, mouseX, mouseY);
 	}
 	*///? } else {
@@ -181,6 +185,10 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 	public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
 		this.renderBackground(guiGraphics, mouseX, mouseY, partialTicks);
 		super.render(guiGraphics, mouseX, mouseY, partialTicks);
+		if (LaunchSplash.isActive()) {
+			LaunchSplash.render(guiGraphics, this.leftPos, this.topPos);
+			return;
+		}
 		this.renderTooltip(guiGraphics, mouseX, mouseY);
 	}
 	//?}
@@ -194,6 +202,10 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 	public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
 		guiGraphics.fill(0, 0, this.width, this.height, 0x50000000);
 		super.render(guiGraphics, mouseX, mouseY, partialTicks);
+		if (LaunchSplash.isActive()) {
+			LaunchSplash.render(guiGraphics, this.leftPos, this.topPos);
+			return;
+		}
 		this.renderTooltip(guiGraphics, mouseX, mouseY);
 	}
 	*///?}
@@ -255,6 +267,10 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 	//? if <1.21.10 {
 	@Override
 	public boolean keyPressed(int key, int b, int c) {
+		if (LaunchSplash.isActive()) {
+			LaunchSplash.skip();
+			return true;
+		}
 		if (key == com.mojang.blaze3d.platform.InputConstants.KEY_ESCAPE) {
 			this.minecraft.player.closeContainer();
 			return true;
@@ -273,6 +289,10 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 	//? if >=1.21.10 {
 	/*@Override
 	public boolean keyPressed(net.minecraft.client.input.KeyEvent event) {
+		if (LaunchSplash.isActive()) {
+			LaunchSplash.skip();
+			return true;
+		}
 		if (event.key() == com.mojang.blaze3d.platform.InputConstants.KEY_ESCAPE) {
 			this.minecraft.player.closeContainer();
 			return true;
@@ -288,6 +308,50 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 		return false;
 	}
 	*///?}
+
+	// While the launch splash covers the display (see LaunchSplash), the phone underneath gets no input: a
+	// click or a key only skips the splash. Screens that override these themselves check
+	// LaunchSplash.isActive() first too (see CrazyPhoneSignInScreenScreen).
+	//? if <1.21.10 {
+	@Override
+	public boolean mouseClicked(double mouseX, double mouseY, int button) {
+		if (LaunchSplash.isActive()) {
+			LaunchSplash.skip();
+			return true;
+		}
+		return super.mouseClicked(mouseX, mouseY, button);
+	}
+
+	@Override
+	public boolean charTyped(char codePoint, int modifiers) {
+		if (LaunchSplash.isActive())
+			return true;
+		return super.charTyped(codePoint, modifiers);
+	}
+	//?}
+	//? if >=1.21.10 {
+	/*@Override
+	public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent event, boolean doubleClick) {
+		if (LaunchSplash.isActive()) {
+			LaunchSplash.skip();
+			return true;
+		}
+		return super.mouseClicked(event, doubleClick);
+	}
+
+	@Override
+	public boolean charTyped(net.minecraft.client.input.CharacterEvent event) {
+		if (LaunchSplash.isActive())
+			return true;
+		return super.charTyped(event);
+	}
+	*///?}
+
+	/** The screens a phone launch lands on (sign in, password, home): they start the first-launch splash.
+	 * Every other screen (an incoming call, a photo...) never does. */
+	protected boolean isLaunchScreen() {
+		return false;
+	}
 
 	//? if >=26 {
 	/*@Override
@@ -346,6 +410,8 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 		phoneScale = PhoneScale.computeScale(this.imageWidth, Math.max(this.imageHeight, PhoneScale.PHONE_HEIGHT), 0, 0);
 		PhoneScale.applyVirtualSize(this, phoneScale);
 		super.init();
+		if (isLaunchScreen())
+			LaunchSplash.startIfFirstLaunch();
 		HashMap<String, Object> guistate = getWidgets();
 		//? if legacyforge {
 		/*ResourceLocation backNormal = Crazyphone.parseId("crazyphone:textures/screens/crazyphone-back.png");

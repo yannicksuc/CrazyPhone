@@ -190,6 +190,8 @@ sourceSets.main {
             "fr/lordfinn/crazyphone/client/ClientPrefs.java",
             "fr/lordfinn/crazyphone/client/EmojiCatalog.java",
             "fr/lordfinn/crazyphone/client/gui/components/EmojiDrawer.java",
+            // First-launch "Sandbox creation" splash over the phone display.
+            "fr/lordfinn/crazyphone/client/gui/LaunchSplash.java",
             "fr/lordfinn/crazyphone/mixin/PhoneScaleScreenMixin.java",
             "fr/lordfinn/crazyphone/mixin/PhoneScaleMouseMixin.java",
             "fr/lordfinn/crazyphone/mixin/PhoneScaleGuiGraphicsMixin.java",

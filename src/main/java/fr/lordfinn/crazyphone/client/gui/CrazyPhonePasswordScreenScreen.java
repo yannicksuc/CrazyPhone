@@ -445,4 +445,9 @@ public class CrazyPhonePasswordScreenScreen extends CrazyPhoneDefaultScreenScree
         guistate.put("button:imagebutton_reset", buttonReset);
         addRenderableWidget(buttonReset);
     }
+
+	@Override
+	protected boolean isLaunchScreen() {
+		return true;
+	}
 }

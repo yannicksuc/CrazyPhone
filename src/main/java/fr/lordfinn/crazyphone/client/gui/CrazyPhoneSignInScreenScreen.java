@@ -184,6 +184,10 @@ public class CrazyPhoneSignInScreenScreen extends CrazyPhoneDefaultScreenScreen<
 	//? if <1.21.10 {
 	@Override
 	public boolean keyPressed(int key, int scanCode, int modifiers) {
+		if (LaunchSplash.isActive()) {
+			LaunchSplash.skip();
+			return true;
+		}
 		if (keyPressedImpl(key)) return true;
 		return super.keyPressed(key, scanCode, modifiers);
 	}
@@ -191,6 +195,10 @@ public class CrazyPhoneSignInScreenScreen extends CrazyPhoneDefaultScreenScreen<
 	//? if >=1.21.10 {
 	/*@Override
 	public boolean keyPressed(net.minecraft.client.input.KeyEvent event) {
+		if (LaunchSplash.isActive()) {
+			LaunchSplash.skip();
+			return true;
+		}
 		if (keyPressedImpl(event.key())) return true;
 		return super.keyPressed(event);
 	}
@@ -258,6 +266,10 @@ public class CrazyPhoneSignInScreenScreen extends CrazyPhoneDefaultScreenScreen<
 	//? if <1.21.10 {
 	@Override
 	public boolean mouseClicked(double mouseX, double mouseY, int button) {
+		if (LaunchSplash.isActive()) {
+			LaunchSplash.skip();
+			return true;
+		}
 		if (button == com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_LEFT && isHoveringAutoLockIcon(mouseX, mouseY)) {
 			onAutoLockIconClicked();
 			return true;
@@ -268,6 +280,10 @@ public class CrazyPhoneSignInScreenScreen extends CrazyPhoneDefaultScreenScreen<
 	//? if >=1.21.10 {
 	/*@Override
 	public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent event, boolean doubleClick) {
+		if (LaunchSplash.isActive()) {
+			LaunchSplash.skip();
+			return true;
+		}
 		if (event.button() == com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_LEFT && isHoveringAutoLockIcon(event.x(), event.y())) {
 			onAutoLockIconClicked();
 			return true;
@@ -275,4 +291,9 @@ public class CrazyPhoneSignInScreenScreen extends CrazyPhoneDefaultScreenScreen<
 		return super.mouseClicked(event, doubleClick);
 	}
 	*///?}
+
+	@Override
+	protected boolean isLaunchScreen() {
+		return true;
+	}
 }

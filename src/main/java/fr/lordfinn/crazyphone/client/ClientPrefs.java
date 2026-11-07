@@ -47,6 +47,7 @@ public final class ClientPrefs {
     public static final String KEY_LIVE_SCREEN_OWN = "liveScreenOwnPhone";
     public static final String KEY_LIVE_SCREEN_OTHERS = "liveScreenOtherPhones";
     public static final String KEY_CALL_CAMERA_VIDEO = "callCameraVideo";
+    public static final String KEY_LAUNCH_SPLASH_SHOWN = "launchSplashShown";
 
     /** 0 = keep the vanilla GUI scale size (the phone as it was before this option existed). */
     public static final int PHONE_SIZE_VANILLA = 0;
@@ -56,6 +57,8 @@ public final class ClientPrefs {
 
     private static int phoneSizePercent = PHONE_SIZE_DEFAULT;
     private static boolean emojiPickerEnabled = true;
+    /** The "Sandbox creation" splash is shown the first time the phone is opened on this game, then never again. */
+    private static boolean launchSplashShown;
 
     private static boolean loadedOnce;
     /** The in-game toggles (ClientConfig) are taken from the file only once: afterwards the game owns them. */
@@ -77,6 +80,22 @@ public final class ClientPrefs {
     public static synchronized boolean emojiPickerEnabled() {
         refreshIfChanged();
         return emojiPickerEnabled;
+    }
+
+    public static synchronized boolean launchSplashShown() {
+        refreshIfChanged();
+        return launchSplashShown;
+    }
+
+    /** Remembers that the launch splash was shown, saved right away. */
+    public static synchronized void markLaunchSplashShown() {
+        refreshIfChanged();
+        if (launchSplashShown)
+            return;
+        launchSplashShown = true;
+        Path path = file();
+        if (path != null)
+            write(path);
     }
 
     /** Reads the file now if it was never read (creating it with defaults if missing). */
@@ -142,6 +161,7 @@ public final class ClientPrefs {
     private static void load(Path path) throws IOException {
         int size = PHONE_SIZE_DEFAULT;
         boolean picker = true;
+        boolean splashShown = false;
         if (Files.size(path) <= MAX_FILE_BYTES) {
             Properties props = new Properties();
             try (InputStream in = Files.newInputStream(path);
@@ -150,6 +170,7 @@ public final class ClientPrefs {
             }
             size = parseInt(props.getProperty(KEY_PHONE_SIZE), PHONE_SIZE_DEFAULT);
             picker = parseBoolean(props.getProperty(KEY_EMOJI_PICKER), true);
+            splashShown = parseBoolean(props.getProperty(KEY_LAUNCH_SPLASH_SHOWN), false);
             if (!togglesApplied) {
                 ClientConfig.liveScreenOwnPhone = parseBoolean(props.getProperty(KEY_LIVE_SCREEN_OWN), true);
                 ClientConfig.liveScreenOtherPhones = parseBoolean(props.getProperty(KEY_LIVE_SCREEN_OTHERS), true);
@@ -158,7 +179,7 @@ public final class ClientPrefs {
             unknownKeys.clear();
             for (String key : props.stringPropertyNames()) {
                 if (!key.equals(KEY_PHONE_SIZE) && !key.equals(KEY_EMOJI_PICKER) && !key.equals(KEY_LIVE_SCREEN_OWN)
-                        && !key.equals(KEY_LIVE_SCREEN_OTHERS) && !key.equals(KEY_CALL_CAMERA_VIDEO))
+                        && !key.equals(KEY_LIVE_SCREEN_OTHERS) && !key.equals(KEY_CALL_CAMERA_VIDEO) && !key.equals(KEY_LAUNCH_SPLASH_SHOWN))
                     unknownKeys.put(key, props.getProperty(key));
             }
         } else {
@@ -167,6 +188,7 @@ public final class ClientPrefs {
         togglesApplied = true;
         phoneSizePercent = clampPhoneSizePercent(size);
         emojiPickerEnabled = picker;
+        launchSplashShown = splashShown;
     }
 
     private static int parseInt(String raw, int fallback) {
@@ -219,7 +241,10 @@ public final class ClientPrefs {
                 .append(KEY_LIVE_SCREEN_OTHERS).append('=').append(ClientConfig.liveScreenOtherPhones).append("\n")
                 .append("\n")
                 .append("# Camera video in calls (the video button of the call screen). No frame is ever stored.\n")
-                .append(KEY_CALL_CAMERA_VIDEO).append('=').append(ClientConfig.callCameraVideo).append("\n");
+                .append(KEY_CALL_CAMERA_VIDEO).append('=').append(ClientConfig.callCameraVideo).append("\n")
+                .append("\n")
+                .append("# The \"Sandbox creation\" splash was already shown on the first phone launch (false shows it again).\n")
+                .append(KEY_LAUNCH_SPLASH_SHOWN).append('=').append(launchSplashShown).append("\n");
         if (!unknownKeys.isEmpty()) {
             Properties extra = new Properties();
             extra.putAll(unknownKeys);
