@@ -193,6 +193,43 @@ public class CrazyPhonePasswordScreenScreen extends CrazyPhoneDefaultScreenScree
     }
     //?}
 
+    /** Top and bottom of the room the admin warning may use: under the header, above the password label (y 96). */
+    private static final int WARNING_TOP = 30, WARNING_BOTTOM = 92;
+    private static final int WARNING_FILL = 0xFFFDE8E6, WARNING_FRAME = 0xFFE74C3C, WARNING_TEXT = 0xFFB83227;
+
+    /**
+     * The "admins can see this password" warning, in an alert box like the rest of the phone (pale red fill,
+     * red 1 px frame with cut corners, dark red text). The text is drawn a bit smaller and never bold, and the
+     * box sizes itself to the wrapped text: in a long language it shrinks the text further rather than run
+     * over the password label below it.
+     */
+    private void drawAdminWarning(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics) {
+        Component warning = Component.translatable("gui.crazyphone.crazy_phone_password_screen.warning_admin_visible");
+        int x0 = 6, x1 = 116, pad = 3;
+        int room = WARNING_BOTTOM - WARNING_TOP - 2 * pad;
+        float scale = 0.75f;
+        int lines;
+        while (true) {
+            int wrapWidth = Math.round((x1 - x0 - 2 * pad) / scale);
+            lines = font.split(warning, wrapWidth).size();
+            if (lines * 9 * scale <= room || scale <= 0.5f)
+                break;
+            scale -= 0.05f;
+        }
+        int textHeight = (int) Math.ceil(lines * 9 * scale);
+        // Centered in the free room between the header and the password label.
+        int boxHeight = textHeight + 2 * pad;
+        int y0 = WARNING_TOP + Math.max(0, (WARNING_BOTTOM - WARNING_TOP - boxHeight) / 2), y1 = y0 + boxHeight;
+        guiGraphics.fill(x0 + 1, y0, x1 - 1, y1, WARNING_FRAME);
+        guiGraphics.fill(x0, y0 + 1, x1, y1 - 1, WARNING_FRAME);
+        guiGraphics.fill(x0 + 1, y0 + 1, x1 - 1, y1 - 1, WARNING_FILL);
+        fr.lordfinn.crazyphone.utils.GuiCompat.pushPose(guiGraphics);
+        fr.lordfinn.crazyphone.utils.GuiCompat.translate(guiGraphics, x0 + pad, y0 + pad);
+        fr.lordfinn.crazyphone.utils.GuiCompat.scale(guiGraphics, scale, scale);
+        guiGraphics./*$ gui_draw_word_wrap {*/drawWordWrap/*$}*/(font, warning, 0, 0, Math.round((x1 - x0 - 2 * pad) / scale), WARNING_TEXT);
+        fr.lordfinn.crazyphone.utils.GuiCompat.popPose(guiGraphics);
+    }
+
     private void drawLabels(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics) {
         if (step == STEP_IDENTITY) {
             guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(font, Component.translatable("gui.crazyphone.crazy_phone_password_screen.label_numero_associe_au_telephone"), 8, 29, -12829636, false);
@@ -201,9 +238,7 @@ public class CrazyPhonePasswordScreenScreen extends CrazyPhoneDefaultScreenScree
             if (!identityStepMessage.isEmpty())
                 guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(font, identityStepMessage, 8, 128, -12829636, false);
         } else {
-            Component warning = Component.translatable("gui.crazyphone.crazy_phone_password_screen.warning_admin_visible")
-                    .copy().withStyle(ChatFormatting.BOLD, ChatFormatting.RED);
-            guiGraphics./*$ gui_draw_word_wrap {*/drawWordWrap/*$}*/(font, warning, 8, 32, 106, 0xFFFF5555);
+            drawAdminWarning(guiGraphics);
             String passwordLabelKey = Config.requirePhonePassword
                     ? "gui.crazyphone.crazy_phone_password_screen.label_mot_de_passe"
                     : "gui.crazyphone.crazy_phone_password_screen.label_mot_de_passe_optionnel";
