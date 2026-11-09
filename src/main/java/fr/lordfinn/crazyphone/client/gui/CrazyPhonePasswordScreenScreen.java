@@ -10,6 +10,7 @@ import net.minecraft.client.gui./*$ gui_graphics_type {*/GuiGraphics/*$}*/;
 *///?}
 import net.minecraft.client.gui.components.Button;
 import fr.lordfinn.crazyphone.client.gui.components.PhoneButton;
+import fr.lordfinn.crazyphone.client.gui.components.DiceButton;
 import net.minecraft.client.gui.components.EditBox;
 import fr.lordfinn.crazyphone.client.gui.components.PhoneEditBox;
 import net.minecraft.client.gui.components.ImageButton;
@@ -44,7 +45,7 @@ public class CrazyPhonePasswordScreenScreen extends CrazyPhoneDefaultScreenScree
     private EditBox name;
     private EditBox password;
     private Button buttonAction;
-    private ImageButton buttonReset;
+    private DiceButton buttonReset;
 
     /** Which half of registration is showing - number/name first, then password on its own page (kept out
      * of the first page so the admin-visibility warning below can't be missed by someone rushing through).
@@ -288,7 +289,7 @@ public class CrazyPhonePasswordScreenScreen extends CrazyPhoneDefaultScreenScree
     }
 
     private void initNumberField() {
-        number = new PhoneEditBox(font, leftPos + 8, topPos + 40, 83, 18, Component.translatable("gui.crazyphone.crazy_phone_password_screen.number"));
+        number = new PhoneEditBox(font, leftPos + 8, topPos + 40, 88, 14, Component.translatable("gui.crazyphone.crazy_phone_password_screen.number"));
         number.setMaxLength(32767);
         guistate.put("text:number", number);
         addWidget(number);
@@ -304,7 +305,7 @@ public class CrazyPhonePasswordScreenScreen extends CrazyPhoneDefaultScreenScree
     }
 
     private void initNameField() {
-        name = new PhoneEditBox(font, leftPos + 8, topPos + 72, 106, 18, Component.translatable("gui.crazyphone.crazy_phone_password_screen.name")) {
+        name = new PhoneEditBox(font, leftPos + 8, topPos + 72, 106, 14, Component.translatable("gui.crazyphone.crazy_phone_password_screen.name")) {
             @Override
             public void insertText(String text) {
                 super.insertText(text);
@@ -352,7 +353,7 @@ public class CrazyPhonePasswordScreenScreen extends CrazyPhoneDefaultScreenScree
     }
 
     private void initPasswordField() {
-        password = new PasswordEditBox(font, leftPos + 8, topPos + 107, 106, 18, Component.translatable("gui.crazyphone.crazy_phone_password_screen.password")) {
+        password = new PasswordEditBox(font, leftPos + 8, topPos + 107, 106, 14, Component.translatable("gui.crazyphone.crazy_phone_password_screen.password")) {
             @Override
             public void insertText(String text) {
                 super.insertText(text);
@@ -437,48 +438,12 @@ public class CrazyPhonePasswordScreenScreen extends CrazyPhoneDefaultScreenScree
     }
 
     private void initResetButton() {
-        //? if legacyforge {
-        /*ResourceLocation resetTex = Crazyphone.parseId("crazyphone:textures/screens/reset.png");
-        buttonReset = new ImageButton(leftPos + 96, topPos + 40, 18, 18, 0, 0, 18, resetTex,
-            e -> {
-                NetworkAccess.sendToServer(new CrazyPhonePasswordScreenButtonMessage(1, x, y, z, getEditBoxAndCheckBoxValues()));
-                CrazyPhonePasswordScreenButtonMessage.handleButtonAction(entity, 1, x, y, z, getEditBoxAndCheckBoxValues());
-            }) {
-            private final WidgetSprites sprites = new WidgetSprites(resetTex, resetTex);
-
-            {
-                setTooltip(Tooltip.create(Component.translatable("gui.crazyphone.crazy_phone_password_screen.tooltip_reset")));
-            }
-
-            @Override
-            public void renderWidget(GuiGraphics guiGraphics, int x, int y, float partialTicks) {
-                fr.lordfinn.crazyphone.utils.GuiCompat.blit(guiGraphics, sprites.get(isActive(), isHoveredOrFocused()), getX(), getY(), 0, width, height);
-            }
-        };
-        *///? } else {
-        buttonReset = new ImageButton(leftPos + 96, topPos + 40, 18, 18,
-            new WidgetSprites(Crazyphone.parseId("crazyphone:textures/screens/reset.png"),
-                              Crazyphone.parseId("crazyphone:textures/screens/reset.png")),
-            e -> {
-                NetworkAccess.sendToServer(new CrazyPhonePasswordScreenButtonMessage(1, x, y, z, getEditBoxAndCheckBoxValues()));
-                CrazyPhonePasswordScreenButtonMessage.handleButtonAction(entity, 1, x, y, z, getEditBoxAndCheckBoxValues());
-            }) {
-            {
-                setTooltip(Tooltip.create(Component.translatable("gui.crazyphone.crazy_phone_password_screen.tooltip_reset")));
-            }
-            //? if >=26 {
-            /*@Override
-            public void extractContents(GuiGraphicsExtractor guiGraphics, int x, int y, float partialTicks) {
-                fr.lordfinn.crazyphone.utils.GuiCompat.blit(guiGraphics, sprites.get(isActive(), isHoveredOrFocused()), getX(), getY(), 0, width, height);
-            }
-            *///? } else {
-            @Override
-            public void renderWidget(GuiGraphics guiGraphics, int x, int y, float partialTicks) {
-                fr.lordfinn.crazyphone.utils.GuiCompat.blit(guiGraphics, sprites.get(isActive(), isHoveredOrFocused()), getX(), getY(), 0, width, height);
-            }
-            //?}
-        };
-        //?}
+        // A rolling die: picks a new random number (same message as before).
+        buttonReset = new DiceButton(leftPos + 100, topPos + 40, 14, e -> {
+            NetworkAccess.sendToServer(new CrazyPhonePasswordScreenButtonMessage(1, x, y, z, getEditBoxAndCheckBoxValues()));
+            CrazyPhonePasswordScreenButtonMessage.handleButtonAction(entity, 1, x, y, z, getEditBoxAndCheckBoxValues());
+        });
+        buttonReset.setTooltip(Tooltip.create(Component.translatable("gui.crazyphone.crazy_phone_password_screen.tooltip_reset")));
         guistate.put("button:imagebutton_reset", buttonReset);
         addRenderableWidget(buttonReset);
     }

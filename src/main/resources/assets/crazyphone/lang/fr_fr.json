@@ -130,7 +130,7 @@
   "gui.crazyphone.crazy_phone_password_screen.button_valider": "Valider",
   "gui.crazyphone.crazy_phone_password_screen.tooltip_valider": "Enregistrer ce numéro de téléphone",
   "gui.crazyphone.crazy_phone_password_screen.button_empty": "",
-  "gui.crazyphone.crazy_phone_password_screen.tooltip_reset": "Réinitialiser le formulaire",
+  "gui.crazyphone.crazy_phone_password_screen.tooltip_reset": "Tirer un autre numéro au hasard",
 
   "gui.crazyphone.crazy_phone_contacts_screen.title": "Messagerie",
   "gui.crazyphone.crazy_phone_contacts_screen.button_retour": "Retour",

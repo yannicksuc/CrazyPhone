@@ -132,7 +132,7 @@ public class CrazyPhoneSignInScreenScreen extends CrazyPhoneDefaultScreenScreen<
 		setBackButtonActive(false);
 		setHomeButtonActive(false);
 		setLockButtonActive(false);
-		password = new PasswordEditBox(this.font, this.leftPos + 7, this.topPos + 78, 108, 18, Component.translatable("gui.crazyphone.crazy_phone_sign_in_screen.password")) {
+		password = new PasswordEditBox(this.font, this.leftPos + 7, this.topPos + 78, 108, 14, Component.translatable("gui.crazyphone.crazy_phone_sign_in_screen.password")) {
 			@Override
 			public void insertText(String text) {
 				super.insertText(text);

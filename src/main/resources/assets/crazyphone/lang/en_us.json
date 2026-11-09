@@ -130,7 +130,7 @@
   "gui.crazyphone.crazy_phone_password_screen.button_valider": "Validate",
   "gui.crazyphone.crazy_phone_password_screen.tooltip_valider": "Register this phone number",
   "gui.crazyphone.crazy_phone_password_screen.button_empty": "",
-  "gui.crazyphone.crazy_phone_password_screen.tooltip_reset": "Clear the form",
+  "gui.crazyphone.crazy_phone_password_screen.tooltip_reset": "Roll another random number",
 
   "gui.crazyphone.crazy_phone_contacts_screen.title": "Messaging",
   "gui.crazyphone.crazy_phone_contacts_screen.button_retour": "Back",
