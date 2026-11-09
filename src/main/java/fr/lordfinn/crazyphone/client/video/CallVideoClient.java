@@ -232,6 +232,10 @@ public final class CallVideoClient {
         long now = System.nanoTime();
         if (now < nextCaptureNanos || CallVideoCapture.isBusy() || encoding.get())
             return false;
+        // Nobody watching: nothing is sent, and with the phone put away there is no own preview to show
+        // either, so nothing is captured at all.
+        if (demandFps <= 0 && !(Minecraft.getInstance()./*$ mc_get_screen {*/screen/*$}*/ instanceof CrazyPhoneInCallScreenScreen))
+            return false;
         int fps = demandFps > 0 ? Math.min(demandFps, serverMaxFps) : PREVIEW_FPS;
         fps = Math.min(fps, fr.lordfinn.crazyphone.client.ClientPrefs.videoQuality().maxFps);
         nextCaptureNanos = now + 1_000_000_000L / Math.max(1, fps);

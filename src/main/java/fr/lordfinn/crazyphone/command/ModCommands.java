@@ -182,6 +182,10 @@ public class ModCommands {
                                 .executes(ModCommands::devOpen)
                                 .then(Commands.argument("data", StringArgumentType.greedyString())
                                         .executes(ModCommands::devOpen))))
+                // Dev only too: unlocks the phone in hand as if its password had been typed in.
+                .then(Commands.literal("unlock").requires(source -> DEV_COMMANDS && permLevel(4).test(source))
+                        .then(Commands.argument("password", StringArgumentType.word())
+                                .executes(ModCommands::devUnlock)))
                 // Dev only too: registers the phone in hand as if its registration form had been filled in.
                 .then(Commands.literal("register").requires(source -> DEV_COMMANDS && permLevel(4).test(source))
                         .then(Commands.argument("number", StringArgumentType.word())
@@ -258,7 +262,25 @@ public class ModCommands {
             case "hangup" -> fr.lordfinn.crazyphone.network.CrazyPhoneCallActionMessage.HANGUP;
             default -> fr.lordfinn.crazyphone.network.CrazyPhoneCallActionMessage.OPEN_CALL_SCREEN;
         };
-        fr.lordfinn.crazyphone.network.CrazyPhoneCallActionMessage.handleAction(player, action, StringArgumentType.getString(arguments, "conversation"));
+        String conversation = StringArgumentType.getString(arguments, "conversation");
+        fr.lordfinn.crazyphone.network.CrazyPhoneCallActionMessage.handleAction(player, action, conversation);
+        // Reports where the call stands, so a test can tell why nothing happened.
+        String number = fr.lordfinn.crazyphone.procedures.GetCrazyPhoneNumberFromMainHandProcedure.execute(player, null);
+        String status = "number=" + number
+                + " members=" + fr.lordfinn.crazyphone.utils.CrazyPhoneHelper.getGroupMembers(player.level(), conversation)
+                + " voice=" + fr.lordfinn.crazyphone.voicechat.VoicechatIntegration.isAvailable()
+                + " session=" + fr.lordfinn.crazyphone.voicechat.CallRegistry.getSessionFor(player.getUUID())
+                        .map(s -> "in:" + s.participants.size() + " ringing:" + s.ringing.size()).orElse("none");
+        arguments.getSource().sendSuccess(() -> Component.literal(status), false);
+        return 1;
+    }
+
+    private static int devUnlock(CommandContext<CommandSourceStack> arguments) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        net.minecraft.server.level.ServerPlayer player = arguments.getSource().getPlayerOrException();
+        java.util.HashMap<String, String> form = new java.util.HashMap<>();
+        form.put("textin:password", StringArgumentType.getString(arguments, "password"));
+        fr.lordfinn.crazyphone.procedures.CrazyPhoneTrySignInProcedure.execute(
+                player.level(), player.getX(), player.getY(), player.getZ(), player, form);
         return 1;
     }
 
