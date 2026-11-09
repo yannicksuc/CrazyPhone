@@ -155,11 +155,11 @@ public class CrazyPhoneContactsScreenScreen extends CrazyPhoneDefaultScreenScree
 				NetworkAccess.sendToServer(new CrazyPhoneContactsScreenButtonMessage(2, x, y, z, textstate));
 				CrazyPhoneContactsScreenButtonMessage.handleButtonAction(entity, 2, x, y, z, textstate);
 			}
-		}).bounds(this.leftPos + 8, this.topPos + 158, 74, 14).build();
+		}).bounds(this.leftPos + 8, this.topPos + 158, 72, 14).build();
 		guistate.put("button:button_creategroup", button_creategroup);
 		this.addRenderableWidget(button_creategroup);
 
-		button_remove = createSquareIconButton(this.leftPos + 84, this.topPos + 158,
+		button_remove = createSquareIconButton(this.leftPos + 83, this.topPos + 158,
 				Component.translatable("gui.crazyphone.crazy_phone_contacts_screen.button_remove"), PhoneButton.Style.DANGER, e -> {
 			if (!selectedSlots.isEmpty()) {
 				HashMap<String, String> textstate = getEditBoxAndCheckBoxValues();

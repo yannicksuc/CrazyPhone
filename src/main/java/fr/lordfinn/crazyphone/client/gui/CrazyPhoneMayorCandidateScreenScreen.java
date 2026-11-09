@@ -127,14 +127,14 @@ public class CrazyPhoneMayorCandidateScreenScreen extends CrazyPhoneDefaultScree
         if (posterWidth <= 0 || posterHeight <= 0)
             initImageScaling(texture);
 
-        int x = this.leftPos + 6;
+        int x = this.leftPos + 8;
         int y = this.topPos + 26 - scrollOffsetY + 1;
 
         GuiCompat.blit(guiGraphics, texture.location(), x, y, 0, posterWidth, posterHeight);
     }
 
     private void initImageScaling(FabricPictureCache.CachedTexture texture) {
-		int maxWidth = 110;
+		int maxWidth = 106;
 		int maxHeight = 132; // height of scissor zone (158 - 26)
 
 		this.posterWidth = maxWidth;

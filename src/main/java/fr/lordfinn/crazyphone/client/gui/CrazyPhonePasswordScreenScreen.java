@@ -289,7 +289,7 @@ public class CrazyPhonePasswordScreenScreen extends CrazyPhoneDefaultScreenScree
     }
 
     private void initNumberField() {
-        number = new PhoneEditBox(font, leftPos + 8, topPos + 40, 88, 14, Component.translatable("gui.crazyphone.crazy_phone_password_screen.number"));
+        number = new PhoneEditBox(font, leftPos + 8, topPos + 40, 89, 14, Component.translatable("gui.crazyphone.crazy_phone_password_screen.number"));
         number.setMaxLength(32767);
         guistate.put("text:number", number);
         addWidget(number);

@@ -59,14 +59,16 @@ public class CrazyPhoneGroupSettingsScreenScreen extends CrazyPhoneDefaultScreen
      * like every button and field), the rows sit 2 px inside it. */
     private static final int LIST_PAD = 2;
     private static final int NAME_FIELD_Y = 30;
-    // Name field 30-43, icon box 47-64, member list 68-153: 3 px between each, like the rest of the phone.
+    // Name field 30-43, icon box 47-66, member list 70-153: 3 px between each, like the rest of the phone.
+    // The icon box has the same 2 px inner padding as the member list, so its head lines up with theirs.
     private static final int ICON_ROW_Y = 47;
+    private static final int ICON_BOX = 16 + 2 * 2;
     /** 3px more than the icon preview row's own bottom edge (ICON_ROW_Y+16=64), so the list doesn't sit
      * right up against it. */
-    private static final int MEMBER_LIST_Y = 68;
+    private static final int MEMBER_LIST_Y = 70;
     private static final int MEMBER_LIST_WIDTH = PHONE_WIDTH - CONTENT_X * 2;
     /** Bottom edge stays fixed (was MEMBER_LIST_Y(66)+88=154) - shortened by the same 3px the top grew by. */
-    private static final int MEMBER_LIST_HEIGHT = 86;
+    private static final int MEMBER_LIST_HEIGHT = 84;
     private static final int MEMBER_ROW_HEIGHT = 18;
     private static final int TOGGLE_SIZE = 12;
     private static final int SCROLL_STEP = 10;
@@ -121,7 +123,7 @@ public class CrazyPhoneGroupSettingsScreenScreen extends CrazyPhoneDefaultScreen
         this.setInitialFocus(nameField);
 
         Button cancelButton = PhoneButton.builder(PhoneButton.Style.NEUTRAL, Component.translatable("gui.crazyphone.crazy_phone_group_settings.button_cancel"), e -> onCancel())
-                .bounds(this.leftPos + 8, this.topPos + ACTION_BUTTON_Y, 52, ACTION_BUTTON_HEIGHT).build();
+                .bounds(this.leftPos + 8, this.topPos + ACTION_BUTTON_Y, 51, ACTION_BUTTON_HEIGHT).build();
         guistate.put("button:group_settings_cancel", cancelButton);
         this.addRenderableWidget(cancelButton);
 
@@ -152,13 +154,16 @@ public class CrazyPhoneGroupSettingsScreenScreen extends CrazyPhoneDefaultScreen
         Component title = Component.translatable("gui.crazyphone.crazy_phone_group_settings.inventory_title");
         guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(this.font, title,
                 x0 + (x1 - x0 - this.font.width(title) + 1) / 2, y0 + 3, PANEL_INK, false);
+        // Grid lines first (2 px everywhere: between cells and around the grid), then the 16 px cells.
         for (Slot slot : this.menu.slots) {
-            int x = this.leftPos + slot.x - 1;
-            int y = this.topPos + slot.y - 1;
-            guiGraphics.fill(x, y, x + 18, y + 18, CELL_FRAME);
-            guiGraphics.fill(x + 1, y + 1, x + 17, y + 17, CELL_FILL);
-            guiGraphics.fill(x + 1, y + 1, x + 17, y + 2, CELL_SHADE);
-            guiGraphics.fill(x + 1, y + 2, x + 2, y + 17, CELL_SHADE);
+            int x = this.leftPos + slot.x, y = this.topPos + slot.y;
+            guiGraphics.fill(x - 2, y - 2, x + 18, y + 18, CELL_FRAME);
+        }
+        for (Slot slot : this.menu.slots) {
+            int x = this.leftPos + slot.x, y = this.topPos + slot.y;
+            guiGraphics.fill(x, y, x + 16, y + 16, CELL_FILL);
+            guiGraphics.fill(x, y, x + 16, y + 1, CELL_SHADE);
+            guiGraphics.fill(x, y + 1, x + 1, y + 16, CELL_SHADE);
         }
     }
 
@@ -261,16 +266,16 @@ public class CrazyPhoneGroupSettingsScreenScreen extends CrazyPhoneDefaultScreen
     private boolean isHoveringIconPreview(int mouseX, int mouseY) {
         int x = this.leftPos + CONTENT_X;
         int y = this.topPos + ICON_ROW_Y;
-        return mouseX >= x && mouseX < x + 18 && mouseY >= y && mouseY < y + 18;
+        return mouseX >= x && mouseX < x + ICON_BOX && mouseY >= y && mouseY < y + ICON_BOX;
     }
 
     private void renderIconPreview(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int mouseX, int mouseY) {
         int x = this.leftPos + CONTENT_X;
         int y = this.topPos + ICON_ROW_Y;
-        fillCutCorners(guiGraphics, x, y, x + 18, y + 18, 0x80000000);
+        fillCutCorners(guiGraphics, x, y, x + ICON_BOX, y + ICON_BOX, 0x80000000);
         ItemStack icon = resolvePreviewIcon();
         if (!icon.isEmpty())
-            guiGraphics./*$ gui_render_item {*/renderItem/*$}*/(icon, x + 1, y + 1);
+            guiGraphics./*$ gui_render_item {*/renderItem/*$}*/(icon, x + LIST_PAD, y + LIST_PAD);
     }
 
     /** Returns the toggle tooltip to show for whichever row is hovered, or null - rendering is deferred
@@ -347,6 +352,32 @@ public class CrazyPhoneGroupSettingsScreenScreen extends CrazyPhoneDefaultScreen
         return Math.max(0, Math.min(255, value));
     }
 
+    // The toggle signs, 6 x 6 pixels: an even size, exactly centered in the 12 px toggle (the font's cross,
+    // nudged by half a pixel, came out uneven, as if cut).
+    private static final String[] CROSS = {
+            "##..##",
+            ".####.",
+            "..##..",
+            "..##..",
+            ".####.",
+            "##..##"};
+    private static final String[] ARROW = {
+            "...#..",
+            "...##.",
+            "######",
+            "######",
+            "...##.",
+            "...#.."};
+
+    private void drawPixelSymbol(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int toggleX, int toggleY, String[] symbol, int color) {
+        int x0 = toggleX + (TOGGLE_SIZE - symbol[0].length()) / 2;
+        int y0 = toggleY + (TOGGLE_SIZE - symbol.length) / 2;
+        for (int row = 0; row < symbol.length; row++)
+            for (int col = 0; col < symbol[row].length(); col++)
+                if (symbol[row].charAt(col) == '#')
+                    guiGraphics.fill(x0 + col, y0 + row, x0 + col + 1, y0 + row + 1, color);
+    }
+
     private void drawToggleSymbol(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int toggleX, int toggleY, String symbol, int color) {
         drawToggleSymbol(guiGraphics, toggleX, toggleY, symbol, color, 0f);
     }
@@ -365,10 +396,10 @@ public class CrazyPhoneGroupSettingsScreenScreen extends CrazyPhoneDefaultScreen
     private void drawStateToggle(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int toggleX, int toggleY, boolean showCross) {
         if (showCross) {
             drawPhoneToggle(guiGraphics, toggleX, toggleY, TOGGLE_SIZE, 0xFFE74C3C, 0xFFF08A7E, 0xFFB83227);
-            drawToggleSymbol(guiGraphics, toggleX, toggleY, "\u2715", 0xFFFFFFFF, -0.25f);
+            drawPixelSymbol(guiGraphics, toggleX, toggleY, CROSS, 0xFFFFFFFF);
         } else {
             drawPhoneToggle(guiGraphics, toggleX, toggleY, TOGGLE_SIZE, 0xFFFED200, 0xFFFFEF00, 0xFFFFA500);
-            drawToggleSymbol(guiGraphics, toggleX, toggleY, "\u2192", 0xFF3A4456);
+            drawPixelSymbol(guiGraphics, toggleX, toggleY, ARROW, 0xFF3A4456);
         }
 
     }

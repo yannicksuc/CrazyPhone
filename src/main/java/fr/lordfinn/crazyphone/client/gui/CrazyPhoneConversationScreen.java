@@ -114,9 +114,10 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
      * inserting, so an emoji is either inserted whole or not at all. */
     private static final int MAX_MESSAGE_LENGTH = 32767;
     /** Message field width without / with the emoji button squeezed in between it and the send button. */
-    private static final int MESSAGE_FIELD_WIDTH = 91;
-    private static final int MESSAGE_FIELD_WIDTH_WITH_EMOJI = 76;
-    private static final int EMOJI_BUTTON_X = 85;
+    // Message row: field, (emoji button), send button at 100, 3 px apart, within the content width (8-114).
+    private static final int MESSAGE_FIELD_WIDTH = 89;
+    private static final int MESSAGE_FIELD_WIDTH_WITH_EMOJI = 72;
+    private static final int EMOJI_BUTTON_X = 83;
     /** GLFW's shift modifier bit (GLFW_MOD_SHIFT), spelled out: LWJGL isn't on every node's compile classpath. */
     private static final int GLFW_MOD_SHIFT = 0x0001;
     /** Opens the emoji drawer; null when the drawer is turned off (client prefs) or has nothing to offer. */
@@ -130,8 +131,9 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
      * several at once. Same hover-reveal column as imagebutton_crazyphoneaddimage/imagebutton_crazyphonevoicemessage
      * (see updateButtonVisibility) - closest to the send button, matching how often it's reached for. */
     private ImageButton imagebutton_attachphoto;
-    private static final int SEND_GALLERY_IMAGE_ICON_Y = 143;
-    private static final int TAKE_AND_SEND_IMAGE_ICON_Y = 128;
+    // The send buttons stacked above the send button (y 158): 14 px each, 3 px apart.
+    private static final int SEND_GALLERY_IMAGE_ICON_Y = 141;
+    private static final int TAKE_AND_SEND_IMAGE_ICON_Y = 124;
 
     /** Voice message recording, replaces the text input row while active. NONE = normal text input;
      * RECORDING = mic capture in progress, [trash][waveform][pause] shown; REVIEWING = paused, waiting for
@@ -142,11 +144,12 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
     /** Topmost of the three hover-reveal icons (furthest from the send button) - only constructed/shown
      * when SVC is available (see VoicechatIntegration), guarded with a null check everywhere it's touched. */
     private ImageButton imagebutton_crazyphonevoicemessage;
-    private static final int SEND_VOICE_ICON_Y = 113;
+    private static final int SEND_VOICE_ICON_Y = 107;
     private static final int RECORDING_ROW_Y = 158;
     private static final int TRASH_X = 8;
-    private static final int WAVEFORM_X = 23;
-    private static final int WAVEFORM_WIDTH = 76;
+    // Recording row: trash 8-21, waveform 25-96, pause / send 100-113: 3 px apart.
+    private static final int WAVEFORM_X = 25;
+    private static final int WAVEFORM_WIDTH = 72;
     private static final int PAUSE_SEND_X = 100;
     /** Real vanilla Button widgets (see createSquareIconButton) - trash/pause always exist once the screen
      * is built, only shown/hidden per voiceRecordingState; send reuses the same glyph as button_envoyer. */

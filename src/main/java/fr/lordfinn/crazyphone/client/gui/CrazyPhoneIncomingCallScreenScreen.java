@@ -66,7 +66,7 @@ public class CrazyPhoneIncomingCallScreenScreen extends CrazyPhoneDefaultScreenS
             *///? } else {
             NetworkAccess.sendToServer(new CrazyPhoneCallActionMessage(CrazyPhoneCallActionMessage.ANSWER, menu.getConversationId()));
             //?}
-        }).bounds(this.leftPos + 8, this.topPos + 158, 52, 14).build();
+        }).bounds(this.leftPos + 8, this.topPos + 158, 51, 14).build();
         this.addRenderableWidget(button_accept);
 
         button_decline = PhoneButton.builder(PhoneButton.Style.DANGER, Component.translatable("gui.crazyphone.crazy_phone_incoming_call_screen.button_decline"), e -> {

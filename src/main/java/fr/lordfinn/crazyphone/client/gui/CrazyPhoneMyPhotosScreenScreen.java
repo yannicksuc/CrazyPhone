@@ -549,7 +549,7 @@ public class CrazyPhoneMyPhotosScreenScreen extends CrazyPhoneDefaultScreenScree
 
             buttonTake = PhoneButton.builder(PhoneButton.Style.PRIMARY, Component.translatable("gui.crazyphone.crazy_phone_my_photos_screen.button_take"), b -> {
                 takeSelected();
-            }).bounds(this.leftPos + 8, this.topPos + 158, 52, 14).build();
+            }).bounds(this.leftPos + 8, this.topPos + 158, 51, 14).build();
             guistate.put("button:button_take", buttonTake);
             this.addRenderableWidget(buttonTake);
         }

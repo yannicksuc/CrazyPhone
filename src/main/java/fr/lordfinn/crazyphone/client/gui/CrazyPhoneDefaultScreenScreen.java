@@ -136,8 +136,9 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 	// Every icon of the header banner is vertically centered on the title's line (glyph rows 14-21 relative
 	// to topPos; the banner itself is y 9-27). The right-hand icons are laid out from the right: the last one
 	// ends 3 px in from the banner's right edge, 3 px apart from each other.
-	/** Exclusive right edge of the rightmost header icon, relative to leftPos (last pixel: 114). */
-	protected static final int HEADER_ICONS_RIGHT = 115;
+	/** Exclusive right edge of the rightmost header icon, relative to leftPos (last pixel: 113): the same
+	 * right edge as the phone's content (x 8 to 114 exclusive), mirroring the left icon at x 8. */
+	protected static final int HEADER_ICONS_RIGHT = 114;
 	protected static final int HEADER_ICON_GAP = 3;
 	/** Top of an 8 px emoji glyph, relative to topPos: same line as the title. */
 	protected static final int HEADER_GLYPH_Y = 14;
