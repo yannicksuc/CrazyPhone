@@ -129,7 +129,11 @@ public class Crazyphone {
         modEventBus.addListener(fr.lordfinn.crazyphone.gametest.CrazyPhoneGameTests::registerGameTests);
         *///?}
 
-        //? if >=1.20.5 {
+        // FML 12 (NeoForge 26.3) dropped ModConfig.Type.COMMON; NeoForge moved its own common config to LOCAL.
+        // The explicit file name keeps the same config/crazyphone-common.toml as every other version.
+        //? if >=26.3 {
+        /*modContainer.registerConfig(ModConfig.Type.LOCAL, Config.SPEC, "crazyphone-common.toml");
+        *///? } else if >=1.20.5 {
         /*modContainer.registerConfig(ModConfig.Type.COMMON, Config.SPEC);
         *///? } else {
         net.neoforged.fml.ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, Config.SPEC);

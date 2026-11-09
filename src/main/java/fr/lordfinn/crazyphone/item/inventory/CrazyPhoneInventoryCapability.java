@@ -1,9 +1,13 @@
 package fr.lordfinn.crazyphone.item.inventory;
 
 //? if neoforge {
-//? if >=1.20.5 {
+// NeoForge 26.3 deleted the whole deprecated net.neoforged.neoforge.items package (ComponentItemHandler,
+// IItemHandler, ItemStackHandler...): from 26.3 on this class stores its slots in the CONTAINER component itself.
+//? if >=1.20.5 <26.3 {
 /*import net.neoforged.neoforge.items.ComponentItemHandler;
-import net.neoforged.neoforge.common.MutableDataComponentHolder;
+*///?}
+//? if >=1.20.5 {
+/*import net.neoforged.neoforge.common.MutableDataComponentHolder;
 *///? } else {
 import net.neoforged.neoforge.items.ItemStackHandler;
 //?}
@@ -52,8 +56,13 @@ import fr.lordfinn.crazyphone.utils.PhoneTagAccess;
 import javax.annotation.Nonnull;
 
 @EventBusSubscriber(value = Dist.CLIENT)
-//? if >=1.21.10 {
+//? if >=1.21.10 <26.3 {
 /*public class CrazyPhoneInventoryCapability extends ComponentItemHandler implements ResourceHandler<ItemResource> {
+*///?}
+//? if >=26.3 {
+/*public class CrazyPhoneInventoryCapability implements ResourceHandler<ItemResource> {
+    private static final int SLOTS = 97;
+    private final MutableDataComponentHolder parent;
 *///?}
 //? if >=1.20.5 <1.21.10 {
 /*public class CrazyPhoneInventoryCapability extends ComponentItemHandler {
@@ -79,7 +88,97 @@ public class CrazyPhoneInventoryCapability extends ItemStackHandler {
         }
     }
 
-    //? if >=1.20.5 {
+    //? if >=26.3 {
+    /*public CrazyPhoneInventoryCapability(MutableDataComponentHolder parent) {
+        this.parent = parent;
+    }
+
+    // Same behavior as NeoForge's old ComponentItemHandler (removed in 26.3), which the older branches extend:
+    // the slots live in the parent's CONTAINER component, every write stores a fresh ItemContainerContents.
+    public int getSlots() {
+        return SLOTS;
+    }
+
+    public int getSlotLimit(int slot) {
+        return 1;
+    }
+
+    public boolean isItemValid(int slot, @Nonnull ItemStack stack) {
+        return stack.getItem() != ModItems.CRAZY_PHONE.get();
+    }
+
+    public ItemStack getStackInSlot(int slot) {
+        return stackFrom(contents(), slot);
+    }
+
+    public void setStackInSlot(int slot, ItemStack stack) {
+        checkSlot(slot);
+        if (!isItemValid(slot, stack))
+            throw new RuntimeException("Invalid stack " + stack + " for slot " + slot);
+        net.minecraft.world.item.component.ItemContainerContents contents = contents();
+        if (!ItemStack.matches(stack, stackFrom(contents, slot)))
+            write(contents, stack, slot);
+    }
+
+    public ItemStack insertItem(int slot, ItemStack toInsert, boolean simulate) {
+        checkSlot(slot);
+        if (toInsert.isEmpty())
+            return ItemStack.EMPTY;
+        if (!isItemValid(slot, toInsert))
+            return toInsert;
+        net.minecraft.world.item.component.ItemContainerContents contents = contents();
+        ItemStack existing = stackFrom(contents, slot);
+        int limit = Math.min(getSlotLimit(slot), toInsert.getMaxStackSize());
+        if (!existing.isEmpty()) {
+            if (!ItemStack.isSameItemSameComponents(toInsert, existing))
+                return toInsert;
+            limit -= existing.getCount();
+        }
+        if (limit <= 0)
+            return toInsert;
+        int inserted = Math.min(limit, toInsert.getCount());
+        if (!simulate)
+            write(contents, toInsert.copyWithCount(existing.getCount() + inserted), slot);
+        return toInsert.copyWithCount(toInsert.getCount() - inserted);
+    }
+
+    public ItemStack extractItem(int slot, int amount, boolean simulate) {
+        checkSlot(slot);
+        if (amount == 0)
+            return ItemStack.EMPTY;
+        net.minecraft.world.item.component.ItemContainerContents contents = contents();
+        ItemStack existing = stackFrom(contents, slot);
+        if (existing.isEmpty())
+            return ItemStack.EMPTY;
+        int toExtract = Math.min(amount, existing.getCount());
+        if (!simulate)
+            write(contents, existing.copyWithCount(existing.getCount() - toExtract), slot);
+        return existing.copyWithCount(toExtract);
+    }
+
+    private net.minecraft.world.item.component.ItemContainerContents contents() {
+        return parent.getOrDefault(DataComponents.CONTAINER, net.minecraft.world.item.component.ItemContainerContents.EMPTY);
+    }
+
+    private ItemStack stackFrom(net.minecraft.world.item.component.ItemContainerContents contents, int slot) {
+        checkSlot(slot);
+        if (slot >= contents.getSlots())
+            return ItemStack.EMPTY;
+        return contents.getTemplateInSlot(slot).map(net.minecraft.world.item.ItemStackTemplate::create).orElse(ItemStack.EMPTY);
+    }
+
+    private void write(net.minecraft.world.item.component.ItemContainerContents contents, ItemStack stack, int slot) {
+        net.minecraft.core.NonNullList<ItemStack> list = net.minecraft.core.NonNullList.withSize(Math.max(contents.getSlots(), SLOTS), ItemStack.EMPTY);
+        contents.copyInto(list);
+        list.set(slot, stack);
+        parent.set(DataComponents.CONTAINER, net.minecraft.world.item.component.ItemContainerContents.fromItems(list));
+    }
+
+    private static void checkSlot(int slot) {
+        if (slot < 0 || slot >= SLOTS)
+            throw new RuntimeException("Slot " + slot + " not in valid range - [0," + SLOTS + ")");
+    }
+    *///? } else if >=1.20.5 {
     /*public CrazyPhoneInventoryCapability(MutableDataComponentHolder parent) {
         super(parent, DataComponents.CONTAINER, 97);
     }
@@ -98,6 +197,7 @@ public class CrazyPhoneInventoryCapability extends ItemStackHandler {
     }
     //?}
 
+    //? if <26.3 {
     @Override
     public int getSlotLimit(int slot) {
         return 1;
@@ -112,6 +212,7 @@ public class CrazyPhoneInventoryCapability extends ItemStackHandler {
     public ItemStack getStackInSlot(int slot) {
         return super.getStackInSlot(slot).copy();
     }
+    //?}
 
     //? if >=1.21.10 {
     /*@Override

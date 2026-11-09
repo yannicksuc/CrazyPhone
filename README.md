@@ -71,7 +71,7 @@ here and only here, so it can't drift out of sync with the wiki), and pointers t
 ## 🧩 Platforms & versions
 
 One shared `src/main/java` tree, preprocessed per target by [Stonecutter](https://stonecutter.kikugie.dev/)
-(`//? if fabric` / `//? if neoforge`, plus per-version checks) into 11 build targets.
+(`//? if fabric` / `//? if neoforge`, plus per-version checks) into 12 build targets.
 
 ### Maintenance status
 
@@ -88,8 +88,9 @@ still getting updates", separate from the detailed per-feature table below.
 | NeoForge 1.21.10 | 🟢 Actively maintained again (since 1.8.0-beta.6) |
 | NeoForge 26.1 | 🟢 Actively maintained |
 | Fabric 26.1 | 🟢 Actively maintained |
-| NeoForge 26.2 | 🟡 Work in progress - doesn't compile yet, see [PORTING-26x.md](PORTING-26x.md) |
+| NeoForge 26.2 | 🟢 Actively maintained (since the NeoForge 26.x port, see [PORTING-26x.md](PORTING-26x.md)) |
 | Fabric 26.2 | 🟢 Actively maintained (since 1.8.0-beta.6) |
+| NeoForge 26.3 | 🟢 Actively maintained (since the NeoForge 26.x port, see [PORTING-26x.md](PORTING-26x.md)) |
 | Fabric 26.3 | 🟢 Actively maintained (since 1.8.0-beta.6) |
 
 Only the 🟢 targets get new features and bugfixes going forward. The 26.x line is otherwise a newer,
@@ -112,8 +113,10 @@ ongoing port - see [PORTING-26x.md](PORTING-26x.md) for its detailed status and 
   to the new APIs is a separate, tracked follow-up.
 - **NeoForge 26.1** compiles clean and has been live-tested (native camera, sneak-presenting including
   two-hand dual-photo, selfie mode, voice calls) - the newest fully-verified target in the project.
-- **NeoForge 26.2** doesn't compile yet - blocked on the same item-rendering API migration 26.1 needed,
-  not yet finished for this node. See [PORTING-26x.md](PORTING-26x.md).
+- **NeoForge 26.2** and **NeoForge 26.3** compile, boot a dedicated server cleanly, pass the 13 GameTests
+  and were played on a dev client (phone and photo in hand, phone screens, photos in item frames, Soulbound
+  loot, Simple Voice Chat plugin loading). Sign-up, messages, calls and camera video weren't clicked through
+  live yet on these two. See [PORTING-26x.md](PORTING-26x.md).
 - **Fabric 1.20.1** is a walking skeleton for now - the item exists and registers, but the phone's
   networking layer needs an API (`CustomPacketPayload`) that doesn't exist before 1.20.5, so none of the
   screens/messaging/camera work yet on that specific version.

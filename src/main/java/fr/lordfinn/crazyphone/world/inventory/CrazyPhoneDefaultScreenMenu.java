@@ -1,10 +1,12 @@
 
 package fr.lordfinn.crazyphone.world.inventory;
 
-//? if neoforge {
+//? if neoforge && <26.3 {
 import net.neoforged.neoforge.items.ItemStackHandler;
 import net.neoforged.neoforge.items.IItemHandlerModifiable;
 import net.neoforged.neoforge.items.IItemHandler;
+//?}
+//? if neoforge {
 import net.neoforged.neoforge.capabilities.Capabilities;
 //?}
 
@@ -48,9 +50,13 @@ abstract public class CrazyPhoneDefaultScreenMenu extends AbstractContainerMenu 
 	public final Player entity;
 	public int x, y, z;
 	protected ContainerLevelAccess access = ContainerLevelAccess.NULL;
-	//? if neoforge {
+	//? if neoforge && <26.3 {
 	public IItemHandler internal;
 	//?}
+	//? if neoforge && >=26.3 {
+	/*// Null until bound to the held phone (NeoForge 26.3 has no ItemStackHandler for the old empty placeholder).
+	public fr.lordfinn.crazyphone.item.inventory.CrazyPhoneInventoryCapability internal;
+	*///?}
 	//? if fabric {
 	/*// TODO(#163): real Fabric ItemApiLookup-backed item capability - deferred until the two menus that
 	// actually use this (CrazyPhonePicturesScreenMenu/CrazyPhonePictureFoldersScreenMenu, both still
@@ -72,7 +78,7 @@ abstract public class CrazyPhoneDefaultScreenMenu extends AbstractContainerMenu 
 		super(type, id);
 		this.entity = inv.player;
 		this.world = inv.player.level();
-		//? if neoforge {
+		//? if neoforge && <26.3 {
 		this.internal = new ItemStackHandler(0);
 		//?}
 		//? if fabric {
@@ -107,7 +113,14 @@ abstract public class CrazyPhoneDefaultScreenMenu extends AbstractContainerMenu 
 				byte hand = extraData.readByte();
 				ItemStack itemstack = hand == 0 ? this.entity.getMainHandItem() : this.entity.getOffhandItem();
 				this.boundItemMatcher = () -> itemstack == (hand == 0 ? this.entity.getMainHandItem() : this.entity.getOffhandItem());
-				//? if neoforge && >=1.21.10 {
+				//? if neoforge && >=26.3 {
+				/*Object cap = itemstack.getCapability(Capabilities.Item.ITEM, null);
+				if (cap instanceof fr.lordfinn.crazyphone.item.inventory.CrazyPhoneInventoryCapability h) {
+					this.internal = h;
+					this.bound = true;
+				}
+				*///?}
+				//? if neoforge && >=1.21.10 <26.3 {
 				/*Object cap = itemstack.getCapability(Capabilities.Item.ITEM, null);
 				if (cap instanceof IItemHandler h) {
 					this.internal = h;
@@ -264,7 +277,7 @@ abstract public class CrazyPhoneDefaultScreenMenu extends AbstractContainerMenu 
 			if (playerIn instanceof ServerPlayer serverPlayer)
 				serverPlayer.inventoryMenu.broadcastChanges();
 		}
-		//? if neoforge {
+		//? if neoforge && <26.3 {
 		if (!bound && playerIn instanceof ServerPlayer serverPlayer) {
 			if (!serverPlayer.isAlive() || serverPlayer.hasDisconnected()) {
 				for (int j = 0; j < internal.getSlots(); ++j) {

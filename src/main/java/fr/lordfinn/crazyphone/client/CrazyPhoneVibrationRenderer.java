@@ -61,6 +61,6 @@ public class CrazyPhoneVibrationRenderer {
         float shakeY = Mth.cos(time * 5.3f) * 0.015f * envelope;
         float shakeRot = Mth.sin(time * 4.1f) * 4.0f * envelope;
         poseStack.translate(shakeX, shakeY, 0);
-        poseStack.mulPose(Axis.ZP.rotationDegrees(shakeRot));
+        poseStack./*$ pose_rotate {*/mulPose/*$}*/(Axis.ZP.rotationDegrees(shakeRot));
     }
 }

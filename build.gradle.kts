@@ -3,7 +3,7 @@ plugins {
     `maven-publish`
     idea
     `jvm-test-suite`
-    id("net.neoforged.moddev") version "2.0.143"
+    id("net.neoforged.moddev") version "2.0.148"
     // Not applied unconditionally - see the MODRINTH_TOKEN/CURSEFORGE_TOKEN checks below. `apply false`
     // here still resolves the plugin coordinate from the Gradle Plugin Portal (settings.gradle.kts's own
     // pluginManagement block) for every node's local dev build too, a small, accepted overhead for keeping
@@ -30,6 +30,11 @@ tasks.withType<JavaCompile>().configureEach {
 repositories {
     mavenLocal()
     maven("https://maven.maxhenkel.de/repository/public")
+    // Only for the dev-only -PwithVoicechat runtime below (same setup as build.fabric26.gradle.kts).
+    exclusiveContent {
+        forRepository { maven("https://api.modrinth.com/maven") }
+        filter { includeGroup("maven.modrinth") }
+    }
 }
 
 base {
@@ -75,6 +80,9 @@ neoForge {
 
     // Default run configurations.
     // These can be tweaked, removed, or duplicated as needed.
+    // Dev-only: -PquickPlayMultiplayer=host:port points both client runs at another dedicated server than
+    // localhost:25565 (same opt-in property as build.fabric26.gradle.kts), so two worktrees can test at once.
+    val devQuickPlayTarget = findProperty("quickPlayMultiplayer") as String? ?: "localhost:25565"
     runs {
         // Two-player local testing (calls, group chats): run "server" (a dedicated, offline/cracked-mode
         // server - see run-server/server.properties) alongside "client" and "client2", both of which
@@ -99,7 +107,7 @@ neoForge {
             gameDirectory = thisProject.file("run")
             programArguments.addAll(
                 "--username", "LordFinn", "--uuid", "60b30ab6-a3a3-3980-9bfe-b84bc32ce8d0",
-                "--quickPlayMultiplayer", "localhost:25565"
+                "--quickPlayMultiplayer", devQuickPlayTarget
             )
         }
 
@@ -109,7 +117,7 @@ neoForge {
             gameDirectory = thisProject.file("run-client2")
             programArguments.addAll(
                 "--username", "Bouteilles", "--uuid", "94f877fb-ab97-3a21-a67f-715f0a12f124",
-                "--quickPlayMultiplayer", "localhost:25565"
+                "--quickPlayMultiplayer", devQuickPlayTarget
             )
         }
 
@@ -215,6 +223,10 @@ dependencies {
     // Optional Simple Voice Chat addon API - compileOnly so the mod doesn't require SVC to be present at
     // runtime; availability is checked via ModList at runtime (see VoicechatIntegration.isAvailable()).
     compileOnly("de.maxhenkel.voicechat:voicechat-api:${property("voicechat_api_version")}")
+    // Dev-only, opt-in (`-PwithVoicechat`): puts the real Simple Voice Chat mod in runClient/runServer to live-test
+    // calls and voice messages, like the Fabric 26.x nodes. Off by default, the released jar never depends on it.
+    if (hasProperty("withVoicechat"))
+        runtimeOnly("maven.modrinth:simple-voice-chat:neoforge-${property("voicechat_api_version")}+$minecraftVersion")
 }
 
 // SpongePowered Mixin refuses to process a config whose declared compatibilityLevel is higher than the
@@ -340,6 +352,22 @@ tasks.named<ProcessResources>("processResources") {
         }
     }
 
+    // NeoForge 26.3's LootModifier takes one optional "condition" (a LootItemCondition holder) instead of the
+    // old "conditions" array (checked against LootModifier.codecStart in the NeoForge 26.3.0.101 sources), so the
+    // array's single entry becomes that field in the 26.3+ build output. Its own dispatch key is "type" there too
+    // (LootItemCondition.DIRECT_CODEC is a plain registry dispatch), not "condition" (seen live on a server boot).
+    if (minecraftVersion.startsWith("26.") && minecraftVersion >= "26.3") {
+        doLast {
+            destinationDir.resolve("data/crazyphone/loot_modifiers").listFiles { f -> f.name.endsWith(".json") }?.forEach { f ->
+                f.writeText(
+                    f.readText().replace(Regex("""("conditions")\s*:\s*\[\s*(\{[^\]]*\})\s*\]""")) { m ->
+                        "\"condition\": " + m.groupValues[2].replace(Regex(""""condition"\s*:"""), "\"type\":")
+                    }
+                )
+            }
+        }
+    }
+
     // The photo-dyeing recipe's own "minecraft:crafting_dye" type doesn't exist before 26.x (confirmed live:
     // 1.21.1's own RecipeManager fails the whole reload with "Unknown registry key ... minecraft:crafting_dye"
     // otherwise, not just skip this one recipe) - dyeing still works fine on every earlier version without it,
@@ -412,7 +440,8 @@ idea {
 // check was already written to avoid.
 // 1.20.4 deliberately excluded - the user decided to stop maintaining that target (2026-09-03).
 // 1.21.10 added back in 1.8.0-beta.6: it now compiles, boots and has the camera and presenting features.
-val readyToPublish = thisProject.name in setOf("1.21.1", "1.21.10", "26.1")
+// 26.2 and 26.3 added after the NeoForge 26.x port (compile, server and client boot, GameTests; see PORTING-26x.md).
+val readyToPublish = thisProject.name in setOf("1.21.1", "1.21.10", "26.1", "26.2", "26.3")
 val modrinthProjectId = findProperty("modrinth_project_id") as String? ?: "REPLACE_WITH_MODRINTH_PROJECT_ID"
 val curseforgeProjectId = findProperty("curseforge_project_id") as String? ?: "REPLACE_WITH_CURSEFORGE_PROJECT_ID"
 val releaseChangelog = System.getenv("RELEASE_CHANGELOG") ?: "See the GitHub release notes for this version."

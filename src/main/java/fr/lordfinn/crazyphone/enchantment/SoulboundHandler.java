@@ -76,7 +76,7 @@ public class SoulboundHandler {
         if (event.getEntity() instanceof ServerPlayer newPlayer) {
             for (ItemStack stack : stash.items) {
                 if (!newPlayer.getInventory().add(stack))
-                    newPlayer.drop(stack, false);
+                    newPlayer.drop(stack, /^$ drop_args {^/false/^$}^/);
             }
         }
         // Clear it on the new player too - copyOnDeath isn't used here (see PhoneAttachmentTypes), but

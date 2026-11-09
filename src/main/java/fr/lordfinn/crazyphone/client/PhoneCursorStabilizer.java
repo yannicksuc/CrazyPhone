@@ -20,7 +20,10 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 import net.minecraftforge.client.event.ScreenEvent;
 *///?}
+// 26.3 swapped GLFW for SDL3 (org.lwjgl.glfw is gone): the cursor is read from MouseHandler there.
+//? if <26.3 {
 import org.lwjgl.glfw.GLFW;
+//?}
 
 /**
  * Every phone "page" is backed by its own AbstractContainerMenu/Screen pair, so navigating within the
@@ -69,6 +72,10 @@ public class PhoneCursorStabilizer {
     }
 
     private static void captureCursorPosition() {
+        //? if >=26.3 {
+        /*savedX = Minecraft.getInstance().mouseHandler.xpos();
+        savedY = Minecraft.getInstance().mouseHandler.ypos();
+        *///? } else {
         //? if <1.21.10 {
         long window = Minecraft.getInstance().getWindow().getWindow();
         //? } else {
@@ -79,6 +86,7 @@ public class PhoneCursorStabilizer {
         GLFW.glfwGetCursorPos(window, x, y);
         savedX = x[0];
         savedY = y[0];
+        //?}
     }
 
     /** Called by MouseHandlerCursorMixin right after vanilla's own centering logic runs. */

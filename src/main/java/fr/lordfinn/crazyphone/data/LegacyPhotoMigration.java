@@ -153,7 +153,7 @@ public final class LegacyPhotoMigration {
             net.minecraft.world.item.ItemStack stack = inventory.getItem(i);
             if (!(stack.getItem() instanceof fr.lordfinn.crazyphone.item.CrazyPhoneItem))
                 continue;
-            net.neoforged.neoforge.items.IItemHandlerModifiable handler = fr.lordfinn.crazyphone.utils.CrazyPhoneHelper.getPhoneItemHandler(stack);
+            /*$ phone_item_handler {*/net.neoforged.neoforge.items.IItemHandlerModifiable/*$}*/ handler = fr.lordfinn.crazyphone.utils.CrazyPhoneHelper.getPhoneItemHandler(stack);
             if (handler == null)
                 continue;
             String owner = fr.lordfinn.crazyphone.procedures.GetCrazyPhoneNumberProcedure.execute(stack, player.level());
@@ -162,7 +162,7 @@ public final class LegacyPhotoMigration {
         }
     }
 
-    private static void importPhoneSlots(MinecraftServer server, net.neoforged.neoforge.items.IItemHandlerModifiable handler, String owner) {
+    private static void importPhoneSlots(MinecraftServer server, /*$ phone_item_handler {*/net.neoforged.neoforge.items.IItemHandlerModifiable/*$}*/ handler, String owner) {
         PhotoSavedData photos = null;
         for (int slot = 0; slot < handler.getSlots(); slot++) {
             net.minecraft.world.item.ItemStack sub = handler.getStackInSlot(slot);

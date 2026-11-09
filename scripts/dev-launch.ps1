@@ -119,7 +119,10 @@ $VersionMeta = [ordered]@{
     '1.21.1'        = @{ Loader = 'neoforge'; Port = 25565 }
     '1.21.10'       = @{ Loader = 'neoforge'; Port = 25569 }
     '26.1'          = @{ Loader = 'neoforge'; Port = 25565 }
-    '26.2'          = @{ Loader = 'neoforge'; Port = 25570 }
+    # 26.2 / 26.3 share 25565 for the same reason as 1.21.1 / 26.1 above (the NeoForge clients' fixed
+    # --quickPlayMultiplayer target): 26.2 used to sit on 25570, where its client never auto-joined.
+    '26.2'          = @{ Loader = 'neoforge'; Port = 25565 }
+    '26.3'          = @{ Loader = 'neoforge'; Port = 25565 }
     '1.21.1-fabric' = @{ Loader = 'fabric';   Port = 25567 }
     '1.20.1-fabric' = @{ Loader = 'fabric';   Port = 25571 }
     '26.1-fabric'   = @{ Loader = 'fabric';   Port = 25572 }

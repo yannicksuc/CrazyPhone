@@ -12,7 +12,6 @@ import net.neoforged.neoforge.client.event.ViewportEvent;
 import net.neoforged.neoforge.client.event.InputEvent;
 import net.neoforged.neoforge.client.event.RenderHandEvent;
 import net.neoforged.neoforge.client.event.RenderGuiEvent;
-import org.lwjgl.glfw.GLFW;
 //? if <1.20.5 {
 import net.neoforged.neoforge.client.event.RenderGuiOverlayEvent;
 import net.neoforged.neoforge.client.gui.overlay.VanillaGuiOverlay;
@@ -32,7 +31,6 @@ import net.minecraftforge.client.event.RenderHandEvent;
 import net.minecraftforge.client.event.RenderGuiEvent;
 import net.minecraftforge.client.event.RenderGuiOverlayEvent;
 import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
-import org.lwjgl.glfw.GLFW;
 *///?}
 
 import net.minecraft.client.CameraType;
@@ -388,10 +386,10 @@ public final class CrazyPhoneCaptureMode {
 
     @SubscribeEvent
     public static void onMouseButton(InputEvent.MouseButton.Pre event) {
-        if (!active || event.getAction() != GLFW.GLFW_PRESS)
+        if (!active || event.getAction() != com.mojang.blaze3d.platform.InputConstants.PRESS)
             return;
         event.setCanceled(true);
-        if (event.getButton() == GLFW.GLFW_MOUSE_BUTTON_RIGHT)
+        if (event.getButton() == com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_RIGHT)
             triggerCapture();
     }
 
