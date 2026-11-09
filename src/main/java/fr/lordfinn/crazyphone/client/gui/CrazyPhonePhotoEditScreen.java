@@ -101,7 +101,11 @@ public class CrazyPhonePhotoEditScreen extends Screen implements PhoneScreen {
     // Vertical gap a row caption ("Hue"/"Contrast"/"Brightness") reserves ABOVE its own row - live-reported
     // overlapping the row above it when this was smaller than the font's own line height plus a little
     // breathing room.
-    private static final int ROW_LABEL_GAP = 12;
+    // Panel spacing: a caption (9 px) sits 2 px above its own row, rows of one block are 3 px apart, blocks
+    // are 8 px apart. Rows (blocks): hue, contrast, brightness; straighten + crop; size + apply; undo/redo +
+    // replace/copy.
+    private static final int ROW_LABEL_GAP = 11;
+    private static final int BLOCK_GAP = 8;
 
     private static final Executor COMMIT_IO = Executors.newSingleThreadExecutor(r -> {
         Thread t = new Thread(r, "crazyphone-photo-edit-commit");
@@ -328,15 +332,15 @@ public class CrazyPhonePhotoEditScreen extends Screen implements PhoneScreen {
 
         y = addAdjustmentRow(panelX, y, panelWidth, rowHeight,
                 Component.translatable("gui.crazyphone.photo_edit_screen.hue"), state.hueDegrees(),
-                v -> commit(state.withHue(v)), () -> commit(state.resetHue()), HUE_STEP, "hue") + gap + ROW_LABEL_GAP;
+                v -> commit(state.withHue(v)), () -> commit(state.resetHue()), HUE_STEP, "hue") + BLOCK_GAP + ROW_LABEL_GAP;
         y = addAdjustmentRow(panelX, y, panelWidth, rowHeight,
                 Component.translatable("gui.crazyphone.photo_edit_screen.contrast"), state.contrast(),
-                v -> commit(state.withContrast(v)), () -> commit(state.resetContrast()), CONTRAST_STEP, "contrast") + gap + ROW_LABEL_GAP;
+                v -> commit(state.withContrast(v)), () -> commit(state.resetContrast()), CONTRAST_STEP, "contrast") + BLOCK_GAP + ROW_LABEL_GAP;
         y = addAdjustmentRow(panelX, y, panelWidth, rowHeight,
                 Component.translatable("gui.crazyphone.photo_edit_screen.brightness"), state.brightness(),
-                v -> commit(state.withBrightness(v)), () -> commit(state.resetBrightness()), BRIGHTNESS_STEP, "brightness") + gap;
+                v -> commit(state.withBrightness(v)), () -> commit(state.resetBrightness()), BRIGHTNESS_STEP, "brightness");
 
-        y += gap * 2;
+        y += BLOCK_GAP;
         // One grid for every row below, so their edges line up: two equal columns, and a 14 px column on
         // the right for the small square icon buttons (reset, ratio lock, close). A row with two wide
         // buttons lets its second one run over the icon column.
@@ -363,7 +367,7 @@ public class CrazyPhonePhotoEditScreen extends Screen implements PhoneScreen {
                 b -> commit(fillCrop()), col2X, y, colW, rowHeight, ACCENT_CONFIRM);
         addPanelWidget(cropFillButton, y);
         addPanelWidget(resetIconButton(iconX, y, b -> commit(state.resetCrop())), y);
-        y += rowHeight + gap * 2;
+        y += rowHeight + BLOCK_GAP;
 
         widthField = new PhoneEditBox(this.font, panelX, y, colW, rowHeight, Component.translatable("gui.crazyphone.photo_edit_screen.width"));
         widthField.setValue(String.valueOf(currentCroppedWidth()));
@@ -393,7 +397,7 @@ public class CrazyPhonePhotoEditScreen extends Screen implements PhoneScreen {
             heightField.setValue(String.valueOf(currentCroppedHeight()));
             suppressResizeFieldFeedback = false;
         }), y);
-        y += rowHeight + gap * 3;
+        y += rowHeight + BLOCK_GAP;
 
         undoButton = accentButton(Component.translatable("gui.crazyphone.photo_edit_screen.undo"), b -> undo(),
                 panelX, y, colW, rowHeight, ACCENT_UNDOREDO);
@@ -406,7 +410,7 @@ public class CrazyPhonePhotoEditScreen extends Screen implements PhoneScreen {
                 () -> Component.literal("\u2715"), b -> onClose(), PhoneButton.Style.DANGER);
         cancelButton.setTooltip(net.minecraft.client.gui.components.Tooltip.create(Component.translatable("gui.crazyphone.photo_edit_screen.cancel")));
         addPanelWidget(cancelButton, y);
-        y += rowHeight + gap * 2;
+        y += rowHeight + gap;
 
         replaceButton = accentButton(Component.translatable("gui.crazyphone.photo_edit_screen.replace"), b -> commitAndUpload(true),
                 panelX, y, colW, rowHeight, ACCENT_DANGER);
@@ -457,15 +461,17 @@ public class CrazyPhonePhotoEditScreen extends Screen implements PhoneScreen {
         int xValue = xMinus + smallButtonW + gap2;
         int xPlus = xValue + valueLabelW + gap2;
         int xReset = xPlus + smallButtonW + gap2;
-        Button minus = accentButton(Component.literal("-"), b -> onChange.accept(clampAdjustment(currentValueOf(kind) - step, kind)),
-                xMinus, y, smallButtonW, rowHeight, ACCENT_NEUTRAL);
+        Button minus = new fr.lordfinn.crazyphone.client.gui.components.PhoneSymbolButton(xMinus, y, smallButtonW,
+                fr.lordfinn.crazyphone.client.gui.components.PhoneSymbolButton.Symbol.MINUS, Component.literal("-"),
+                b -> onChange.accept(clampAdjustment(currentValueOf(kind) - step, kind)), PhoneButton.Style.NEUTRAL);
         addPanelWidget(minus, y);
         Button valueLabel = PhoneButton.builder(PhoneButton.Style.NEUTRAL, Component.literal(formatAdjustment(currentValue)), b -> {
         }).bounds(xValue, y, valueLabelW, rowHeight).build();
         valueLabel.active = false;
         addPanelWidget(valueLabel, y);
-        Button plus = accentButton(Component.literal("+"), b -> onChange.accept(clampAdjustment(currentValueOf(kind) + step, kind)),
-                xPlus, y, smallButtonW, rowHeight, ACCENT_NEUTRAL);
+        Button plus = new fr.lordfinn.crazyphone.client.gui.components.PhoneSymbolButton(xPlus, y, smallButtonW,
+                fr.lordfinn.crazyphone.client.gui.components.PhoneSymbolButton.Symbol.PLUS, Component.literal("+"),
+                b -> onChange.accept(clampAdjustment(currentValueOf(kind) + step, kind)), PhoneButton.Style.NEUTRAL);
         addPanelWidget(plus, y);
         addPanelWidget(resetIconButton(xReset, y, b -> onReset.run()), y);
         switch (kind) {

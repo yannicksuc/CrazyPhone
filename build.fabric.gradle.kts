@@ -194,6 +194,7 @@ sourceSets.main {
             "fr/lordfinn/crazyphone/client/gui/components/PhoneButton.java",
             "fr/lordfinn/crazyphone/client/gui/components/DiceButton.java",
             "fr/lordfinn/crazyphone/client/gui/components/PhoneIconButton.java",
+            "fr/lordfinn/crazyphone/client/gui/components/PhoneSymbolButton.java",
             // First-launch "Sandbox creation" splash over the phone display.
             "fr/lordfinn/crazyphone/client/gui/LaunchSplash.java",
             "fr/lordfinn/crazyphone/mixin/PhoneScaleScreenMixin.java",

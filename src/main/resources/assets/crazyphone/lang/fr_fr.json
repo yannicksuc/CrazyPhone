@@ -277,7 +277,7 @@
   "gui.crazyphone.crazy_phone_group_settings.label_admin_suffix": "(admin)",
   "gui.crazyphone.crazy_phone_group_settings.tooltip_icon_hint": "Clique sur un objet de ton inventaire pour en prendre une copie, puis clique ici pour en faire l'icône du groupe",
   "gui.crazyphone.crazy_phone_group_settings.button_cancel": "Annuler",
-  "gui.crazyphone.crazy_phone_group_settings.button_validate": "Enregistrer",
+  "gui.crazyphone.crazy_phone_group_settings.button_validate": "Valider",
   "gui.crazyphone.crazy_phone_group_settings.button_leave": "Quitter",
   "gui.crazyphone.crazy_phone_group_settings.button_exclude": "Exclure",
   "gui.crazyphone.crazy_phone_group_settings.button_undo": "Annuler",

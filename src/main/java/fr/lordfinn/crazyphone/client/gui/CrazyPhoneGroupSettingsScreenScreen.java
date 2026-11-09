@@ -55,14 +55,18 @@ public class CrazyPhoneGroupSettingsScreenScreen extends CrazyPhoneDefaultScreen
      * side (see the -1/+1 fill calls) - widgets use this wider span too so their edges actually line up
      * with those panels instead of looking 1px narrower. */
     private static final int PANEL_EDGE_INSET = 1;
+    /** Inner padding of the member list box: the box itself spans the phone's content width (x 8-114,
+     * like every button and field), the rows sit 2 px inside it. */
+    private static final int LIST_PAD = 2;
     private static final int NAME_FIELD_Y = 30;
-    private static final int ICON_ROW_Y = 48;
+    // Name field 30-43, icon box 47-64, member list 68-153: 3 px between each, like the rest of the phone.
+    private static final int ICON_ROW_Y = 47;
     /** 3px more than the icon preview row's own bottom edge (ICON_ROW_Y+16=64), so the list doesn't sit
      * right up against it. */
-    private static final int MEMBER_LIST_Y = 69;
+    private static final int MEMBER_LIST_Y = 68;
     private static final int MEMBER_LIST_WIDTH = PHONE_WIDTH - CONTENT_X * 2;
     /** Bottom edge stays fixed (was MEMBER_LIST_Y(66)+88=154) - shortened by the same 3px the top grew by. */
-    private static final int MEMBER_LIST_HEIGHT = 85;
+    private static final int MEMBER_LIST_HEIGHT = 86;
     private static final int MEMBER_ROW_HEIGHT = 18;
     private static final int TOGGLE_SIZE = 12;
     private static final int SCROLL_STEP = 10;
@@ -106,8 +110,8 @@ public class CrazyPhoneGroupSettingsScreenScreen extends CrazyPhoneDefaultScreen
     public void init() {
         super.init();
 
-        nameField = new PhoneEditBox(this.font, this.leftPos + CONTENT_X - PANEL_EDGE_INSET, this.topPos + NAME_FIELD_Y,
-                MEMBER_LIST_WIDTH + PANEL_EDGE_INSET * 2, 14,
+        nameField = new PhoneEditBox(this.font, this.leftPos + CONTENT_X, this.topPos + NAME_FIELD_Y,
+                MEMBER_LIST_WIDTH, 14,
                 Component.translatable("gui.crazyphone.crazy_phone_group_settings.label_group_name"));
         nameField.setMaxLength(64);
         nameField.setValue(menu.getGroupName());
@@ -257,16 +261,16 @@ public class CrazyPhoneGroupSettingsScreenScreen extends CrazyPhoneDefaultScreen
     private boolean isHoveringIconPreview(int mouseX, int mouseY) {
         int x = this.leftPos + CONTENT_X;
         int y = this.topPos + ICON_ROW_Y;
-        return mouseX >= x - 1 && mouseX < x + 17 && mouseY >= y - 1 && mouseY < y + 17;
+        return mouseX >= x && mouseX < x + 18 && mouseY >= y && mouseY < y + 18;
     }
 
     private void renderIconPreview(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int mouseX, int mouseY) {
         int x = this.leftPos + CONTENT_X;
         int y = this.topPos + ICON_ROW_Y;
-        fillCutCorners(guiGraphics, x - 1, y - 1, x + 17, y + 17, 0x80000000);
+        fillCutCorners(guiGraphics, x, y, x + 18, y + 18, 0x80000000);
         ItemStack icon = resolvePreviewIcon();
         if (!icon.isEmpty())
-            guiGraphics./*$ gui_render_item {*/renderItem/*$}*/(icon, x, y);
+            guiGraphics./*$ gui_render_item {*/renderItem/*$}*/(icon, x + 1, y + 1);
     }
 
     /** Returns the toggle tooltip to show for whichever row is hovered, or null - rendering is deferred
@@ -277,13 +281,13 @@ public class CrazyPhoneGroupSettingsScreenScreen extends CrazyPhoneDefaultScreen
     private Component renderMemberList(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int mouseX, int mouseY) {
         int x = this.leftPos + CONTENT_X;
         int y = this.topPos + MEMBER_LIST_Y;
-        fillCutCorners(guiGraphics, x - 1, y - 1, x + MEMBER_LIST_WIDTH + 1, y + MEMBER_LIST_HEIGHT + 1, 0xA0000000);
+        fillCutCorners(guiGraphics, x, y, x + MEMBER_LIST_WIDTH, y + MEMBER_LIST_HEIGHT, 0xA0000000);
         guiGraphics.enableScissor(x, y, x + MEMBER_LIST_WIDTH, y + MEMBER_LIST_HEIGHT);
 
         int rowY = y - scrollPosition;
         Component hoveredTooltip = null;
         for (Contact member : menu.getMembers()) {
-            Component tooltip = renderMemberRow(guiGraphics, mouseX, mouseY, x, y, rowY, member);
+            Component tooltip = renderMemberRow(guiGraphics, mouseX, mouseY, x + LIST_PAD, y, rowY, member);
             if (tooltip != null)
                 hoveredTooltip = tooltip;
             rowY += MEMBER_ROW_HEIGHT;
@@ -303,7 +307,7 @@ public class CrazyPhoneGroupSettingsScreenScreen extends CrazyPhoneDefaultScreen
     private void drawPersonRow(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int x, int rowY, Contact person, int textColor) {
         guiGraphics./*$ gui_render_item {*/renderItem/*$}*/(CrazyPhoneHelper.createContactHead(person), x, rowY + (MEMBER_ROW_HEIGHT - 16) / 2);
 
-        int maxTextWidth = MEMBER_LIST_WIDTH - 16 - 2 - TOGGLE_SIZE - 2;
+        int maxTextWidth = MEMBER_LIST_WIDTH - 2 * LIST_PAD - 16 - 2 - TOGGLE_SIZE - 2;
         String rawName = person.getNumber().equals(menu.getGroupAdmin()) ? person.getName() + " *" : person.getName();
         String nameLine = this.font.plainSubstrByWidth(rawName, maxTextWidth);
         guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(this.font, nameLine, x + 18, rowY + 5, textColor, false);
@@ -381,7 +385,7 @@ public class CrazyPhoneGroupSettingsScreenScreen extends CrazyPhoneDefaultScreen
         if (!canToggle)
             return null;
 
-        int toggleX = x + MEMBER_LIST_WIDTH - TOGGLE_SIZE;
+        int toggleX = x + MEMBER_LIST_WIDTH - 2 * LIST_PAD - TOGGLE_SIZE;
         int toggleY = rowY + (MEMBER_ROW_HEIGHT - TOGGLE_SIZE) / 2;
         boolean hovered = isToggleHovered(mouseX, mouseY, toggleX, toggleY, listY);
         if (hovered)
@@ -405,7 +409,7 @@ public class CrazyPhoneGroupSettingsScreenScreen extends CrazyPhoneDefaultScreen
         boolean staged = stagedAdded.contains(contact.getNumber());
         drawPersonRow(guiGraphics, x, rowY, contact, staged ? 0xFF55FF55 : 0xFF808080); // green once marked to be added, grey otherwise
 
-        int toggleX = x + MEMBER_LIST_WIDTH - TOGGLE_SIZE;
+        int toggleX = x + MEMBER_LIST_WIDTH - 2 * LIST_PAD - TOGGLE_SIZE;
         int toggleY = rowY + (MEMBER_ROW_HEIGHT - TOGGLE_SIZE) / 2;
         boolean hovered = isToggleHovered(mouseX, mouseY, toggleX, toggleY, listY);
         if (hovered)
@@ -470,7 +474,7 @@ public class CrazyPhoneGroupSettingsScreenScreen extends CrazyPhoneDefaultScreen
         if (index < 0 || index >= members.size() + invitable.size())
             return false;
 
-        int toggleX = listX + MEMBER_LIST_WIDTH - TOGGLE_SIZE;
+        int toggleX = listX + MEMBER_LIST_WIDTH - LIST_PAD - TOGGLE_SIZE;
         if (mouseX < toggleX || mouseX >= toggleX + TOGGLE_SIZE)
             return false;
 
