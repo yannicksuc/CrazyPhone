@@ -66,6 +66,11 @@ public class CrazyPhoneGroupSettingsScreenScreen extends CrazyPhoneDefaultScreen
     private static final int MEMBER_ROW_HEIGHT = 18;
     private static final int TOGGLE_SIZE = 12;
     private static final int SCROLL_STEP = 10;
+    // Inventory panel colours: the phone's own (frame, screen, header, ink) and its carved text fields.
+    private static final int PANEL_FRAME = 0xFF5A6B7D, PANEL_SCREEN = 0xFFC2F1F3;
+    private static final int PANEL_TITLE = 0xFFFED200, PANEL_TITLE_LIGHT = 0xFFFFEF00, PANEL_TITLE_DARK = 0xFFFFA500;
+    private static final int PANEL_INK = 0xFF3A4456;
+    private static final int CELL_FRAME = 0xFF9FB4C4, CELL_FILL = 0xFFFFFFFF, CELL_SHADE = 0xFFB8C7D2;
 
     private final static HashMap<String, Object> guistate = CrazyPhoneGroupSettingsScreenMenu.guistate;
     private final ItemStack headerIcon = CrazyPhoneConversationMenu.createGroupSettingsIcon();
@@ -126,13 +131,30 @@ public class CrazyPhoneGroupSettingsScreenScreen extends CrazyPhoneDefaultScreen
     protected void drawScreenBackground(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics) {
         super.drawScreenBackground(guiGraphics);
 
+        // The inventory the group icon is picked from, as a small phone-style panel next to the phone: a
+        // slate frame with cut corners around the phone's screen colour, a yellow title strip like the
+        // phone's header, and carved cells like the phone's text fields.
         int invX = this.leftPos + CrazyPhoneGroupSettingsScreenMenu.PLAYER_INV_X;
         int invY = this.topPos + CrazyPhoneGroupSettingsScreenMenu.PLAYER_INV_Y;
-        guiGraphics.fill(invX - 4, invY - 4, invX + INV_PANEL_WIDTH + 4, invY + INV_PANEL_HEIGHT + 4, 0x60000000);
+        int x0 = invX - 5, x1 = invX + INV_PANEL_WIDTH + 5;
+        int y0 = invY - 19, y1 = invY + INV_PANEL_HEIGHT + 5;
+        guiGraphics.fill(x0 + 1, y0, x1 - 1, y1, PANEL_FRAME);
+        guiGraphics.fill(x0, y0 + 1, x1, y1 - 1, PANEL_FRAME);
+        guiGraphics.fill(x0 + 1, y0 + 1, x1 - 1, y1 - 1, PANEL_SCREEN);
+        // Title strip.
+        guiGraphics.fill(x0 + 1, y0 + 1, x1 - 1, y0 + 13, PANEL_TITLE);
+        guiGraphics.fill(x0 + 1, y0 + 1, x1 - 1, y0 + 2, PANEL_TITLE_LIGHT);
+        guiGraphics.fill(x0 + 1, y0 + 12, x1 - 1, y0 + 13, PANEL_TITLE_DARK);
+        Component title = Component.translatable("gui.crazyphone.crazy_phone_group_settings.inventory_title");
+        guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(this.font, title,
+                x0 + (x1 - x0 - this.font.width(title) + 1) / 2, y0 + 3, PANEL_INK, false);
         for (Slot slot : this.menu.slots) {
             int x = this.leftPos + slot.x - 1;
             int y = this.topPos + slot.y - 1;
-            guiGraphics.fill(x, y, x + 18, y + 18, 0x40FFFFFF);
+            guiGraphics.fill(x, y, x + 18, y + 18, CELL_FRAME);
+            guiGraphics.fill(x + 1, y + 1, x + 17, y + 17, CELL_FILL);
+            guiGraphics.fill(x + 1, y + 1, x + 17, y + 2, CELL_SHADE);
+            guiGraphics.fill(x + 1, y + 2, x + 2, y + 17, CELL_SHADE);
         }
     }
 
@@ -211,6 +233,14 @@ public class CrazyPhoneGroupSettingsScreenScreen extends CrazyPhoneDefaultScreen
 
     private static final long ICON_HEAD_CYCLE_INTERVAL_MS = 1000;
 
+    /** A (possibly translucent) box with its corners cut by 1 px, like every other phone shape: three bands
+     * that never overlap, so a translucent colour stays even. */
+    private static void fillCutCorners(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int x0, int y0, int x1, int y1, int color) {
+        guiGraphics.fill(x0 + 1, y0, x1 - 1, y0 + 1, color);
+        guiGraphics.fill(x0, y0 + 1, x1, y1 - 1, color);
+        guiGraphics.fill(x0 + 1, y1 - 1, x1 - 1, y1, color);
+    }
+
     /** The custom icon if one is staged, otherwise a member head that cycles over time - same fallback
      * convention as the contacts screen's group entries, so an unset icon still reads as "these people"
      * instead of just sitting empty. */
@@ -233,7 +263,7 @@ public class CrazyPhoneGroupSettingsScreenScreen extends CrazyPhoneDefaultScreen
     private void renderIconPreview(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int mouseX, int mouseY) {
         int x = this.leftPos + CONTENT_X;
         int y = this.topPos + ICON_ROW_Y;
-        guiGraphics.fill(x - 1, y - 1, x + 17, y + 17, 0x80000000);
+        fillCutCorners(guiGraphics, x - 1, y - 1, x + 17, y + 17, 0x80000000);
         ItemStack icon = resolvePreviewIcon();
         if (!icon.isEmpty())
             guiGraphics./*$ gui_render_item {*/renderItem/*$}*/(icon, x, y);
@@ -247,7 +277,7 @@ public class CrazyPhoneGroupSettingsScreenScreen extends CrazyPhoneDefaultScreen
     private Component renderMemberList(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int mouseX, int mouseY) {
         int x = this.leftPos + CONTENT_X;
         int y = this.topPos + MEMBER_LIST_Y;
-        guiGraphics.fill(x - 1, y - 1, x + MEMBER_LIST_WIDTH + 1, y + MEMBER_LIST_HEIGHT + 1, 0xA0000000);
+        fillCutCorners(guiGraphics, x - 1, y - 1, x + MEMBER_LIST_WIDTH + 1, y + MEMBER_LIST_HEIGHT + 1, 0xA0000000);
         guiGraphics.enableScissor(x, y, x + MEMBER_LIST_WIDTH, y + MEMBER_LIST_HEIGHT);
 
         int rowY = y - scrollPosition;
@@ -288,13 +318,17 @@ public class CrazyPhoneGroupSettingsScreenScreen extends CrazyPhoneDefaultScreen
     /** Flat single-color squares read as boring - a 1px bevel (lighter top+left, darker bottom+right)
      * gives them the classic pixel-art "raised button" look, at the same outer footprint as before. */
     private void drawBeveledButton(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int x, int y, int size, int baseColor) {
-        guiGraphics.fill(x, y, x + size, y + size, baseColor);
-        int light = adjustBrightness(baseColor, 1.5f);
-        int dark = adjustBrightness(baseColor, 0.5f);
-        guiGraphics.fill(x, y, x + size, y + 1, light); // top edge
-        guiGraphics.fill(x, y, x + 1, y + size, light); // left edge
-        guiGraphics.fill(x, y + size - 1, x + size, y + size, dark); // bottom edge
-        guiGraphics.fill(x + size - 1, y, x + size, y + size, dark); // right edge
+        drawPhoneToggle(guiGraphics, x, y, size, baseColor, adjustBrightness(baseColor, 1.5f), adjustBrightness(baseColor, 0.5f));
+    }
+
+    /** Same look as PhoneButton: flat fill, light top / left, dark bottom / right, corners cut by 1 px. */
+    private void drawPhoneToggle(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int x, int y, int size, int fill, int light, int dark) {
+        guiGraphics.fill(x + 1, y, x + size - 1, y + size, fill);
+        guiGraphics.fill(x, y + 1, x + size, y + size - 1, fill);
+        guiGraphics.fill(x + 1, y, x + size - 1, y + 1, light);
+        guiGraphics.fill(x, y + 1, x + 1, y + size - 1, light);
+        guiGraphics.fill(x + 1, y + size - 1, x + size - 1, y + size, dark);
+        guiGraphics.fill(x + size - 1, y + 1, x + size, y + size - 1, dark);
     }
 
     private static int adjustBrightness(int argb, float factor) {
@@ -326,12 +360,13 @@ public class CrazyPhoneGroupSettingsScreenScreen extends CrazyPhoneDefaultScreen
      * next, no separate "undo" glyph needed. */
     private void drawStateToggle(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int toggleX, int toggleY, boolean showCross) {
         if (showCross) {
-            drawBeveledButton(guiGraphics, toggleX, toggleY, TOGGLE_SIZE, 0xFF884444);
-            drawToggleSymbol(guiGraphics, toggleX, toggleY, "âœ•", 0xFFFFFFFF, -0.25f);
+            drawPhoneToggle(guiGraphics, toggleX, toggleY, TOGGLE_SIZE, 0xFFE74C3C, 0xFFF08A7E, 0xFFB83227);
+            drawToggleSymbol(guiGraphics, toggleX, toggleY, "\u2715", 0xFFFFFFFF, -0.25f);
         } else {
-            drawBeveledButton(guiGraphics, toggleX, toggleY, TOGGLE_SIZE, 0xFFCCAA00);
-            drawToggleSymbol(guiGraphics, toggleX, toggleY, "â†’", 0xFF000000);
+            drawPhoneToggle(guiGraphics, toggleX, toggleY, TOGGLE_SIZE, 0xFFFED200, 0xFFFFEF00, 0xFFFFA500);
+            drawToggleSymbol(guiGraphics, toggleX, toggleY, "\u2192", 0xFF3A4456);
         }
+
     }
 
     private Component renderMemberRow(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int mouseX, int mouseY, int x, int listY, int rowY, Contact member) {

@@ -114,7 +114,8 @@ public class CrazyPhonePhotoViewerScreen extends Screen implements PhoneScreen {
             Button saveButton = PhoneButton.builder(PhoneButton.Style.PRIMARY, Component.translatable("gui.crazyphone.photo_viewer.save"), b -> {
                 NetworkAccess.sendToServer(new CrazyPhoneGivePhotoItemPacket(photoId));
                 Minecraft.getInstance().player.playSound(SoundEvents.ITEM_PICKUP, 1f, 1f);
-            }).bounds(startX + buttonWidth + spacing, y, buttonWidth, buttonHeight).build();
+            }).bounds(startX + buttonWidth + spacing, y, buttonWidth, buttonHeight)
+                    .tooltip(net.minecraft.client.gui.components.Tooltip.create(Component.translatable("gui.crazyphone.photo_viewer.save.tooltip"))).build();
             addRenderableWidget(backButton);
             addRenderableWidget(saveButton);
             ownButtons.add(backButton);
@@ -128,7 +129,8 @@ public class CrazyPhonePhotoViewerScreen extends Screen implements PhoneScreen {
                 Button addButton = PhoneButton.builder(PhoneButton.Style.CONFIRM, Component.translatable("gui.crazyphone.photo_viewer.add_to_my_photos"), b -> {
                     NetworkAccess.sendToServer(new CrazyPhoneAddPhotoToMyPhotosPacket(photoId));
                     Minecraft.getInstance().player.playSound(SoundEvents.ITEM_PICKUP, 1f, 1f);
-                }).bounds(nextX, y, buttonWidth, buttonHeight).build();
+                }).bounds(nextX, y, buttonWidth, buttonHeight)
+                        .tooltip(net.minecraft.client.gui.components.Tooltip.create(Component.translatable("gui.crazyphone.photo_viewer.add_to_my_photos.tooltip"))).build();
                 addRenderableWidget(addButton);
                 ownButtons.add(addButton);
                 nextX += buttonWidth + spacing;

@@ -323,7 +323,8 @@ public class CrazyPhonePhotoEditScreen extends Screen implements PhoneScreen {
         // above the viewport's own top edge and got scissor-clipped away entirely (live-reported: "on ne
         // voit pas le premier label").
         int y = ROW_LABEL_GAP;
-        int rowHeight = 22, gap = 4;
+        // Same 14 px buttons and 3 px gaps as the rest of the phone.
+        int rowHeight = ICON_BUTTON_SIZE, gap = 3;
 
         y = addAdjustmentRow(panelX, y, panelWidth, rowHeight,
                 Component.translatable("gui.crazyphone.photo_edit_screen.hue"), state.hueDegrees(),
@@ -336,84 +337,99 @@ public class CrazyPhonePhotoEditScreen extends Screen implements PhoneScreen {
                 v -> commit(state.withBrightness(v)), () -> commit(state.resetBrightness()), BRIGHTNESS_STEP, "brightness") + gap;
 
         y += gap * 2;
-        int thirdW = (panelWidth - gap * 2) / 3;
-        // No Rotate/Crop-mode toggle buttons here anymore - rotation is now the draggable handle on the
-        // preview image itself (see drawRotateHandle/tryStartRotateDrag), and crop's own rectangle+handles
-        // are simply always shown and always draggable alongside it (live request: "rotate et crop sont
-        // complementaires, on doit pouvoir utiliser les deux outils en meme temps" - no exclusive mode to
-        // switch between at all anymore).
-        int halfW = (panelWidth - gap) / 2;
+        // One grid for every row below, so their edges line up: two equal columns, and a 14 px column on
+        // the right for the small square icon buttons (reset, ratio lock, close). A row with two wide
+        // buttons lets its second one run over the icon column.
+        int colW = (panelWidth - ICON_BUTTON_SIZE - gap * 2) / 2;
+        int col2X = panelX + colW + gap;
+        int iconX = panelX + panelWidth - ICON_BUTTON_SIZE;
+        int col2WideW = iconX + ICON_BUTTON_SIZE - col2X;
+        int bothColsW = colW * 2 + gap;
+        // No Rotate/Crop-mode toggle buttons here anymore - rotation is the draggable handle on the preview
+        // image itself (see drawRotateHandle/tryStartRotateDrag), and the crop rectangle and its handles are
+        // always shown and draggable alongside it.
         Button resetRotationButton = accentButton(Component.translatable("gui.crazyphone.photo_edit_screen.reset_rotation"),
-                b -> commit(state.resetRotation()), panelX, y, halfW, rowHeight, ACCENT_RESET);
+                b -> commit(state.resetRotation()), panelX, y, colW, rowHeight, ACCENT_RESET);
         addPanelWidget(resetRotationButton, y);
         Button resetAllButtonTop = accentButton(Component.translatable("gui.crazyphone.photo_edit_screen.reset_all"),
-                b -> commit(PhotoEditState.DEFAULT), panelX + halfW + gap, y, halfW, rowHeight, ACCENT_RESET);
+                b -> commit(PhotoEditState.DEFAULT), col2X, y, col2WideW, rowHeight, ACCENT_RESET);
         addPanelWidget(resetAllButtonTop, y);
         y += rowHeight + gap;
 
         cropSquareButton = accentButton(Component.translatable("gui.crazyphone.photo_edit_screen.crop_square"),
-                b -> commit(squareCrop()), panelX, y, thirdW, rowHeight, ACCENT_CONFIRM);
+                b -> commit(squareCrop()), panelX, y, colW, rowHeight, ACCENT_CONFIRM);
         addPanelWidget(cropSquareButton, y);
         Button cropFillButton = accentButton(Component.translatable("gui.crazyphone.photo_edit_screen.crop_fill"),
-                b -> commit(fillCrop()), panelX + thirdW + gap, y, thirdW, rowHeight, ACCENT_CONFIRM);
+                b -> commit(fillCrop()), col2X, y, colW, rowHeight, ACCENT_CONFIRM);
         addPanelWidget(cropFillButton, y);
-        Button cropResetButton = accentButton(Component.translatable("gui.crazyphone.photo_edit_screen.reset"),
-                b -> commit(state.resetCrop()), panelX + (thirdW + gap) * 2, y, thirdW, rowHeight, ACCENT_RESET);
-        addPanelWidget(cropResetButton, y);
+        addPanelWidget(resetIconButton(iconX, y, b -> commit(state.resetCrop())), y);
         y += rowHeight + gap * 2;
 
-        int fieldW = (panelWidth - gap * 2) / 3;
-        widthField = new PhoneEditBox(this.font, panelX, y, fieldW, rowHeight, Component.translatable("gui.crazyphone.photo_edit_screen.width"));
+        widthField = new PhoneEditBox(this.font, panelX, y, colW, rowHeight, Component.translatable("gui.crazyphone.photo_edit_screen.width"));
         widthField.setValue(String.valueOf(currentCroppedWidth()));
         widthField.setResponder(this::onWidthFieldChanged);
         addPanelWidget(widthField, y);
-        heightField = new PhoneEditBox(this.font, panelX + fieldW + gap, y, fieldW, rowHeight, Component.translatable("gui.crazyphone.photo_edit_screen.height"));
+        heightField = new PhoneEditBox(this.font, col2X, y, colW, rowHeight, Component.translatable("gui.crazyphone.photo_edit_screen.height"));
         heightField.setValue(String.valueOf(currentCroppedHeight()));
         heightField.setResponder(this::onHeightFieldChanged);
         addPanelWidget(heightField, y);
-        // Short label text ("Locked"/"Free") - live-reported the longer "Ratio: locked" phrasing clipping
-        // past this button's own edge at this panel width.
-        lockRatioButton = accentButton(lockRatioLabel(), b -> {
+        // Padlock icon (closed: the ratio is kept); its tooltip says which.
+        lockRatioButton = new fr.lordfinn.crazyphone.client.gui.components.PhoneIconButton(iconX, y, ICON_BUTTON_SIZE,
+                () -> Component.literal(state.lockAspectRatio() ? "\uD83D\uDD12" : "\uD83D\uDD13"), b -> {
             state = state.withLockAspectRatio(!state.lockAspectRatio());
-            lockRatioButton.setMessage(lockRatioLabel());
-        }, panelX + (fieldW + gap) * 2, y, fieldW, rowHeight, ACCENT_NEUTRAL);
+            lockRatioButton.setTooltip(net.minecraft.client.gui.components.Tooltip.create(lockRatioLabel()));
+        }, PhoneButton.Style.NEUTRAL);
+        lockRatioButton.setTooltip(net.minecraft.client.gui.components.Tooltip.create(lockRatioLabel()));
         addPanelWidget(lockRatioButton, y);
         y += rowHeight + gap;
 
         Button applySizeButton = accentButton(Component.translatable("gui.crazyphone.photo_edit_screen.resize_apply"),
-                b -> applyResizeFields(), panelX, y, thirdW, rowHeight, ACCENT_CONFIRM);
+                b -> applyResizeFields(), panelX, y, bothColsW, rowHeight, ACCENT_CONFIRM);
         addPanelWidget(applySizeButton, y);
-        Button resizeResetButton = accentButton(Component.translatable("gui.crazyphone.photo_edit_screen.reset"), b -> {
+        addPanelWidget(resetIconButton(iconX, y, b -> {
             commit(state.resetResize());
             suppressResizeFieldFeedback = true;
             widthField.setValue(String.valueOf(currentCroppedWidth()));
             heightField.setValue(String.valueOf(currentCroppedHeight()));
             suppressResizeFieldFeedback = false;
-        }, panelX + thirdW + gap, y, thirdW, rowHeight, ACCENT_RESET);
-        addPanelWidget(resizeResetButton, y);
+        }), y);
         y += rowHeight + gap * 3;
 
         undoButton = accentButton(Component.translatable("gui.crazyphone.photo_edit_screen.undo"), b -> undo(),
-                panelX, y, thirdW, rowHeight, ACCENT_UNDOREDO);
+                panelX, y, colW, rowHeight, ACCENT_UNDOREDO);
         addPanelWidget(undoButton, y);
         redoButton = accentButton(Component.translatable("gui.crazyphone.photo_edit_screen.redo"), b -> redo(),
-                panelX + thirdW + gap, y, thirdW, rowHeight, ACCENT_UNDOREDO);
+                col2X, y, colW, rowHeight, ACCENT_UNDOREDO);
         addPanelWidget(redoButton, y);
-        Button cancelButton = accentButton(Component.translatable("gui.crazyphone.photo_edit_screen.cancel"), b -> onClose(),
-                panelX + (thirdW + gap) * 2, y, thirdW, rowHeight, ACCENT_DANGER);
+        // Close without saving: a red cross, "Cancel" as its tooltip.
+        Button cancelButton = new fr.lordfinn.crazyphone.client.gui.components.PhoneIconButton(iconX, y, ICON_BUTTON_SIZE,
+                () -> Component.literal("\u2715"), b -> onClose(), PhoneButton.Style.DANGER);
+        cancelButton.setTooltip(net.minecraft.client.gui.components.Tooltip.create(Component.translatable("gui.crazyphone.photo_edit_screen.cancel")));
         addPanelWidget(cancelButton, y);
         y += rowHeight + gap * 2;
 
         replaceButton = accentButton(Component.translatable("gui.crazyphone.photo_edit_screen.replace"), b -> commitAndUpload(true),
-                panelX, y, halfW, rowHeight, ACCENT_DANGER);
+                panelX, y, colW, rowHeight, ACCENT_DANGER);
         addPanelWidget(replaceButton, y);
         createCopyButton = accentButton(Component.translatable("gui.crazyphone.photo_edit_screen.create_copy"), b -> commitAndUpload(false),
-                panelX + halfW + gap, y, halfW, rowHeight, ACCENT_CONFIRM);
+                col2X, y, col2WideW, rowHeight, ACCENT_CONFIRM);
         addPanelWidget(createCopyButton, y);
         y += rowHeight;
 
         panelContentHeight = y;
         updateUndoRedoButtons();
+    }
+
+    /** Phone buttons and fields of this panel are 14 px, like everywhere else on the phone. */
+    private static final int ICON_BUTTON_SIZE = 14;
+
+    /** A small square "reset" button: the counterclockwise arrows emoji, "Reset" as its tooltip (the word
+     * itself did not fit these buttons and was shrunk until unreadable). */
+    private Button resetIconButton(int x, int y, Button.OnPress onPress) {
+        Button button = new fr.lordfinn.crazyphone.client.gui.components.PhoneIconButton(x, y, ICON_BUTTON_SIZE,
+                () -> Component.literal("\uD83D\uDD04"), onPress, PhoneButton.Style.PRIMARY);
+        button.setTooltip(net.minecraft.client.gui.components.Tooltip.create(Component.translatable("gui.crazyphone.photo_edit_screen.reset")));
+        return button;
     }
 
     private Component lockRatioLabel() {
@@ -433,9 +449,9 @@ public class CrazyPhonePhotoEditScreen extends Screen implements PhoneScreen {
         // Derived as percentages of the row's OWN width, not fixed pixel constants - at a narrow logical
         // panel width (high GUI scale), fixed widths for +/-/Reset overflowed past the row's right edge and
         // got scissor-clipped (live-reported: "les boutons sont a moitié crop sur la droite").
-        int smallButtonW = Math.max(14, width * 16 / 100);
-        int resetW = Math.max(30, width * 20 / 100);
-        int gap2 = 2;
+        int smallButtonW = ICON_BUTTON_SIZE;
+        int resetW = ICON_BUTTON_SIZE;
+        int gap2 = 3;
         int valueLabelW = Math.max(16, width - smallButtonW * 2 - resetW - gap2 * 3);
         int xMinus = x;
         int xValue = xMinus + smallButtonW + gap2;
@@ -451,9 +467,7 @@ public class CrazyPhonePhotoEditScreen extends Screen implements PhoneScreen {
         Button plus = accentButton(Component.literal("+"), b -> onChange.accept(clampAdjustment(currentValueOf(kind) + step, kind)),
                 xPlus, y, smallButtonW, rowHeight, ACCENT_NEUTRAL);
         addPanelWidget(plus, y);
-        Button reset = accentButton(Component.translatable("gui.crazyphone.photo_edit_screen.reset"), b -> onReset.run(),
-                xReset, y, resetW, rowHeight, ACCENT_RESET);
-        addPanelWidget(reset, y);
+        addPanelWidget(resetIconButton(xReset, y, b -> onReset.run()), y);
         switch (kind) {
             case "hue" -> hueValueLabel = valueLabel;
             case "contrast" -> contrastValueLabel = valueLabel;
@@ -630,7 +644,7 @@ public class CrazyPhonePhotoEditScreen extends Screen implements PhoneScreen {
         refreshPreview();
         updateUndoRedoButtons();
         if (lockRatioButton != null)
-            lockRatioButton.setMessage(lockRatioLabel());
+            lockRatioButton.setTooltip(net.minecraft.client.gui.components.Tooltip.create(lockRatioLabel()));
         if (widthField != null && heightField != null) {
             suppressResizeFieldFeedback = true;
             widthField.setValue(String.valueOf(currentCroppedWidth()));
