@@ -175,11 +175,62 @@ public class ModCommands {
                                         .then(Commands.argument("phoneNumber", IntegerArgumentType.integer(100, 999)).suggests(REGISTERED_NUMBERS)
                                                 .executes(ModCommands::mayorVotesClear))))
                         .then(candidate))
+                // Dev only (CRAZYPHONE_DEV_COMMANDS=1 on the server): opens one phone page directly, to look
+                // at every screen in a test game without clicking through the phone.
+                .then(Commands.literal("open").requires(source -> DEV_COMMANDS && permLevel(4).test(source))
+                        .then(Commands.argument("screen", StringArgumentType.word()).suggests(DEV_SCREENS)
+                                .executes(ModCommands::devOpen)
+                                .then(Commands.argument("data", StringArgumentType.greedyString())
+                                        .executes(ModCommands::devOpen))))
+                // Dev only too: registers the phone in hand as if its registration form had been filled in.
+                .then(Commands.literal("register").requires(source -> DEV_COMMANDS && permLevel(4).test(source))
+                        .then(Commands.argument("number", StringArgumentType.word())
+                                .then(Commands.argument("name", StringArgumentType.word())
+                                        .then(Commands.argument("password", StringArgumentType.word())
+                                                .executes(ModCommands::devRegister)))))
                 .then(Commands.literal("cache").requires(permLevel(4))
                         .then(Commands.literal("clear")
                                 .executes(ModCommands::cacheClearSelf)
                                 .then(Commands.argument("player", EntityArgument.player())
                                         .executes(ModCommands::cacheClearPlayer))));
+    }
+
+    // --- dev ---
+
+    private static final boolean DEV_COMMANDS = "1".equals(System.getenv("CRAZYPHONE_DEV_COMMANDS"))
+            || Boolean.getBoolean("crazyphone.devCommands");
+    private static final String[] DEV_SCREEN_IDS = {"crazyphone_home_screen", "crazy_phone_sign_in_screen",
+            "crazy_phone_password_screen", "crazy_phone_contacts_screen", "crazy_phone_conversation",
+            "crazy_phone_group_settings_screen", "crazy_phone_mayors_candidates_list", "my_photos"};
+    private static final com.mojang.brigadier.suggestion.SuggestionProvider<CommandSourceStack> DEV_SCREENS =
+            (context, builder) -> net.minecraft.commands.SharedSuggestionProvider.suggest(DEV_SCREEN_IDS, builder);
+
+    private static int devOpen(CommandContext<CommandSourceStack> arguments) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        net.minecraft.server.level.ServerPlayer player = arguments.getSource().getPlayerOrException();
+        String screen = StringArgumentType.getString(arguments, "screen");
+        String data;
+        try {
+            data = StringArgumentType.getString(arguments, "data");
+        } catch (IllegalArgumentException noData) {
+            data = null;
+        }
+        net.minecraft.world.InteractionHand hand = net.minecraft.world.InteractionHand.MAIN_HAND;
+        switch (screen) {
+            case "my_photos" -> fr.lordfinn.crazyphone.utils.ScreenMenuUtils.openPhoneMyPhotosMenu(player, hand, data == null ? "" : data);
+            default -> fr.lordfinn.crazyphone.utils.ScreenMenuUtils.openCrazyPhoneMenuByTag(player, hand, "crazyphone:" + screen, data);
+        }
+        return 1;
+    }
+
+    private static int devRegister(CommandContext<CommandSourceStack> arguments) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        net.minecraft.server.level.ServerPlayer player = arguments.getSource().getPlayerOrException();
+        java.util.HashMap<String, String> form = new java.util.HashMap<>();
+        form.put("textin:number", StringArgumentType.getString(arguments, "number"));
+        form.put("textin:name", StringArgumentType.getString(arguments, "name"));
+        form.put("textin:password", StringArgumentType.getString(arguments, "password"));
+        fr.lordfinn.crazyphone.procedures.CrazyPhoneInitialFormValidationButtonClickProcedure.execute(
+                player.level(), player.getX(), player.getY(), player.getZ(), player, form);
+        return 1;
     }
 
     // --- phones ---

@@ -85,6 +85,17 @@ public final class LiveScreenClient {
     private static final Map<String, Integer> unreadByNumber = new HashMap<>();
     private static int unreadRefresh = 0;
 
+    /** Going from one phone page to the next closes one screen and opens the other: for a tick or two no
+     * phone screen is open, which made the held phone flash its lock screen. The last page is kept that long. */
+    private static final int PAGE_CHANGE_GRACE_TICKS = 10;
+    private static int ticksWithoutApp = 0;
+    /** The lock screen only lights up for a moment, like a real phone: when the phone is taken in hand, put
+     * away (its UI closed) or a new message arrives. The rest of the time the held phone's screen is off. */
+    private static final int WAKE_TICKS = 80;
+    private static int wakeTicks = 0;
+    private static boolean wasHoldingPhone = false;
+    private static int lastUnreadTotal = -1;
+
     private LiveScreenClient() {
     }
 
@@ -128,10 +139,30 @@ public final class LiveScreenClient {
                 lastPlayer = player;
                 lastSent = null;
             }
-            localApp = computeLocalApp(mc);
+            PhoneScreenApp computed = computeLocalApp(mc);
+            if (computed != PhoneScreenApp.NONE) {
+                ticksWithoutApp = 0;
+                localApp = computed;
+            } else if (localApp != PhoneScreenApp.NONE && ++ticksWithoutApp > PAGE_CHANGE_GRACE_TICKS) {
+                // Really closed (not just between two pages): the lock screen shows for a moment, then off.
+                localApp = PhoneScreenApp.NONE;
+                wake();
+            }
+            boolean holding = isPhone(player.getMainHandItem()) || isPhone(player.getOffhandItem());
+            if (holding && !wasHoldingPhone)
+                wake();
+            wasHoldingPhone = holding;
+            if (wakeTicks > 0)
+                wakeTicks--;
             if (++unreadRefresh >= UNREAD_REFRESH_TICKS) {
                 unreadRefresh = 0;
                 refreshUnread(player);
+                int total = 0;
+                for (int count : unreadByNumber.values())
+                    total += count;
+                if (lastUnreadTotal >= 0 && total > lastUnreadTotal)
+                    wake();
+                lastUnreadTotal = total;
             }
             ticksSinceSend++;
             if (localApp != lastSent && ticksSinceSend >= MIN_TICKS_BETWEEN_REPORTS && canReport())
@@ -165,6 +196,10 @@ public final class LiveScreenClient {
 
     private static void resetSession() {
         wasInWorld = false;
+        ticksWithoutApp = 0;
+        wakeTicks = 0;
+        wasHoldingPhone = false;
+        lastUnreadTotal = -1;
         lastPlayer = null;
         lastSent = null;
         localApp = PhoneScreenApp.NONE;
@@ -180,6 +215,20 @@ public final class LiveScreenClient {
     /** The phone app on the local player's screen right now (NONE when no phone UI is up). */
     public static PhoneScreenApp localApp() {
         return localApp;
+    }
+
+    /** Lights the local player's lock screen up for a few seconds. */
+    static void wake() {
+        wakeTicks = WAKE_TICKS;
+    }
+
+    /** True while the local player's lock screen is lit (see WAKE_TICKS). */
+    static boolean isAwake() {
+        return wakeTicks > 0;
+    }
+
+    private static boolean isPhone(ItemStack stack) {
+        return !stack.isEmpty() && stack.getItem() == ModItems.CRAZY_PHONE.get();
     }
 
     static PhoneScreenApp computeLocalApp(Minecraft mc) {

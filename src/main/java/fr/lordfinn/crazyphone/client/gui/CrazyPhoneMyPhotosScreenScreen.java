@@ -52,6 +52,9 @@ public class CrazyPhoneMyPhotosScreenScreen extends CrazyPhoneDefaultScreenScree
     private static final int THUMB_PITCH = 36;
     // Matches CrazyPhoneConversationScreen's own message crop zone top (topPos+27), same as GRID_HEIGHT below.
     private static final int GRID_TOP_Y = 26;
+    // Room between the header (and its shade line) and the first row of photos, so the yellow selection
+    // border of the top row is not hidden under the header. Scrolled rows are still cut at GRID_TOP_Y.
+    private static final int GRID_TOP_PADDING = 3;
     private static final int GRID_WIDTH = GRID_COLUMNS * THUMB_PITCH;
     // Matches CrazyPhoneConversationScreen's own message crop zone height exactly (its enableScissor call
     // spans topPos+27 to topPos+158, 131px) - the grid already scrolls in continuous pixels, not snapped
@@ -169,7 +172,7 @@ public class CrazyPhoneMyPhotosScreenScreen extends CrazyPhoneDefaultScreenScree
 
     private int maxScrollPosition() {
         int rowCount = (menu.photoIds.size() + GRID_COLUMNS - 1) / GRID_COLUMNS;
-        return Math.max(0, rowCount * THUMB_PITCH - GRID_HEIGHT);
+        return Math.max(0, GRID_TOP_PADDING + rowCount * THUMB_PITCH - GRID_HEIGHT);
     }
 
     /** Row-index (not pixel) of the topmost row any part of which is currently visible - shared by
@@ -405,7 +408,7 @@ public class CrazyPhoneMyPhotosScreenScreen extends CrazyPhoneDefaultScreenScree
             int col = rel % GRID_COLUMNS;
             int row = topRow + rel / GRID_COLUMNS;
             int x = gridLeft + col * THUMB_PITCH;
-            int y = gridTop + row * THUMB_PITCH - scrollPosition;
+            int y = gridTop + GRID_TOP_PADDING + row * THUMB_PITCH - scrollPosition;
 
             if (texture == null) {
                 PhotoLoadingPlaceholder.draw(guiGraphics, x, y, THUMB_SIZE, THUMB_SIZE);
@@ -480,7 +483,7 @@ public class CrazyPhoneMyPhotosScreenScreen extends CrazyPhoneDefaultScreenScree
             int col = rel % GRID_COLUMNS;
             int row = topRow + rel / GRID_COLUMNS;
             int x = gridLeft + col * THUMB_PITCH;
-            int y = gridTop + row * THUMB_PITCH - scrollPosition;
+            int y = gridTop + GRID_TOP_PADDING + row * THUMB_PITCH - scrollPosition;
             if (mouseX < x || mouseX >= x + THUMB_SIZE || mouseY < y || mouseY >= y + THUMB_SIZE)
                 continue;
 

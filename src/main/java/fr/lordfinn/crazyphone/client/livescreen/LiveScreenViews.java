@@ -101,6 +101,11 @@ public final class LiveScreenViews {
         if (app != PhoneScreenApp.NONE)
             return view(LiveScreenView.Mode.APP, app, 0, 0, -1, -1, frame, "", 0);
 
+        // Nothing going on: the screen is off, like the phone in the hotbar. The local player's own phone
+        // lights its lock screen up for a few seconds when taken in hand, put away or on a new message.
+        if (!own || !LiveScreenClient.isAwake())
+            return null;
+
         long dayTime = Math.floorMod(dayTime(level), 24000L);
         int hour = (int) ((dayTime / 1000 + 6) % 24);
         int minute = (int) ((dayTime % 1000) * 60 / 1000);

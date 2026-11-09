@@ -106,7 +106,7 @@ public class CrazyPhoneSignInScreenScreen extends CrazyPhoneDefaultScreenScreen<
 	//?}
 
 	private void drawLabel(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics) {
-		guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(this.font, Component.translatable("gui.crazyphone.crazy_phone_sign_in_screen.label_mot_de_passe"), 7, 66, -12829636, false);
+		guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(this.font, Component.translatable("gui.crazyphone.crazy_phone_sign_in_screen.label_mot_de_passe"), 8, 66, -12829636, false);
 	}
 
 	@Override
@@ -132,7 +132,7 @@ public class CrazyPhoneSignInScreenScreen extends CrazyPhoneDefaultScreenScreen<
 		setBackButtonActive(false);
 		setHomeButtonActive(false);
 		setLockButtonActive(false);
-		password = new PasswordEditBox(this.font, this.leftPos + 7, this.topPos + 78, 108, 14, Component.translatable("gui.crazyphone.crazy_phone_sign_in_screen.password")) {
+		password = new PasswordEditBox(this.font, this.leftPos + 8, this.topPos + 78, 106, 14, Component.translatable("gui.crazyphone.crazy_phone_sign_in_screen.password")) {
 			@Override
 			public void insertText(String text) {
 				super.insertText(text);
@@ -169,7 +169,7 @@ public class CrazyPhoneSignInScreenScreen extends CrazyPhoneDefaultScreenScreen<
 		guistate.put("text:password", password);
 		this.addWidget(this.password);
 		button_deverrouiller = PhoneButton.builder(PhoneButton.Style.PRIMARY, Component.translatable("gui.crazyphone.crazy_phone_sign_in_screen.button_deverrouiller"), e -> submitPassword())
-				.bounds(this.leftPos + 7, this.topPos + 100, 108, 20)
+				.bounds(this.leftPos + ACTION_BUTTON_X, this.topPos + ACTION_BUTTON_Y, ACTION_BUTTON_FULL_WIDTH, ACTION_BUTTON_HEIGHT)
 				.tooltip(net.minecraft.client.gui.components.Tooltip.create(
 						Component.translatable("gui.crazyphone.crazy_phone_sign_in_screen.tooltip_deverrouiller")))
 				.build();

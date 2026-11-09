@@ -112,12 +112,12 @@ public class CrazyPhoneGroupSettingsScreenScreen extends CrazyPhoneDefaultScreen
         this.setInitialFocus(nameField);
 
         Button cancelButton = PhoneButton.builder(PhoneButton.Style.NEUTRAL, Component.translatable("gui.crazyphone.crazy_phone_group_settings.button_cancel"), e -> onCancel())
-                .bounds(this.leftPos + CONTENT_X - PANEL_EDGE_INSET, this.topPos + 158, 52 + PANEL_EDGE_INSET, 14).build();
+                .bounds(this.leftPos + 8, this.topPos + ACTION_BUTTON_Y, 52, ACTION_BUTTON_HEIGHT).build();
         guistate.put("button:group_settings_cancel", cancelButton);
         this.addRenderableWidget(cancelButton);
 
         Button validateButton = PhoneButton.builder(PhoneButton.Style.CONFIRM, Component.translatable("gui.crazyphone.crazy_phone_group_settings.button_validate"), e -> onValidate())
-                .bounds(this.leftPos + 62, this.topPos + 158, 52 + PANEL_EDGE_INSET, 14).build();
+                .bounds(this.leftPos + 62, this.topPos + ACTION_BUTTON_Y, 52, ACTION_BUTTON_HEIGHT).build();
         guistate.put("button:group_settings_validate", validateButton);
         this.addRenderableWidget(validateButton);
     }

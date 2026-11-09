@@ -81,7 +81,7 @@ public class CrazyPhoneMayorCandidateScreenScreen extends CrazyPhoneDefaultScree
 
 		voteButton = PhoneButton.builder(PhoneButton.Style.PRIMARY, Component.translatable("gui.crazyphone.crazy_phone_mayor_candidate_screen.button_vote"), b -> {
 			Minecraft.getInstance().player.connection.sendCommand("crazyphone mayor vote " + mayorNumber);
-		}).bounds(this.leftPos + 6, this.topPos + 160, 110, 14)
+		}).bounds(this.leftPos + ACTION_BUTTON_X, this.topPos + ACTION_BUTTON_Y, ACTION_BUTTON_FULL_WIDTH, ACTION_BUTTON_HEIGHT)
 				.tooltip(net.minecraft.client.gui.components.Tooltip.create(
 						Component.translatable(!votingFeatureEnabled
 								? "gui.crazyphone.crazy_phone_mayor_candidate_screen.tooltip_vote_disabled"
