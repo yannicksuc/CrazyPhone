@@ -188,6 +188,10 @@ public class ModCommands {
                                 .then(Commands.argument("name", StringArgumentType.word())
                                         .then(Commands.argument("password", StringArgumentType.word())
                                                 .executes(ModCommands::devRegister)))))
+                // Dev only too: fills the test world for the phone in hand (two more phones as contacts, a
+                // group with them, a test photo) and prints the group and photo ids.
+                .then(Commands.literal("seed").requires(source -> DEV_COMMANDS && permLevel(4).test(source))
+                        .executes(ModCommands::devSeed))
                 .then(Commands.literal("cache").requires(permLevel(4))
                         .then(Commands.literal("clear")
                                 .executes(ModCommands::cacheClearSelf)
@@ -230,6 +234,52 @@ public class ModCommands {
         form.put("textin:password", StringArgumentType.getString(arguments, "password"));
         fr.lordfinn.crazyphone.procedures.CrazyPhoneInitialFormValidationButtonClickProcedure.execute(
                 player.level(), player.getX(), player.getY(), player.getZ(), player, form);
+        return 1;
+    }
+
+    private static int devSeed(CommandContext<CommandSourceStack> arguments) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        net.minecraft.server.level.ServerPlayer player = arguments.getSource().getPlayerOrException();
+        Level world = player.level();
+        String owner = fr.lordfinn.crazyphone.procedures.GetCrazyPhoneNumberFromMainHandProcedure.execute(player, null);
+        if (owner == null || owner.isEmpty()) {
+            arguments.getSource().sendFailure(Component.literal("Hold a registered phone first (/crazyphone register ...)"));
+            return 0;
+        }
+        String[][] others = {{"201", "Mastu"}, {"202", "Zafeel"}};
+        for (String[] other : others) {
+            java.util.HashMap<String, String> form = new java.util.HashMap<>();
+            form.put("textin:number", other[0]);
+            form.put("textin:name", other[1]);
+            form.put("textin:password", "");
+            if (!fr.lordfinn.crazyphone.procedures.IsPhoneInUseProcedure.execute(world, other[0]))
+                fr.lordfinn.crazyphone.procedures.RegisterNewPhoneFromFormProcedure.execute(world, player,
+                        new net.minecraft.world.item.ItemStack(fr.lordfinn.crazyphone.init.ModItems.CRAZY_PHONE.get()), form);
+            fr.lordfinn.crazyphone.procedures.CrazyPhoneAddContactToPhoneProcedure.execute(world, other[0], owner);
+        }
+        String groupId = fr.lordfinn.crazyphone.utils.CrazyPhoneHelper.generateGroupConversationId();
+        fr.lordfinn.crazyphone.utils.CrazyPhoneHelper.createGroup(world, groupId, java.util.List.of("201", "202", owner), owner);
+
+        java.util.UUID photoId;
+        try {
+            java.awt.image.BufferedImage image = new java.awt.image.BufferedImage(160, 120, java.awt.image.BufferedImage.TYPE_INT_RGB);
+            for (int y = 0; y < 120; y++)
+                for (int x = 0; x < 160; x++) {
+                    int hill = 80 + (int) (12 * Math.sin(x / 18.0));
+                    int rgb = y < hill ? (0x5A9BD8 + (y / 4) * 0x010100) : (y < hill + 4 ? 0x5DAA3C : 0x7A5634);
+                    if ((x - 120) * (x - 120) + (y - 28) * (y - 28) < 120)
+                        rgb = 0xFFD84A;
+                    image.setRGB(x, y, rgb);
+                }
+            java.io.ByteArrayOutputStream png = new java.io.ByteArrayOutputStream();
+            javax.imageio.ImageIO.write(image, "png", png);
+            byte[] bytes = png.toByteArray();
+            photoId = fr.lordfinn.crazyphone.data.PhotoSavedData.get(world).storePhoto(owner, "", null, bytes, bytes, 0);
+        } catch (java.io.IOException e) {
+            arguments.getSource().sendFailure(Component.literal("Could not make the test photo: " + e));
+            return 0;
+        }
+        String result = "seed ok, group=" + groupId + " photo=" + photoId;
+        arguments.getSource().sendSuccess(() -> Component.literal(result), false);
         return 1;
     }
 

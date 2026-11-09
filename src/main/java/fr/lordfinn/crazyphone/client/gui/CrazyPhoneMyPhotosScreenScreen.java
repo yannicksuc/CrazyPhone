@@ -214,7 +214,7 @@ public class CrazyPhoneMyPhotosScreenScreen extends CrazyPhoneDefaultScreenScree
     private static final int IMPORT_ICON_GAP = 3;
 
     private int importIconX() {
-        return this.leftPos + HEADER_BANNER_RIGHT_X - this.font.width(IMPORT_ICON) - 2;
+        return this.leftPos + HEADER_ICONS_RIGHT - HEADER_GLYPH_SIZE;
     }
 
     private boolean isHoveringImportIcon(double mouseX, double mouseY) {
@@ -272,7 +272,7 @@ public class CrazyPhoneMyPhotosScreenScreen extends CrazyPhoneDefaultScreenScree
     private static final Component LINK_ICON = Component.literal("🔗");
 
     private int linkIconX() {
-        return importIconX() - IMPORT_ICON_GAP - this.font.width(LINK_ICON);
+        return importIconX() - HEADER_ICON_GAP - HEADER_GLYPH_SIZE;
     }
 
     private boolean isHoveringLinkIcon(double mouseX, double mouseY) {
@@ -356,9 +356,10 @@ public class CrazyPhoneMyPhotosScreenScreen extends CrazyPhoneDefaultScreenScree
             fr.lordfinn.crazyphone.client.CursorEffects.requestPointerCursor();
             guiGraphics.fill(iconX - 1, iconY - 1, iconX + PHOTO_COUNT_ICON_SIZE + 1, iconY + PHOTO_COUNT_ICON_SIZE + 1, 0x80FFFFFF);
         }
-        // Centered inside the 16x16 slot a real item icon would have filled.
-        int textX = iconX + (PHOTO_COUNT_ICON_SIZE - this.font.width(PHOTO_COUNT_ICON)) / 2;
-        int textY = iconY + (PHOTO_COUNT_ICON_SIZE - this.font.lineHeight) / 2;
+        // On the title line and the same left edge as every header icon (see the header icon rule in
+        // CrazyPhoneDefaultScreenScreen).
+        int textX = this.leftPos + PHOTO_COUNT_ICON_X + 1;
+        int textY = this.topPos + HEADER_GLYPH_Y;
         guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(this.font, PHOTO_COUNT_ICON, textX, textY, COUNTER_TEXT_COLOR, false);
     }
 

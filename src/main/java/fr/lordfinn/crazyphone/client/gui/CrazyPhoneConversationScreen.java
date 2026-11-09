@@ -93,22 +93,21 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
     /** Second-from-right slot of the header banner's icon row, same position/size convention as the
      * contacts screen's add-contact icon - only shown for group conversations. Shifted one 16px slot left
      * of its old position (99) to make room for the always-shown mute icon at {@link #MUTE_ICON_X}. */
-    private static final int GROUP_SETTINGS_ICON_X = 83;
-    private static final int GROUP_SETTINGS_ICON_Y = 9;
+    // Header icons from the right (header icon rule in CrazyPhoneDefaultScreenScreen): mute, then group
+    // settings (groups only), then call, 3 px apart.
+    private static final int GROUP_SETTINGS_ICON_X = HEADER_ICONS_RIGHT - HEADER_GLYPH_SIZE - HEADER_ICON_GAP - HEADER_ITEM_SIZE;
     private final ItemStack groupSettingsIcon = CrazyPhoneConversationMenu.createGroupSettingsIcon();
     private final Component groupSettingsTooltip = Component.translatable("gui.crazyphone.crazy_phone_conversation.tooltip_group_settings")
             .withStyle(style -> style.withColor(ChatFormatting.GOLD).withBold(true));
     /** Sits immediately left of the group-settings icon when both are shown (group conversations, flush
      * against it - no gap between the two buttons), or immediately left of the mute icon when there's no
      * group icon to share a slot with (1:1 conversations). */
-    private static final int CALL_ICON_Y = 9;
     private int callIconX() {
-        return this.leftPos + (menu.isGroup() ? GROUP_SETTINGS_ICON_X - 16 : MUTE_ICON_X - 16);
+        return this.leftPos + (menu.isGroup() ? GROUP_SETTINGS_ICON_X : MUTE_ICON_X) - HEADER_ICON_GAP - HEADER_GLYPH_SIZE;
     }
     /** Rightmost slot of the header banner's icon row - unlike the group-settings/call icons above, this
      * one is ALWAYS shown regardless of conversation type, since muting applies to any conversation. */
-    private static final int MUTE_ICON_X = 99;
-    private static final int MUTE_ICON_Y = 9;
+    private static final int MUTE_ICON_X = HEADER_ICONS_RIGHT - HEADER_GLYPH_SIZE;
     private EditBox message;
     private Button button_envoyer;
     /** Same cap the message field has always had (setMaxLength below); the emoji drawer checks it before
@@ -449,7 +448,7 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
         // The title's scroll boundary must stop at whichever right-side header button sits closest to it -
         // the call icon, which itself shifts left to sit flush against the group-settings cog when both are
         // shown (see callIconX()) - not a fixed constant, or the title would scroll behind/under a button.
-        renderHeader(guiGraphics, contactHead, Component.literal(title), callIconX() - this.leftPos);
+        renderHeader(guiGraphics, contactHead, Component.literal(title), callIconX() - this.leftPos - 2);
     }
 
     private ItemStack resolveHeaderIcon(List<Contact> otherContacts) {
@@ -459,20 +458,14 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
     }
 
     private void renderGroupSettingsIcon(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int mouseX, int mouseY) {
-        int iconX = this.leftPos + GROUP_SETTINGS_ICON_X;
-        int iconY = this.topPos + GROUP_SETTINGS_ICON_Y;
         boolean hovered = isHoveringGroupSettingsIcon(mouseX, mouseY);
-        if (hovered) {
+        if (hovered)
             CursorEffects.requestPointerCursor();
-            guiGraphics.fill(iconX, iconY, iconX + 16, iconY + 16, 0x80FFFFFF);
-        }
-        guiGraphics./*$ gui_render_item {*/renderItem/*$}*/(groupSettingsIcon, iconX, iconY);
+        drawHeaderItem(guiGraphics, groupSettingsIcon, this.leftPos + GROUP_SETTINGS_ICON_X, hovered);
     }
 
     private boolean isHoveringGroupSettingsIcon(double mouseX, double mouseY) {
-        int iconX = this.leftPos + GROUP_SETTINGS_ICON_X;
-        int iconY = this.topPos + GROUP_SETTINGS_ICON_Y;
-        return mouseX >= iconX && mouseX < iconX + 16 && mouseY >= iconY && mouseY < iconY + 16;
+        return isInHeaderIcon(mouseX, mouseY, this.leftPos + GROUP_SETTINGS_ICON_X, this.topPos + HEADER_ITEM_Y, HEADER_ITEM_SIZE);
     }
 
     /** True while a call tied to THIS conversation is active/ringing/calling for the local player - a
@@ -489,13 +482,9 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
     }
 
     private void renderCallIcon(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int mouseX, int mouseY) {
-        int iconX = callIconX();
-        int iconY = this.topPos + CALL_ICON_Y;
-        boolean hovered = isHoveringCallIcon(mouseX, mouseY);
-        if (hovered && !isCallStartDisabled()) {
+        boolean hovered = isHoveringCallIcon(mouseX, mouseY) && !isCallStartDisabled();
+        if (hovered)
             CursorEffects.requestPointerCursor();
-            guiGraphics.fill(iconX, iconY, iconX + 16, iconY + 16, 0x80FFFFFF);
-        }
         int color;
         if (isCallStartDisabled())
             color = 0x80FFFFFF;
@@ -505,13 +494,11 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
             color = CrazyPhoneColors.ACCENT_YELLOW; // same "you could join/rejoin this" color as the contacts-list badge
         else
             color = 0xFFFFFFFF;
-        guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(this.font, "📞", iconX + 3, iconY + 4, color, true);
+        drawHeaderGlyph(guiGraphics, Component.literal("📞"), callIconX(), color, hovered);
     }
 
     private boolean isHoveringCallIcon(double mouseX, double mouseY) {
-        int iconX = callIconX();
-        int iconY = this.topPos + CALL_ICON_Y;
-        return mouseX >= iconX && mouseX < iconX + 16 && mouseY >= iconY && mouseY < iconY + 16;
+        return isInHeaderIcon(mouseX, mouseY, callIconX(), this.topPos + HEADER_GLYPH_Y, HEADER_GLYPH_SIZE);
     }
 
     private Component callIconTooltip() {
@@ -541,21 +528,15 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
      * keeps appearing normally either way. Bell/no-bell glyph mirrors CrazyPhonePhotoFrameResizeScreen's
      * Fullbright hotbar button - same "icon + tooltip both re-read current state every frame" technique. */
     private void renderMuteIcon(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int mouseX, int mouseY) {
-        int iconX = this.leftPos + MUTE_ICON_X;
-        int iconY = this.topPos + MUTE_ICON_Y;
         boolean hovered = isHoveringMuteIcon(mouseX, mouseY);
-        if (hovered) {
+        if (hovered)
             CursorEffects.requestPointerCursor();
-            guiGraphics.fill(iconX, iconY, iconX + 16, iconY + 16, 0x80FFFFFF);
-        }
         String glyph = isConversationMuted() ? "🔕" : "🔔";
-        guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(this.font, glyph, iconX + 3, iconY + 4, 0xFFFFFFFF, true);
+        drawHeaderGlyph(guiGraphics, Component.literal(glyph), this.leftPos + MUTE_ICON_X, 0xFFFFFFFF, hovered);
     }
 
     private boolean isHoveringMuteIcon(double mouseX, double mouseY) {
-        int iconX = this.leftPos + MUTE_ICON_X;
-        int iconY = this.topPos + MUTE_ICON_Y;
-        return mouseX >= iconX && mouseX < iconX + 16 && mouseY >= iconY && mouseY < iconY + 16;
+        return isInHeaderIcon(mouseX, mouseY, this.leftPos + MUTE_ICON_X, this.topPos + HEADER_GLYPH_Y, HEADER_GLYPH_SIZE);
     }
 
     /** The current player's own phone is guaranteed to be in their main hand while this screen is open

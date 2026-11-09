@@ -127,9 +127,50 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 		return builder.build();
 	}
 
-	/** Where the header icon sits, and where the title text starts just past it - both relative to leftPos. */
+	/** Where the header icon sits, and where the title text starts just past it - both relative to leftPos.
+	 * The icon is the item drawn at 75 % (12 px), 4 px in from the banner's left edge (x 4). */
 	private static final int HEADER_ICON_X = 7;
-	private static final int HEADER_TITLE_X = 26;
+	private static final int HEADER_TITLE_X = 23;
+
+	// ---- Header icons: one rule for every screen ------------------------------------------------------
+	// Every icon of the header banner is vertically centered on the title's line (glyph rows 14-21 relative
+	// to topPos; the banner itself is y 9-27). The right-hand icons are laid out from the right: the last one
+	// ends 3 px in from the banner's right edge, 3 px apart from each other.
+	/** Exclusive right edge of the rightmost header icon, relative to leftPos (last pixel: 114). */
+	protected static final int HEADER_ICONS_RIGHT = 115;
+	protected static final int HEADER_ICON_GAP = 3;
+	/** Top of an 8 px emoji glyph, relative to topPos: same line as the title. */
+	protected static final int HEADER_GLYPH_Y = 14;
+	protected static final int HEADER_GLYPH_SIZE = 8;
+	/** Items in the header are drawn at 75 %: 12 px, rows 12-23 relative to topPos (centered on the title). */
+	protected static final float HEADER_ITEM_SCALE = 0.75f;
+	protected static final int HEADER_ITEM_SIZE = 12;
+	protected static final int HEADER_ITEM_Y = 12;
+
+	/** An emoji icon of the header at (x, topPos + HEADER_GLYPH_Y), with the hover highlight around it. */
+	protected void drawHeaderGlyph(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, Component glyph, int x, int color, boolean hovered) {
+		int y = this.topPos + HEADER_GLYPH_Y;
+		if (hovered)
+			guiGraphics.fill(x - 2, y - 2, x + HEADER_GLYPH_SIZE + 2, y + HEADER_GLYPH_SIZE + 2, 0x80FFFFFF);
+		guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(this.font, glyph, x, y, color, true);
+	}
+
+	/** An item icon of the header at 75 % (12 px) at (x, topPos + HEADER_ITEM_Y). */
+	protected void drawHeaderItem(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, ItemStack stack, int x, boolean hovered) {
+		int y = this.topPos + HEADER_ITEM_Y;
+		if (hovered)
+			guiGraphics.fill(x - 2, y - 2, x + HEADER_ITEM_SIZE + 2, y + HEADER_ITEM_SIZE + 2, 0x80FFFFFF);
+		fr.lordfinn.crazyphone.utils.GuiCompat.pushPose(guiGraphics);
+		fr.lordfinn.crazyphone.utils.GuiCompat.translate(guiGraphics, x, y);
+		fr.lordfinn.crazyphone.utils.GuiCompat.scale(guiGraphics, HEADER_ITEM_SCALE, HEADER_ITEM_SCALE);
+		guiGraphics./*$ gui_render_item {*/renderItem/*$}*/(stack, 0, 0);
+		fr.lordfinn.crazyphone.utils.GuiCompat.popPose(guiGraphics);
+	}
+
+	/** Hit box of a header icon whose drawn box starts at (x, y) and is size px wide and tall (2 px of slack). */
+	protected static boolean isInHeaderIcon(double mouseX, double mouseY, int x, int y, int size) {
+		return mouseX >= x - 2 && mouseX < x + size + 2 && mouseY >= y - 2 && mouseY < y + size + 2;
+	}
 	/** Right edge of the header banner itself, relative to leftPos (banner starts at +4, is 114px wide). */
 	private static final int HEADER_BANNER_RIGHT_X = 118;
 	/** Small breathing room between the scrolling title and whatever sits immediately to its right. */
@@ -163,7 +204,7 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 		fr.lordfinn.crazyphone.utils.GuiCompat.blit(guiGraphics, HEADER_BANNER_IMAGE, this.leftPos + 4, this.topPos + 9, 0, 114, 18);
 		int titleX = HEADER_TITLE_X;
 		if (showIcon)
-			guiGraphics./*$ gui_render_item {*/renderItem/*$}*/(icon, this.leftPos + HEADER_ICON_X, this.topPos + 9);
+			drawHeaderItem(guiGraphics, icon, this.leftPos + HEADER_ICON_X + 1, false);
 		else
 			titleX = HEADER_ICON_X;
 		int availableWidth = Math.max(0, rightBoundX - HEADER_TITLE_RIGHT_GAP - titleX);

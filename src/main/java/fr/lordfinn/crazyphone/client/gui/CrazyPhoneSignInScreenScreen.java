@@ -221,9 +221,8 @@ public class CrazyPhoneSignInScreenScreen extends CrazyPhoneDefaultScreenScreen<
 	// the SAME technique CrazyPhoneConversationScreen's own header-row icons (call/mute/group settings)
 	// already use - a hand-drawn glyph plus manual hit-test/tooltip/click, not a real Button widget, since
 	// that's the established system for icons living directly on a phone screen's header banner.
-	private static final int AUTO_LOCK_ICON_X = 98;
-	private static final int AUTO_LOCK_ICON_Y = 9;
-	private static final int AUTO_LOCK_ICON_SIZE = 16;
+	/** The header's rightmost icon (see the header icon rule in CrazyPhoneDefaultScreenScreen). */
+	private static final int AUTO_LOCK_ICON_X = HEADER_ICONS_RIGHT - HEADER_GLYPH_SIZE;
 	private static final int AUTO_LOCK_TOGGLE_BUTTON_ID = 4;
 	// "locked" (U+1F512) while auto-lock is ON, "unlocked" (U+1F513) while it's OFF - same bundled Pixel
 	// Twemoji font as every other emoji icon already used across this mod's phone screens.
@@ -235,20 +234,15 @@ public class CrazyPhoneSignInScreenScreen extends CrazyPhoneDefaultScreenScreen<
 	}
 
 	private void renderAutoLockIcon(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int mouseX, int mouseY) {
-		int iconX = this.leftPos + AUTO_LOCK_ICON_X;
-		int iconY = this.topPos + AUTO_LOCK_ICON_Y;
-		if (isHoveringAutoLockIcon(mouseX, mouseY)) {
+		boolean hovered = isHoveringAutoLockIcon(mouseX, mouseY);
+		if (hovered)
 			CursorEffects.requestPointerCursor();
-			guiGraphics.fill(iconX, iconY, iconX + AUTO_LOCK_ICON_SIZE, iconY + AUTO_LOCK_ICON_SIZE, 0x80FFFFFF);
-		}
 		Component glyph = isAutoLockEnabled() ? AUTO_LOCK_ICON_ON : AUTO_LOCK_ICON_OFF;
-		guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(this.font, glyph, iconX + 3, iconY + 4, 0xFFFFFFFF, true);
+		drawHeaderGlyph(guiGraphics, glyph, this.leftPos + AUTO_LOCK_ICON_X, 0xFFFFFFFF, hovered);
 	}
 
 	private boolean isHoveringAutoLockIcon(double mouseX, double mouseY) {
-		int iconX = this.leftPos + AUTO_LOCK_ICON_X;
-		int iconY = this.topPos + AUTO_LOCK_ICON_Y;
-		return mouseX >= iconX && mouseX < iconX + AUTO_LOCK_ICON_SIZE && mouseY >= iconY && mouseY < iconY + AUTO_LOCK_ICON_SIZE;
+		return isInHeaderIcon(mouseX, mouseY, this.leftPos + AUTO_LOCK_ICON_X, this.topPos + HEADER_GLYPH_Y, HEADER_GLYPH_SIZE);
 	}
 
 	private List<Component> autoLockIconTooltip() {
