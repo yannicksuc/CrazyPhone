@@ -8,7 +8,7 @@ package fr.lordfinn.crazyphone.client;
  * class everywhere else.
  */
 //? if neoforge && >=1.20.5 && <1.21.10 {
-import com.mojang.brigadier.arguments.StringArgumentType;
+/*import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
@@ -36,6 +36,28 @@ public final class PhoneUiDevCommand {
                 .then(LiteralArgumentBuilder.<CommandSourceStack>literal("view")
                         .then(RequiredArgumentBuilder.<CommandSourceStack, String>argument("photo", StringArgumentType.word())
                                 .executes(ctx -> open(ctx, false))))
+                .then(LiteralArgumentBuilder.<CommandSourceStack>literal("perspective")
+                        .then(RequiredArgumentBuilder.<CommandSourceStack, String>argument("view", StringArgumentType.word())
+                                .executes(ctx -> {
+                                    String view = StringArgumentType.getString(ctx, "view");
+                                    Minecraft mc = Minecraft.getInstance();
+                                    mc.execute(() -> mc.options.setCameraType(switch (view) {
+                                        case "back" -> net.minecraft.client.CameraType.THIRD_PERSON_BACK;
+                                        case "front" -> net.minecraft.client.CameraType.THIRD_PERSON_FRONT;
+                                        default -> net.minecraft.client.CameraType.FIRST_PERSON;
+                                    }));
+                                    return 1;
+                                })))
+                .then(LiteralArgumentBuilder.<CommandSourceStack>literal("close")
+                        .executes(ctx -> {
+                            Minecraft mc = Minecraft.getInstance();
+                            mc.execute(() -> {
+                                if (mc.player != null)
+                                    mc.player.closeContainer();
+                                mc.setScreen(null);
+                            });
+                            return 1;
+                        }))
                 .then(LiteralArgumentBuilder.<CommandSourceStack>literal("edit")
                         .then(RequiredArgumentBuilder.<CommandSourceStack, String>argument("photo", StringArgumentType.word())
                                 .executes(ctx -> open(ctx, true)))));
@@ -52,9 +74,9 @@ public final class PhoneUiDevCommand {
         return 1;
     }
 }
-//?} else {
-/*public final class PhoneUiDevCommand {
+*///?} else {
+public final class PhoneUiDevCommand {
     private PhoneUiDevCommand() {
     }
 }
-*///?}
+//?}

@@ -236,8 +236,9 @@ public final class CallVideoRelay {
         Map<UUID, Set<UUID>> watchersBySender = new HashMap<>();
         for (ServerPlayer member : members) {
             Set<UUID> watchers = new HashSet<>();
-            boolean canSend = isAllowed() && ready(member) && CallRegistry.isVideoEnabled(session, member.getUUID())
-                    && CallRegistry.isViewingInCallScreen(member);
+            // A sender no longer needs their own In Call screen open: with the phone put away they keep sending
+            // what they see while walking around. Only viewers need the screen open (nobody else is sent anything).
+            boolean canSend = isAllowed() && ready(member) && CallRegistry.isVideoEnabled(session, member.getUUID());
             if (canSend) {
                 for (ServerPlayer viewer : viewers)
                     if (!viewer.getUUID().equals(member.getUUID()))

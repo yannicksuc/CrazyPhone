@@ -190,6 +190,17 @@ public class ModCommands {
                                                 .executes(ModCommands::devRegister)))))
                 // Dev only too: fills the test world for the phone in hand (two more phones as contacts, a
                 // group with them, a test photo) and prints the group and photo ids.
+                // Dev only too: the call buttons, for a test game (start, answer, video, hangup, open).
+                .then(Commands.literal("call").requires(source -> DEV_COMMANDS && permLevel(4).test(source))
+                        .then(Commands.argument("action", StringArgumentType.word())
+                                .suggests((context, builder) -> net.minecraft.commands.SharedSuggestionProvider.suggest(
+                                        new String[]{"start", "answer", "video", "hangup", "open"}, builder))
+                                .then(Commands.argument("conversation", StringArgumentType.greedyString())
+                                        .executes(ModCommands::devCall))))
+                // Dev only too: a group of the phone in hand with these numbers (prints its id).
+                .then(Commands.literal("group").requires(source -> DEV_COMMANDS && permLevel(4).test(source))
+                        .then(Commands.argument("numbers", StringArgumentType.greedyString())
+                                .executes(ModCommands::devGroup)))
                 .then(Commands.literal("seed").requires(source -> DEV_COMMANDS && permLevel(4).test(source))
                         .executes(ModCommands::devSeed))
                 .then(Commands.literal("cache").requires(permLevel(4))
@@ -223,6 +234,31 @@ public class ModCommands {
             case "my_photos" -> fr.lordfinn.crazyphone.utils.ScreenMenuUtils.openPhoneMyPhotosMenu(player, hand, data == null ? "" : data);
             default -> fr.lordfinn.crazyphone.utils.ScreenMenuUtils.openCrazyPhoneMenuByTag(player, hand, "crazyphone:" + screen, data);
         }
+        return 1;
+    }
+
+    private static int devGroup(CommandContext<CommandSourceStack> arguments) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        net.minecraft.server.level.ServerPlayer player = arguments.getSource().getPlayerOrException();
+        String owner = fr.lordfinn.crazyphone.procedures.GetCrazyPhoneNumberFromMainHandProcedure.execute(player, null);
+        java.util.List<String> members = new java.util.ArrayList<>(java.util.Arrays.asList(StringArgumentType.getString(arguments, "numbers").trim().split("\\s+")));
+        members.add(owner);
+        String groupId = fr.lordfinn.crazyphone.utils.CrazyPhoneHelper.generateGroupConversationId();
+        fr.lordfinn.crazyphone.utils.CrazyPhoneHelper.createGroup(player.level(), groupId, members, owner);
+        String result = "group=" + groupId;
+        arguments.getSource().sendSuccess(() -> Component.literal(result), false);
+        return 1;
+    }
+
+    private static int devCall(CommandContext<CommandSourceStack> arguments) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        net.minecraft.server.level.ServerPlayer player = arguments.getSource().getPlayerOrException();
+        int action = switch (StringArgumentType.getString(arguments, "action")) {
+            case "start" -> fr.lordfinn.crazyphone.network.CrazyPhoneCallActionMessage.START_CALL;
+            case "answer" -> fr.lordfinn.crazyphone.network.CrazyPhoneCallActionMessage.ANSWER;
+            case "video" -> fr.lordfinn.crazyphone.network.CrazyPhoneCallActionMessage.TOGGLE_VIDEO;
+            case "hangup" -> fr.lordfinn.crazyphone.network.CrazyPhoneCallActionMessage.HANGUP;
+            default -> fr.lordfinn.crazyphone.network.CrazyPhoneCallActionMessage.OPEN_CALL_SCREEN;
+        };
+        fr.lordfinn.crazyphone.network.CrazyPhoneCallActionMessage.handleAction(player, action, StringArgumentType.getString(arguments, "conversation"));
         return 1;
     }
 

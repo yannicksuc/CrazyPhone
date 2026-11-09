@@ -48,6 +48,19 @@ public final class ClientPrefs {
     public static final String KEY_LIVE_SCREEN_OTHERS = "liveScreenOtherPhones";
     public static final String KEY_CALL_CAMERA_VIDEO = "callCameraVideo";
     public static final String KEY_LAUNCH_SPLASH_SHOWN = "launchSplashShown";
+    public static final String KEY_CALL_CAMERA_VIDEO_QUALITY = "callCameraVideoQuality";
+
+    /** This player's own cap on the camera video they send, under the server's limits (high = the server's). */
+    public enum VideoQuality {
+        LOW(3, 32), MEDIUM(6, 48), HIGH(Integer.MAX_VALUE, Integer.MAX_VALUE);
+
+        public final int maxFps, maxSide;
+
+        VideoQuality(int maxFps, int maxSide) {
+            this.maxFps = maxFps;
+            this.maxSide = maxSide;
+        }
+    }
 
     /** 0 = keep the vanilla GUI scale size (the phone as it was before this option existed). */
     public static final int PHONE_SIZE_VANILLA = 0;
@@ -59,6 +72,7 @@ public final class ClientPrefs {
     private static boolean emojiPickerEnabled = true;
     /** The "Sandbox creation" splash is shown the first time the phone is opened on this game, then never again. */
     private static boolean launchSplashShown;
+    private static VideoQuality videoQuality = VideoQuality.HIGH;
 
     private static boolean loadedOnce;
     /** The in-game toggles (ClientConfig) are taken from the file only once: afterwards the game owns them. */
@@ -80,6 +94,11 @@ public final class ClientPrefs {
     public static synchronized boolean emojiPickerEnabled() {
         refreshIfChanged();
         return emojiPickerEnabled;
+    }
+
+    public static synchronized VideoQuality videoQuality() {
+        refreshIfChanged();
+        return videoQuality;
     }
 
     public static synchronized boolean launchSplashShown() {
@@ -162,6 +181,7 @@ public final class ClientPrefs {
         int size = PHONE_SIZE_DEFAULT;
         boolean picker = true;
         boolean splashShown = false;
+        VideoQuality quality = VideoQuality.HIGH;
         if (Files.size(path) <= MAX_FILE_BYTES) {
             Properties props = new Properties();
             try (InputStream in = Files.newInputStream(path);
@@ -171,6 +191,12 @@ public final class ClientPrefs {
             size = parseInt(props.getProperty(KEY_PHONE_SIZE), PHONE_SIZE_DEFAULT);
             picker = parseBoolean(props.getProperty(KEY_EMOJI_PICKER), true);
             splashShown = parseBoolean(props.getProperty(KEY_LAUNCH_SPLASH_SHOWN), false);
+            String rawQuality = props.getProperty(KEY_CALL_CAMERA_VIDEO_QUALITY);
+            if (rawQuality != null) {
+                for (VideoQuality q : VideoQuality.values())
+                    if (q.name().equalsIgnoreCase(rawQuality.trim()))
+                        quality = q;
+            }
             if (!togglesApplied) {
                 ClientConfig.liveScreenOwnPhone = parseBoolean(props.getProperty(KEY_LIVE_SCREEN_OWN), true);
                 ClientConfig.liveScreenOtherPhones = parseBoolean(props.getProperty(KEY_LIVE_SCREEN_OTHERS), true);
@@ -179,7 +205,7 @@ public final class ClientPrefs {
             unknownKeys.clear();
             for (String key : props.stringPropertyNames()) {
                 if (!key.equals(KEY_PHONE_SIZE) && !key.equals(KEY_EMOJI_PICKER) && !key.equals(KEY_LIVE_SCREEN_OWN)
-                        && !key.equals(KEY_LIVE_SCREEN_OTHERS) && !key.equals(KEY_CALL_CAMERA_VIDEO) && !key.equals(KEY_LAUNCH_SPLASH_SHOWN))
+                        && !key.equals(KEY_LIVE_SCREEN_OTHERS) && !key.equals(KEY_CALL_CAMERA_VIDEO) && !key.equals(KEY_LAUNCH_SPLASH_SHOWN) && !key.equals(KEY_CALL_CAMERA_VIDEO_QUALITY))
                     unknownKeys.put(key, props.getProperty(key));
             }
         } else {
@@ -189,6 +215,7 @@ public final class ClientPrefs {
         phoneSizePercent = clampPhoneSizePercent(size);
         emojiPickerEnabled = picker;
         launchSplashShown = splashShown;
+        videoQuality = quality;
     }
 
     private static int parseInt(String raw, int fallback) {
@@ -244,7 +271,11 @@ public final class ClientPrefs {
                 .append(KEY_CALL_CAMERA_VIDEO).append('=').append(ClientConfig.callCameraVideo).append("\n")
                 .append("\n")
                 .append("# The \"Sandbox creation\" splash was already shown on the first phone launch (false shows it again).\n")
-                .append(KEY_LAUNCH_SPLASH_SHOWN).append('=').append(launchSplashShown).append("\n");
+                .append(KEY_LAUNCH_SPLASH_SHOWN).append('=').append(launchSplashShown).append("\n")
+                .append("\n")
+                .append("# Camera video you send in calls: low (3 images/s, 32 px), medium (6 images/s, 48 px) or high (the\n")
+                .append("# server's limits). Lower it on a slow connection; the server's own limits always apply on top.\n")
+                .append(KEY_CALL_CAMERA_VIDEO_QUALITY).append('=').append(videoQuality.name().toLowerCase(java.util.Locale.ROOT)).append("\n");
         if (!unknownKeys.isEmpty()) {
             Properties extra = new Properties();
             extra.putAll(unknownKeys);

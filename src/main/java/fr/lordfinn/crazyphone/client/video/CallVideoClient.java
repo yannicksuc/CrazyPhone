@@ -196,7 +196,7 @@ public final class CallVideoClient {
                 return;
             }
             capturing = true;
-            boolean front = camera == Camera.FRONT && CallVideoFrontCamera.isAvailable();
+            boolean front = effectiveCamera(mc) == Camera.FRONT;
             updateSelfiePose(front);
             // The selfie view is drawn and captured before the next frame's world pass (see beforeLevelRender).
             if (front || !captureDue())
@@ -212,7 +212,7 @@ public final class CallVideoClient {
     /** Called by CallVideoCaptureMixin at the start of each frame's world pass, with a way to run one more such
      * pass: when the selfie camera is due, its offscreen view is drawn now, before the real one. */
     public static void beforeLevelRender(Runnable renderLevel) {
-        if (!capturing || camera != Camera.FRONT || CallVideoFrontCamera.isRendering())
+        if (!capturing || CallVideoFrontCamera.isRendering() || effectiveCamera(Minecraft.getInstance()) != Camera.FRONT)
             return;
         try {
             Minecraft mc = Minecraft.getInstance();
@@ -233,19 +233,24 @@ public final class CallVideoClient {
         if (now < nextCaptureNanos || CallVideoCapture.isBusy() || encoding.get())
             return false;
         int fps = demandFps > 0 ? Math.min(demandFps, serverMaxFps) : PREVIEW_FPS;
+        fps = Math.min(fps, fr.lordfinn.crazyphone.client.ClientPrefs.videoQuality().maxFps);
         nextCaptureNanos = now + 1_000_000_000L / Math.max(1, fps);
         return true;
     }
 
     private static int frameSide() {
-        return Math.max(16, Math.min(CallVideoCodec.MAX_SIDE, serverMaxSide));
+        int side = Math.min(CallVideoCodec.MAX_SIDE, serverMaxSide);
+        side = Math.min(side, fr.lordfinn.crazyphone.client.ClientPrefs.videoQuality().maxSide);
+        return Math.max(16, side);
     }
 
     private static boolean shouldCapture(Minecraft mc) {
         return !disabledForSession && helloSent && serverAllowed && ClientConfig.callCameraVideo
                 && mc.player != null && mc.level != null
                 && ClientCallState.isActiveCall() && ClientCallState.isVideoFeatureEnabled() && ClientCallState.isSelfVideoEnabled()
-                && mc./*$ mc_get_screen {*/screen/*$}*/ instanceof CrazyPhoneInCallScreenScreen
+                // In the In Call screen, or phone put away and playing (no screen open): what the player
+                // sees keeps going out while walking around during the call.
+                && (mc./*$ mc_get_screen {*/screen/*$}*/ instanceof CrazyPhoneInCallScreenScreen || mc./*$ mc_get_screen {*/screen/*$}*/ == null)
                 && !mc.isPaused() && (mc.isWindowActive() || CAPTURE_UNFOCUSED)
                 && !CrazyPhoneCaptureMode.isActive();
     }
@@ -424,7 +429,20 @@ public final class CallVideoClient {
 
     /** The camera actually filming: the selfie camera falls back to the back one whenever it is not available. */
     public static Camera camera() {
-        return camera == Camera.FRONT && CallVideoFrontCamera.isAvailable() ? Camera.FRONT : Camera.BACK;
+        return effectiveCamera(Minecraft.getInstance());
+    }
+
+    /**
+     * The camera filming right now. In the In Call screen: the one chosen there (back or selfie). Phone put away
+     * while still in the call: what the player sees, i.e. the back camera in first person, and the selfie camera
+     * as soon as they switch to a third person view (F5). The selfie camera falls back to the back one whenever
+     * it is not available on this version.
+     */
+    private static Camera effectiveCamera(Minecraft mc) {
+        Camera wanted = camera;
+        if (mc != null && !(mc./*$ mc_get_screen {*/screen/*$}*/ instanceof CrazyPhoneInCallScreenScreen))
+            wanted = mc.options.getCameraType().isFirstPerson() ? Camera.BACK : Camera.FRONT;
+        return wanted == Camera.FRONT && CallVideoFrontCamera.isAvailable() ? Camera.FRONT : Camera.BACK;
     }
 
     public static boolean isFrontCameraAvailable() {
