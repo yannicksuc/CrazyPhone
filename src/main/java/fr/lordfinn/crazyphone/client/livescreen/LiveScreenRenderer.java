@@ -46,6 +46,9 @@ public final class LiveScreenRenderer {
     private static final float X0 = 6f / 16f;
     private static final float X1 = 10f / 16f;
     private static final float Y_TOP = (8f - 0.5f * 16f / 15f) / 16f;
+    // The face's top edge: the bezel row above the screen (texture row 8) is covered too, in the colour of the
+    // screen's first row, so no strip of the plain texture shows above the drawn screen.
+    private static final float Y_FACE_TOP = 8f / 16f;
     private static final float Y_BOTTOM = (8f - 6.5f * 16f / 15f) / 16f;
     private static final float Z = 8.5f / 16f + 0.0015f;
 
@@ -98,6 +101,22 @@ public final class LiveScreenRenderer {
     static void emit(VertexConsumer buffer, PoseStack.Pose pose, LiveScreenMesh mesh) {
         float sx = (X1 - X0) / LiveScreenPainter.WIDTH;
         float sy = (Y_TOP - Y_BOTTOM) / LiveScreenPainter.HEIGHT;
+        // Above the screen: each column takes the colour of the topmost drawn pixel at that column (last rect wins).
+        for (int x = 0; x < LiveScreenPainter.WIDTH; x++) {
+            int top = -1;
+            for (int i = 0; i < mesh.count; i++) {
+                if (mesh.rects[i * 4 + 1] <= 0 && mesh.rects[i * 4] <= x && mesh.rects[i * 4 + 2] > x)
+                    top = mesh.colors[i];
+            }
+            if (top == -1)
+                continue;
+            int r = (top >> 16) & 0xFF, g = (top >> 8) & 0xFF, bl = top & 0xFF;
+            float x0 = X0 + x * sx, x1 = X0 + (x + 1) * sx;
+            vertex(buffer, pose, x0, Y_TOP, r, g, bl, 0f, 1f);
+            vertex(buffer, pose, x1, Y_TOP, r, g, bl, 1f, 1f);
+            vertex(buffer, pose, x1, Y_FACE_TOP, r, g, bl, 1f, 0f);
+            vertex(buffer, pose, x0, Y_FACE_TOP, r, g, bl, 0f, 0f);
+        }
         for (int i = 0; i < mesh.count; i++) {
             float x0 = X0 + mesh.rects[i * 4] * sx;
             float y0 = Y_TOP - mesh.rects[i * 4 + 1] * sy;
