@@ -98,11 +98,6 @@ neoForge {
         create("client") {
             client()
             systemProperty("neoforge.enabledGameTestNamespaces", modId)
-            // Dev only: with CRAZYPHONE_DEV_COMMANDS=1, the call camera keeps filming in a background window.
-            if (System.getenv("CRAZYPHONE_DEV_COMMANDS") == "1") {
-                systemProperty("crazyphone.dev.videoCaptureUnfocused", "true")
-                systemProperty("crazyphone.videoStats", "true")
-            }
             // Per-version, not a shared "run" - each Stonecutter version node (1.20.4, 1.21.1, 1.21.10...)
             // gets its own saves/config/mods folder so switching which version you're testing is just
             // running a different Gradle task, never manual mod-shuffling between versions again.
@@ -119,10 +114,6 @@ neoForge {
         create("client2") {
             client()
             systemProperty("neoforge.enabledGameTestNamespaces", modId)
-            if (System.getenv("CRAZYPHONE_DEV_COMMANDS") == "1") {
-                systemProperty("crazyphone.dev.videoCaptureUnfocused", "true")
-                systemProperty("crazyphone.videoStats", "true")
-            }
             gameDirectory = thisProject.file("run-client2")
             programArguments.addAll(
                 "--username", "Bouteilles", "--uuid", "94f877fb-ab97-3a21-a67f-715f0a12f124",

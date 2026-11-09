@@ -279,14 +279,6 @@ sourceSets.main {
         "fr/lordfinn/crazyphone/voicechat/CallRegistry.java",
         "fr/lordfinn/crazyphone/voicechat/CallVoiceMode.java",
         "fr/lordfinn/crazyphone/voicechat/CallHeadRotationSync.java",
-        // Call camera video (relay, packets, codec, client capture/display) - see CallVideoRelay.
-        "fr/lordfinn/crazyphone/voicechat/CallVideoRelay.java",
-        "fr/lordfinn/crazyphone/network/CallVideoC2SPacket.java",
-        "fr/lordfinn/crazyphone/network/CallVideoS2CPacket.java",
-        "fr/lordfinn/crazyphone/video/**",
-        "fr/lordfinn/crazyphone/client/video/**",
-        "fr/lordfinn/crazyphone/mixin/CallVideoCaptureMixin.java",
-        "fr/lordfinn/crazyphone/mixin/CallVideoFrontCameraMixin.java",
         "fr/lordfinn/crazyphone/voicechat/CallTerminationListener.java",
         // A COMMON (both-sides), server-side-only mixin - not one of the client-only capture-mode mixins
         // further down this list. Registered in crazyphone.fabric.mixins.json's own "mixins" array (not
@@ -465,9 +457,7 @@ val fabricClientMixins = listOf(
     "CrazyPhoneSelfieStickMouseMixin",
     "PhoneScaleScreenMixin",
     "PhoneScaleMouseMixin",
-    "PhoneScaleGuiGraphicsMixin",
-    "CallVideoCaptureMixin",
-    "CallVideoFrontCameraMixin"
+    "PhoneScaleGuiGraphicsMixin"
 ).joinToString(",\n    ") { "\"$it\"" }
 
 // No 1.20.1 boundary to worry about on this loader (unlike build.fabric.gradle.kts's own conditional

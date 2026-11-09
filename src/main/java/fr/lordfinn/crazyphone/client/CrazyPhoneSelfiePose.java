@@ -44,10 +44,7 @@ public final class CrazyPhoneSelfiePose {
      * rendering), or their held phone stack's own synced data for anyone else. */
     public static boolean isSelfieFraming(LivingEntity entity) {
         if (entity == net.minecraft.client.Minecraft.getInstance().player)
-            return (CrazyPhoneCaptureMode.isActive() && CrazyPhoneCaptureMode.isSelfieMode())
-                    // The call video selfie camera's own offscreen view shows the phone held out the same way
-                    // (others see it through the synced pose); never the player's own hand, hotbar or F5 view.
-                    || fr.lordfinn.crazyphone.client.video.CallVideoFrontCamera.isRendering();
+            return CrazyPhoneCaptureMode.isActive() && CrazyPhoneCaptureMode.isSelfieMode();
         return CrazyPhoneSelfiePoseNetwork.isSelfieActive(entity);
     }
 

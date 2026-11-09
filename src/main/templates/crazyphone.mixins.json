@@ -25,9 +25,7 @@
     "CrazyPhoneCaptureViewCycleMixin",
     "PhoneScaleScreenMixin",
     "PhoneScaleMouseMixin",
-    "PhoneScaleGuiGraphicsMixin",
-    "CallVideoCaptureMixin",
-    "CallVideoFrontCameraMixin"
+    "PhoneScaleGuiGraphicsMixin"
   ],
   "injectors": {
     "defaultRequire": 1
