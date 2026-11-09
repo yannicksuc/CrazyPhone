@@ -74,6 +74,12 @@ public class PhoneButton extends Button {
     //?}
 
     private void draw(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics) {
+        drawBackground(guiGraphics);
+        drawLabel(guiGraphics);
+    }
+
+    /** The flat background in the role colour (lighter when hovered, grey when disabled). */
+    protected void drawBackground(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics) {
         int x0 = getX(), y0 = getY(), x1 = x0 + getWidth(), y1 = y0 + getHeight();
         boolean enabled = this.active;
         int fill = enabled ? (isHoveredOrFocused() ? lighten(style.fill) : style.fill) : DISABLED_FILL;
@@ -88,7 +94,11 @@ public class PhoneButton extends Button {
         guiGraphics.fill(x0, y0 + 1, x0 + 1, y1 - 1, light);
         guiGraphics.fill(x0 + 1, y1 - 1, x1 - 1, y1, dark);
         guiGraphics.fill(x1 - 1, y0 + 1, x1, y1 - 1, dark);
+    }
 
+    private void drawLabel(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics) {
+        int x0 = getX(), y0 = getY();
+        boolean enabled = this.active;
         Font font = Minecraft.getInstance().font;
         Component label = getMessage();
         int textWidth = font.width(label);

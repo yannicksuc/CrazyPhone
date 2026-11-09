@@ -78,6 +78,8 @@ package fr.lordfinn.crazyphone.client.gui;
  * not guessed) and draws its own grid/buttons manually instead, mirroring CrazyPhonePhotoViewerScreen's own
  * established "skip Screen#render's default background pass" pattern (see that class's own doc comment).
  */
+import fr.lordfinn.crazyphone.client.gui.components.PhoneButton;
+import fr.lordfinn.crazyphone.client.gui.components.PhoneIconButton;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import fr.lordfinn.crazyphone.client.CursorEffects;
@@ -362,40 +364,7 @@ public class CrazyPhonePhotoFrameResizeScreen extends AbstractContainerScreen<Cr
     // SUPPLIER, not a fixed Component, so a caller like the fullbright toggle can have its own icon reflect
     // live state rather than whatever it was at button-creation time.
     private Button createSquareIconButton(int x, int y, java.util.function.Supplier<Component> iconSupplier, Button.OnPress onPress) {
-        return new Button(x, y, HOTBAR_BUTTON_SIZE, HOTBAR_BUTTON_SIZE, iconSupplier.get(), onPress, supplier -> iconSupplier.get().copy()) {
-            //? if >=26 {
-            /*@Override
-            public void extractContents(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
-                Component message = iconSupplier.get();
-                this.extractDefaultSprite(guiGraphics);
-
-                var font = Minecraft.getInstance().font;
-                int textWidth = font.width(message);
-                int drawX = getX() + (getWidth() - textWidth) / 2;
-                int drawY = getY() + (getHeight() - 8) / 2;
-                GuiCompat.pushPose(guiGraphics);
-                GuiCompat.translate(guiGraphics, 0.5f, 0f);
-                guiGraphics./^$ gui_draw_string {^/drawString/^$}^/(font, message, drawX, drawY, 0xFFFFFFFF, true);
-                GuiCompat.popPose(guiGraphics);
-            }
-            *///? } else {
-            @Override
-            public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-                Component message = iconSupplier.get();
-                setMessage(Component.empty());
-                super.renderWidget(guiGraphics, mouseX, mouseY, partialTick);
-
-                var font = Minecraft.getInstance().font;
-                int textWidth = font.width(message);
-                int drawX = getX() + (getWidth() - textWidth) / 2;
-                int drawY = getY() + (getHeight() - 8) / 2;
-                GuiCompat.pushPose(guiGraphics);
-                GuiCompat.translate(guiGraphics, 0.5f, 0f);
-                guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(font, message, drawX, drawY, 0xFFFFFFFF, true);
-                GuiCompat.popPose(guiGraphics);
-            }
-            //?}
-        };
+        return new PhoneIconButton(x, y, HOTBAR_BUTTON_SIZE, iconSupplier, onPress, PhoneButton.Style.NEUTRAL);
     }
 
     // Which screen direction (col+/right, row+/down) each server axis (U/V) actually corresponds to for the

@@ -497,8 +497,9 @@ public final class LiveScreenPainter {
                 gradient(SCREEN, SCREEN_MID, SCREEN_DEEP);
                 // The diagonal glare band of the item texture, one texel (4 px) wide.
                 for (int y = 0; y < HEIGHT; y++) {
-                    int x = 30 - y;
-                    hline(Math.max(0, x), y, 3, GLARE);
+                    // Straight diagonal, leaving the screen on the left (it used to be stopped at column 0
+                    // and ran down the left edge, which looked like it turned).
+                    hline(30 - y, y, 3, GLARE);
                 }
             }
         }

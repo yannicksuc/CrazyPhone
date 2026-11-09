@@ -1,5 +1,6 @@
 package fr.lordfinn.crazyphone.client.gui;
 
+import fr.lordfinn.crazyphone.client.gui.components.PhoneIconButton;
 import fr.lordfinn.crazyphone.utils.GuiCompat;
 
 import fr.lordfinn.crazyphone.Crazyphone;
@@ -159,7 +160,7 @@ public class CrazyPhoneContactsScreenScreen extends CrazyPhoneDefaultScreenScree
 		this.addRenderableWidget(button_creategroup);
 
 		button_remove = createSquareIconButton(this.leftPos + 84, this.topPos + 158,
-				Component.translatable("gui.crazyphone.crazy_phone_contacts_screen.button_remove").withStyle(ChatFormatting.RED), e -> {
+				Component.translatable("gui.crazyphone.crazy_phone_contacts_screen.button_remove"), PhoneButton.Style.DANGER, e -> {
 			if (!selectedSlots.isEmpty()) {
 				HashMap<String, String> textstate = getEditBoxAndCheckBoxValues();
 				textstate.put("selectedNumbers", joinSelectedNumbers());
@@ -173,7 +174,7 @@ public class CrazyPhoneContactsScreenScreen extends CrazyPhoneDefaultScreenScree
 		this.addRenderableWidget(button_remove);
 
 		button_favorite = createSquareIconButton(this.leftPos + 100, this.topPos + 158,
-				Component.translatable("gui.crazyphone.crazy_phone_contacts_screen.button_favorite").withStyle(ChatFormatting.GOLD), e -> {
+				Component.translatable("gui.crazyphone.crazy_phone_contacts_screen.button_favorite"), PhoneButton.Style.INFO, e -> {
 			if (!selectedSlots.isEmpty()) {
 				HashMap<String, String> textstate = getEditBoxAndCheckBoxValues();
 				textstate.put("selectedNumbers", joinSelectedNumbers());
@@ -197,49 +198,8 @@ public class CrazyPhoneContactsScreenScreen extends CrazyPhoneDefaultScreenScree
 	 * still comes from vanilla (via super.renderWidget with a blanked-out message), so hover/press/disabled
 	 * states keep working normally.
 	 */
-	private Button createSquareIconButton(int x, int y, Component icon, Button.OnPress onPress) {
-		return new Button(x, y, 14, 14, icon, onPress, supplier -> icon.copy()) {
-			//? if >=26 {
-			/*@Override
-			public void extractContents(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
-				// 26.x's AbstractButton has no default extractContents body left to call via super - the
-				// background sprite and default label are now two independent, separately-invokable pieces
-				// (extractDefaultSprite(GuiGraphicsExtractor)/extractDefaultLabel(ActiveTextCollector), the
-				// latter part of a new text-collection pipeline this button never needs to touch since it
-				// always draws its own custom-positioned label instead of the default one) - only the sprite
-				// half is relevant here, so call that directly instead of blanking/restoring the message
-				// around a super call that no longer exists.
-				Component message = getMessage();
-				this.extractDefaultSprite(guiGraphics);
-
-				var font = Minecraft.getInstance().font;
-				int textWidth = font.width(message);
-				int drawX = getX() + (getWidth() - textWidth) / 2;
-				int drawY = getY() + (getHeight() - 8) / 2;
-				GuiCompat.pushPose(guiGraphics);
-				GuiCompat.translate(guiGraphics, 0.5f, 0f);
-				guiGraphics./^$ gui_draw_string {^/drawString/^$}^/(font, message, drawX, drawY, 0xFFFFFFFF, true);
-				GuiCompat.popPose(guiGraphics);
-			}
-			*///? } else {
-			@Override
-			public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-				Component message = getMessage();
-				setMessage(Component.empty());
-				super.renderWidget(guiGraphics, mouseX, mouseY, partialTick);
-				setMessage(message);
-
-				var font = Minecraft.getInstance().font;
-				int textWidth = font.width(message);
-				int drawX = getX() + (getWidth() - textWidth) / 2;
-				int drawY = getY() + (getHeight() - 8) / 2;
-				GuiCompat.pushPose(guiGraphics);
-				GuiCompat.translate(guiGraphics, 0.5f, 0f);
-				guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(font, message, drawX, drawY, 0xFFFFFFFF, true);
-				GuiCompat.popPose(guiGraphics);
-			}
-			//?}
-		};
+	private Button createSquareIconButton(int x, int y, Component icon, PhoneButton.Style style, Button.OnPress onPress) {
+		return new PhoneIconButton(x, y, 14, () -> icon, onPress, style);
 	}
 
 	private String joinSelectedNumbers() {

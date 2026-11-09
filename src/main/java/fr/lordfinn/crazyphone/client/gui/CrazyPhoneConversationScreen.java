@@ -1,5 +1,7 @@
 package fr.lordfinn.crazyphone.client.gui;
 
+import fr.lordfinn.crazyphone.client.gui.components.PhoneButton;
+import fr.lordfinn.crazyphone.client.gui.components.PhoneIconButton;
 import fr.lordfinn.crazyphone.utils.GuiCompat;
 
 import fr.lordfinn.crazyphone.Crazyphone;
@@ -992,10 +994,10 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
         if (VoicechatIntegration.isAvailable()) {
             imagebutton_crazyphonevoicemessage = createVoiceMessageButton();
             button_voicetrash = createSquareIconButton(this.leftPos + TRASH_X, this.topPos + RECORDING_ROW_Y,
-                    Component.translatable("gui.crazyphone.crazy_phone_conversation.button_voice_trash").withStyle(ChatFormatting.RED),
+                    Component.translatable("gui.crazyphone.crazy_phone_conversation.button_voice_trash"), PhoneButton.Style.DANGER,
                     e -> onTrashClicked());
             button_voicepause = createSquareIconButton(this.leftPos + PAUSE_SEND_X, this.topPos + RECORDING_ROW_Y,
-                    Component.translatable("gui.crazyphone.crazy_phone_conversation.button_voice_pause"),
+                    Component.translatable("gui.crazyphone.crazy_phone_conversation.button_voice_pause"), PhoneButton.Style.NEUTRAL,
                     e -> onPauseSendClicked());
             // Same crazyphone-send-message.png button as the main send button - every "send" action in
             // this mod uses this one texture now, not the glyph-only square style trash/pause still use.
@@ -1044,49 +1046,8 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
      * exactly in the middle instead. The real button background still comes from vanilla (via
      * super.renderWidget with a blanked-out message), so hover/press/disabled states keep working normally.
      */
-    private Button createSquareIconButton(int x, int y, Component icon, Button.OnPress onPress) {
-        return new Button(x, y, 14, 14, icon, onPress, supplier -> icon.copy()) {
-            //? if >=26 {
-            /*@Override
-            public void extractContents(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
-                // 26.x's AbstractButton has no default extractContents body left to call via super - the
-                // background sprite and default label are now two independent, separately-invokable pieces
-                // (extractDefaultSprite(GuiGraphicsExtractor)/extractDefaultLabel(ActiveTextCollector), the
-                // latter part of a new text-collection pipeline this button never needs to touch since it
-                // always draws its own custom-positioned label instead of the default one) - only the sprite
-                // half is relevant here, so call that directly instead of blanking/restoring the message
-                // around a super call that no longer exists.
-                Component message = getMessage();
-                this.extractDefaultSprite(guiGraphics);
-
-                var font = Minecraft.getInstance().font;
-                int textWidth = font.width(message);
-                int drawX = getX() + (getWidth() - textWidth) / 2;
-                int drawY = getY() + (getHeight() - 8) / 2;
-                GuiCompat.pushPose(guiGraphics);
-                GuiCompat.translate(guiGraphics, 0.5f, 0f);
-                guiGraphics./^$ gui_draw_string {^/drawString/^$}^/(font, message, drawX, drawY, 0xFFFFFFFF, true);
-                GuiCompat.popPose(guiGraphics);
-            }
-            *///? } else {
-            @Override
-            public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-                Component message = getMessage();
-                setMessage(Component.empty());
-                super.renderWidget(guiGraphics, mouseX, mouseY, partialTick);
-                setMessage(message);
-
-                var font = Minecraft.getInstance().font;
-                int textWidth = font.width(message);
-                int drawX = getX() + (getWidth() - textWidth) / 2;
-                int drawY = getY() + (getHeight() - 8) / 2;
-                GuiCompat.pushPose(guiGraphics);
-                GuiCompat.translate(guiGraphics, 0.5f, 0f);
-                guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(font, message, drawX, drawY, 0xFFFFFFFF, true);
-                GuiCompat.popPose(guiGraphics);
-            }
-            //?}
-        };
+    private Button createSquareIconButton(int x, int y, Component icon, PhoneButton.Style style, Button.OnPress onPress) {
+        return new PhoneIconButton(x, y, 14, () -> icon, onPress, style);
     }
 
     /** The emoji button between the message field and the send button: same 14x14 icon-button look as
