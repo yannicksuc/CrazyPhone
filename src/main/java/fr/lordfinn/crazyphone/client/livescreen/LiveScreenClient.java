@@ -93,6 +93,10 @@ public final class LiveScreenClient {
      * away (its UI closed) or a new message arrives. The rest of the time the held phone's screen is off. */
     private static final int WAKE_TICKS = 80;
     private static int wakeTicks = 0;
+    /** A page change must last this long before the held phone shows it (3 ticks = 0.15 s). */
+    private static final int PAGE_STABLE_TICKS = 3;
+    private static PhoneScreenApp pendingApp = PhoneScreenApp.NONE;
+    private static int pendingTicks = 0;
     private static boolean wasHoldingPhone = false;
     private static int lastUnreadTotal = -1;
 
@@ -142,7 +146,21 @@ public final class LiveScreenClient {
             PhoneScreenApp computed = computeLocalApp(mc);
             if (computed != PhoneScreenApp.NONE) {
                 ticksWithoutApp = 0;
-                localApp = computed;
+                if (computed == localApp || localApp == PhoneScreenApp.NONE) {
+                    // Same page, or the phone just opened: shown right away.
+                    localApp = computed;
+                    pendingApp = PhoneScreenApp.NONE;
+                } else if (computed == pendingApp) {
+                    // Another page: shown once it has stayed up a few ticks, so a page that only flashes by
+                    // between two others (the home screen, typically) never shows on the held phone.
+                    if (++pendingTicks >= PAGE_STABLE_TICKS) {
+                        localApp = computed;
+                        pendingApp = PhoneScreenApp.NONE;
+                    }
+                } else {
+                    pendingApp = computed;
+                    pendingTicks = 1;
+                }
             } else if (localApp != PhoneScreenApp.NONE && ++ticksWithoutApp > PAGE_CHANGE_GRACE_TICKS) {
                 // Really closed (not just between two pages): the lock screen shows for a moment, then off.
                 localApp = PhoneScreenApp.NONE;
@@ -203,6 +221,8 @@ public final class LiveScreenClient {
         lastPlayer = null;
         lastSent = null;
         localApp = PhoneScreenApp.NONE;
+        pendingApp = PhoneScreenApp.NONE;
+        pendingTicks = 0;
         sendFailed = false;
         incomingCallId = null;
         incomingCaller = "";
