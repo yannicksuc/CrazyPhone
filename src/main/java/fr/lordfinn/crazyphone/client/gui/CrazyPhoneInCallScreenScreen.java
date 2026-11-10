@@ -428,8 +428,18 @@ public class CrazyPhoneInCallScreenScreen extends CrazyPhoneDefaultScreenScreen<
             guiGraphics.fill(iconX - 1, iconY - 1, iconX + w + 1, iconY + h + 1, 0x80FFFFFF);
         }
         guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(this.font, VIDEO_ICON, iconX, iconY, videoOn ? VIDEO_ICON_ON_COLOR : VIDEO_ICON_OFF_COLOR, true);
-        if (!videoOn)
+        if (!videoOn) {
+            // Text is drawn after the plain boxes of the same frame: the bar is pushed in front so it crosses the
+            // icon instead of hiding behind it.
+            //? if <1.21.10 {
+            guiGraphics.pose().pushPose();
+            guiGraphics.pose().translate(0f, 0f, 50f);
+            //?}
             guiGraphics.fill(iconX, iconY + h / 2 - 1, iconX + w, iconY + h / 2 + 1, VIDEO_ICON_OFF_BAR_COLOR);
+            //? if <1.21.10 {
+            guiGraphics.pose().popPose();
+            //?}
+        }
     }
 
     /** Tooltip for whichever video icon is under the mouse, or null. */
