@@ -230,6 +230,7 @@ sourceSets.main {
             "fr/lordfinn/crazyphone/client/gui/components/CrazyPhoneColors.java",
             "fr/lordfinn/crazyphone/client/gui/components/PasswordEditBox.java",
             "fr/lordfinn/crazyphone/client/gui/components/SmallTextEditBox.java",
+            "fr/lordfinn/crazyphone/client/gui/components/MessageTextBox.java",
             "fr/lordfinn/crazyphone/client/gui/components/PhoneEditBox.java",
             "fr/lordfinn/crazyphone/client/gui/components/MessageWidget.java",
             "fr/lordfinn/crazyphone/client/gui/components/PhotoLoadingPlaceholder.java",

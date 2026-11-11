@@ -48,6 +48,26 @@ public final class PhoneUiDevCommand {
                                     }));
                                     return 1;
                                 })))
+                .then(LiteralArgumentBuilder.<CommandSourceStack>literal("type")
+                        .then(RequiredArgumentBuilder.<CommandSourceStack, String>argument("text", StringArgumentType.greedyString())
+                                .executes(ctx -> {
+                                    String text = StringArgumentType.getString(ctx, "text").replace("\\n", "\n");
+                                    Minecraft mc = Minecraft.getInstance();
+                                    mc.execute(() -> {
+                                        if (mc.screen instanceof fr.lordfinn.crazyphone.client.gui.CrazyPhoneConversationScreen conversation)
+                                            conversation.devTypeMessage(text);
+                                    });
+                                    return 1;
+                                })))
+                .then(LiteralArgumentBuilder.<CommandSourceStack>literal("send")
+                        .executes(ctx -> {
+                            Minecraft mc = Minecraft.getInstance();
+                            mc.execute(() -> {
+                                if (mc.screen instanceof fr.lordfinn.crazyphone.client.gui.CrazyPhoneConversationScreen conversation)
+                                    conversation.devSendMessage();
+                            });
+                            return 1;
+                        }))
                 .then(LiteralArgumentBuilder.<CommandSourceStack>literal("emoji")
                         .executes(ctx -> {
                             Minecraft mc = Minecraft.getInstance();

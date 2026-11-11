@@ -79,9 +79,21 @@ public class EmojiDrawer {
     }
 
     /** Re-anchors the drawer on the phone (called from the screen's init(), also after a resize). */
+    /** How far the message field has grown above its one line height: the drawer sits that much higher. */
+    private int bottomShift;
+    private int originTop;
+
+    public void setBottomShift(int shift) {
+        if (shift != bottomShift) {
+            bottomShift = shift;
+            this.top = originTop + BOTTOM - HEIGHT - bottomShift;
+        }
+    }
+
     public void setPhoneOrigin(int leftPos, int topPos) {
+        this.originTop = topPos;
         this.left = leftPos + X;
-        this.top = topPos + BOTTOM - HEIGHT;
+        this.top = topPos + BOTTOM - HEIGHT - bottomShift;
     }
 
     public boolean isOpen() {

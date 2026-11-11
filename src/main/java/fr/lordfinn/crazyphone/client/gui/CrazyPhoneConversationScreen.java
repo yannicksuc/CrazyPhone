@@ -114,7 +114,7 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
     }
     /** Rightmost slot of the header banner's icon row - unlike the group-settings/call icons above, this
      * one is ALWAYS shown regardless of conversation type, since muting applies to any conversation. */
-    private EditBox message;
+    private fr.lordfinn.crazyphone.client.gui.components.MessageTextBox message;
     private Button button_envoyer;
     /** Same cap the message field has always had (setMaxLength below); the emoji drawer checks it before
      * inserting, so an emoji is either inserted whole or not at all. */
@@ -390,7 +390,7 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
                 || (imagebutton_crazyphonevoicemessage != null && imagebutton_crazyphonevoicemessage.isMouseOver(mouseX, mouseY)))
             return false;
         return mouseX >= this.leftPos && mouseX < this.leftPos + 200
-                && mouseY >= this.topPos + 27 && mouseY < this.topPos + 158;
+                && mouseY >= this.topPos + 27 && mouseY < this.topPos + 158 - messageFieldExtra;
     }
 
     private void renderHoveredHeadTooltip(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int mouseX, int mouseY) {
@@ -730,8 +730,26 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
         }
     }
 
+    /** How much taller than one line the message field is right now (it grows upward with its text). */
+    private int messageFieldExtra;
+
+    /** The message field takes the height its text wants (bottom edge fixed), the feed and the emoji drawer
+     * move up by the same amount. */
+    private void layoutMessageField() {
+        int height = message.wantedHeight();
+        int extra = height - fr.lordfinn.crazyphone.client.gui.components.MessageTextBox.ONE_LINE_HEIGHT;
+        if (extra != messageFieldExtra || message.getY() != this.topPos + 172 - height) {
+            messageFieldExtra = extra;
+            message.setRequestedHeight(height);
+            message.setY(this.topPos + 172 - height);
+        }
+        messageManager.setBottom(this.topPos + 157 - messageFieldExtra);
+        emojiDrawer.setBottomShift(messageFieldExtra);
+    }
+
     private void renderMessageWidget(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int mouseX, int mouseY, float partialTicks) {
-        guiGraphics.enableScissor(this.leftPos, this.topPos + 27, this.leftPos + 200, this.topPos + 158);
+        layoutMessageField();
+        guiGraphics.enableScissor(this.leftPos, this.topPos + 27, this.leftPos + 200, this.topPos + 158 - messageFieldExtra);
         // Widgets outside the visible crop (scrolled off-screen) still get rendered here - the scissor
         // only clips what's drawn, not the widgets' own hover checks (image zoom/shadow, cursor change).
         // Feeding them an impossible coordinate when the real cursor is outside the crop zone makes every
@@ -910,8 +928,8 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
     }
 
     private void initializeEditBox() {
-        message = new SmallTextEditBox(this.font, this.leftPos + 8, this.topPos + 158,
-                imagebutton_emoji != null ? MESSAGE_FIELD_WIDTH_WITH_EMOJI : MESSAGE_FIELD_WIDTH, 14,
+        message = new fr.lordfinn.crazyphone.client.gui.components.MessageTextBox(this.font, this.leftPos + 8, this.topPos + 158,
+                imagebutton_emoji != null ? MESSAGE_FIELD_WIDTH_WITH_EMOJI : MESSAGE_FIELD_WIDTH,
                 Component.translatable("gui.crazyphone.crazy_phone_conversation.message")) {
             @Override
             public void insertText(String text) {
@@ -1076,6 +1094,18 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
         List<Component> lines = EmojiDrawer.buttonTooltip();
         button.setTooltip(Tooltip.create(lines.get(0).copy().append("\n").append(lines.get(1))));
         return button;
+    }
+
+    /** Dev only (/phoneui type): puts this text in the message field, as if typed, "\n" for a new line. */
+    public void devTypeMessage(String text) {
+        message.setValue(text);
+        this.setFocused(message);
+        message.setFocused(true);
+    }
+
+    /** Dev only (/phoneui send): sends what is in the message field, like Enter. */
+    public void devSendMessage() {
+        sendCurrentMessage();
     }
 
     public void toggleEmojiDrawer() {
@@ -1469,7 +1499,7 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
             // message field (to move the cursor before picking) and the emoji button (its own toggle) are
             // the drawer's companions and keep it open.
             boolean onMessageField = mouseX >= message.getX() && mouseX < this.leftPos + EMOJI_BUTTON_X
-                    && mouseY >= this.topPos + 158 && mouseY < this.topPos + 172;
+                    && mouseY >= message.getY() && mouseY < this.topPos + 172;
             if (!onEmojiButton && !onMessageField)
                 emojiDrawer.close();
         }
@@ -1529,9 +1559,15 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
         if (emojiDrawer.keyPressed(key, shift))
             return true;
         if (message.isFocused() && (key == com.mojang.blaze3d.platform.InputConstants.KEY_RETURN || key == com.mojang.blaze3d.platform.InputConstants.KEY_NUMPADENTER)) {
-            sendCurrentMessage();
+            // Shift+Enter: a new line in the message; Enter alone sends it.
+            if (shift)
+                message.insertNewline();
+            else
+                sendCurrentMessage();
             return true;
         }
+        if (message.isFocused() && (key == com.mojang.blaze3d.platform.InputConstants.KEY_UP || key == com.mojang.blaze3d.platform.InputConstants.KEY_DOWN))
+            return message.moveVertically(key == com.mojang.blaze3d.platform.InputConstants.KEY_UP ? -1 : 1, shift);
         return false;
     }
 

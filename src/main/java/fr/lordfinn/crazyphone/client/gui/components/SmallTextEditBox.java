@@ -18,7 +18,7 @@ import net.neoforged.api.distmarker.OnlyIn;
 //?}
 public class SmallTextEditBox extends PhoneEditBox {
 
-    private static final float SCALE_FACTOR = 0.75F; // Scale down the font size
+    protected static final float SCALE_FACTOR = 0.75F; // Scale down the font size
 
     /**
      * The height actually requested by the caller (e.g. 14, to align with a 14px-tall sibling button).
@@ -28,10 +28,16 @@ public class SmallTextEditBox extends PhoneEditBox {
      * compensates by shifting the render-only translation down by that shortfall so the BOTTOM edge
      * still lands exactly where the caller asked for, without changing the (still-integer) click bounds.
      */
-    private final int requestedHeight;
+    protected int requestedHeight;
     /** Same for the width: the carved frame is drawn at the size the caller asked for, unscaled, so its
      * 1 px edges stay sharp; only the text inside is drawn at SCALE_FACTOR. */
     private final int requestedWidth;
+
+    /** Changes the drawn height (the field grows or shrinks, see MessageTextBox). */
+    public void setRequestedHeight(int height) {
+        this.requestedHeight = height;
+        setHeight((int) (height * (1 / SCALE_FACTOR)));
+    }
 
     public SmallTextEditBox(Font font, int x, int y, int width, int height, Component message) {
         super(font, x, y, (int)(width * (1/SCALE_FACTOR)), (int)(height * (1/SCALE_FACTOR)), message);

@@ -21,7 +21,7 @@ import java.util.List;
 public class MessageDisplayManager {
     private final List<MessageEntry> messageEntries = new ArrayList<>();
     private final int x;
-    private final int y;
+    private int y;
     private final int width;
     /** Width used for a system-event entry instead of {@link #width} - spans (nearly) the full feed area
      * since it isn't a left/right-aligned chat bubble with head-icon clearance to leave room for. */
@@ -128,6 +128,14 @@ public class MessageDisplayManager {
                 guiGraphics.fill(x, lineY, leftLineEnd, lineY + 1, DATE_SEPARATOR_COLOR);
             if (x + fullWidth > rightLineStart)
                 guiGraphics.fill(rightLineStart, lineY, x + fullWidth, lineY + 1, DATE_SEPARATOR_COLOR);
+        }
+    }
+
+    /** Moves the bottom of the feed (the message field grows upward over it). */
+    public void setBottom(int bottom) {
+        if (bottom != y) {
+            y = bottom;
+            resetPositions();
         }
     }
 

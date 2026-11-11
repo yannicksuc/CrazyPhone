@@ -32,12 +32,12 @@ public class PhoneEditBox extends EditBox {
     static final int TEXT_INSET = 4;
     private static final long BLINK_MS = 500;
 
-    private final Font textFont;
+    protected final Font textFont;
     private boolean editable = true;
     /** First character shown: the text scrolls so the cursor always stays visible. */
     private int scroll;
-    private String suggestion;
-    private Component hint;
+    protected String suggestion;
+    protected Component hint;
 
     public PhoneEditBox(Font font, int x, int y, int width, int height, Component message) {
         super(font, x, y, width, height, message);

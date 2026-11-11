@@ -206,8 +206,12 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 		int y = this.topPos + HEADER_ITEM_Y;
 		if (hovered)
 			drawHeaderSlotHover(guiGraphics, x);
+		// Heads sit low in their 16 px item box (vanilla's head model is drawn in its lower part): measured
+		// 1.25 px low at this size, so they go up by that much to be centered in the slot like other items.
+		float headLift = stack.getItem() instanceof net.minecraft.world.item.BlockItem blockItem
+				&& blockItem.getBlock() instanceof net.minecraft.world.level.block.AbstractSkullBlock ? 1.25f : 0f;
 		fr.lordfinn.crazyphone.utils.GuiCompat.pushPose(guiGraphics);
-		fr.lordfinn.crazyphone.utils.GuiCompat.translate(guiGraphics, x, y);
+		fr.lordfinn.crazyphone.utils.GuiCompat.translate(guiGraphics, x, y - headLift);
 		fr.lordfinn.crazyphone.utils.GuiCompat.scale(guiGraphics, HEADER_ITEM_SCALE, HEADER_ITEM_SCALE);
 		guiGraphics./*$ gui_render_item {*/renderItem/*$}*/(stack, 0, 0);
 		fr.lordfinn.crazyphone.utils.GuiCompat.popPose(guiGraphics);
