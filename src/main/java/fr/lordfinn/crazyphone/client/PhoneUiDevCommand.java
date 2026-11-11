@@ -48,6 +48,15 @@ public final class PhoneUiDevCommand {
                                     }));
                                     return 1;
                                 })))
+                .then(LiteralArgumentBuilder.<CommandSourceStack>literal("emoji")
+                        .executes(ctx -> {
+                            Minecraft mc = Minecraft.getInstance();
+                            mc.execute(() -> {
+                                if (mc.screen instanceof fr.lordfinn.crazyphone.client.gui.CrazyPhoneConversationScreen conversation)
+                                    conversation.toggleEmojiDrawer();
+                            });
+                            return 1;
+                        }))
                 .then(LiteralArgumentBuilder.<CommandSourceStack>literal("close")
                         .executes(ctx -> {
                             Minecraft mc = Minecraft.getInstance();

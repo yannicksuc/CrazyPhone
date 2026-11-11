@@ -1072,7 +1072,7 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
         return button;
     }
 
-    private void toggleEmojiDrawer() {
+    public void toggleEmojiDrawer() {
         if (imagebutton_emoji == null || voiceRecordingState != VoiceRecordingState.NONE) {
             emojiDrawer.closeNow();
             return;
