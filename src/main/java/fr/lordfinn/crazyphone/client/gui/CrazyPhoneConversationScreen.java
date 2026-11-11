@@ -1111,6 +1111,7 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
     /** Dev only (/phoneui emojitab): shows that tab of the emoji drawer. */
     public void devEmojiTab(int tab) {
         emojiDrawer.selectTab(tab);
+        emojiDrawer.devHighlight(10);
     }
 
     public void toggleEmojiDrawer() {

@@ -37,6 +37,9 @@ public class EmojiDrawer {
     public static final int HEIGHT = 74;
 
     private static final int CELL = 11;
+    /** An emoji glyph's top row is drawn one pixel above the y it is given (its font's ascent is 8, plain text 7):
+     * measured in game with the highlight box around a square emoji. */
+    private static final float EMOJI_TOP_OFFSET = 1f;
     private static final int COLUMNS = 9;
     private static final int VISIBLE_ROWS = 5;
     private static final int TAB_WIDTH = 10;
@@ -73,6 +76,11 @@ public class EmojiDrawer {
     private int scrollRow;
     /** -1 when nothing is keyboard-highlighted (mouse users never see a highlight). */
     private int keyboardIndex = -1;
+
+    /** Dev only: highlights this emoji of the grid as if reached with the arrow keys. */
+    public void devHighlight(int index) {
+        keyboardIndex = index;
+    }
 
     public EmojiDrawer(Consumer<Emoji> onPick) {
         this.onPick = onPick;
@@ -244,7 +252,7 @@ public class EmojiDrawer {
                 float[] bounds = icon == null || icon.isEmpty() ? null : fr.lordfinn.crazyphone.client.EmojiGlyphs.bounds(icon.codePointAt(0));
                 if (bounds != null) {
                     float gx = center - (bounds[0] + bounds[2]) / 2f;
-                    float gy = ty + (TAB_HEIGHT - (bounds[3] - bounds[1])) / 2f - bounds[1];
+                    float gy = ty + (TAB_HEIGHT - (bounds[3] - bounds[1])) / 2f - bounds[1] + EMOJI_TOP_OFFSET;
                     pushOffsetXY(guiGraphics, gx, gy);
                     drawGlyph(guiGraphics, font, icon, 0, 0);
                     popOffset(guiGraphics);
@@ -290,7 +298,8 @@ public class EmojiDrawer {
                 String glyph = emojis.get(i).glyph();
                 float[] bounds = glyph.isEmpty() ? null : fr.lordfinn.crazyphone.client.EmojiGlyphs.bounds(glyph.codePointAt(0));
                 if (bounds != null) {
-                    pushOffsetXY(guiGraphics, cx + (CELL - (bounds[2] - bounds[0])) / 2f - bounds[0], cy + (CELL - (bounds[3] - bounds[1])) / 2f - bounds[1]);
+                    pushOffsetXY(guiGraphics, cx + (CELL - (bounds[2] - bounds[0])) / 2f - bounds[0],
+                            cy + (CELL - (bounds[3] - bounds[1])) / 2f - bounds[1] + EMOJI_TOP_OFFSET);
                     drawGlyph(guiGraphics, font, glyph, 0, 0);
                     popOffset(guiGraphics);
                 } else {
