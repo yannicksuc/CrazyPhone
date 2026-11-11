@@ -42,7 +42,14 @@ public final class CrazyPhoneSelfiePose {
     /** Whether {@code entity} should currently show the selfie arm/head pose - the local player's own
      * client-side capture-mode state for themselves (zero-latency, no network round trip needed for your own
      * rendering), or their held phone stack's own synced data for anyone else. */
+    /** Above 0 while an item is drawn as a GUI icon (hotbar, inventory) before 1.21.10 (PhoneScaleGuiGraphicsMixin):
+     * the phone keeps its normal icon there, never the selfie stick. 1.21.10+ item models check the display
+     * context instead (CrazyPhoneItemProperties). */
+    public static int guiItemDepth;
+
     public static boolean isSelfieFraming(LivingEntity entity) {
+        if (guiItemDepth > 0)
+            return false;
         if (entity == net.minecraft.client.Minecraft.getInstance().player)
             return CrazyPhoneCaptureMode.isActive() && CrazyPhoneCaptureMode.isSelfieMode();
         return CrazyPhoneSelfiePoseNetwork.isSelfieActive(entity);

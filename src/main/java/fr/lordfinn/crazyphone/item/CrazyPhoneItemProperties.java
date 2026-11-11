@@ -85,12 +85,18 @@ public class CrazyPhoneItemProperties {
     }
     *///?}
     //? if >=1.21.10 {
-    /*public record ScreenOn() implements ConditionalItemModelProperty {
+    /*private static boolean isHandContext(ItemDisplayContext context) {
+        return context == ItemDisplayContext.FIRST_PERSON_RIGHT_HAND || context == ItemDisplayContext.FIRST_PERSON_LEFT_HAND
+                || context == ItemDisplayContext.THIRD_PERSON_RIGHT_HAND || context == ItemDisplayContext.THIRD_PERSON_LEFT_HAND;
+    }
+
+    public record ScreenOn() implements ConditionalItemModelProperty {
         public static final MapCodec<ScreenOn> MAP_CODEC = MapCodec.unit(new ScreenOn());
 
         @Override
         public boolean get(ItemStack stack, @Nullable ClientLevel level, @Nullable LivingEntity entity, int seed, ItemDisplayContext displayContext) {
-            return CrazyPhoneHelper.isPhoneScreenOpen(stack);
+            return CrazyPhoneHelper.isPhoneScreenOpen(stack)
+                    && !(isHandContext(displayContext) && fr.lordfinn.crazyphone.client.livescreen.LiveScreenRenderer.coversScreen(stack, entity));
         }
 
         @Override
@@ -109,7 +115,8 @@ public class CrazyPhoneItemProperties {
 
         @Override
         public boolean get(ItemStack stack, @Nullable ClientLevel level, @Nullable LivingEntity entity, int seed, ItemDisplayContext displayContext) {
-            return targetState.name().equals(CrazyPhoneHelper.getPhoneCallState(stack));
+            return targetState.name().equals(CrazyPhoneHelper.getPhoneCallState(stack))
+                    && !(isHandContext(displayContext) && fr.lordfinn.crazyphone.client.livescreen.LiveScreenRenderer.coversScreen(stack, entity));
         }
 
         @Override
@@ -190,7 +197,9 @@ public class CrazyPhoneItemProperties {
         ItemProperties.register(
                 ModItems.CRAZY_PHONE.get(),
                 Crazyphone.resource("screen_on"),
-                (stack, level, entity, seed) -> CrazyPhoneHelper.isPhoneScreenOpen(stack) ? 1.0f : 0.0f
+                // Under the live screen the plain texture is the dark "off" one (see LiveScreenRenderer#coversScreen).
+                (stack, level, entity, seed) -> CrazyPhoneHelper.isPhoneScreenOpen(stack)
+                        && !fr.lordfinn.crazyphone.client.livescreen.LiveScreenRenderer.coversScreen(stack, entity) ? 1.0f : 0.0f
         );
         registerCallState("calling", State.CALLING);
         registerCallState("called_in", State.RINGING);
@@ -222,7 +231,8 @@ public class CrazyPhoneItemProperties {
         ItemProperties.register(
                 ModItems.CRAZY_PHONE.get(),
                 Crazyphone.resource(propertyName),
-                (stack, level, entity, seed) -> targetState.name().equals(CrazyPhoneHelper.getPhoneCallState(stack)) ? 1.0f : 0.0f
+                (stack, level, entity, seed) -> targetState.name().equals(CrazyPhoneHelper.getPhoneCallState(stack))
+                        && !fr.lordfinn.crazyphone.client.livescreen.LiveScreenRenderer.coversScreen(stack, entity) ? 1.0f : 0.0f
         );
     }
     //?}

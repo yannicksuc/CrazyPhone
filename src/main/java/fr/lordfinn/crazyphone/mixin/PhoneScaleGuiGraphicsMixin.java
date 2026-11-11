@@ -35,6 +35,19 @@ public abstract class PhoneScaleGuiGraphicsMixin {
     }
 
     //? if <1.21.10 {
+    // An item drawn as a GUI icon (hotbar, inventory): flagged so the phone keeps its plain icon there.
+    @Inject(method = "renderItem(Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/level/Level;Lnet/minecraft/world/item/ItemStack;IIII)V",
+            at = @At("HEAD"), require = 0)
+    private void crazyphone$guiItemStart(org.spongepowered.asm.mixin.injection.callback.CallbackInfo ci) {
+        fr.lordfinn.crazyphone.client.CrazyPhoneSelfiePose.guiItemDepth++;
+    }
+
+    @Inject(method = "renderItem(Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/level/Level;Lnet/minecraft/world/item/ItemStack;IIII)V",
+            at = @At("RETURN"), require = 0)
+    private void crazyphone$guiItemEnd(org.spongepowered.asm.mixin.injection.callback.CallbackInfo ci) {
+        fr.lordfinn.crazyphone.client.CrazyPhoneSelfiePose.guiItemDepth = Math.max(0, fr.lordfinn.crazyphone.client.CrazyPhoneSelfiePose.guiItemDepth - 1);
+    }
+
     @org.spongepowered.asm.mixin.injection.ModifyVariable(method = "enableScissor", at = @At("HEAD"), argsOnly = true, ordinal = 0)
     private int crazyphone$scissorMinX(int value) {
         return (int) Math.floor(value * PhoneScale.activeFactor(this));

@@ -71,6 +71,23 @@ public final class LiveScreenRenderer {
         }
     }
 
+    /**
+     * Whether the live screen is drawn over this phone right now. The plain texture under it is then the dark
+     * "off" one (CrazyPhoneItemProperties): the game smooths textures seen from afar (mipmaps), which blended the
+     * bezel row above the screen with the bright cyan or blue top row of the "on" or "in call" texture and showed
+     * a light blue line between the bezel and the drawn screen; with the dark one it reads as the bezel line of
+     * a phone that is off. Never for a phone drawn as an icon (hotbar, inventory).
+     */
+    public static boolean coversScreen(ItemStack stack, @Nullable LivingEntity holder) {
+        if (holder == null || failures >= MAX_FAILURES || fr.lordfinn.crazyphone.client.CrazyPhoneSelfiePose.guiItemDepth > 0)
+            return false;
+        try {
+            return LiveScreenViews.resolve(stack, holder, ItemDisplayContext.THIRD_PERSON_RIGHT_HAND) != null;
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
     static void fail(Throwable t) {
         failures++;
         if (failures == 1 || failures == MAX_FAILURES)
