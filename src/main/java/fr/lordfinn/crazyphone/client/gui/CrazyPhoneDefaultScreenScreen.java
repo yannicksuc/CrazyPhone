@@ -186,9 +186,9 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 		int[] b = text.isEmpty() ? null : fr.lordfinn.crazyphone.client.EmojiGlyphs.bounds(text.codePointAt(0));
 		float x, y;
 		if (b != null) {
-			// Emoji cell: 9 px tall with ascent 8, so its top row is one pixel above the text y.
+			// The emoji cell's top row is drawn at the text y (measured in game).
 			x = slotX + (HEADER_SLOT - (b[2] - b[0])) / 2f - b[0];
-			y = slotY + (HEADER_SLOT - (b[3] - b[1])) / 2f - b[1] + 1;
+			y = slotY + (HEADER_SLOT - (b[3] - b[1])) / 2f - b[1];
 		} else {
 			x = slotX + (HEADER_SLOT - (this.font.width(glyph) - 1)) / 2f;
 			y = slotY + (HEADER_SLOT - 7) / 2f;
@@ -258,7 +258,11 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 		else
 			titleX = HEADER_ICON_X;
 		int availableWidth = Math.max(0, rightBoundX - HEADER_TITLE_RIGHT_GAP - titleX);
+		// Half a pixel up: the 7 px capitals are then centered on the banner like the icons (measured in game).
+		fr.lordfinn.crazyphone.utils.GuiCompat.pushPose(guiGraphics);
+		fr.lordfinn.crazyphone.utils.GuiCompat.translate(guiGraphics, 0f, -0.5f);
 		ScrollingText.render(guiGraphics, this.font, title, this.leftPos + titleX, this.topPos + 14, availableWidth, 0xFF404040);
+		fr.lordfinn.crazyphone.utils.GuiCompat.popPose(guiGraphics);
 	}
 
 	public static HashMap<String, String> getEditBoxAndCheckBoxValues() {

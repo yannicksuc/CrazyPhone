@@ -74,15 +74,6 @@ public class CrazyPhoneMyPhotosScreenScreen extends CrazyPhoneDefaultScreenScree
     // (scissor-cropped, see renderThumbnails) instead of snapping a whole row at a time per wheel tick.
     private static final int SCROLL_STEP = 10;
 
-    // Header banner's right edge and the title's own y, both relative to leftPos/topPos - mirror
-    // CrazyPhoneDefaultScreenScreen's own private HEADER_BANNER_RIGHT_X / title y (neither is exposed to
-    // subclasses) so the "247/300" counter lines up flush with the banner's right edge, on the exact same
-    // row as the title. Same technique CrazyPhoneConversationScreen uses to reserve header room for its
-    // call icon (see its renderHeader(..., rightBoundX) call).
-    private static final int HEADER_BANNER_RIGHT_X = 118;
-    private static final int HEADER_TITLE_Y = 14;
-    // Matches renderHeader's own title color.
-    private static final int COUNTER_TEXT_COLOR = 0xFF404040;
     // Fraction of Config.maxPhotosStoredPerOwner at which the storage warning below the header kicks in -
     // 90% gives a clear heads-up before the server's own silent FIFO eviction of the oldest photos (see
     // Config.maxPhotosStoredPerOwner's own comment) actually starts discarding anything.
@@ -328,27 +319,21 @@ public class CrazyPhoneMyPhotosScreenScreen extends CrazyPhoneDefaultScreenScree
     // only shows as this icon's tooltip now (live request: a page icon here instead of the number sitting
     // in the banner itself).
     private static final Component PHOTO_COUNT_ICON = Component.literal("📄");
-    private static final int PHOTO_COUNT_ICON_X = 7;
-    private static final int PHOTO_COUNT_ICON_SIZE = 16;
+
+    /** The header's left slot (x 8 to 19, where the other screens put their item icon). */
+    private int photoCountIconX() {
+        return this.leftPos + 8;
+    }
 
     private boolean isHoveringPhotoCountIcon(double mouseX, double mouseY) {
-        int iconX = this.leftPos + PHOTO_COUNT_ICON_X;
-        int iconY = this.topPos + 9;
-        return mouseX >= iconX && mouseX < iconX + PHOTO_COUNT_ICON_SIZE && mouseY >= iconY && mouseY < iconY + PHOTO_COUNT_ICON_SIZE;
+        return isInHeaderSlot(mouseX, mouseY, photoCountIconX());
     }
 
     private void renderPhotoCountIcon(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int mouseX, int mouseY) {
-        int iconX = this.leftPos + PHOTO_COUNT_ICON_X;
-        int iconY = this.topPos + 9;
-        if (isHoveringPhotoCountIcon(mouseX, mouseY)) {
+        boolean hovered = isHoveringPhotoCountIcon(mouseX, mouseY);
+        if (hovered)
             fr.lordfinn.crazyphone.client.CursorEffects.requestPointerCursor();
-            guiGraphics.fill(iconX - 1, iconY - 1, iconX + PHOTO_COUNT_ICON_SIZE + 1, iconY + PHOTO_COUNT_ICON_SIZE + 1, 0x80FFFFFF);
-        }
-        // On the title line and the same left edge as every header icon (see the header icon rule in
-        // CrazyPhoneDefaultScreenScreen).
-        int textX = this.leftPos + PHOTO_COUNT_ICON_X + 1;
-        int textY = this.topPos + HEADER_GLYPH_Y;
-        guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(this.font, PHOTO_COUNT_ICON, textX, textY, COUNTER_TEXT_COLOR, false);
+        drawHeaderGlyph(guiGraphics, PHOTO_COUNT_ICON, photoCountIconX(), 0xFFFFFFFF, hovered);
     }
 
     private java.util.List<Component> photoCountTooltipAt(double mouseX, double mouseY) {

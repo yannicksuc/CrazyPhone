@@ -73,11 +73,6 @@ public class CrazyPhoneInCallScreenScreen extends CrazyPhoneDefaultScreenScreen<
     private static final int STATUS_ROW_Y = 34;
     private static final int MUTE_ICON_CENTER_X = 105;
 
-    // Header banner's right edge, matching CrazyPhoneDefaultScreenScreen's own private HEADER_BANNER_RIGHT_X
-    // (not exposed to subclasses) - same technique CrazyPhoneMyPhotosScreenScreen's "247/300" counter and
-    // CrazyPhoneConversationScreen's call icon use to sit flush against the banner's right edge, on the
-    // title's own row, while reserving that space out of the title's available width.
-    private static final int HEADER_BANNER_RIGHT_X = 118;
     private static final int HEADER_TITLE_Y = 14;
     // Matches renderHeader's own title color.
     private static final int TIMER_TEXT_COLOR = 0xFF404040;
@@ -99,7 +94,6 @@ public class CrazyPhoneInCallScreenScreen extends CrazyPhoneDefaultScreenScreen<
     // isolated (lock) - same emoji-font technique as the icons above.
     private static final Component[] VOICE_MODE_ICONS = {Component.literal("📢"), Component.literal("👥"), Component.literal("🔒")};
     private static final String[] VOICE_MODE_KEYS = {"open", "normal", "isolated"};
-    private static final int VOICE_MODE_ICON_GAP = 3;
 
     /** One tile's on-screen rectangle from the most recent grid layout pass, so mouseClicked and the tooltip
      * hover check can hit-test against exactly what was drawn (the layout depends on the participant count,
@@ -467,27 +461,27 @@ public class CrazyPhoneInCallScreenScreen extends CrazyPhoneDefaultScreenScreen<
         return VOICE_MODE_ICONS[mode];
     }
 
+    /** Left edge of the elapsed timer: its last pixel on the content's right edge, like the header buttons. */
+    private int timerX(String timer) {
+        return this.leftPos + HEADER_ICONS_RIGHT - (this.font.width(timer) - 1);
+    }
+
+    /** The voice mode button: a header slot (see CrazyPhoneDefaultScreenScreen), right of everything when the
+     * call has no timer yet, otherwise one slot gap left of the timer. */
     private int voiceModeIconX() {
         String timer = elapsedTimerText();
-        int timerLeft = this.leftPos + HEADER_BANNER_RIGHT_X - (timer == null ? 0 : this.font.width(timer) + 2);
-        return timerLeft - this.font.width(voiceModeIcon()) - VOICE_MODE_ICON_GAP;
+        return timer == null ? headerSlotX(0) : timerX(timer) - HEADER_SLOT_GAP - HEADER_SLOT;
     }
 
     private boolean isHoveringVoiceModeIcon(double mouseX, double mouseY) {
-        int iconX = voiceModeIconX();
-        int iconY = this.topPos + HEADER_TITLE_Y;
-        return mouseX >= iconX - 1 && mouseX < iconX + this.font.width(voiceModeIcon()) + 1
-                && mouseY >= iconY - 1 && mouseY < iconY + this.font.lineHeight + 1;
+        return isInHeaderSlot(mouseX, mouseY, voiceModeIconX());
     }
 
     private void renderVoiceModeButton(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int mouseX, int mouseY) {
-        int iconX = voiceModeIconX();
-        int iconY = this.topPos + HEADER_TITLE_Y;
-        if (isHoveringVoiceModeIcon(mouseX, mouseY)) {
+        boolean hovered = isHoveringVoiceModeIcon(mouseX, mouseY);
+        if (hovered)
             CursorEffects.requestPointerCursor();
-            guiGraphics.fill(iconX - 1, iconY - 1, iconX + this.font.width(voiceModeIcon()) + 1, iconY + this.font.lineHeight + 1, 0x80FFFFFF);
-        }
-        guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(this.font, voiceModeIcon(), iconX, iconY, 0xFFFFFFFF, true);
+        drawHeaderGlyph(guiGraphics, voiceModeIcon(), voiceModeIconX(), 0xFFFFFFFF, hovered);
     }
 
     private List<Component> voiceModeTooltipAt(double mouseX, double mouseY) {
@@ -548,19 +542,21 @@ public class CrazyPhoneInCallScreenScreen extends CrazyPhoneDefaultScreenScreen<
         if (text == null)
             return;
         Component timerText = Component.literal(text);
-        int timerX = this.leftPos + HEADER_BANNER_RIGHT_X - this.font.width(timerText) - 2;
+        int timerX = timerX(text);
         // Explicit alpha byte (0xFF......) - on >=26, GuiGraphicsExtractor#text silently drops any call
         // whose color has a zero alpha byte instead of treating it as opaque like pre-26's drawString did.
+        // Same line as the title (drawn half a pixel up, see CrazyPhoneDefaultScreenScreen#renderHeader).
+        fr.lordfinn.crazyphone.utils.GuiCompat.pushPose(guiGraphics);
+        fr.lordfinn.crazyphone.utils.GuiCompat.translate(guiGraphics, 0f, -0.5f);
         guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(this.font, timerText, timerX, this.topPos + HEADER_TITLE_Y, TIMER_TEXT_COLOR, false);
+        fr.lordfinn.crazyphone.utils.GuiCompat.popPose(guiGraphics);
     }
 
     /** Reduces the header's title width to leave room for the elapsed timer, but only once there's actually
      * a timer to make room for - before the call connects the title gets the banner's full width, same as
      * every other screen. */
     private int timerHeaderRightBoundX() {
-        String text = elapsedTimerText();
-        int reserved = this.font.width(voiceModeIcon()) + VOICE_MODE_ICON_GAP + 2;
-        return (text == null ? HEADER_BANNER_RIGHT_X : HEADER_BANNER_RIGHT_X - this.font.width(text) - 4) - reserved;
+        return voiceModeIconX() - this.leftPos - 2;
     }
 
     private String elapsedTimerText() {
