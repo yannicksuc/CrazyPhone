@@ -68,6 +68,20 @@ public final class PhoneUiDevCommand {
                             });
                             return 1;
                         }))
+                .then(LiteralArgumentBuilder.<CommandSourceStack>literal("hover")
+                        .then(RequiredArgumentBuilder.<CommandSourceStack, Integer>argument("x", com.mojang.brigadier.arguments.IntegerArgumentType.integer())
+                                .then(RequiredArgumentBuilder.<CommandSourceStack, Integer>argument("y", com.mojang.brigadier.arguments.IntegerArgumentType.integer())
+                                        .executes(ctx -> {
+                                            fr.lordfinn.crazyphone.client.PhoneCursorStabilizer.devMouse = new double[]{
+                                                    com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "x"),
+                                                    com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "y")};
+                                            return 1;
+                                        })))
+                        .then(LiteralArgumentBuilder.<CommandSourceStack>literal("off")
+                                .executes(ctx -> {
+                                    fr.lordfinn.crazyphone.client.PhoneCursorStabilizer.devMouse = null;
+                                    return 1;
+                                })))
                 .then(LiteralArgumentBuilder.<CommandSourceStack>literal("emojitab")
                         .then(RequiredArgumentBuilder.<CommandSourceStack, Integer>argument("tab", com.mojang.brigadier.arguments.IntegerArgumentType.integer(0))
                                 .executes(ctx -> {

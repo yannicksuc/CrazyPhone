@@ -40,6 +40,10 @@ import org.lwjgl.glfw.GLFW;
  */
 @EventBusSubscriber(value = Dist.CLIENT)
 public class PhoneCursorStabilizer {
+    /** Dev only (/phoneui hover): a mouse position in window pixels that the game reads instead of the real one,
+     * to look at hover states in a test game without moving the player's own mouse. Null when off. */
+    public static volatile double[] devMouse;
+
     private static boolean pendingRestore = false;
     private static boolean awaitingPhoneReopen = false;
     private static double savedX;

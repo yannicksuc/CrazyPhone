@@ -114,7 +114,7 @@ public class MessageDisplayManager {
         for (DateSeparator separator : dateSeparators) {
             int textWidth = Math.round(font.width(separator.label()) * DATE_SEPARATOR_SCALE);
             int drawX = x + Math.max(0, (fullWidth - textWidth) / 2);
-            int drawY = separator.y() + 1 + Math.max(0, (DATE_SEPARATOR_HEIGHT - lineHeight) / 2);
+            int drawY = separator.y() + Math.max(0, (DATE_SEPARATOR_HEIGHT - lineHeight) / 2);
             GuiCompat.pushPose(guiGraphics);
             GuiCompat.translate(guiGraphics, drawX, drawY);
             GuiCompat.scale(guiGraphics, DATE_SEPARATOR_SCALE, DATE_SEPARATOR_SCALE);
@@ -175,9 +175,16 @@ public class MessageDisplayManager {
         // day begins" when scrolling from old (top) to new (bottom), same convention as most chat UIs.
         if (i + 1 < messageEntries.size()
                 && !isSameLocalDay(currentEntry.data().getTimecode(), messageEntries.get(i + 1).data().getTimecode())) {
+            // The same gap above and below the divider: the usual gap between two messages on each side.
+            if (paddingBelow == 0) {
+                currentY -= PADDING;
+                totalHeight += PADDING;
+            }
             currentY -= DATE_SEPARATOR_HEIGHT;
             totalHeight += DATE_SEPARATOR_HEIGHT;
             dateSeparators.add(new DateSeparator(currentY, formatDateSeparatorLabel(currentEntry.data().getTimecode())));
+            currentY -= PADDING;
+            totalHeight += PADDING;
         }
 
         previousSender = currentSender;

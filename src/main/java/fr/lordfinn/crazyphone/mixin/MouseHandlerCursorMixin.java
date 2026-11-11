@@ -27,6 +27,20 @@ public abstract class MouseHandlerCursorMixin {
     @Shadow
     private double ypos;
 
+    @Inject(method = "xpos", at = @At("HEAD"), cancellable = true, require = 0)
+    private void crazyphone$devMouseX(org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Double> cir) {
+        double[] dev = PhoneCursorStabilizer.devMouse;
+        if (dev != null)
+            cir.setReturnValue(dev[0]);
+    }
+
+    @Inject(method = "ypos", at = @At("HEAD"), cancellable = true, require = 0)
+    private void crazyphone$devMouseY(org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Double> cir) {
+        double[] dev = PhoneCursorStabilizer.devMouse;
+        if (dev != null)
+            cir.setReturnValue(dev[1]);
+    }
+
     @Inject(method = "releaseMouse", at = @At("TAIL"))
     private void crazyphone$restoreCursorAfterRelease(CallbackInfo ci) {
         restoreIfPending();

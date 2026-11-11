@@ -152,7 +152,8 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 	 */
 	protected static final int HEADER_SLOT = 12;
 	protected static final int HEADER_SLOT_GAP = 2;
-	protected static final int HEADER_SLOT_Y = 12;
+	// Measured in game: the banner's yellow is rows 10 to 25, so a 12 px slot centered on it is rows 11 to 22.
+	protected static final int HEADER_SLOT_Y = 11;
 
 	/** Left edge (absolute) of header slot n counted from the right (0 = rightmost). */
 	protected int headerSlotX(int n) {
@@ -175,7 +176,7 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 	/** Items in the header are drawn at 75 %: 12 px, rows 12-23 relative to topPos (centered on the title). */
 	protected static final float HEADER_ITEM_SCALE = 0.75f;
 	protected static final int HEADER_ITEM_SIZE = 12;
-	protected static final int HEADER_ITEM_Y = 12;
+	protected static final int HEADER_ITEM_Y = HEADER_SLOT_Y;
 
 	/** An emoji icon in the header slot starting at slotX (absolute), centered on its own pixels. */
 	protected void drawHeaderGlyph(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, Component glyph, int slotX, int color, boolean hovered) {
@@ -186,9 +187,9 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 		float[] b = text.isEmpty() ? null : fr.lordfinn.crazyphone.client.EmojiGlyphs.bounds(text.codePointAt(0));
 		float x, y;
 		if (b != null) {
-			// The emoji cell's top row is drawn at the text y (measured in game).
+			// An emoji's top row is drawn one pixel above the y it is given (measured in game).
 			x = slotX + (HEADER_SLOT - (b[2] - b[0])) / 2f - b[0];
-			y = slotY + (HEADER_SLOT - (b[3] - b[1])) / 2f - b[1];
+			y = slotY + (HEADER_SLOT - (b[3] - b[1])) / 2f - b[1] + 1;
 		} else {
 			x = slotX + (HEADER_SLOT - (this.font.width(glyph) - 1)) / 2f;
 			y = slotY + (HEADER_SLOT - 7) / 2f;
@@ -206,10 +207,10 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 		int y = this.topPos + HEADER_ITEM_Y;
 		if (hovered)
 			drawHeaderSlotHover(guiGraphics, x);
-		// Heads sit low in their 16 px item box (vanilla's head model is drawn in its lower part): measured
-		// 1.25 px low at this size, so they go up by that much to be centered in the slot like other items.
+		// Heads sit low in their 16 px item box (vanilla's head model is drawn in its lower part): measured a
+		// quarter of a pixel low at this size in the slot, so they go up by that much.
 		float headLift = stack.getItem() instanceof net.minecraft.world.item.BlockItem blockItem
-				&& blockItem.getBlock() instanceof net.minecraft.world.level.block.AbstractSkullBlock ? 1.25f : 0f;
+				&& blockItem.getBlock() instanceof net.minecraft.world.level.block.AbstractSkullBlock ? 0.25f : 0f;
 		fr.lordfinn.crazyphone.utils.GuiCompat.pushPose(guiGraphics);
 		fr.lordfinn.crazyphone.utils.GuiCompat.translate(guiGraphics, x, y - headLift);
 		fr.lordfinn.crazyphone.utils.GuiCompat.scale(guiGraphics, HEADER_ITEM_SCALE, HEADER_ITEM_SCALE);
