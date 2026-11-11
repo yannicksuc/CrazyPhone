@@ -851,7 +851,8 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
             int railY = this.topPos + (rest ? 158 : TRAY_TOP + 1);
             barIcons.add(new BarIcon(BAR_ALBUM, GLYPH_ALBUM, this.leftPos + railX[0], railY, RAIL_SIZE, imagesEnabled));
             barIcons.add(new BarIcon(BAR_PHOTO, GLYPH_PHOTO, this.leftPos + railX[1], railY, RAIL_SIZE, imagesEnabled));
-            if (voiceAvailable())
+            // In the tray the voice message only shows when the right button is the send arrow (else it is there).
+            if (voiceAvailable() && (rest || !message.getValue().isEmpty()))
                 barIcons.add(new BarIcon(BAR_VOICE, GLYPH_VOICE, this.leftPos + railX[2], railY, RAIL_SIZE, voiceEnabled));
         }
         // Writing with an empty field: the right button is the voice message.
@@ -927,23 +928,23 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
         }
     }
 
-    /** The + of the field, drawn in pixels (2 px strokes, 8 px across, centered in its 12 px square): dark on
-     * the field while the menu is closed (tinted square on hover), white on a square in the tray's teal while
-     * it is open, so the button and the tray under it read as one. */
+    /** The + of the field, drawn in pixels (2 px strokes, 6 px across like the photo editor's + and -, centered
+     * in its 12 px square): slate like the field's frame while the menu is closed (tinted square on hover), teal
+     * on a tinted square while it is open, the tray's colour. */
     private void drawPlusButton(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, BarIcon icon, boolean hovered, boolean pressed) {
         int x0 = icon.x(), y0 = icon.y(), x1 = x0 + icon.size(), y1 = y0 + icon.size();
         if (plusMenuOpen || hovered) {
             if (hovered)
                 CursorEffects.requestPointerCursor();
-            int c = plusMenuOpen ? TRAY_FRAME : pressed ? BAR_PRESSED : BAR_HOVER;
+            int c = plusMenuOpen || pressed ? BAR_PRESSED : BAR_HOVER;
             guiGraphics.fill(x0 + 1, y0, x1 - 1, y1, c);
             guiGraphics.fill(x0, y0 + 1, x0 + 1, y1 - 1, c);
             guiGraphics.fill(x1 - 1, y0 + 1, x1, y1 - 1, c);
         }
-        int ink = plusMenuOpen ? 0xFFFFFFFF : 0xFF3A4456;
+        int ink = plusMenuOpen ? TRAY_FRAME : 0xFF5A6B7D;
         int cx = x0 + icon.size() / 2, cy = y0 + icon.size() / 2 + (pressed ? 1 : 0);
-        guiGraphics.fill(cx - 4, cy - 1, cx + 4, cy + 1, ink);
-        guiGraphics.fill(cx - 1, cy - 4, cx + 1, cy + 4, ink);
+        guiGraphics.fill(cx - 3, cy - 1, cx + 3, cy + 1, ink);
+        guiGraphics.fill(cx - 1, cy - 3, cx + 1, cy + 3, ink);
     }
 
     /** The emoji centered in its square on its own drawn pixels (one pixel above the y it is given: see
