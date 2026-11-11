@@ -766,8 +766,32 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
             GLYPH_ALBUM = "\uD83D\uDDBC", GLYPH_PHOTO = "\uD83D\uDCF7", GLYPH_VOICE = "\uD83C\uDFA4";
     private static final int BAR_BOTTOM = 172, BAR_ROW = 17, RAIL_SIZE = 14, FIELD_ICON_SIZE = 12;
     private static final int BAR_HOVER = 0x33007EA2, BAR_PRESSED = 0x55007EA2;
+    /** The + menu's tray: right under the raised field (its bottom edge at y 155), down to the bar's old
+     * bottom, in the emoji drawer's colours (teal frame, cream panel) so it reads as part of the bar. */
+    private static final int TRAY_TOP = 155, TRAY_BOTTOM = 172;
+    private static final int TRAY_FRAME = 0xFF007EA2, TRAY_PANEL = 0xFFFFF7EE;
 
     private record BarIcon(int id, String glyph, int x, int y, int size, boolean enabled) {
+    }
+
+    /** The attach buttons keep their framed button images (14 px, the bar's height); only the + and the
+     * emoji button inside the field are bare emojis. */
+    private static String barTexture(int id) {
+        return switch (id) {
+            case BAR_ALBUM -> "crazyphone-send-gallery";
+            case BAR_PHOTO -> "crazyphone-add-image";
+            case BAR_VOICE -> "crazyphone-send-voice";
+            default -> null;
+        };
+    }
+
+    private static String barHoverTexture(int id) {
+        return switch (id) {
+            case BAR_ALBUM -> "crazyphone-send-gallery-hover";
+            case BAR_PHOTO -> "crazyphone-add-hover";
+            case BAR_VOICE -> "crazyphone-send-voice-hover";
+            default -> null;
+        };
     }
 
     private final List<BarIcon> barIcons = new ArrayList<>();
@@ -821,9 +845,10 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
             barIcons.add(new BarIcon(BAR_SMILEY, GLYPH_SMILEY, message.getX() + fieldWidth - 1 - FIELD_ICON_SIZE, iconY, FIELD_ICON_SIZE, true));
         // The attach buttons: right of the field while resting, in a row under the bar while the + menu is open.
         if (rest || plusMenuOpen) {
+            // In the + menu they sit in a tray under the field (see renderSendBar), 1 px in from its frame.
             int[] railX = rest ? new int[]{114 - railCount * BAR_ROW + 3, 114 - (railCount - 1) * BAR_ROW + 3, 100}
-                    : new int[]{8, 8 + BAR_ROW, 8 + 2 * BAR_ROW};
-            int railY = this.topPos + 158;
+                    : new int[]{10, 10 + BAR_ROW, 10 + 2 * BAR_ROW};
+            int railY = this.topPos + (rest ? 158 : TRAY_TOP + 1);
             barIcons.add(new BarIcon(BAR_ALBUM, GLYPH_ALBUM, this.leftPos + railX[0], railY, RAIL_SIZE, imagesEnabled));
             barIcons.add(new BarIcon(BAR_PHOTO, GLYPH_PHOTO, this.leftPos + railX[1], railY, RAIL_SIZE, imagesEnabled));
             if (voiceAvailable())
@@ -864,10 +889,32 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
 
     private void renderSendBar(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int mouseX, int mouseY) {
         boolean leftDown = Minecraft.getInstance().mouseHandler.isLeftPressed();
+        if (plusMenuOpen && voiceRecordingState == VoiceRecordingState.NONE) {
+            // The tray: same width as the field, its top edge shared with the field's bottom edge, corners cut.
+            int x0 = message.getX(), x1 = x0 + message.getRequestedWidth();
+            int y0 = this.topPos + TRAY_TOP, y1 = this.topPos + TRAY_BOTTOM;
+            guiGraphics.fill(x0, y0, x1, y1 - 1, TRAY_FRAME);
+            guiGraphics.fill(x0 + 1, y1 - 1, x1 - 1, y1, TRAY_FRAME);
+            guiGraphics.fill(x0 + 1, y0, x1 - 1, y1 - 1, TRAY_PANEL);
+        }
         for (BarIcon icon : barIcons) {
             boolean hovered = mouseX >= icon.x() && mouseX < icon.x() + icon.size() && mouseY >= icon.y() && mouseY < icon.y() + icon.size();
             boolean pressed = hovered && icon.enabled() && leftDown;
             boolean toggled = (icon.id() == BAR_PLUS && plusMenuOpen) || (icon.id() == BAR_SMILEY && emojiDrawer.isOpen());
+            String texture = barTexture(icon.id());
+            if (texture != null) {
+                if (hovered && icon.enabled())
+                    CursorEffects.requestPointerCursor();
+                String name = hovered && icon.enabled() ? barHoverTexture(icon.id()) : texture;
+                // The images are 14 x 15 with an empty last row.
+                fr.lordfinn.crazyphone.utils.GuiCompat.blit(guiGraphics, Crazyphone.parseId("crazyphone:textures/screens/" + name + ".png"),
+                        icon.x(), icon.y() + (pressed ? 1 : 0), 0, 14, 15, icon.enabled() ? 1f : 0.45f);
+                continue;
+            }
+            if (icon.id() == BAR_PLUS) {
+                drawPlusButton(guiGraphics, icon, hovered, pressed);
+                continue;
+            }
             if (icon.enabled() && (hovered || toggled)) {
                 CursorEffects.requestPointerCursor();
                 int c = pressed || toggled ? BAR_PRESSED : BAR_HOVER;
@@ -878,6 +925,25 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
             }
             drawBarGlyph(guiGraphics, icon, pressed ? 1 : 0);
         }
+    }
+
+    /** The + of the field, drawn in pixels (2 px strokes, 8 px across, centered in its 12 px square): dark on
+     * the field while the menu is closed (tinted square on hover), white on a square in the tray's teal while
+     * it is open, so the button and the tray under it read as one. */
+    private void drawPlusButton(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, BarIcon icon, boolean hovered, boolean pressed) {
+        int x0 = icon.x(), y0 = icon.y(), x1 = x0 + icon.size(), y1 = y0 + icon.size();
+        if (plusMenuOpen || hovered) {
+            if (hovered)
+                CursorEffects.requestPointerCursor();
+            int c = plusMenuOpen ? TRAY_FRAME : pressed ? BAR_PRESSED : BAR_HOVER;
+            guiGraphics.fill(x0 + 1, y0, x1 - 1, y1, c);
+            guiGraphics.fill(x0, y0 + 1, x0 + 1, y1 - 1, c);
+            guiGraphics.fill(x1 - 1, y0 + 1, x1, y1 - 1, c);
+        }
+        int ink = plusMenuOpen ? 0xFFFFFFFF : 0xFF3A4456;
+        int cx = x0 + icon.size() / 2, cy = y0 + icon.size() / 2 + (pressed ? 1 : 0);
+        guiGraphics.fill(cx - 4, cy - 1, cx + 4, cy + 1, ink);
+        guiGraphics.fill(cx - 1, cy - 4, cx + 1, cy + 4, ink);
     }
 
     /** The emoji centered in its square on its own drawn pixels (one pixel above the y it is given: see
