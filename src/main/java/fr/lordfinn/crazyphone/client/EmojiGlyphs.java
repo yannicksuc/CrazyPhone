@@ -100,50 +100,74 @@ public final class EmojiGlyphs {
         return cached == NO_BOUNDS ? null : cached;
     }
 
+    /** Where each emoji sits in the font images: {provider index, row, column, rows, columns}, built once. */
+    private static java.util.Map<Integer, int[]> cells;
+    private static final java.util.List<String> CELL_FILES = new java.util.ArrayList<>();
+    /** Decoded font images, read once each (a drawer page measures dozens of emojis in one frame). */
+    private static final java.util.Map<String, java.awt.image.BufferedImage> IMAGES = new java.util.HashMap<>();
+
     private static int[] measure(int codepoint) {
         try {
             Minecraft mc = Minecraft.getInstance();
-            for (Resource resource : mc.getResourceManager().getResourceStack(Crazyphone.parseId("minecraft:font/default.json"))) {
-                JsonArray providers;
-                try (Reader reader = resource.openAsReader()) {
-                    providers = JsonParser.parseReader(reader).getAsJsonObject().getAsJsonArray("providers");
-                }
-                if (providers == null)
-                    continue;
-                for (JsonElement element : providers) {
-                    if (!element.isJsonObject())
-                        continue;
-                    JsonObject provider = element.getAsJsonObject();
-                    if (!provider.has("file") || !isEmojiFont(provider.get("file").getAsString()) || provider.getAsJsonArray("chars") == null)
-                        continue;
-                    JsonArray rows = provider.getAsJsonArray("chars");
-                    for (int row = 0; row < rows.size(); row++) {
-                        int[] line = rows.get(row).getAsString().codePoints().toArray();
-                        for (int col = 0; col < line.length; col++) {
-                            if (line[col] == codepoint)
-                                return measureCell(mc, provider.get("file").getAsString(), row, col, rows.size(), line.length);
-                        }
-                    }
-                }
-            }
+            if (cells == null)
+                cells = indexCells(mc);
+            int[] cell = cells.get(codepoint);
+            if (cell == null)
+                return null;
+            java.awt.image.BufferedImage image = image(mc, CELL_FILES.get(cell[0]));
+            return image == null ? null : measureCell(image, cell[1], cell[2], cell[3], cell[4]);
         } catch (Exception ignored) {
+            return null;
         }
-        return null;
     }
 
-    private static int[] measureCell(Minecraft mc, String file, int row, int col, int rows, int cols) throws Exception {
+    private static java.util.Map<Integer, int[]> indexCells(Minecraft mc) throws Exception {
+        java.util.Map<Integer, int[]> index = new java.util.HashMap<>();
+        for (Resource resource : mc.getResourceManager().getResourceStack(Crazyphone.parseId("minecraft:font/default.json"))) {
+            JsonArray providers;
+            try (Reader reader = resource.openAsReader()) {
+                providers = JsonParser.parseReader(reader).getAsJsonObject().getAsJsonArray("providers");
+            }
+            if (providers == null)
+                continue;
+            for (JsonElement element : providers) {
+                if (!element.isJsonObject())
+                    continue;
+                JsonObject provider = element.getAsJsonObject();
+                if (!provider.has("file") || !isEmojiFont(provider.get("file").getAsString()) || provider.getAsJsonArray("chars") == null)
+                    continue;
+                int fileIndex = CELL_FILES.size();
+                CELL_FILES.add(provider.get("file").getAsString());
+                JsonArray rows = provider.getAsJsonArray("chars");
+                for (int row = 0; row < rows.size(); row++) {
+                    int[] line = rows.get(row).getAsString().codePoints().toArray();
+                    for (int col = 0; col < line.length; col++)
+                        if (line[col] >= FIRST_EMOJI)
+                            index.putIfAbsent(line[col], new int[]{fileIndex, row, col, rows.size(), line.length});
+                }
+            }
+        }
+        return index;
+    }
+
+    private static java.awt.image.BufferedImage image(Minecraft mc, String file) throws Exception {
+        if (IMAGES.containsKey(file))
+            return IMAGES.get(file);
         // "twemoji:font/emoji.png" is the texture twemoji:textures/font/emoji.png.
         int colon = file.indexOf(':');
         String id = file.substring(0, colon) + ":textures/" + file.substring(colon + 1);
         java.util.Optional<Resource> texture = mc.getResourceManager().getResource(Crazyphone.parseId(id));
-        if (texture.isEmpty())
-            return null;
-        java.awt.image.BufferedImage image;
-        try (java.io.InputStream in = texture.get().open()) {
-            image = javax.imageio.ImageIO.read(in);
+        java.awt.image.BufferedImage image = null;
+        if (texture.isPresent()) {
+            try (java.io.InputStream in = texture.get().open()) {
+                image = javax.imageio.ImageIO.read(in);
+            }
         }
-        if (image == null)
-            return null;
+        IMAGES.put(file, image);
+        return image;
+    }
+
+    private static int[] measureCell(java.awt.image.BufferedImage image, int row, int col, int rows, int cols) {
         int cw = image.getWidth() / cols, ch = image.getHeight() / rows;
         int x0 = cw, y0 = ch, x1 = 0, y1 = 0;
         for (int y = 0; y < ch; y++) {

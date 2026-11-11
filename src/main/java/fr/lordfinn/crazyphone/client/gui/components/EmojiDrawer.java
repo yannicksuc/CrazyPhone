@@ -240,14 +240,20 @@ public class EmojiDrawer {
                 }
                 popOffset(guiGraphics);
                 String icon = i == RECENTS_TAB ? recentsIcon() : cats.get(i - 1).icon().glyph();
-                String shown = icon != null ? icon : "*";
-                // The icon centered on the same point as its box, whatever its own width.
-                pushOffset(guiGraphics, center - font.width(shown) / 2f);
-                if (icon != null)
-                    drawGlyph(guiGraphics, font, icon, 0, ty + 1);
-                else
-                    guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(font, Component.literal("*"), 0, ty + 2, HINT_TEXT, false);
-                popOffset(guiGraphics);
+                // The icon centered in its box on its own drawn pixels (measured in the font image), both ways.
+                int[] bounds = icon == null || icon.isEmpty() ? null : fr.lordfinn.crazyphone.client.EmojiGlyphs.bounds(icon.codePointAt(0));
+                if (bounds != null) {
+                    float gx = center - (bounds[0] + bounds[2]) / 2f;
+                    float gy = ty + (TAB_HEIGHT - (bounds[3] - bounds[1])) / 2f - bounds[1];
+                    pushOffsetXY(guiGraphics, gx, gy);
+                    drawGlyph(guiGraphics, font, icon, 0, 0);
+                    popOffset(guiGraphics);
+                } else {
+                    String shown = icon != null ? icon : "*";
+                    pushOffset(guiGraphics, center - (font.width(shown) - 1) / 2f);
+                    guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(font, Component.literal(shown), 0, ty + 2, icon != null ? 0xFFFFFFFF : HINT_TEXT, false);
+                    popOffset(guiGraphics);
+                }
                 if (tabHovered)
                     hoveredTab = Component.translatable(i == RECENTS_TAB
                             ? "gui.crazyphone.emoji_drawer.tab.recent"
@@ -280,7 +286,16 @@ public class EmojiDrawer {
                 }
                 if (cellHovered)
                     hovered = emojis.get(i);
-                drawGlyph(guiGraphics, font, emojis.get(i).glyph(), cx + 1, cy + 1);
+                // Centered in its cell on its own drawn pixels, so the hover box shows the same margin all around.
+                String glyph = emojis.get(i).glyph();
+                int[] bounds = glyph.isEmpty() ? null : fr.lordfinn.crazyphone.client.EmojiGlyphs.bounds(glyph.codePointAt(0));
+                if (bounds != null) {
+                    pushOffsetXY(guiGraphics, cx + (CELL - (bounds[2] - bounds[0])) / 2f - bounds[0], cy + (CELL - (bounds[3] - bounds[1])) / 2f - bounds[1]);
+                    drawGlyph(guiGraphics, font, glyph, 0, 0);
+                    popOffset(guiGraphics);
+                } else {
+                    drawGlyph(guiGraphics, font, glyph, cx + 1, cy + 1);
+                }
             }
 
             // Scrollbar, only when there is something to scroll.
@@ -342,6 +357,16 @@ public class EmojiDrawer {
         //?} else {
         /*guiGraphics.pose().pushMatrix();
         guiGraphics.pose().translate(dx, 0f);
+        *///?}
+    }
+
+    private static void pushOffsetXY(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, float dx, float dy) {
+        //? if <1.21.10 {
+        guiGraphics.pose().pushPose();
+        guiGraphics.pose().translate(dx, dy, 0f);
+        //?} else {
+        /*guiGraphics.pose().pushMatrix();
+        guiGraphics.pose().translate(dx, dy);
         *///?}
     }
 
