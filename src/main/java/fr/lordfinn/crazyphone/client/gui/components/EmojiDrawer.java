@@ -185,7 +185,7 @@ public class EmojiDrawer {
         scrollRow = Math.max(0, Math.min(scrollRow, maxScroll));
     }
 
-    private void selectTab(int newTab) {
+    public void selectTab(int newTab) {
         int count = tabCount();
         if (count <= 0)
             return;
@@ -241,7 +241,7 @@ public class EmojiDrawer {
                 popOffset(guiGraphics);
                 String icon = i == RECENTS_TAB ? recentsIcon() : cats.get(i - 1).icon().glyph();
                 // The icon centered in its box on its own drawn pixels (measured in the font image), both ways.
-                int[] bounds = icon == null || icon.isEmpty() ? null : fr.lordfinn.crazyphone.client.EmojiGlyphs.bounds(icon.codePointAt(0));
+                float[] bounds = icon == null || icon.isEmpty() ? null : fr.lordfinn.crazyphone.client.EmojiGlyphs.bounds(icon.codePointAt(0));
                 if (bounds != null) {
                     float gx = center - (bounds[0] + bounds[2]) / 2f;
                     float gy = ty + (TAB_HEIGHT - (bounds[3] - bounds[1])) / 2f - bounds[1];
@@ -288,7 +288,7 @@ public class EmojiDrawer {
                     hovered = emojis.get(i);
                 // Centered in its cell on its own drawn pixels, so the hover box shows the same margin all around.
                 String glyph = emojis.get(i).glyph();
-                int[] bounds = glyph.isEmpty() ? null : fr.lordfinn.crazyphone.client.EmojiGlyphs.bounds(glyph.codePointAt(0));
+                float[] bounds = glyph.isEmpty() ? null : fr.lordfinn.crazyphone.client.EmojiGlyphs.bounds(glyph.codePointAt(0));
                 if (bounds != null) {
                     pushOffsetXY(guiGraphics, cx + (CELL - (bounds[2] - bounds[0])) / 2f - bounds[0], cy + (CELL - (bounds[3] - bounds[1])) / 2f - bounds[1]);
                     drawGlyph(guiGraphics, font, glyph, 0, 0);

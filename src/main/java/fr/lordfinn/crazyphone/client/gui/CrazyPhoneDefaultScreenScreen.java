@@ -183,7 +183,7 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 		if (hovered)
 			drawHeaderSlotHover(guiGraphics, slotX);
 		String text = glyph.getString();
-		int[] b = text.isEmpty() ? null : fr.lordfinn.crazyphone.client.EmojiGlyphs.bounds(text.codePointAt(0));
+		float[] b = text.isEmpty() ? null : fr.lordfinn.crazyphone.client.EmojiGlyphs.bounds(text.codePointAt(0));
 		float x, y;
 		if (b != null) {
 			// The emoji cell's top row is drawn at the text y (measured in game).

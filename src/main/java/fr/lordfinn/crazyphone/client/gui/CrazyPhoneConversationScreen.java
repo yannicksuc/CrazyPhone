@@ -1108,6 +1108,11 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
         sendCurrentMessage();
     }
 
+    /** Dev only (/phoneui emojitab): shows that tab of the emoji drawer. */
+    public void devEmojiTab(int tab) {
+        emojiDrawer.selectTab(tab);
+    }
+
     public void toggleEmojiDrawer() {
         if (imagebutton_emoji == null || voiceRecordingState != VoiceRecordingState.NONE) {
             emojiDrawer.closeNow();

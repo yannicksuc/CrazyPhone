@@ -81,18 +81,19 @@ public final class EmojiGlyphs {
         }
     }
 
-    private static final java.util.Map<Integer, int[]> BOUNDS = new java.util.HashMap<>();
-    private static final int[] NO_BOUNDS = new int[0];
+    private static final java.util.Map<Integer, float[]> BOUNDS = new java.util.HashMap<>();
+    private static final float[] NO_BOUNDS = new float[0];
 
     /**
-     * The drawn pixels of an emoji inside its font cell, as {x0, y0, x1, y1} (x1 and y1 exclusive), read from the
+     * The drawn pixels of an emoji inside its font cell, as {x0, y0, x1, y1} (x1 and y1 exclusive) in GUI pixels at
+     * the size the font draws it (the flags image is twice as fine as the emoji one, so its pixels count half), read from the
      * font image once per emoji; null for a character that is not an emoji or could not be measured. Used to
      * center icons on what they really show (their transparent margins differ from one emoji to the next).
      */
-    public static synchronized int[] bounds(int codepoint) {
+    public static synchronized float[] bounds(int codepoint) {
         if (!isEmoji(codepoint))
             return null;
-        int[] cached = BOUNDS.get(codepoint);
+        float[] cached = BOUNDS.get(codepoint);
         if (cached == null) {
             cached = measure(codepoint);
             BOUNDS.put(codepoint, cached == null ? NO_BOUNDS : cached);
@@ -106,7 +107,7 @@ public final class EmojiGlyphs {
     /** Decoded font images, read once each (a drawer page measures dozens of emojis in one frame). */
     private static final java.util.Map<String, java.awt.image.BufferedImage> IMAGES = new java.util.HashMap<>();
 
-    private static int[] measure(int codepoint) {
+    private static float[] measure(int codepoint) {
         try {
             Minecraft mc = Minecraft.getInstance();
             if (cells == null)
@@ -115,7 +116,7 @@ public final class EmojiGlyphs {
             if (cell == null)
                 return null;
             java.awt.image.BufferedImage image = image(mc, CELL_FILES.get(cell[0]));
-            return image == null ? null : measureCell(image, cell[1], cell[2], cell[3], cell[4]);
+            return image == null ? null : measureCell(image, cell[1], cell[2], cell[3], cell[4], cell[5]);
         } catch (Exception ignored) {
             return null;
         }
@@ -137,13 +138,14 @@ public final class EmojiGlyphs {
                 if (!provider.has("file") || !isEmojiFont(provider.get("file").getAsString()) || provider.getAsJsonArray("chars") == null)
                     continue;
                 int fileIndex = CELL_FILES.size();
+                int height = provider.has("height") ? provider.get("height").getAsInt() : 8;
                 CELL_FILES.add(provider.get("file").getAsString());
                 JsonArray rows = provider.getAsJsonArray("chars");
                 for (int row = 0; row < rows.size(); row++) {
                     int[] line = rows.get(row).getAsString().codePoints().toArray();
                     for (int col = 0; col < line.length; col++)
                         if (line[col] >= FIRST_EMOJI)
-                            index.putIfAbsent(line[col], new int[]{fileIndex, row, col, rows.size(), line.length});
+                            index.putIfAbsent(line[col], new int[]{fileIndex, row, col, rows.size(), line.length, height});
                 }
             }
         }
@@ -167,7 +169,7 @@ public final class EmojiGlyphs {
         return image;
     }
 
-    private static int[] measureCell(java.awt.image.BufferedImage image, int row, int col, int rows, int cols) {
+    private static float[] measureCell(java.awt.image.BufferedImage image, int row, int col, int rows, int cols, int height) {
         int cw = image.getWidth() / cols, ch = image.getHeight() / rows;
         int x0 = cw, y0 = ch, x1 = 0, y1 = 0;
         for (int y = 0; y < ch; y++) {
@@ -180,7 +182,11 @@ public final class EmojiGlyphs {
                 }
             }
         }
-        return x1 <= x0 ? null : new int[]{x0, y0, x1, y1};
+        if (x1 <= x0)
+            return null;
+        // Image pixels to GUI pixels: the font draws a cell "height" pixels tall.
+        float scale = height / (float) ch;
+        return new float[]{x0 * scale, y0 * scale, x1 * scale, y1 * scale};
     }
 
     private static boolean isEmojiFont(String file) {

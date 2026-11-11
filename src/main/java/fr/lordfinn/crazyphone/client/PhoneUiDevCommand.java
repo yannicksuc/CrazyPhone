@@ -68,6 +68,17 @@ public final class PhoneUiDevCommand {
                             });
                             return 1;
                         }))
+                .then(LiteralArgumentBuilder.<CommandSourceStack>literal("emojitab")
+                        .then(RequiredArgumentBuilder.<CommandSourceStack, Integer>argument("tab", com.mojang.brigadier.arguments.IntegerArgumentType.integer(0))
+                                .executes(ctx -> {
+                                    int tab = com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "tab");
+                                    Minecraft mc = Minecraft.getInstance();
+                                    mc.execute(() -> {
+                                        if (mc.screen instanceof fr.lordfinn.crazyphone.client.gui.CrazyPhoneConversationScreen conversation)
+                                            conversation.devEmojiTab(tab);
+                                    });
+                                    return 1;
+                                })))
                 .then(LiteralArgumentBuilder.<CommandSourceStack>literal("emoji")
                         .executes(ctx -> {
                             Minecraft mc = Minecraft.getInstance();
