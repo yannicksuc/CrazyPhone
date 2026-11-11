@@ -121,7 +121,7 @@ public class CrazyPhoneMyPhotosScreenScreen extends CrazyPhoneDefaultScreenScree
     public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTicks) {
         super.extractRenderState(guiGraphics, mouseX, mouseY, partialTicks);
         renderHeader(guiGraphics, ItemStack.EMPTY,
-                Component.translatable("gui.crazyphone.crazy_phone_my_photos_screen.title"), HEADER_BANNER_RIGHT_X, true);
+                Component.translatable("gui.crazyphone.crazy_phone_my_photos_screen.title"), linkIconX() - this.leftPos - 2, true);
         renderPhotoCountIcon(guiGraphics, mouseX, mouseY);
         renderPhotoCountInfo(guiGraphics);
         renderImportButton(guiGraphics, mouseX, mouseY);
@@ -139,7 +139,7 @@ public class CrazyPhoneMyPhotosScreenScreen extends CrazyPhoneDefaultScreenScree
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
         super.render(guiGraphics, mouseX, mouseY, partialTicks);
         renderHeader(guiGraphics, ItemStack.EMPTY,
-                Component.translatable("gui.crazyphone.crazy_phone_my_photos_screen.title"), HEADER_BANNER_RIGHT_X, true);
+                Component.translatable("gui.crazyphone.crazy_phone_my_photos_screen.title"), linkIconX() - this.leftPos - 2, true);
         renderPhotoCountIcon(guiGraphics, mouseX, mouseY);
         renderPhotoCountInfo(guiGraphics);
         renderImportButton(guiGraphics, mouseX, mouseY);
@@ -214,24 +214,18 @@ public class CrazyPhoneMyPhotosScreenScreen extends CrazyPhoneDefaultScreenScree
     private static final int IMPORT_ICON_GAP = 3;
 
     private int importIconX() {
-        return this.leftPos + HEADER_ICONS_RIGHT - HEADER_GLYPH_SIZE;
+        return headerSlotX(0);
     }
 
     private boolean isHoveringImportIcon(double mouseX, double mouseY) {
-        int iconX = importIconX();
-        int iconY = this.topPos + HEADER_TITLE_Y;
-        return mouseX >= iconX - 1 && mouseX < iconX + this.font.width(IMPORT_ICON) + 1
-                && mouseY >= iconY - 1 && mouseY < iconY + this.font.lineHeight + 1;
+        return isInHeaderSlot(mouseX, mouseY, importIconX());
     }
 
     private void renderImportButton(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int mouseX, int mouseY) {
-        int iconX = importIconX();
-        int iconY = this.topPos + HEADER_TITLE_Y;
-        if (isHoveringImportIcon(mouseX, mouseY)) {
+        boolean hovered = isHoveringImportIcon(mouseX, mouseY);
+        if (hovered)
             fr.lordfinn.crazyphone.client.CursorEffects.requestPointerCursor();
-            guiGraphics.fill(iconX - 1, iconY - 1, iconX + this.font.width(IMPORT_ICON) + 1, iconY + this.font.lineHeight + 1, 0x80FFFFFF);
-        }
-        guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(this.font, IMPORT_ICON, iconX, iconY, 0xFFFFFFFF, true);
+        drawHeaderGlyph(guiGraphics, IMPORT_ICON, importIconX(), 0xFFFFFFFF, hovered);
     }
 
     private java.util.List<Component> importTooltipAt(double mouseX, double mouseY) {
@@ -272,24 +266,18 @@ public class CrazyPhoneMyPhotosScreenScreen extends CrazyPhoneDefaultScreenScree
     private static final Component LINK_ICON = Component.literal("🔗");
 
     private int linkIconX() {
-        return importIconX() - HEADER_ICON_GAP - HEADER_GLYPH_SIZE;
+        return headerSlotX(1);
     }
 
     private boolean isHoveringLinkIcon(double mouseX, double mouseY) {
-        int iconX = linkIconX();
-        int iconY = this.topPos + HEADER_TITLE_Y;
-        return mouseX >= iconX - 1 && mouseX < iconX + this.font.width(LINK_ICON) + 1
-                && mouseY >= iconY - 1 && mouseY < iconY + this.font.lineHeight + 1;
+        return isInHeaderSlot(mouseX, mouseY, linkIconX());
     }
 
     private void renderLinkButton(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int mouseX, int mouseY) {
-        int iconX = linkIconX();
-        int iconY = this.topPos + HEADER_TITLE_Y;
-        if (isHoveringLinkIcon(mouseX, mouseY)) {
+        boolean hovered = isHoveringLinkIcon(mouseX, mouseY);
+        if (hovered)
             fr.lordfinn.crazyphone.client.CursorEffects.requestPointerCursor();
-            guiGraphics.fill(iconX - 1, iconY - 1, iconX + this.font.width(LINK_ICON) + 1, iconY + this.font.lineHeight + 1, 0x80FFFFFF);
-        }
-        guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(this.font, LINK_ICON, iconX, iconY, 0xFFFFFFFF, true);
+        drawHeaderGlyph(guiGraphics, LINK_ICON, linkIconX(), 0xFFFFFFFF, hovered);
     }
 
     private java.util.List<Component> linkTooltipAt(double mouseX, double mouseY) {

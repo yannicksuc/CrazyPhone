@@ -93,6 +93,12 @@ public class MessageWidget extends AbstractWidget {
         this.callDurationMillis = durationMillis;
     }
 
+    /** Cut corners of the bubble: top ones when no message of the same person sits right above, bottom ones
+     * when none sits right below. */
+    public void setCutCorners(boolean top, boolean bottom) {
+        wrappedText.setCutCorners(top, bottom);
+    }
+
     public MessageWidget(WrappedTextWidget wrappedText, boolean isSender, ItemStack icon, int scrollPosition, MessageDisplayManager messageDisplayManager, boolean isSystem) {
         this(wrappedText, isSender, icon, scrollPosition, messageDisplayManager, isSystem, null, 0, null, null, 0, -1, null);
     }

@@ -25,7 +25,8 @@
     "CrazyPhoneCaptureViewCycleMixin",
     "PhoneScaleScreenMixin",
     "PhoneScaleMouseMixin",
-    "PhoneScaleGuiGraphicsMixin"
+    "PhoneScaleGuiGraphicsMixin",
+    "EmojiColorTextMixin"
   ],
   "injectors": {
     "defaultRequire": 1

@@ -213,22 +213,29 @@ public class EmojiDrawer {
             // Tabs
             List<Category> cats = EmojiCatalog.categories();
             int tabs = tabCount();
-            int tabsX = left + (WIDTH - tabs * TAB_WIDTH) / 2;
+            int ty = y0 + TAB_Y;
             for (int i = 0; i < tabs; i++) {
-                int tx = tabsX + i * TAB_WIDTH;
-                int ty = y0 + TAB_Y;
-                boolean tabHovered = interactive && mouseX >= tx && mouseX < tx + TAB_WIDTH && mouseY >= ty && mouseY < ty + TAB_HEIGHT;
+                // Every tab gets the same box, centered on its own equal share of the strip (half pixels allowed),
+                // so the gaps between tabs and the margins at both ends are all the same.
+                float center = tabCenter(i, tabs);
+                boolean tabHovered = interactive && i == tabAt(mouseX, mouseY, ty, tabs);
+                pushOffset(guiGraphics, center - TAB_WIDTH / 2f);
                 if (i == tab) {
-                    guiGraphics.fill(tx, ty, tx + TAB_WIDTH, ty + TAB_HEIGHT, 0x33FFC107);
-                    guiGraphics.fill(tx + 1, ty + TAB_HEIGHT - 1, tx + TAB_WIDTH - 1, ty + TAB_HEIGHT, KEYBOARD_HIGHLIGHT);
+                    guiGraphics.fill(0, ty, TAB_WIDTH, ty + TAB_HEIGHT, 0x33FFC107);
+                    guiGraphics.fill(1, ty + TAB_HEIGHT - 1, TAB_WIDTH - 1, ty + TAB_HEIGHT, KEYBOARD_HIGHLIGHT);
                 } else if (tabHovered) {
-                    guiGraphics.fill(tx, ty, tx + TAB_WIDTH, ty + TAB_HEIGHT, HOVER);
+                    guiGraphics.fill(0, ty, TAB_WIDTH, ty + TAB_HEIGHT, HOVER);
                 }
+                popOffset(guiGraphics);
                 String icon = i == RECENTS_TAB ? recentsIcon() : cats.get(i - 1).icon().glyph();
+                String shown = icon != null ? icon : "*";
+                // The icon centered on the same point as its box, whatever its own width.
+                pushOffset(guiGraphics, center - font.width(shown) / 2f);
                 if (icon != null)
-                    drawGlyph(guiGraphics, font, icon, tx + 1, ty + 1);
+                    drawGlyph(guiGraphics, font, icon, 0, ty + 1);
                 else
-                    guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(font, Component.literal("*"), tx + 3, ty + 2, HINT_TEXT, false);
+                    guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(font, Component.literal("*"), 0, ty + 2, HINT_TEXT, false);
+                popOffset(guiGraphics);
                 if (tabHovered)
                     hoveredTab = Component.translatable(i == RECENTS_TAB
                             ? "gui.crazyphone.emoji_drawer.tab.recent"
@@ -298,6 +305,42 @@ public class EmojiDrawer {
         return glyph != null && glyph.codePointCount(0, glyph.length()) == 1 ? glyph : null;
     }
 
+    /** The middle of tab {@code i}: the strip inside the frame is cut into {@code tabs} equal shares. */
+    private float tabCenter(int i, int tabs) {
+        float share = (WIDTH - 2) / (float) tabs;
+        return left + 1 + (i + 0.5f) * share;
+    }
+
+    /** The tab whose box is under the mouse (the same box drawn for hover and selection), or -1. */
+    private int tabAt(double mouseX, double mouseY, int tabTop, int tabs) {
+        if (mouseY < tabTop || mouseY >= tabTop + TAB_HEIGHT)
+            return -1;
+        for (int i = 0; i < tabs; i++) {
+            float x0 = tabCenter(i, tabs) - TAB_WIDTH / 2f;
+            if (mouseX >= x0 && mouseX < x0 + TAB_WIDTH)
+                return i;
+        }
+        return -1;
+    }
+
+    private static void pushOffset(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, float dx) {
+        //? if <1.21.10 {
+        guiGraphics.pose().pushPose();
+        guiGraphics.pose().translate(dx, 0f, 0f);
+        //?} else {
+        /*guiGraphics.pose().pushMatrix();
+        guiGraphics.pose().translate(dx, 0f);
+        *///?}
+    }
+
+    private static void popOffset(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics) {
+        //? if <1.21.10 {
+        guiGraphics.pose().popPose();
+        //?} else {
+        /*guiGraphics.pose().popMatrix();
+        *///?}
+    }
+
     private void drawPanel(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int y0) {
         int x0 = left, x1 = left + WIDTH, y1 = y0 + HEIGHT;
         // Rounded 1px frame (corners left out), like the phone's own icon buttons.
@@ -332,10 +375,9 @@ public class EmojiDrawer {
             return false;
         if (button != InputConstants.MOUSE_BUTTON_LEFT || progress() < 0.999f)
             return true;
-        int tabs = tabCount();
-        int tabsX = left + (WIDTH - tabs * TAB_WIDTH) / 2;
-        if (mouseY >= top + TAB_Y && mouseY < top + TAB_Y + TAB_HEIGHT && mouseX >= tabsX && mouseX < tabsX + tabs * TAB_WIDTH) {
-            selectTab((int) ((mouseX - tabsX) / TAB_WIDTH));
+        int clickedTab = tabAt(mouseX, mouseY, top + TAB_Y, tabCount());
+        if (clickedTab >= 0) {
+            selectTab(clickedTab);
             playClick();
             return true;
         }

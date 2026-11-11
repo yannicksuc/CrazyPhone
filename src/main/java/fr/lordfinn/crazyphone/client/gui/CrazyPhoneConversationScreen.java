@@ -95,7 +95,6 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
      * of its old position (99) to make room for the always-shown mute icon at {@link #MUTE_ICON_X}. */
     // Header icons from the right (header icon rule in CrazyPhoneDefaultScreenScreen): mute, then group
     // settings (groups only), then call, 3 px apart.
-    private static final int GROUP_SETTINGS_ICON_X = HEADER_ICONS_RIGHT - HEADER_GLYPH_SIZE - HEADER_ICON_GAP - HEADER_ITEM_SIZE;
     private final ItemStack groupSettingsIcon = CrazyPhoneConversationMenu.createGroupSettingsIcon();
     private final Component groupSettingsTooltip = Component.translatable("gui.crazyphone.crazy_phone_conversation.tooltip_group_settings")
             .withStyle(style -> style.withColor(ChatFormatting.GOLD).withBold(true));
@@ -103,11 +102,18 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
      * against it - no gap between the two buttons), or immediately left of the mute icon when there's no
      * group icon to share a slot with (1:1 conversations). */
     private int callIconX() {
-        return this.leftPos + (menu.isGroup() ? GROUP_SETTINGS_ICON_X : MUTE_ICON_X) - HEADER_ICON_GAP - HEADER_GLYPH_SIZE;
+        return headerSlotX(menu.isGroup() ? 2 : 1);
+    }
+
+    private int groupSettingsIconX() {
+        return headerSlotX(1);
+    }
+
+    private int muteIconX() {
+        return headerSlotX(0);
     }
     /** Rightmost slot of the header banner's icon row - unlike the group-settings/call icons above, this
      * one is ALWAYS shown regardless of conversation type, since muting applies to any conversation. */
-    private static final int MUTE_ICON_X = HEADER_ICONS_RIGHT - HEADER_GLYPH_SIZE;
     private EditBox message;
     private Button button_envoyer;
     /** Same cap the message field has always had (setMaxLength below); the emoji drawer checks it before
@@ -464,11 +470,11 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
         boolean hovered = isHoveringGroupSettingsIcon(mouseX, mouseY);
         if (hovered)
             CursorEffects.requestPointerCursor();
-        drawHeaderItem(guiGraphics, groupSettingsIcon, this.leftPos + GROUP_SETTINGS_ICON_X, hovered);
+        drawHeaderItem(guiGraphics, groupSettingsIcon, groupSettingsIconX(), hovered);
     }
 
     private boolean isHoveringGroupSettingsIcon(double mouseX, double mouseY) {
-        return isInHeaderIcon(mouseX, mouseY, this.leftPos + GROUP_SETTINGS_ICON_X, this.topPos + HEADER_ITEM_Y, HEADER_ITEM_SIZE);
+        return isInHeaderSlot(mouseX, mouseY, groupSettingsIconX());
     }
 
     /** True while a call tied to THIS conversation is active/ringing/calling for the local player - a
@@ -501,7 +507,7 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
     }
 
     private boolean isHoveringCallIcon(double mouseX, double mouseY) {
-        return isInHeaderIcon(mouseX, mouseY, callIconX(), this.topPos + HEADER_GLYPH_Y, HEADER_GLYPH_SIZE);
+        return isInHeaderSlot(mouseX, mouseY, callIconX());
     }
 
     private Component callIconTooltip() {
@@ -535,11 +541,11 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
         if (hovered)
             CursorEffects.requestPointerCursor();
         String glyph = isConversationMuted() ? "🔕" : "🔔";
-        drawHeaderGlyph(guiGraphics, Component.literal(glyph), this.leftPos + MUTE_ICON_X, 0xFFFFFFFF, hovered);
+        drawHeaderGlyph(guiGraphics, Component.literal(glyph), muteIconX(), 0xFFFFFFFF, hovered);
     }
 
     private boolean isHoveringMuteIcon(double mouseX, double mouseY) {
-        return isInHeaderIcon(mouseX, mouseY, this.leftPos + MUTE_ICON_X, this.topPos + HEADER_GLYPH_Y, HEADER_GLYPH_SIZE);
+        return isInHeaderSlot(mouseX, mouseY, muteIconX());
     }
 
     /** The current player's own phone is guaranteed to be in their main hand while this screen is open

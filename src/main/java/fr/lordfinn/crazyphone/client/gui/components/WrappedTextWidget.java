@@ -75,6 +75,14 @@ public class WrappedTextWidget extends AbstractWidget {
      * Set the minimum height for this widget.
      * Automatically recalculates and updates the widget height.
      */
+    private boolean cutTop = true, cutBottom = true;
+
+    /** Which corners of the background are cut (see drawContent). */
+    public void setCutCorners(boolean top, boolean bottom) {
+        this.cutTop = top;
+        this.cutBottom = bottom;
+    }
+
     public void setMinHeight(int minHeight) {
         this.minHeight = minHeight;
         this.height = calculateHeight();
@@ -113,7 +121,12 @@ public class WrappedTextWidget extends AbstractWidget {
         int renderWidth = width;
         int renderHeight = height;
 
-        guiGraphics.fill(renderX, renderY, renderX + renderWidth, renderY + renderHeight, backgroundColor);
+        // Corners cut by 1 px, like every other box of the phone; only the outer corners of a run of messages
+        // from the same person (stacked boxes touching each other), so no notch shows between two of them.
+        int top = cutTop ? 1 : 0, bottom = cutBottom ? 1 : 0;
+        guiGraphics.fill(renderX + 1, renderY, renderX + renderWidth - 1, renderY + renderHeight, backgroundColor);
+        guiGraphics.fill(renderX, renderY + top, renderX + 1, renderY + renderHeight - bottom, backgroundColor);
+        guiGraphics.fill(renderX + renderWidth - 1, renderY + top, renderX + renderWidth, renderY + renderHeight - bottom, backgroundColor);
 
         if (!leadingIcon.isEmpty()) {
             int iconY = renderY + (renderHeight - 16) / 2;

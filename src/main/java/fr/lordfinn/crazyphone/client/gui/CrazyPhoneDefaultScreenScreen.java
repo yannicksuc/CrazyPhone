@@ -143,24 +143,69 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 	/** Top of an 8 px emoji glyph, relative to topPos: same line as the title. */
 	protected static final int HEADER_GLYPH_Y = 14;
 	protected static final int HEADER_GLYPH_SIZE = 8;
+	/**
+	 * Header buttons: each one is a 12 px square slot, rows 12-23 relative to topPos (centered on the banner, y 9
+	 * to 27), laid out from the right edge of the content (x 114) leftwards, 2 px apart: slot 0 is x 102-113,
+	 * slot 1 x 88-99, slot 2 x 74-85... The hover highlight fills exactly the slot (corners cut), so slots never
+	 * overlap, and the icon is centered in its slot on its own drawn pixels (emojis are measured in the font
+	 * image, see EmojiGlyphs#bounds), half pixels allowed.
+	 */
+	protected static final int HEADER_SLOT = 12;
+	protected static final int HEADER_SLOT_GAP = 2;
+	protected static final int HEADER_SLOT_Y = 12;
+
+	/** Left edge (absolute) of header slot n counted from the right (0 = rightmost). */
+	protected int headerSlotX(int n) {
+		return this.leftPos + HEADER_ICONS_RIGHT - HEADER_SLOT - n * (HEADER_SLOT + HEADER_SLOT_GAP);
+	}
+
+	/** Whether the mouse is in the header slot starting at slotX (absolute). */
+	protected boolean isInHeaderSlot(double mouseX, double mouseY, int slotX) {
+		int y = this.topPos + HEADER_SLOT_Y;
+		return mouseX >= slotX && mouseX < slotX + HEADER_SLOT && mouseY >= y && mouseY < y + HEADER_SLOT;
+	}
+
+	private void drawHeaderSlotHover(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int slotX) {
+		int y = this.topPos + HEADER_SLOT_Y;
+		guiGraphics.fill(slotX + 1, y, slotX + HEADER_SLOT - 1, y + HEADER_SLOT, 0x80FFFFFF);
+		guiGraphics.fill(slotX, y + 1, slotX + 1, y + HEADER_SLOT - 1, 0x80FFFFFF);
+		guiGraphics.fill(slotX + HEADER_SLOT - 1, y + 1, slotX + HEADER_SLOT, y + HEADER_SLOT - 1, 0x80FFFFFF);
+	}
+
 	/** Items in the header are drawn at 75 %: 12 px, rows 12-23 relative to topPos (centered on the title). */
 	protected static final float HEADER_ITEM_SCALE = 0.75f;
 	protected static final int HEADER_ITEM_SIZE = 12;
 	protected static final int HEADER_ITEM_Y = 12;
 
-	/** An emoji icon of the header at (x, topPos + HEADER_GLYPH_Y), with the hover highlight around it. */
-	protected void drawHeaderGlyph(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, Component glyph, int x, int color, boolean hovered) {
-		int y = this.topPos + HEADER_GLYPH_Y;
+	/** An emoji icon in the header slot starting at slotX (absolute), centered on its own pixels. */
+	protected void drawHeaderGlyph(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, Component glyph, int slotX, int color, boolean hovered) {
+		int slotY = this.topPos + HEADER_SLOT_Y;
 		if (hovered)
-			guiGraphics.fill(x - 2, y - 2, x + HEADER_GLYPH_SIZE + 2, y + HEADER_GLYPH_SIZE + 2, 0x80FFFFFF);
-		guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(this.font, glyph, x, y, color, true);
+			drawHeaderSlotHover(guiGraphics, slotX);
+		String text = glyph.getString();
+		int[] b = text.isEmpty() ? null : fr.lordfinn.crazyphone.client.EmojiGlyphs.bounds(text.codePointAt(0));
+		float x, y;
+		if (b != null) {
+			// Emoji cell: 9 px tall with ascent 8, so its top row is one pixel above the text y.
+			x = slotX + (HEADER_SLOT - (b[2] - b[0])) / 2f - b[0];
+			y = slotY + (HEADER_SLOT - (b[3] - b[1])) / 2f - b[1] + 1;
+		} else {
+			x = slotX + (HEADER_SLOT - (this.font.width(glyph) - 1)) / 2f;
+			y = slotY + (HEADER_SLOT - 7) / 2f;
+		}
+		// Drawn with its shadow (keeps a light icon readable on the yellow banner): the shadow adds one pixel
+		// down and right, so the icon and its shadow together are what gets centered.
+		fr.lordfinn.crazyphone.utils.GuiCompat.pushPose(guiGraphics);
+		fr.lordfinn.crazyphone.utils.GuiCompat.translate(guiGraphics, x - 0.5f, y - 0.5f);
+		guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(this.font, glyph, 0, 0, color, true);
+		fr.lordfinn.crazyphone.utils.GuiCompat.popPose(guiGraphics);
 	}
 
-	/** An item icon of the header at 75 % (12 px) at (x, topPos + HEADER_ITEM_Y). */
+	/** An item icon of the header at 75 % (12 px), filling the header slot starting at x (absolute). */
 	protected void drawHeaderItem(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, ItemStack stack, int x, boolean hovered) {
 		int y = this.topPos + HEADER_ITEM_Y;
 		if (hovered)
-			guiGraphics.fill(x - 2, y - 2, x + HEADER_ITEM_SIZE + 2, y + HEADER_ITEM_SIZE + 2, 0x80FFFFFF);
+			drawHeaderSlotHover(guiGraphics, x);
 		fr.lordfinn.crazyphone.utils.GuiCompat.pushPose(guiGraphics);
 		fr.lordfinn.crazyphone.utils.GuiCompat.translate(guiGraphics, x, y);
 		fr.lordfinn.crazyphone.utils.GuiCompat.scale(guiGraphics, HEADER_ITEM_SCALE, HEADER_ITEM_SCALE);

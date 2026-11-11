@@ -189,6 +189,7 @@ sourceSets.main {
             "fr/lordfinn/crazyphone/client/gui/PhoneScale.java",
             "fr/lordfinn/crazyphone/client/ClientPrefs.java",
             "fr/lordfinn/crazyphone/client/EmojiCatalog.java",
+            "fr/lordfinn/crazyphone/client/EmojiGlyphs.java",
             "fr/lordfinn/crazyphone/client/gui/components/EmojiDrawer.java",
             // The phone's own flat, role-coloured buttons.
             "fr/lordfinn/crazyphone/client/gui/components/PhoneButton.java",
@@ -200,6 +201,7 @@ sourceSets.main {
             "fr/lordfinn/crazyphone/mixin/PhoneScaleScreenMixin.java",
             "fr/lordfinn/crazyphone/mixin/PhoneScaleMouseMixin.java",
             "fr/lordfinn/crazyphone/mixin/PhoneScaleGuiGraphicsMixin.java",
+            "fr/lordfinn/crazyphone/mixin/EmojiColorTextMixin.java",
             "fr/lordfinn/crazyphone/client/gui/CrazyPhoneGroupSettingsScreenScreen.java",
             "fr/lordfinn/crazyphone/client/gui/CrazyPhonePasswordScreenScreen.java",
             "fr/lordfinn/crazyphone/client/gui/CrazyPhoneMayorsCandidatesListScreen.java",
@@ -483,6 +485,7 @@ val fabricClientMixins = (if (minecraftVersion != "1.20.1") listOf(
     "PhoneScaleScreenMixin",
     "PhoneScaleMouseMixin",
     "PhoneScaleGuiGraphicsMixin",
+    "EmojiColorTextMixin",
     "CrazyPhoneLiveScreenItemRenderMixin"
 ) else emptyList()).joinToString(",\n    ") { "\"$it\"" }
 

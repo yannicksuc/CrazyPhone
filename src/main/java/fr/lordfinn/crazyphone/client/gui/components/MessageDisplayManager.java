@@ -147,6 +147,13 @@ public class MessageDisplayManager {
 
         currentEntry.widget.setY(currentY);
         currentEntry.widget.setShowIcon(!sameAsPrevious);
+        // Index 0 is the newest message, at the bottom: i + 1 sits right above, i - 1 right below (no gap
+        // between messages of the same person, unless a day divider separates them).
+        boolean dayBreakAbove = i + 1 < messageEntries.size()
+                && !isSameLocalDay(currentEntry.data().getTimecode(), messageEntries.get(i + 1).data().getTimecode());
+        boolean dayBreakBelow = i > 0
+                && !isSameLocalDay(currentEntry.data().getTimecode(), messageEntries.get(i - 1).data().getTimecode());
+        currentEntry.widget.setCutCorners(!sameAsNext || dayBreakAbove, !sameAsPrevious || dayBreakBelow);
         currentEntry.widget.adjustPosition();
 
         int paddingBelow = sameAsNext ? 0 : PADDING;

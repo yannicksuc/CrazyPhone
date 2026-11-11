@@ -56,7 +56,7 @@ public class CrazyPhoneSignInScreenScreen extends CrazyPhoneDefaultScreenScreen<
 	public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTicks) {
 		super.extractRenderState(guiGraphics, mouseX, mouseY, partialTicks);
 		renderHeader(guiGraphics, new ItemStack(fr.lordfinn.crazyphone.init.ModItems.CRAZY_PHONE.get()),
-				Component.translatable("gui.crazyphone.crazy_phone_sign_in_screen.label_connexion"), AUTO_LOCK_ICON_X);
+				Component.translatable("gui.crazyphone.crazy_phone_sign_in_screen.label_connexion"), AUTO_LOCK_ICON_X - 2);
 		renderAutoLockIcon(guiGraphics, mouseX, mouseY);
 		password.extractRenderState(guiGraphics, mouseX, mouseY, partialTicks);
 		if (isHoveringAutoLockIcon(mouseX, mouseY))
@@ -68,7 +68,7 @@ public class CrazyPhoneSignInScreenScreen extends CrazyPhoneDefaultScreenScreen<
 	public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
 		super.render(guiGraphics, mouseX, mouseY, partialTicks);
 		renderHeader(guiGraphics, new ItemStack(fr.lordfinn.crazyphone.init.ModItems.CRAZY_PHONE.get()),
-				Component.translatable("gui.crazyphone.crazy_phone_sign_in_screen.label_connexion"), AUTO_LOCK_ICON_X);
+				Component.translatable("gui.crazyphone.crazy_phone_sign_in_screen.label_connexion"), AUTO_LOCK_ICON_X - 2);
 		renderAutoLockIcon(guiGraphics, mouseX, mouseY);
 		password.render(guiGraphics, mouseX, mouseY, partialTicks);
 		if (isHoveringAutoLockIcon(mouseX, mouseY))
@@ -222,7 +222,7 @@ public class CrazyPhoneSignInScreenScreen extends CrazyPhoneDefaultScreenScreen<
 	// already use - a hand-drawn glyph plus manual hit-test/tooltip/click, not a real Button widget, since
 	// that's the established system for icons living directly on a phone screen's header banner.
 	/** The header's rightmost icon (see the header icon rule in CrazyPhoneDefaultScreenScreen). */
-	private static final int AUTO_LOCK_ICON_X = HEADER_ICONS_RIGHT - HEADER_GLYPH_SIZE;
+	private static final int AUTO_LOCK_ICON_X = HEADER_ICONS_RIGHT - HEADER_SLOT;
 	private static final int AUTO_LOCK_TOGGLE_BUTTON_ID = 4;
 	// "locked" (U+1F512) while auto-lock is ON, "unlocked" (U+1F513) while it's OFF - same bundled Pixel
 	// Twemoji font as every other emoji icon already used across this mod's phone screens.
@@ -238,11 +238,11 @@ public class CrazyPhoneSignInScreenScreen extends CrazyPhoneDefaultScreenScreen<
 		if (hovered)
 			CursorEffects.requestPointerCursor();
 		Component glyph = isAutoLockEnabled() ? AUTO_LOCK_ICON_ON : AUTO_LOCK_ICON_OFF;
-		drawHeaderGlyph(guiGraphics, glyph, this.leftPos + AUTO_LOCK_ICON_X, 0xFFFFFFFF, hovered);
+		drawHeaderGlyph(guiGraphics, glyph, headerSlotX(0), 0xFFFFFFFF, hovered);
 	}
 
 	private boolean isHoveringAutoLockIcon(double mouseX, double mouseY) {
-		return isInHeaderIcon(mouseX, mouseY, this.leftPos + AUTO_LOCK_ICON_X, this.topPos + HEADER_GLYPH_Y, HEADER_GLYPH_SIZE);
+		return isInHeaderSlot(mouseX, mouseY, headerSlotX(0));
 	}
 
 	private List<Component> autoLockIconTooltip() {
