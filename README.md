@@ -76,16 +76,16 @@ still getting updates", separate from the detailed per-feature table below.
 | Target | Status |
 |---|---|
 | Fabric 1.20.1 | ⚪ Not functional - phone networking needs an API absent before 1.20.5, no active work planned |
-| Forge 1.20.1 | 🟢 Actively maintained (since 1.8.0-beta.6) - no hanging photo frame below 1.20.5, photos go in vanilla item frames |
+| Forge 1.20.1 | 🟢 Actively maintained (since 1.8.0-beta.6), hanging photo frames since 1.8.0-beta.7 |
 | NeoForge 1.20.4 | ⚪ Frozen - unmaintained indefinitely (since 2026-09-02), local builds only |
 | NeoForge 1.21.1 | 🟢 Actively maintained - primary NeoForge target |
 | Fabric 1.21.1 | 🟢 Actively maintained - primary Fabric target |
 | NeoForge 1.21.10 | 🟢 Actively maintained again (since 1.8.0-beta.6) |
 | NeoForge 26.1 | 🟢 Actively maintained |
 | Fabric 26.1 | 🟢 Actively maintained |
-| NeoForge 26.2 | 🟢 Actively maintained (since the NeoForge 26.x port, see [PORTING-26x.md](PORTING-26x.md)) |
+| NeoForge 26.2 | 🟢 Actively maintained (since 1.8.0-beta.7, see [PORTING-26x.md](PORTING-26x.md)) |
 | Fabric 26.2 | 🟢 Actively maintained (since 1.8.0-beta.6) |
-| NeoForge 26.3 | 🟢 Actively maintained (since the NeoForge 26.x port, see [PORTING-26x.md](PORTING-26x.md)) |
+| NeoForge 26.3 | 🟢 Actively maintained (since 1.8.0-beta.7, see [PORTING-26x.md](PORTING-26x.md)) |
 | Fabric 26.3 | 🟢 Actively maintained (since 1.8.0-beta.6) |
 
 Only the 🟢 targets get new features and bugfixes going forward. The 26.x line is otherwise a newer,
