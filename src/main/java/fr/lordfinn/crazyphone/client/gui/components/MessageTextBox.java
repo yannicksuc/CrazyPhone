@@ -188,7 +188,7 @@ public class MessageTextBox extends SmallTextEditBox {
             guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(textFont, text, tx, 0, color, false);
             if (firstLine + k == cursorLine && isFocused() && isEditableField() && (System.currentTimeMillis() / 500) % 2 == 0) {
                 int cx = tx + textFont.width(value.substring(line.start(), cursor));
-                guiGraphics.fill(cx, -1, cx + 1, 9, TEXT);
+                fillInFront(guiGraphics, cx, -1, cx + 1, 9, TEXT);
             }
             GuiCompat.popPose(guiGraphics);
         }

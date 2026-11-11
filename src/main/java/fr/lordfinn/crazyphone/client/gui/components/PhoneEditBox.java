@@ -135,8 +135,21 @@ public class PhoneEditBox extends EditBox {
 
         if (isFocused() && editable && (System.currentTimeMillis() / BLINK_MS) % 2 == 0) {
             int cx = tx + textFont.width(value.substring(scroll, cursor));
-            guiGraphics.fill(cx, ty - 1, cx + 1, ty + 9, TEXT);
+            fillInFront(guiGraphics, cx, ty - 1, cx + 1, ty + 9, TEXT);
         }
+    }
+
+    /** A box drawn in front of the text of the same frame (the game draws text after plain boxes, so a cursor
+     * drawn normally went behind the grey hint text). */
+    static void fillInFront(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int x0, int y0, int x1, int y1, int color) {
+        //? if <1.21.10 {
+        guiGraphics.pose().pushPose();
+        guiGraphics.pose().translate(0f, 0f, 50f);
+        //?}
+        guiGraphics.fill(x0, y0, x1, y1, color);
+        //? if <1.21.10 {
+        guiGraphics.pose().popPose();
+        //?}
     }
 
     /** The carved field: frame with cut corners, white fill, a shade along the inner top and left edges. */
