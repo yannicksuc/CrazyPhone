@@ -697,15 +697,24 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
      * top edge) rather than each button's own small isMouseOver individually - the small gaps a cursor
      * drifts through moving from one 14px-tall icon to the next (normal mouse movement is rarely perfectly
      * vertical) otherwise flickered the column closed before it ever reached the topmost icon. */
+    /** Whether the send button's icon column is shown (see updateButtonVisibility). */
+    private boolean columnOpen;
+
     private void updateButtonVisibility(int mouseX, int mouseY) {
         int columnLeft = this.leftPos + 100;
         int columnRight = columnLeft + 14;
         int columnTop = this.topPos + SEND_VOICE_ICON_Y;
         int columnBottom = button_envoyer.getY() + button_envoyer.getHeight();
-        boolean hoveringColumn = mouseX >= columnLeft && mouseX < columnRight
-                && mouseY >= columnTop && mouseY < columnBottom
+        boolean inColumn = mouseX >= columnLeft && mouseX < columnRight
+                && mouseY >= columnTop && mouseY < columnBottom;
+        boolean onSendButton = mouseX >= button_envoyer.getX() && mouseX < button_envoyer.getX() + button_envoyer.getWidth()
+                && mouseY >= button_envoyer.getY() && mouseY < button_envoyer.getY() + button_envoyer.getHeight();
+        // Opens only from the send button (the hidden icons' spot over the feed must not open it), then stays
+        // open while the cursor is anywhere in the column.
+        columnOpen = (onSendButton || (columnOpen && inColumn))
                 // The column would pop up behind the emoji drawer, which covers that spot.
                 && !emojiDrawer.isVisible();
+        boolean hoveringColumn = columnOpen;
         imagebutton_attachphoto.visible = hoveringColumn;
         imagebutton_crazyphoneaddimage.visible = hoveringColumn;
         if (imagebutton_crazyphonevoicemessage != null)
