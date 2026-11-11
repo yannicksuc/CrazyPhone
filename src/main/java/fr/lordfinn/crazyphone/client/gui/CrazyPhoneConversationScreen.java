@@ -209,7 +209,7 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
         ^///?}
         message.visible = voiceRecordingState == VoiceRecordingState.NONE;
         if (imagebutton_emoji != null)
-            imagebutton_emoji.visible = voiceRecordingState == VoiceRecordingState.NONE;
+            imagebutton_emoji.visible = false;
         // The drawer belongs to the text row: gone as soon as a voice recording replaces that row.
         if (voiceRecordingState != VoiceRecordingState.NONE && emojiDrawer.isVisible())
             emojiDrawer.closeNow();
@@ -230,6 +230,7 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
                 && VoiceMessageRecorder.getElapsedSeconds() >= Config.maxVoiceMessageRecordingSeconds)
             onPauseSendClicked();
         updateButtonVisibility(mouseX, mouseY);
+        layoutMessageField();
         super.extractRenderState(guiGraphics, mouseX, mouseY, partialTicks);
         this.renderBanner(guiGraphics);
         if (menu.isGroup())
@@ -261,8 +262,7 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
         // them, most visibly hiding the add-image icon right as hovering the send button revealed it.
         // They're registered via addWidget (not addRenderableWidget) so this is their only render call.
         if (voiceRecordingState == VoiceRecordingState.NONE) {
-            if (imagebutton_emoji != null)
-                imagebutton_emoji.extractRenderState(guiGraphics, mouseX, mouseY, partialTicks);
+            renderSendBar(guiGraphics, mouseX, mouseY);
             button_envoyer.extractRenderState(guiGraphics, mouseX, mouseY, partialTicks);
             imagebutton_crazyphoneaddimage.extractRenderState(guiGraphics, mouseX, mouseY, partialTicks);
             imagebutton_attachphoto.extractRenderState(guiGraphics, mouseX, mouseY, partialTicks);
@@ -275,6 +275,9 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
         emojiDrawer.render(guiGraphics, mouseX, mouseY);
         renderHoveredHeadTooltip(guiGraphics, mouseX, mouseY);
         renderHoveredTimestampTooltip(guiGraphics, mouseX, mouseY);
+        List<Component> barTooltip = sendBarTooltip(mouseX, mouseY);
+        if (barTooltip != null)
+            guiGraphics.setComponentTooltipForNextFrame(this.font, barTooltip, mouseX, mouseY);
         this.extractTooltip(guiGraphics, mouseX, mouseY);
         // CursorEffects.endFrame() is NOT called here - PhoneClickableCursorHandler does it once, in a
         // ScreenEvent.Render.Post listener that fires after this whole method returns, so it can also
@@ -291,7 +294,7 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
         *///?}
         message.visible = voiceRecordingState == VoiceRecordingState.NONE;
         if (imagebutton_emoji != null)
-            imagebutton_emoji.visible = voiceRecordingState == VoiceRecordingState.NONE;
+            imagebutton_emoji.visible = false;
         // The drawer belongs to the text row: gone as soon as a voice recording replaces that row.
         if (voiceRecordingState != VoiceRecordingState.NONE && emojiDrawer.isVisible())
             emojiDrawer.closeNow();
@@ -312,6 +315,7 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
                 && VoiceMessageRecorder.getElapsedSeconds() >= Config.maxVoiceMessageRecordingSeconds)
             onPauseSendClicked();
         updateButtonVisibility(mouseX, mouseY);
+        layoutMessageField();
         super.render(guiGraphics, mouseX, mouseY, partialTicks);
         this.renderBanner(guiGraphics);
         if (menu.isGroup())
@@ -352,8 +356,7 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
         // them, most visibly hiding the add-image icon right as hovering the send button revealed it.
         // They're registered via addWidget (not addRenderableWidget) so this is their only render call.
         if (voiceRecordingState == VoiceRecordingState.NONE) {
-            if (imagebutton_emoji != null)
-                imagebutton_emoji.render(guiGraphics, mouseX, mouseY, partialTicks);
+            renderSendBar(guiGraphics, mouseX, mouseY);
             button_envoyer.render(guiGraphics, mouseX, mouseY, partialTicks);
             imagebutton_crazyphoneaddimage.render(guiGraphics, mouseX, mouseY, partialTicks);
             imagebutton_attachphoto.render(guiGraphics, mouseX, mouseY, partialTicks);
@@ -366,6 +369,14 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
         emojiDrawer.render(guiGraphics, mouseX, mouseY);
         renderHoveredHeadTooltip(guiGraphics, mouseX, mouseY);
         renderHoveredTimestampTooltip(guiGraphics, mouseX, mouseY);
+        List<Component> barTooltip = sendBarTooltip(mouseX, mouseY);
+        if (barTooltip != null) {
+            //? if <1.21.10 {
+            guiGraphics.renderComponentTooltip(this.font, barTooltip, mouseX, mouseY);
+            //? } else {
+            /*guiGraphics.setComponentTooltipForNextFrame(this.font, barTooltip, mouseX, mouseY);
+            *///?}
+        }
         this.renderTooltip(guiGraphics, mouseX, mouseY);
         // CursorEffects.endFrame() is NOT called here - PhoneClickableCursorHandler does it once, in a
         // ScreenEvent.Render.Post listener that fires after this whole method returns, so it can also
@@ -714,7 +725,8 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
         columnOpen = (onSendButton || (columnOpen && inColumn))
                 // The column would pop up behind the emoji drawer, which covers that spot.
                 && !emojiDrawer.isVisible();
-        boolean hoveringColumn = columnOpen;
+        // Replaced by the send bar (renderSendBar): the old column never shows any more.
+        boolean hoveringColumn = false;
         imagebutton_attachphoto.visible = hoveringColumn;
         imagebutton_crazyphoneaddimage.visible = hoveringColumn;
         if (imagebutton_crazyphonevoicemessage != null)
@@ -742,18 +754,164 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
     /** How much taller than one line the message field is right now (it grows upward with its text). */
     private int messageFieldExtra;
 
-    /** The message field takes the height its text wants (bottom edge fixed), the feed and the emoji drawer
-     * move up by the same amount. */
+    // ---- Send bar -----------------------------------------------------------------------------------------
+    // Resting (empty field, not clicked): a short field with the emoji button in it, and the attach buttons
+    // (album, photo, voice message) right of it. Writing (field clicked or text in it): the field takes the
+    // whole row with a + on its left and the emoji button on its right, and the button on the right is the
+    // voice message while the field is empty, the send arrow once something is written. The + opens a row of
+    // the attach buttons under the bar, which moves up one row for it. Every icon is an emoji without a frame
+    // (hover: a tinted square, pressed: one pixel down, disabled: faded).
+    private static final int BAR_PLUS = 0, BAR_SMILEY = 1, BAR_ALBUM = 2, BAR_PHOTO = 3, BAR_VOICE = 4;
+    private static final String GLYPH_PLUS = "\u2795", GLYPH_CLOSE = "\u2716", GLYPH_SMILEY = "\uD83D\uDE42",
+            GLYPH_ALBUM = "\uD83D\uDDBC", GLYPH_PHOTO = "\uD83D\uDCF7", GLYPH_VOICE = "\uD83C\uDFA4";
+    private static final int BAR_BOTTOM = 172, BAR_ROW = 17, RAIL_SIZE = 14, FIELD_ICON_SIZE = 12;
+    private static final int BAR_HOVER = 0x33007EA2, BAR_PRESSED = 0x55007EA2;
+
+    private record BarIcon(int id, String glyph, int x, int y, int size, boolean enabled) {
+    }
+
+    private final List<BarIcon> barIcons = new ArrayList<>();
+    /** The + menu (attach buttons under the bar) is open. */
+    private boolean plusMenuOpen;
+
+    private boolean voiceAvailable() {
+        return imagebutton_crazyphonevoicemessage != null;
+    }
+
+    private boolean resting() {
+        return message.getValue().isEmpty() && !message.isFocused() && !plusMenuOpen && !emojiDrawer.isVisible();
+    }
+
+    /** The message field takes the height its text wants (bottom edge fixed); the feed and the emoji drawer move
+     * up by the same amount, and by one more row while the + menu is open. Lays out the send bar's icons too. */
     private void layoutMessageField() {
+        boolean recording = voiceRecordingState != VoiceRecordingState.NONE;
+        if (recording)
+            plusMenuOpen = false;
+        boolean rest = resting();
+        boolean imagesEnabled = ClientFeatureFlagState.isEnabled(FeatureFlag.IMAGES);
+        boolean voiceEnabled = voiceAvailable() && ClientFeatureFlagState.isEnabled(FeatureFlag.VOICE_MESSAGES);
+        int railCount = voiceAvailable() ? 3 : 2;
+        int shift = plusMenuOpen ? BAR_ROW : 0;
+        int fieldWidth = rest ? 106 - railCount * BAR_ROW : 89;
+        message.setRequestedWidth(fieldWidth);
+        boolean smiley = imagebutton_emoji != null;
+        message.setInsets(rest ? 0 : FIELD_ICON_SIZE, smiley ? FIELD_ICON_SIZE : 0);
+
         int height = message.wantedHeight();
-        int extra = height - fr.lordfinn.crazyphone.client.gui.components.MessageTextBox.ONE_LINE_HEIGHT;
-        if (extra != messageFieldExtra || message.getY() != this.topPos + 172 - height) {
-            messageFieldExtra = extra;
+        int fieldBottom = this.topPos + BAR_BOTTOM - shift;
+        if (message.getY() != fieldBottom - height || height != messageFieldExtra + fr.lordfinn.crazyphone.client.gui.components.MessageTextBox.ONE_LINE_HEIGHT) {
             message.setRequestedHeight(height);
-            message.setY(this.topPos + 172 - height);
+            message.setY(fieldBottom - height);
         }
+        messageFieldExtra = height - fr.lordfinn.crazyphone.client.gui.components.MessageTextBox.ONE_LINE_HEIGHT + shift;
         messageManager.setBottom(this.topPos + 157 - messageFieldExtra);
         emojiDrawer.setBottomShift(messageFieldExtra);
+
+        barIcons.clear();
+        button_envoyer.setY(this.topPos + 158 - shift);
+        button_envoyer.visible = !recording && !rest && (!message.getValue().isEmpty() || !voiceAvailable());
+        if (recording)
+            return;
+        // Icons inside the field: a 12 px square on its bottom row, 1 px in from its frame.
+        int iconY = fieldBottom - 1 - FIELD_ICON_SIZE;
+        if (!rest)
+            barIcons.add(new BarIcon(BAR_PLUS, plusMenuOpen ? GLYPH_CLOSE : GLYPH_PLUS, message.getX() + 1, iconY, FIELD_ICON_SIZE, true));
+        if (smiley)
+            barIcons.add(new BarIcon(BAR_SMILEY, GLYPH_SMILEY, message.getX() + fieldWidth - 1 - FIELD_ICON_SIZE, iconY, FIELD_ICON_SIZE, true));
+        // The attach buttons: right of the field while resting, in a row under the bar while the + menu is open.
+        if (rest || plusMenuOpen) {
+            int[] railX = rest ? new int[]{114 - railCount * BAR_ROW + 3, 114 - (railCount - 1) * BAR_ROW + 3, 100}
+                    : new int[]{8, 8 + BAR_ROW, 8 + 2 * BAR_ROW};
+            int railY = this.topPos + 158;
+            barIcons.add(new BarIcon(BAR_ALBUM, GLYPH_ALBUM, this.leftPos + railX[0], railY, RAIL_SIZE, imagesEnabled));
+            barIcons.add(new BarIcon(BAR_PHOTO, GLYPH_PHOTO, this.leftPos + railX[1], railY, RAIL_SIZE, imagesEnabled));
+            if (voiceAvailable())
+                barIcons.add(new BarIcon(BAR_VOICE, GLYPH_VOICE, this.leftPos + railX[2], railY, RAIL_SIZE, voiceEnabled));
+        }
+        // Writing with an empty field: the right button is the voice message.
+        if (!rest && message.getValue().isEmpty() && voiceAvailable())
+            barIcons.add(new BarIcon(BAR_VOICE, GLYPH_VOICE, this.leftPos + 100, this.topPos + 158 - shift, RAIL_SIZE, voiceEnabled));
+    }
+
+    private BarIcon barIconAt(double mouseX, double mouseY) {
+        for (BarIcon icon : barIcons)
+            if (mouseX >= icon.x() && mouseX < icon.x() + icon.size() && mouseY >= icon.y() && mouseY < icon.y() + icon.size())
+                return icon;
+        return null;
+    }
+
+    private void onBarIcon(int id) {
+        switch (id) {
+            case BAR_PLUS -> plusMenuOpen = !plusMenuOpen;
+            case BAR_SMILEY -> toggleEmojiDrawer();
+            case BAR_ALBUM -> {
+                plusMenuOpen = false;
+                onAttachExistingPhotoClicked();
+            }
+            case BAR_PHOTO -> {
+                plusMenuOpen = false;
+                fr.lordfinn.crazyphone.client.CrazyPhoneCaptureMode.enter(this.menu.getConversationId());
+            }
+            case BAR_VOICE -> {
+                plusMenuOpen = false;
+                onMicIconClicked();
+            }
+            default -> {
+            }
+        }
+    }
+
+    private void renderSendBar(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int mouseX, int mouseY) {
+        boolean leftDown = Minecraft.getInstance().mouseHandler.isLeftPressed();
+        for (BarIcon icon : barIcons) {
+            boolean hovered = mouseX >= icon.x() && mouseX < icon.x() + icon.size() && mouseY >= icon.y() && mouseY < icon.y() + icon.size();
+            boolean pressed = hovered && icon.enabled() && leftDown;
+            boolean toggled = (icon.id() == BAR_PLUS && plusMenuOpen) || (icon.id() == BAR_SMILEY && emojiDrawer.isOpen());
+            if (icon.enabled() && (hovered || toggled)) {
+                CursorEffects.requestPointerCursor();
+                int c = pressed || toggled ? BAR_PRESSED : BAR_HOVER;
+                int x0 = icon.x(), y0 = icon.y(), x1 = x0 + icon.size(), y1 = y0 + icon.size();
+                guiGraphics.fill(x0 + 1, y0, x1 - 1, y1, c);
+                guiGraphics.fill(x0, y0 + 1, x0 + 1, y1 - 1, c);
+                guiGraphics.fill(x1 - 1, y0 + 1, x1, y1 - 1, c);
+            }
+            drawBarGlyph(guiGraphics, icon, pressed ? 1 : 0);
+        }
+    }
+
+    /** The emoji centered in its square on its own drawn pixels (one pixel above the y it is given: see
+     * EmojiDrawer), faded when the button is disabled. */
+    private void drawBarGlyph(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, BarIcon icon, int down) {
+        float[] b = fr.lordfinn.crazyphone.client.EmojiGlyphs.bounds(icon.glyph().codePointAt(0));
+        float x, y;
+        if (b != null) {
+            x = icon.x() + (icon.size() - (b[2] - b[0])) / 2f - b[0];
+            y = icon.y() + (icon.size() - (b[3] - b[1])) / 2f - b[1] + 1;
+        } else {
+            x = icon.x() + (icon.size() - (this.font.width(icon.glyph()) - 1)) / 2f;
+            y = icon.y() + (icon.size() - 8) / 2f;
+        }
+        fr.lordfinn.crazyphone.utils.GuiCompat.pushPose(guiGraphics);
+        fr.lordfinn.crazyphone.utils.GuiCompat.translate(guiGraphics, x, y + down);
+        guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(this.font, Component.literal(icon.glyph()), 0, 0,
+                icon.enabled() ? 0xFFFFFFFF : 0x66FFFFFF, false);
+        fr.lordfinn.crazyphone.utils.GuiCompat.popPose(guiGraphics);
+    }
+
+    private List<Component> sendBarTooltip(double mouseX, double mouseY) {
+        BarIcon icon = barIconAt(mouseX, mouseY);
+        if (icon == null)
+            return null;
+        String base = "gui.crazyphone.crazy_phone_conversation.";
+        return switch (icon.id()) {
+            case BAR_PLUS -> List.of(Component.translatable(base + (plusMenuOpen ? "tooltip_attach_close" : "tooltip_attach")));
+            case BAR_SMILEY -> List.of(Component.translatable("gui.crazyphone.emoji_drawer.button"));
+            case BAR_ALBUM -> List.of(Component.translatable(base + (icon.enabled() ? "tooltip_send_image" : "tooltip_send_image_disabled")));
+            case BAR_PHOTO -> List.of(Component.translatable(base + (icon.enabled() ? "tooltip_take_and_send_image" : "tooltip_take_and_send_image_disabled")));
+            case BAR_VOICE -> List.of(Component.translatable(base + (icon.enabled() ? "tooltip_send_voice_message" : "tooltip_send_voice_message_disabled")));
+            default -> null;
+        };
     }
 
     private void renderMessageWidget(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int mouseX, int mouseY, float partialTicks) {
@@ -1118,6 +1276,17 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
     }
 
     /** Dev only (/phoneui emojitab): shows that tab of the emoji drawer. */
+    /** Dev only (/phoneui plus): opens or closes the + menu, like a click on the +. */
+    public void devTogglePlus() {
+        plusMenuOpen = !plusMenuOpen;
+    }
+
+    /** Dev only (/phoneui unfocus): leaves the message field, as a click elsewhere does. */
+    public void devUnfocus() {
+        message.setFocused(false);
+        this.setFocused(null);
+    }
+
     public void devEmojiTab(int tab) {
         emojiDrawer.selectTab(tab);
         emojiDrawer.devHighlight(10);
@@ -1506,21 +1675,27 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
             return true;
         }
 
-        boolean onEmojiButton = imagebutton_emoji != null && imagebutton_emoji.visible && imagebutton_emoji.isMouseOver(mouseX, mouseY);
+        BarIcon barHit = barIconAt(mouseX, mouseY);
+        if (button == com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_LEFT && barHit != null) {
+            if (barHit.enabled()) {
+                fr.lordfinn.crazyphone.client.gui.components.EmojiDrawer.playClick();
+                onBarIcon(barHit.id());
+            }
+            return true;
+        }
+        if (plusMenuOpen && !button_envoyer.isMouseOver(mouseX, mouseY))
+            plusMenuOpen = false;
+        boolean onEmojiButton = barHit != null && barHit.id() == BAR_SMILEY;
         if (emojiDrawer.isOpen()) {
             if (emojiDrawer.mouseClicked(mouseX, mouseY, button))
                 return true;
             // Clicking anywhere else closes it; the click itself still does what it normally does. The
             // message field (to move the cursor before picking) and the emoji button (its own toggle) are
             // the drawer's companions and keep it open.
-            boolean onMessageField = mouseX >= message.getX() && mouseX < this.leftPos + EMOJI_BUTTON_X
+            boolean onMessageField = mouseX >= message.getX() && mouseX < message.getX() + message.getRequestedWidth()
                     && mouseY >= message.getY() && mouseY < this.topPos + 172;
             if (!onEmojiButton && !onMessageField)
                 emojiDrawer.close();
-        }
-        if (button == com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_LEFT && onEmojiButton) {
-            pressButton(imagebutton_emoji, mouseX, mouseY, button);
-            return true;
         }
 
         if (button == com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_LEFT && button_envoyer.isMouseOver(mouseX, mouseY)) {

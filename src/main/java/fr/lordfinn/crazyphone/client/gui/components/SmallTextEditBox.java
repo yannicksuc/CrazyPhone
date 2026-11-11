@@ -31,7 +31,19 @@ public class SmallTextEditBox extends PhoneEditBox {
     protected int requestedHeight;
     /** Same for the width: the carved frame is drawn at the size the caller asked for, unscaled, so its
      * 1 px edges stay sharp; only the text inside is drawn at SCALE_FACTOR. */
-    private final int requestedWidth;
+    protected int requestedWidth;
+
+    /** Changes the drawn width (the message field is shorter while the attach buttons sit next to it). */
+    public void setRequestedWidth(int width) {
+        if (width == requestedWidth)
+            return;
+        this.requestedWidth = width;
+        setWidth((int) (width * (1 / SCALE_FACTOR)));
+    }
+
+    public int getRequestedWidth() {
+        return requestedWidth;
+    }
 
     /** Changes the drawn height (the field grows or shrinks, see MessageTextBox). */
     public void setRequestedHeight(int height) {

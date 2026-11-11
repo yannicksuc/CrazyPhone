@@ -453,7 +453,7 @@ public class EmojiDrawer {
         onPick.accept(emoji);
     }
 
-    private static void playClick() {
+    public static void playClick() {
         try {
             Minecraft.getInstance().getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(
                     net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK, 1.0F));

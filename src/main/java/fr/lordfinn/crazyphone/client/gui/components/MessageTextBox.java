@@ -33,6 +33,19 @@ public class MessageTextBox extends SmallTextEditBox {
 
     /** First visual line shown (the text scrolls once it has more lines than the field shows). */
     private int firstLine;
+    /** Room kept free inside the field on the left and right, in phone pixels, for the icons drawn in it
+     * (the attach + on the left, the emoji button on the right): the text stays between them. */
+    private int leftInset, rightInset;
+
+    public void setInsets(int left, int right) {
+        this.leftInset = left;
+        this.rightInset = right;
+    }
+
+    /** Where the text starts, in the field's own units. */
+    private float textLeft() {
+        return TEXT_INSET + leftInset / SCALE_FACTOR;
+    }
 
     public MessageTextBox(Font font, int x, int y, int width, Component message) {
         super(font, x, y, width, ONE_LINE_HEIGHT, message);
@@ -77,7 +90,7 @@ public class MessageTextBox extends SmallTextEditBox {
     // ---- layout ----
 
     private int innerWidth() {
-        return Math.max(1, getWidth() - 2 * TEXT_INSET);
+        return Math.max(1, (int) (getWidth() - 2 * TEXT_INSET - (leftInset + rightInset) / SCALE_FACTOR));
     }
 
     private int maxLength() {
@@ -171,7 +184,7 @@ public class MessageTextBox extends SmallTextEditBox {
             firstLine = cursorLine - visible + 1;
 
         int[] sel = selection();
-        int tx = getX() + TEXT_INSET;
+        int tx = getX() + Math.round(textLeft());
         int color = isEditableField() ? TEXT : TEXT_LOCKED;
         for (int k = 0; k < visible && firstLine + k < lines.size(); k++) {
             Line line = lines.get(firstLine + k);
@@ -210,7 +223,7 @@ public class MessageTextBox extends SmallTextEditBox {
     private void placeCursorAt(double mouseX, double mouseY) {
         float renderedHeight = getHeight() * SCALE_FACTOR;
         float top = getY() + (requestedHeight - renderedHeight);
-        double lx = (mouseX - getX()) / SCALE_FACTOR - TEXT_INSET;
+        double lx = (mouseX - getX()) / SCALE_FACTOR - Math.round(textLeft());
         double ly = (mouseY - top) / SCALE_FACTOR - TOP;
         List<Line> lines = layout();
         int index = Math.max(0, Math.min(lines.size() - 1, firstLine + (int) Math.floor((ly + 1) / STEP)));

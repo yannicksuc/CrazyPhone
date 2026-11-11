@@ -51,7 +51,9 @@ public final class PhoneUiDevCommand {
                 .then(LiteralArgumentBuilder.<CommandSourceStack>literal("type")
                         .then(RequiredArgumentBuilder.<CommandSourceStack, String>argument("text", StringArgumentType.greedyString())
                                 .executes(ctx -> {
-                                    String text = StringArgumentType.getString(ctx, "text").replace("\\n", "\n");
+                                    // "-" alone empties the field.
+                                    String raw = StringArgumentType.getString(ctx, "text");
+                                    String text = raw.equals("-") ? "" : raw.replace("\\n", "\n");
                                     Minecraft mc = Minecraft.getInstance();
                                     mc.execute(() -> {
                                         if (mc.screen instanceof fr.lordfinn.crazyphone.client.gui.CrazyPhoneConversationScreen conversation)
@@ -82,6 +84,24 @@ public final class PhoneUiDevCommand {
                                     fr.lordfinn.crazyphone.client.PhoneCursorStabilizer.devMouse = null;
                                     return 1;
                                 })))
+                .then(LiteralArgumentBuilder.<CommandSourceStack>literal("plus")
+                        .executes(ctx -> {
+                            Minecraft mc = Minecraft.getInstance();
+                            mc.execute(() -> {
+                                if (mc.screen instanceof fr.lordfinn.crazyphone.client.gui.CrazyPhoneConversationScreen conversation)
+                                    conversation.devTogglePlus();
+                            });
+                            return 1;
+                        }))
+                .then(LiteralArgumentBuilder.<CommandSourceStack>literal("unfocus")
+                        .executes(ctx -> {
+                            Minecraft mc = Minecraft.getInstance();
+                            mc.execute(() -> {
+                                if (mc.screen instanceof fr.lordfinn.crazyphone.client.gui.CrazyPhoneConversationScreen conversation)
+                                    conversation.devUnfocus();
+                            });
+                            return 1;
+                        }))
                 .then(LiteralArgumentBuilder.<CommandSourceStack>literal("emojitab")
                         .then(RequiredArgumentBuilder.<CommandSourceStack, Integer>argument("tab", com.mojang.brigadier.arguments.IntegerArgumentType.integer(0))
                                 .executes(ctx -> {
