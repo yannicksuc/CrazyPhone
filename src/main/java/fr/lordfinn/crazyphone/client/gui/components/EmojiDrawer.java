@@ -410,7 +410,7 @@ public class EmojiDrawer {
     }
 
     private static void tooltip(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, Font font, List<Component> lines, int mouseX, int mouseY) {
-        guiGraphics./*$ gui_render_component_tooltip {*/renderComponentTooltip/*$}*/(font, lines, mouseX, mouseY);
+        guiGraphics./*$ gui_render_component_tooltip {*/renderComponentTooltip/*$}*/(font, fr.lordfinn.crazyphone.client.gui.PhoneTooltips.wrap(font, lines), mouseX, mouseY);
     }
 
     // ---- input ----

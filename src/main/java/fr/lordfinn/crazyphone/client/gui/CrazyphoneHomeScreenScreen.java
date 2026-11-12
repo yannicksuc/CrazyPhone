@@ -77,6 +77,11 @@ public class CrazyphoneHomeScreenScreen extends CrazyPhoneDefaultScreenScreen<Cr
     private boolean pulsing;
     private long pulseStartMillis;
 
+    /** Dev only (UI test bench): the middle of the magnifier, in this screen's coordinates. */
+    public int[] devSizeToggleCenter() {
+        return new int[]{headerSlotX(0) + HEADER_SLOT / 2, this.topPos + HEADER_SLOT_Y + HEADER_SLOT / 2};
+    }
+
     private boolean isHoveringSizeToggle(double mouseX, double mouseY) {
         return !LaunchSplash.isActive() && isInHeaderSlot(mouseX, mouseY, headerSlotX(0));
     }
@@ -139,7 +144,7 @@ public class CrazyphoneHomeScreenScreen extends CrazyPhoneDefaultScreenScreen<Cr
         super.extractRenderState(guiGraphics, mouseX, mouseY, partialTicks);
         renderSizeToggle(guiGraphics, mouseX, mouseY);
         if (isHoveringSizeToggle(mouseX, mouseY))
-            guiGraphics.setComponentTooltipForNextFrame(this.font, sizeToggleTooltip(), mouseX, mouseY);
+            guiGraphics.setComponentTooltipForNextFrame(this.font, fr.lordfinn.crazyphone.client.gui.PhoneTooltips.wrap(this.font, sizeToggleTooltip()), mouseX, mouseY);
     }
     *///? } else {
     @Override
@@ -147,7 +152,7 @@ public class CrazyphoneHomeScreenScreen extends CrazyPhoneDefaultScreenScreen<Cr
         super.render(guiGraphics, mouseX, mouseY, partialTicks);
         renderSizeToggle(guiGraphics, mouseX, mouseY);
         if (isHoveringSizeToggle(mouseX, mouseY))
-            guiGraphics./*$ gui_render_component_tooltip {*/renderComponentTooltip/*$}*/(this.font, sizeToggleTooltip(), mouseX, mouseY);
+            guiGraphics./*$ gui_render_component_tooltip {*/renderComponentTooltip/*$}*/(this.font, fr.lordfinn.crazyphone.client.gui.PhoneTooltips.wrap(this.font, sizeToggleTooltip()), mouseX, mouseY);
     }
     //?}
 

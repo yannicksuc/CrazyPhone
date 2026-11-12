@@ -100,29 +100,20 @@ $Gradlew = Join-Path $RepoRoot 'gradlew.bat'
 # (see build.gradle.kts/build.fabric*.gradle.kts's own gameDirectory/runDir config), so RunDir/
 # ClientRunDir below are derived from the node name itself rather than repeated per entry - only
 # Loader and the assigned dedicated-server Port actually vary node to node.
+# Every node has its own port, so several nodes can run at once (scripts/ui-bench.py runs them in parallel):
+# Invoke-Start passes each client -PquickPlayMultiplayer=localhost:<its node's port>, which every build reads
+# (without it a client still aims at localhost:25565, the old shared default).
 $VersionMeta = [ordered]@{
     # Real, original Forge 1.20.1 (predates NeoForge's own fork) - built via ModDevGradle's legacyforge
     # plugin (build.legacyforge.gradle.kts), exposing the identical runServer/runClient/runClient2 task
     # names every other node here does, so it needs no special-casing anywhere else in this script.
-    # Port 25565 to match build.legacyforge.gradle.kts's own hardcoded "--quickPlayMultiplayer
-    # localhost:25565" client run arg (same shared-literal-port tradeoff as 1.21.1/26.1 above - can't run
-    # a dedicated server for more than one of these three at the same time).
     '1.20.1'        = @{ Loader = 'legacyforge'; Port = 25565 }
     '1.20.4'        = @{ Loader = 'neoforge'; Port = 25566 }
-    # Matches build.gradle.kts' own hardcoded "--quickPlayMultiplayer localhost:25565" (shared literally
-    # across every NeoForge node's client run config, not actually per-version) - a different port here
-    # left the client auto-connecting to the wrong place (Connection refused, confirmed live) whenever
-    # 1.21.1 wasn't the one node that happened to already sit on 25565. Means 1.21.1 and 26.1 can't have
-    # their own dedicated servers running at the same time (both now claim 25565) - acceptable given
-    # neither this project's current active test matrix nor dev-launch's own docs promise true
-    # simultaneous multi-node testing, only "no manual port bookkeeping" for whichever ones ARE run.
-    '1.21.1'        = @{ Loader = 'neoforge'; Port = 25565 }
+    '1.21.1'        = @{ Loader = 'neoforge'; Port = 25575 }
     '1.21.10'       = @{ Loader = 'neoforge'; Port = 25569 }
-    '26.1'          = @{ Loader = 'neoforge'; Port = 25565 }
-    # 26.2 / 26.3 share 25565 for the same reason as 1.21.1 / 26.1 above (the NeoForge clients' fixed
-    # --quickPlayMultiplayer target): 26.2 used to sit on 25570, where its client never auto-joined.
-    '26.2'          = @{ Loader = 'neoforge'; Port = 25565 }
-    '26.3'          = @{ Loader = 'neoforge'; Port = 25565 }
+    '26.1'          = @{ Loader = 'neoforge'; Port = 25576 }
+    '26.2'          = @{ Loader = 'neoforge'; Port = 25570 }
+    '26.3'          = @{ Loader = 'neoforge'; Port = 25577 }
     '1.21.1-fabric' = @{ Loader = 'fabric';   Port = 25567 }
     '1.20.1-fabric' = @{ Loader = 'fabric';   Port = 25571 }
     '26.1-fabric'   = @{ Loader = 'fabric';   Port = 25572 }
@@ -240,8 +231,12 @@ function Invoke-Start {
     Write-Host "Launching :$Version`:$gradleTask -> $log"
     $errLog = "$log.err"
     if (Test-Path $errLog) { Remove-Item $errLog -Force }
+    # Clients join their own node's dedicated server: Fabric runs only auto-join when told to, NeoForge ones
+    # would otherwise aim at their build's default 25565 whatever port this node's server really uses.
+    $gradleArgs = @(":$Version`:$gradleTask", '--console=plain')
+    if ($K -ne 'server') { $gradleArgs += "-PquickPlayMultiplayer=localhost:$($Versions[$Version].Port)" }
     $proc = Start-Process -FilePath $Gradlew `
-        -ArgumentList ":$Version`:$gradleTask", '--console=plain' `
+        -ArgumentList $gradleArgs `
         -WorkingDirectory $RepoRoot `
         -RedirectStandardOutput $log `
         -RedirectStandardError $errLog `

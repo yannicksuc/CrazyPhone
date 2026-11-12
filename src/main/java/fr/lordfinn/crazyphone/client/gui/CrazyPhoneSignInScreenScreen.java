@@ -60,7 +60,7 @@ public class CrazyPhoneSignInScreenScreen extends CrazyPhoneDefaultScreenScreen<
 		renderAutoLockIcon(guiGraphics, mouseX, mouseY);
 		password.extractRenderState(guiGraphics, mouseX, mouseY, partialTicks);
 		if (isHoveringAutoLockIcon(mouseX, mouseY))
-			guiGraphics.setComponentTooltipForNextFrame(this.font, autoLockIconTooltip(), mouseX, mouseY);
+			guiGraphics.setComponentTooltipForNextFrame(this.font, fr.lordfinn.crazyphone.client.gui.PhoneTooltips.wrap(this.font, autoLockIconTooltip()), mouseX, mouseY);
 		this.extractTooltip(guiGraphics, mouseX, mouseY);
 	}
 	*///? } else {
@@ -72,7 +72,7 @@ public class CrazyPhoneSignInScreenScreen extends CrazyPhoneDefaultScreenScreen<
 		renderAutoLockIcon(guiGraphics, mouseX, mouseY);
 		password.render(guiGraphics, mouseX, mouseY, partialTicks);
 		if (isHoveringAutoLockIcon(mouseX, mouseY))
-			guiGraphics./*$ gui_render_component_tooltip {*/renderComponentTooltip/*$}*/(this.font, autoLockIconTooltip(), mouseX, mouseY);
+			guiGraphics./*$ gui_render_component_tooltip {*/renderComponentTooltip/*$}*/(this.font, fr.lordfinn.crazyphone.client.gui.PhoneTooltips.wrap(this.font, autoLockIconTooltip()), mouseX, mouseY);
 		this.renderTooltip(guiGraphics, mouseX, mouseY);
 	}
 	//?}

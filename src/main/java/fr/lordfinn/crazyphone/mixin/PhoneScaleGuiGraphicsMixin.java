@@ -40,6 +40,7 @@ public abstract class PhoneScaleGuiGraphicsMixin {
             at = @At("HEAD"), require = 0)
     private void crazyphone$guiItemStart(org.spongepowered.asm.mixin.injection.callback.CallbackInfo ci) {
         fr.lordfinn.crazyphone.client.CrazyPhoneSelfiePose.guiItemDepth++;
+        fr.lordfinn.crazyphone.client.BenchRunner.guiItemHookRan = true;
     }
 
     @Inject(method = "renderItem(Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/level/Level;Lnet/minecraft/world/item/ItemStack;IIII)V",

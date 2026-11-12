@@ -24,6 +24,9 @@ import fr.lordfinn.crazyphone.client.EmojiGlyphs;
 public abstract class EmojiColorTextMixin {
     @ModifyVariable(method = "accept(ILnet/minecraft/network/chat/Style;I)Z", at = @At("HEAD"), argsOnly = true, require = 0)
     private Style crazyphone$emojiKeepsItsColours(Style style, int position, Style original, int codepoint) {
-        return EmojiGlyphs.isEmoji(codepoint) ? style.withColor(0xFFFFFF) : style;
+        if (!EmojiGlyphs.isEmoji(codepoint))
+            return style;
+        fr.lordfinn.crazyphone.client.BenchRunner.emojiColourHookRan = true;
+        return style.withColor(0xFFFFFF);
     }
 }

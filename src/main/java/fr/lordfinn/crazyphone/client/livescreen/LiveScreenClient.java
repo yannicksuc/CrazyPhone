@@ -125,6 +125,7 @@ public final class LiveScreenClient {
     *///?}
 
     private static void tick() {
+        fr.lordfinn.crazyphone.client.BenchRunner.tick();
         try {
             if (!configLoaded) {
                 configLoaded = true;

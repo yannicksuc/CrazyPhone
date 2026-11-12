@@ -123,7 +123,7 @@ public class CrazyPhoneMyPhotosScreenScreen extends CrazyPhoneDefaultScreenScree
         if (importTooltip == null)
             importTooltip = linkTooltipAt(mouseX, mouseY);
         if (importTooltip != null)
-            guiGraphics.setComponentTooltipForNextFrame(this.font, importTooltip, mouseX, mouseY);
+            guiGraphics.setComponentTooltipForNextFrame(this.font, fr.lordfinn.crazyphone.client.gui.PhoneTooltips.wrap(this.font, importTooltip), mouseX, mouseY);
     }
     *///? } else {
     @Override
@@ -141,7 +141,7 @@ public class CrazyPhoneMyPhotosScreenScreen extends CrazyPhoneDefaultScreenScree
         if (importTooltip == null)
             importTooltip = linkTooltipAt(mouseX, mouseY);
         if (importTooltip != null)
-            guiGraphics./*$ gui_render_component_tooltip {*/renderComponentTooltip/*$}*/(this.font, importTooltip, mouseX, mouseY);
+            guiGraphics./*$ gui_render_component_tooltip {*/renderComponentTooltip/*$}*/(this.font, fr.lordfinn.crazyphone.client.gui.PhoneTooltips.wrap(this.font, importTooltip), mouseX, mouseY);
     }
     //?}
 

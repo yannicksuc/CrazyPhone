@@ -74,14 +74,14 @@ public final class PhoneUiDevCommand {
                         .then(RequiredArgumentBuilder.<CommandSourceStack, Integer>argument("x", com.mojang.brigadier.arguments.IntegerArgumentType.integer())
                                 .then(RequiredArgumentBuilder.<CommandSourceStack, Integer>argument("y", com.mojang.brigadier.arguments.IntegerArgumentType.integer())
                                         .executes(ctx -> {
-                                            fr.lordfinn.crazyphone.client.PhoneCursorStabilizer.devMouse = new double[]{
+                                            fr.lordfinn.crazyphone.client.BenchRunner.devMouse = new double[]{
                                                     com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "x"),
                                                     com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "y")};
                                             return 1;
                                         })))
                         .then(LiteralArgumentBuilder.<CommandSourceStack>literal("off")
                                 .executes(ctx -> {
-                                    fr.lordfinn.crazyphone.client.PhoneCursorStabilizer.devMouse = null;
+                                    fr.lordfinn.crazyphone.client.BenchRunner.devMouse = null;
                                     return 1;
                                 })))
                 .then(LiteralArgumentBuilder.<CommandSourceStack>literal("plus")

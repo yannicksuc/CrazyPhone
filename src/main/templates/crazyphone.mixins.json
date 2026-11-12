@@ -26,7 +26,8 @@
     "PhoneScaleScreenMixin",
     "PhoneScaleMouseMixin",
     "PhoneScaleGuiGraphicsMixin",
-    "EmojiColorTextMixin"
+    "EmojiColorTextMixin",
+    "BenchMouseMixin"
   ],
   "injectors": {
     "defaultRequire": 1

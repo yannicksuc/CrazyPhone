@@ -269,7 +269,7 @@ public class CrazyPhoneInCallScreenScreen extends CrazyPhoneDefaultScreenScreen<
         if (videoTooltip == null)
             videoTooltip = voiceModeTooltipAt(mouseX, mouseY);
         if (videoTooltip != null)
-            guiGraphics.setComponentTooltipForNextFrame(this.font, videoTooltip, mouseX, mouseY);
+            guiGraphics.setComponentTooltipForNextFrame(this.font, fr.lordfinn.crazyphone.client.gui.PhoneTooltips.wrap(this.font, videoTooltip), mouseX, mouseY);
         this.extractTooltip(guiGraphics, mouseX, mouseY);
     }
     *///? } else {
@@ -286,7 +286,7 @@ public class CrazyPhoneInCallScreenScreen extends CrazyPhoneDefaultScreenScreen<
         if (videoTooltip == null)
             videoTooltip = voiceModeTooltipAt(mouseX, mouseY);
         if (videoTooltip != null)
-            guiGraphics./*$ gui_render_component_tooltip {*/renderComponentTooltip/*$}*/(this.font, videoTooltip, mouseX, mouseY);
+            guiGraphics./*$ gui_render_component_tooltip {*/renderComponentTooltip/*$}*/(this.font, fr.lordfinn.crazyphone.client.gui.PhoneTooltips.wrap(this.font, videoTooltip), mouseX, mouseY);
         this.renderTooltip(guiGraphics, mouseX, mouseY);
     }
     //?}

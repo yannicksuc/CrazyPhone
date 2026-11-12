@@ -247,13 +247,13 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
         // no nested <1.21.10 split needed (and one couldn't be written as a further comment pair nested
         // inside this branch's own outer comment anyway).
         if (menu.isGroup() && isHoveringGroupSettingsIcon(mouseX, mouseY)) {
-            guiGraphics.setComponentTooltipForNextFrame(this.font, List.of(groupSettingsTooltip), mouseX, mouseY);
+            guiGraphics.setComponentTooltipForNextFrame(this.font, fr.lordfinn.crazyphone.client.gui.PhoneTooltips.wrap(this.font, List.of(groupSettingsTooltip)), mouseX, mouseY);
         }
         if (VoicechatIntegration.isAvailable() && isHoveringCallIcon(mouseX, mouseY)) {
-            guiGraphics.setComponentTooltipForNextFrame(this.font, List.of(callIconTooltip()), mouseX, mouseY);
+            guiGraphics.setComponentTooltipForNextFrame(this.font, fr.lordfinn.crazyphone.client.gui.PhoneTooltips.wrap(this.font, List.of(callIconTooltip())), mouseX, mouseY);
         }
         if (isHoveringMuteIcon(mouseX, mouseY)) {
-            guiGraphics.setComponentTooltipForNextFrame(this.font, List.of(muteIconTooltip()), mouseX, mouseY);
+            guiGraphics.setComponentTooltipForNextFrame(this.font, fr.lordfinn.crazyphone.client.gui.PhoneTooltips.wrap(this.font, List.of(muteIconTooltip())), mouseX, mouseY);
         }
         // Drawn again here, after the message feed: button_envoyer/imagebutton_crazyphoneaddimage sit at
         // the bottom-right corner of the message crop zone (y 144-173, crop ends at 158) as a deliberate
@@ -277,7 +277,7 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
         renderHoveredTimestampTooltip(guiGraphics, mouseX, mouseY);
         List<Component> barTooltip = sendBarTooltip(mouseX, mouseY);
         if (barTooltip != null)
-            guiGraphics.setComponentTooltipForNextFrame(this.font, barTooltip, mouseX, mouseY);
+            guiGraphics.setComponentTooltipForNextFrame(this.font, fr.lordfinn.crazyphone.client.gui.PhoneTooltips.wrap(this.font, barTooltip), mouseX, mouseY);
         this.extractTooltip(guiGraphics, mouseX, mouseY);
         // CursorEffects.endFrame() is NOT called here - PhoneClickableCursorHandler does it once, in a
         // ScreenEvent.Render.Post listener that fires after this whole method returns, so it can also
@@ -330,23 +330,23 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
         // got covered, which is exactly the "wide box, no text" look this was producing.
         if (menu.isGroup() && isHoveringGroupSettingsIcon(mouseX, mouseY)) {
             //? if <1.21.10 {
-            guiGraphics.renderComponentTooltip(this.font, List.of(groupSettingsTooltip), mouseX, mouseY);
+            guiGraphics.renderComponentTooltip(this.font, fr.lordfinn.crazyphone.client.gui.PhoneTooltips.wrap(this.font, List.of(groupSettingsTooltip)), mouseX, mouseY);
             //? } else {
-            /*guiGraphics.setComponentTooltipForNextFrame(this.font, List.of(groupSettingsTooltip), mouseX, mouseY);
+            /*guiGraphics.setComponentTooltipForNextFrame(this.font, fr.lordfinn.crazyphone.client.gui.PhoneTooltips.wrap(this.font, List.of(groupSettingsTooltip)), mouseX, mouseY);
             *///?}
         }
         if (VoicechatIntegration.isAvailable() && isHoveringCallIcon(mouseX, mouseY)) {
             //? if <1.21.10 {
-            guiGraphics.renderComponentTooltip(this.font, List.of(callIconTooltip()), mouseX, mouseY);
+            guiGraphics.renderComponentTooltip(this.font, fr.lordfinn.crazyphone.client.gui.PhoneTooltips.wrap(this.font, List.of(callIconTooltip())), mouseX, mouseY);
             //? } else {
-            /*guiGraphics.setComponentTooltipForNextFrame(this.font, List.of(callIconTooltip()), mouseX, mouseY);
+            /*guiGraphics.setComponentTooltipForNextFrame(this.font, fr.lordfinn.crazyphone.client.gui.PhoneTooltips.wrap(this.font, List.of(callIconTooltip())), mouseX, mouseY);
             *///?}
         }
         if (isHoveringMuteIcon(mouseX, mouseY)) {
             //? if <1.21.10 {
-            guiGraphics.renderComponentTooltip(this.font, List.of(muteIconTooltip()), mouseX, mouseY);
+            guiGraphics.renderComponentTooltip(this.font, fr.lordfinn.crazyphone.client.gui.PhoneTooltips.wrap(this.font, List.of(muteIconTooltip())), mouseX, mouseY);
             //? } else {
-            /*guiGraphics.setComponentTooltipForNextFrame(this.font, List.of(muteIconTooltip()), mouseX, mouseY);
+            /*guiGraphics.setComponentTooltipForNextFrame(this.font, fr.lordfinn.crazyphone.client.gui.PhoneTooltips.wrap(this.font, List.of(muteIconTooltip())), mouseX, mouseY);
             *///?}
         }
         // Drawn again here, after the message feed: button_envoyer/imagebutton_crazyphoneaddimage sit at
@@ -372,9 +372,9 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
         List<Component> barTooltip = sendBarTooltip(mouseX, mouseY);
         if (barTooltip != null) {
             //? if <1.21.10 {
-            guiGraphics.renderComponentTooltip(this.font, barTooltip, mouseX, mouseY);
+            guiGraphics.renderComponentTooltip(this.font, fr.lordfinn.crazyphone.client.gui.PhoneTooltips.wrap(this.font, barTooltip), mouseX, mouseY);
             //? } else {
-            /*guiGraphics.setComponentTooltipForNextFrame(this.font, barTooltip, mouseX, mouseY);
+            /*guiGraphics.setComponentTooltipForNextFrame(this.font, fr.lordfinn.crazyphone.client.gui.PhoneTooltips.wrap(this.font, barTooltip), mouseX, mouseY);
             *///?}
         }
         this.renderTooltip(guiGraphics, mouseX, mouseY);
@@ -414,9 +414,9 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
                         CrazyPhoneHelper.formatContactDisplayName(entry.widget().getContactName(), entry.widget().getContactNumber())
                 );
                 //? if <1.21.10 {
-                guiGraphics.renderComponentTooltip(this.font, headTooltip, mouseX, mouseY);
+                guiGraphics.renderComponentTooltip(this.font, fr.lordfinn.crazyphone.client.gui.PhoneTooltips.wrap(this.font, headTooltip), mouseX, mouseY);
                 //? } else {
-                /*guiGraphics.setComponentTooltipForNextFrame(this.font, headTooltip, mouseX, mouseY);
+                /*guiGraphics.setComponentTooltipForNextFrame(this.font, fr.lordfinn.crazyphone.client.gui.PhoneTooltips.wrap(this.font, headTooltip), mouseX, mouseY);
                 *///?}
                 return;
             }
@@ -435,9 +435,9 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
                             .withStyle(ChatFormatting.GRAY));
                 }
                 //? if <1.21.10 {
-                guiGraphics.renderComponentTooltip(this.font, lines, mouseX, mouseY);
+                guiGraphics.renderComponentTooltip(this.font, fr.lordfinn.crazyphone.client.gui.PhoneTooltips.wrap(this.font, lines), mouseX, mouseY);
                 //? } else {
-                /*guiGraphics.setComponentTooltipForNextFrame(this.font, lines, mouseX, mouseY);
+                /*guiGraphics.setComponentTooltipForNextFrame(this.font, fr.lordfinn.crazyphone.client.gui.PhoneTooltips.wrap(this.font, lines), mouseX, mouseY);
                 *///?}
                 return;
             }
@@ -1343,6 +1343,19 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
     }
 
     /** Dev only (/phoneui emojitab): shows that tab of the emoji drawer. */
+    /** Dev only (UI test bench): the middle of a send bar icon (see BAR_*), or of the field if it is not shown. */
+    public int[] devBarIconCenter(int id) {
+        for (BarIcon icon : barIcons)
+            if (icon.id() == id)
+                return new int[]{icon.x() + icon.size() / 2, icon.y() + icon.size() / 2};
+        return new int[]{message.getX() + 4, message.getY() + 4};
+    }
+
+    /** Dev only (UI test bench): the middle of header slot n (0 = rightmost). */
+    public int[] devHeaderSlotCenter(int n) {
+        return new int[]{headerSlotX(n) + HEADER_SLOT / 2, this.topPos + HEADER_SLOT_Y + HEADER_SLOT / 2};
+    }
+
     /** Dev only (/phoneui plus): opens or closes the + menu, like a click on the +. */
     public void devTogglePlus() {
         plusMenuOpen = !plusMenuOpen;

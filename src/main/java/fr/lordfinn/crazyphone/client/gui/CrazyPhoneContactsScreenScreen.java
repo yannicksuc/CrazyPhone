@@ -330,7 +330,7 @@ public class CrazyPhoneContactsScreenScreen extends CrazyPhoneDefaultScreenScree
 			// >=26 always implies >=1.21.10, so this always takes the setTooltipForNextFrame path - no
 			// nested <1.21.10 split needed here (and one couldn't be written as a further /* *\/ comment
 			// pair nested inside this branch's own outer /* *\/ comment anyway).
-			guiGraphics.setTooltipForNextFrame(this.font, hoveredTooltip.stream().map(Component::getVisualOrderText).toList(), mouseX, mouseY);
+			guiGraphics.setTooltipForNextFrame(this.font, fr.lordfinn.crazyphone.client.gui.PhoneTooltips.wrap(this.font, hoveredTooltip).stream().map(Component::getVisualOrderText).toList(), mouseX, mouseY);
 		}
 	}
 	*///? } else {
@@ -367,9 +367,9 @@ public class CrazyPhoneContactsScreenScreen extends CrazyPhoneDefaultScreenScree
 
 		if (hoveredTooltip != null) {
 			//? if <1.21.10 {
-			guiGraphics.renderTooltip(this.font, hoveredTooltip.stream().map(Component::getVisualOrderText).toList(), mouseX, mouseY);
+			guiGraphics.renderTooltip(this.font, fr.lordfinn.crazyphone.client.gui.PhoneTooltips.wrap(this.font, hoveredTooltip).stream().map(Component::getVisualOrderText).toList(), mouseX, mouseY);
 			//? } else {
-			/*guiGraphics.setTooltipForNextFrame(this.font, hoveredTooltip.stream().map(Component::getVisualOrderText).toList(), mouseX, mouseY);
+			/*guiGraphics.setTooltipForNextFrame(this.font, fr.lordfinn.crazyphone.client.gui.PhoneTooltips.wrap(this.font, hoveredTooltip).stream().map(Component::getVisualOrderText).toList(), mouseX, mouseY);
 			*///?}
 		}
 	}

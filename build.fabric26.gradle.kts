@@ -198,6 +198,10 @@ sourceSets.main {
         // Bigger phone (PhoneScale + its three mixins, registered in fabricClientMixins below) and the
         // conversation emoji drawer - all client-only, loader-agnostic.
         "fr/lordfinn/crazyphone/client/gui/PhoneScale.java",
+        "fr/lordfinn/crazyphone/client/gui/PhoneTooltips.java",
+        // Dev only UI test bench (inert without CRAZYPHONE_BENCH).
+        "fr/lordfinn/crazyphone/client/BenchRunner.java",
+        "fr/lordfinn/crazyphone/mixin/BenchMouseMixin.java",
         "fr/lordfinn/crazyphone/client/ClientPrefs.java",
         "fr/lordfinn/crazyphone/client/EmojiCatalog.java",
         "fr/lordfinn/crazyphone/client/EmojiGlyphs.java",
@@ -461,7 +465,8 @@ val fabricClientMixins = listOf(
     "PhoneScaleScreenMixin",
     "PhoneScaleMouseMixin",
     "PhoneScaleGuiGraphicsMixin",
-    "EmojiColorTextMixin"
+    "EmojiColorTextMixin",
+    "BenchMouseMixin"
 ).joinToString(",\n    ") { "\"$it\"" }
 
 // No 1.20.1 boundary to worry about on this loader (unlike build.fabric.gradle.kts's own conditional

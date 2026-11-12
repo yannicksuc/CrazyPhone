@@ -180,10 +180,10 @@ public class CrazyPhoneGroupSettingsScreenScreen extends CrazyPhoneDefaultScreen
         // what made these look like an empty/cropped box instead of a proper tooltip.
         if (cursorCarriedIcon.isEmpty() && isHoveringIconPreview(mouseX, mouseY)) {
             guiGraphics.setComponentTooltipForNextFrame(this.font,
-                    List.of(Component.translatable("gui.crazyphone.crazy_phone_group_settings.tooltip_icon_hint")), mouseX, mouseY);
+                    fr.lordfinn.crazyphone.client.gui.PhoneTooltips.wrap(this.font, List.of(Component.translatable("gui.crazyphone.crazy_phone_group_settings.tooltip_icon_hint"))), mouseX, mouseY);
         }
         if (memberTooltip != null) {
-            guiGraphics.setComponentTooltipForNextFrame(this.font, List.of(memberTooltip), mouseX, mouseY);
+            guiGraphics.setComponentTooltipForNextFrame(this.font, fr.lordfinn.crazyphone.client.gui.PhoneTooltips.wrap(this.font, List.of(memberTooltip)), mouseX, mouseY);
         }
         // Drawn last of all so it always floats on top of everything else, following the cursor exactly
         // like vanilla's own carried-item rendering. Item icons are depth-tested 3D models, not flat 2D
@@ -212,17 +212,17 @@ public class CrazyPhoneGroupSettingsScreenScreen extends CrazyPhoneDefaultScreen
         if (cursorCarriedIcon.isEmpty() && isHoveringIconPreview(mouseX, mouseY)) {
             //? if <1.21.10 {
             guiGraphics.renderComponentTooltip(this.font,
-                    List.of(Component.translatable("gui.crazyphone.crazy_phone_group_settings.tooltip_icon_hint")), mouseX, mouseY);
+                    fr.lordfinn.crazyphone.client.gui.PhoneTooltips.wrap(this.font, List.of(Component.translatable("gui.crazyphone.crazy_phone_group_settings.tooltip_icon_hint"))), mouseX, mouseY);
             //? } else {
             /*guiGraphics.setComponentTooltipForNextFrame(this.font,
-                    List.of(Component.translatable("gui.crazyphone.crazy_phone_group_settings.tooltip_icon_hint")), mouseX, mouseY);
+                    fr.lordfinn.crazyphone.client.gui.PhoneTooltips.wrap(this.font, List.of(Component.translatable("gui.crazyphone.crazy_phone_group_settings.tooltip_icon_hint"))), mouseX, mouseY);
             *///?}
         }
         if (memberTooltip != null) {
             //? if <1.21.10 {
-            guiGraphics.renderComponentTooltip(this.font, List.of(memberTooltip), mouseX, mouseY);
+            guiGraphics.renderComponentTooltip(this.font, fr.lordfinn.crazyphone.client.gui.PhoneTooltips.wrap(this.font, List.of(memberTooltip)), mouseX, mouseY);
             //? } else {
-            /*guiGraphics.setComponentTooltipForNextFrame(this.font, List.of(memberTooltip), mouseX, mouseY);
+            /*guiGraphics.setComponentTooltipForNextFrame(this.font, fr.lordfinn.crazyphone.client.gui.PhoneTooltips.wrap(this.font, List.of(memberTooltip)), mouseX, mouseY);
             *///?}
         }
         // Drawn last of all so it always floats on top of everything else, following the cursor exactly

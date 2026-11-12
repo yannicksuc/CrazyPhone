@@ -83,6 +83,8 @@ loom {
         named("client") {
             client()
             programArgs("--username", "LordFinn")
+            // Dev-only, opt-in (scripts/dev-launch.ps1 passes it): joins that dedicated server straight away.
+            (findProperty("quickPlayMultiplayer") as String?)?.let { programArgs("--quickPlayMultiplayer", it) }
             runDir = "run"
         }
         named("server") {
@@ -187,6 +189,10 @@ sourceSets.main {
             // Bigger phone (PhoneScale + its three mixins, registered in fabricClientMixins below) and the
             // conversation emoji drawer - all client-only, loader-agnostic.
             "fr/lordfinn/crazyphone/client/gui/PhoneScale.java",
+            "fr/lordfinn/crazyphone/client/gui/PhoneTooltips.java",
+            // Dev only UI test bench (inert without CRAZYPHONE_BENCH).
+            "fr/lordfinn/crazyphone/client/BenchRunner.java",
+            "fr/lordfinn/crazyphone/mixin/BenchMouseMixin.java",
             "fr/lordfinn/crazyphone/client/ClientPrefs.java",
             "fr/lordfinn/crazyphone/client/EmojiCatalog.java",
             "fr/lordfinn/crazyphone/client/EmojiGlyphs.java",
@@ -487,6 +493,7 @@ val fabricClientMixins = (if (minecraftVersion != "1.20.1") listOf(
     "PhoneScaleMouseMixin",
     "PhoneScaleGuiGraphicsMixin",
     "EmojiColorTextMixin",
+    "BenchMouseMixin",
     "CrazyPhoneLiveScreenItemRenderMixin"
 ) else emptyList()).joinToString(",\n    ") { "\"$it\"" }
 
