@@ -37,6 +37,11 @@ repositories {
     mavenLocal()
     // Simple Voice Chat addon API - same repo as the NeoForge side (build.gradle.kts).
     maven("https://maven.maxhenkel.de/repository/public")
+    // JEI's API, compile only (see client/compat/CrazyPhoneJeiPlugin).
+    exclusiveContent {
+        forRepository { maven("https://maven.blamejared.com") }
+        filter { includeGroup("mezz.jei") }
+    }
     // Modrinth's maven, only for the opt-in dev runtime Simple Voice Chat below.
     exclusiveContent {
         forRepository { maven("https://api.modrinth.com/maven") }
@@ -79,6 +84,9 @@ dependencies {
     // Simple Voice Chat addon API - compile-time only, same coordinate/version as the NeoForge side
     // (build.gradle.kts) - see fr.lordfinn.crazyphone.voicechat package.
     compileOnly("de.maxhenkel.voicechat:voicechat-api:${property("voicechat_api_version")}")
+    // Optional JEI integration, compile only: the plugin class is only ever loaded by JEI itself.
+    if (hasProperty("jei_api_version"))
+        compileOnly("mezz.jei:jei-${property("jei_minecraft")}-common-api:${property("jei_api_version")}")
     // Dev-only, opt-in (`-PwithVoicechat`): puts the real Simple Voice Chat mod in runClient/runServer to live-test
     // calls and voice messages. Off by default, so normal builds and the released jar never depend on it.
     if (hasProperty("withVoicechat"))
@@ -198,6 +206,7 @@ sourceSets.main {
         // Bigger phone (PhoneScale + its three mixins, registered in fabricClientMixins below) and the
         // conversation emoji drawer - all client-only, loader-agnostic.
         "fr/lordfinn/crazyphone/client/gui/PhoneScale.java",
+        "fr/lordfinn/crazyphone/client/compat/CrazyPhoneJeiPlugin.java",
         "fr/lordfinn/crazyphone/client/ClientPrefs.java",
         "fr/lordfinn/crazyphone/client/EmojiCatalog.java",
         "fr/lordfinn/crazyphone/client/EmojiGlyphs.java",
@@ -481,6 +490,8 @@ val modMetadataProperties = mapOf(
     "fabric_loader_version_range" to property("fabric_loader_version_range"),
     "mixin_compatibility_level" to mixinCompatibilityLevel,
     "crazyphone_fabric_client_mixins" to fabricClientMixins,
+    // JEI's plugin entrypoint (see build.fabric.gradle.kts).
+    "crazyphone_fabric_extra_entrypoints" to ",\n    \"jei_mod_plugin\": [\"fr.lordfinn.crazyphone.client.compat.CrazyPhoneJeiPlugin\"]",
     "crazyphone_fabric_common_mixins" to fabricCommonMixins
 )
 val generateModMetadata = tasks.register<ProcessResources>("generateModMetadata") {

@@ -30,6 +30,11 @@ tasks.withType<JavaCompile>().configureEach {
 repositories {
     mavenLocal()
     maven("https://maven.maxhenkel.de/repository/public")
+    // JEI's API, compile only (see client/compat/CrazyPhoneJeiPlugin).
+    exclusiveContent {
+        forRepository { maven("https://maven.blamejared.com") }
+        filter { includeGroup("mezz.jei") }
+    }
     // Only for the dev-only -PwithVoicechat runtime below (same setup as build.fabric26.gradle.kts).
     exclusiveContent {
         forRepository { maven("https://api.modrinth.com/maven") }
@@ -223,8 +228,14 @@ dependencies {
     // Optional Simple Voice Chat addon API - compileOnly so the mod doesn't require SVC to be present at
     // runtime; availability is checked via ModList at runtime (see VoicechatIntegration.isAvailable()).
     compileOnly("de.maxhenkel.voicechat:voicechat-api:${property("voicechat_api_version")}")
+    // Optional JEI integration, compile only: the plugin class is only ever loaded by JEI itself.
+    if (hasProperty("jei_api_version"))
+        compileOnly("mezz.jei:jei-${property("jei_minecraft")}-common-api:${property("jei_api_version")}")
     // Dev-only, opt-in (`-PwithVoicechat`): puts the real Simple Voice Chat mod in runClient/runServer to live-test
     // calls and voice messages, like the Fabric 26.x nodes. Off by default, the released jar never depends on it.
+    // Dev-only, opt-in (`-PwithJei`): the real JEI in the dev game, to check the phone screens with it.
+    if (hasProperty("withJei") && hasProperty("jei_api_version"))
+        runtimeOnly("mezz.jei:jei-${property("jei_minecraft")}-neoforge:${property("jei_api_version")}") { isTransitive = false }
     if (hasProperty("withVoicechat"))
         runtimeOnly("maven.modrinth:simple-voice-chat:neoforge-${property("voicechat_api_version")}+$minecraftVersion")
 }

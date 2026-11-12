@@ -10,7 +10,7 @@
   "entrypoints": {
     "main": ["fr.lordfinn.crazyphone.fabric.CrazyphoneFabric"],
     "client": ["fr.lordfinn.crazyphone.fabric.CrazyphoneFabricClient"],
-    "voicechat": ["fr.lordfinn.crazyphone.voicechat.CrazyPhoneVoicechatPlugin"]
+    "voicechat": ["fr.lordfinn.crazyphone.voicechat.CrazyPhoneVoicechatPlugin"]${crazyphone_fabric_extra_entrypoints}
   },
   "mixins": ["crazyphone.fabric.mixins.json"],
   "depends": {

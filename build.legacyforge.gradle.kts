@@ -36,6 +36,11 @@ tasks.withType<JavaCompile>().configureEach {
 repositories {
     mavenLocal()
     maven("https://maven.maxhenkel.de/repository/public")
+    // JEI's API, compile only (see client/compat/CrazyPhoneJeiPlugin).
+    exclusiveContent {
+        forRepository { maven("https://maven.blamejared.com") }
+        filter { includeGroup("mezz.jei") }
+    }
 }
 
 base {
@@ -161,6 +166,9 @@ dependencies {
     // Optional Simple Voice Chat addon API - compileOnly so the mod doesn't require SVC to be present at
     // runtime; availability is checked via ModList at runtime (see VoicechatIntegration.isAvailable()).
     compileOnly("de.maxhenkel.voicechat:voicechat-api:${property("voicechat_api_version")}")
+    // Optional JEI integration, compile only: the plugin class is only ever loaded by JEI itself.
+    if (hasProperty("jei_api_version"))
+        compileOnly("mezz.jei:jei-${property("jei_minecraft")}-common-api:${property("jei_api_version")}")
     // Mixin's annotation processor writes the refmap (Mojang names -> SRG) the reobfuscated jar needs:
     // production Forge 1.20.1 runs on SRG names, so without a refmap every @Inject target string would
     // miss at runtime.
