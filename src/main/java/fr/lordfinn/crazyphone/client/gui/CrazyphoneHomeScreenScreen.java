@@ -64,6 +64,80 @@ public class CrazyphoneHomeScreenScreen extends CrazyPhoneDefaultScreenScreen<Cr
         guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(this.font, number, x, 14, PHONE_NUMBER_COLOR, false);
     }
 
+    // ---- Phone size switch: a magnifier in the top strip's right header slot ----
+    private static final Component ZOOM_IN_ICON = Component.literal("\uD83D\uDD0D");
+    private static final Component ZOOM_OUT_ICON = Component.literal("\uD83D\uDD0E");
+
+    private boolean bigPhone() {
+        return fr.lordfinn.crazyphone.client.ClientPrefs.phoneSizePercent() != fr.lordfinn.crazyphone.client.ClientPrefs.PHONE_SIZE_VANILLA;
+    }
+
+    private boolean isHoveringSizeToggle(double mouseX, double mouseY) {
+        return !LaunchSplash.isActive() && isInHeaderSlot(mouseX, mouseY, headerSlotX(0));
+    }
+
+    private void renderSizeToggle(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int mouseX, int mouseY) {
+        if (LaunchSplash.isActive())
+            return;
+        boolean hovered = isHoveringSizeToggle(mouseX, mouseY);
+        if (hovered)
+            fr.lordfinn.crazyphone.client.CursorEffects.requestPointerCursor();
+        drawHeaderGlyph(guiGraphics, bigPhone() ? ZOOM_OUT_ICON : ZOOM_IN_ICON, headerSlotX(0), 0xFFFFFFFF, hovered);
+    }
+
+    private java.util.List<Component> sizeToggleTooltip() {
+        String key = bigPhone() ? "gui.crazyphone.crazyphone_home_screen.size_big" : "gui.crazyphone.crazyphone_home_screen.size_normal";
+        return java.util.List.of(Component.translatable(key),
+                Component.translatable(key + ".lore").withStyle(net.minecraft.ChatFormatting.GRAY));
+    }
+
+    /** Switches between the vanilla size and the bigger phone, then lays this screen out again at once. */
+    private void toggleSize() {
+        fr.lordfinn.crazyphone.client.gui.components.EmojiDrawer.playClick();
+        fr.lordfinn.crazyphone.client.ClientPrefs.setPhoneSizePercent(bigPhone()
+                ? fr.lordfinn.crazyphone.client.ClientPrefs.PHONE_SIZE_VANILLA : fr.lordfinn.crazyphone.client.ClientPrefs.PHONE_SIZE_BIG);
+        this.rebuildWidgets();
+    }
+
+    //? if >=26 {
+    /*@Override
+    public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTicks) {
+        super.extractRenderState(guiGraphics, mouseX, mouseY, partialTicks);
+        renderSizeToggle(guiGraphics, mouseX, mouseY);
+        if (isHoveringSizeToggle(mouseX, mouseY))
+            guiGraphics.setComponentTooltipForNextFrame(this.font, sizeToggleTooltip(), mouseX, mouseY);
+    }
+    *///? } else {
+    @Override
+    public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
+        super.render(guiGraphics, mouseX, mouseY, partialTicks);
+        renderSizeToggle(guiGraphics, mouseX, mouseY);
+        if (isHoveringSizeToggle(mouseX, mouseY))
+            guiGraphics./*$ gui_render_component_tooltip {*/renderComponentTooltip/*$}*/(this.font, sizeToggleTooltip(), mouseX, mouseY);
+    }
+    //?}
+
+    //? if <1.21.10 {
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (button == 0 && isHoveringSizeToggle(mouseX, mouseY)) {
+            toggleSize();
+            return true;
+        }
+        return super.mouseClicked(mouseX, mouseY, button);
+    }
+    //?}
+    //? if >=1.21.10 {
+    /*@Override
+    public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent event, boolean doubleClick) {
+        if (event.button() == 0 && isHoveringSizeToggle(event.x(), event.y())) {
+            toggleSize();
+            return true;
+        }
+        return super.mouseClicked(event, doubleClick);
+    }
+    *///?}
+
     @Override
     public void init() {
         super.init();

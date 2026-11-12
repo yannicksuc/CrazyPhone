@@ -47,17 +47,25 @@ public final class ClientPrefs {
     public static final String KEY_LIVE_SCREEN_OWN = "liveScreenOwnPhone";
     public static final String KEY_LIVE_SCREEN_OTHERS = "liveScreenOtherPhones";
     public static final String KEY_LAUNCH_SPLASH_SHOWN = "launchSplashShown";
+    /** Set once the player picks a phone size themselves (the home screen's magnifier, or by hand). */
+    public static final String KEY_PHONE_SIZE_CHOSEN = "phoneScreenHeightChosen";
 
     /** 0 = keep the vanilla GUI scale size (the phone as it was before this option existed). */
     public static final int PHONE_SIZE_VANILLA = 0;
     public static final int PHONE_SIZE_MIN = 40;
     public static final int PHONE_SIZE_MAX = 95;
-    public static final int PHONE_SIZE_DEFAULT = 70;
+    /** The vanilla size by default: the bigger phone made the game report a smaller window to every screen,
+     * so other mods that draw beside a screen (JEI, REI, EMI...) landed on top of the phone. */
+    public static final int PHONE_SIZE_DEFAULT = PHONE_SIZE_VANILLA;
+    /** The size the home screen's magnifier switches to, and the old default (files written before
+     * 1.8.0-beta.8 hold it without having been chosen: they go back to the vanilla size once). */
+    public static final int PHONE_SIZE_BIG = 70;
 
     private static int phoneSizePercent = PHONE_SIZE_DEFAULT;
     private static boolean emojiPickerEnabled = true;
     /** The "Sandbox creation" splash is shown the first time the phone is opened on this game, then never again. */
     private static boolean launchSplashShown;
+    private static boolean phoneSizeChosen;
 
     private static boolean loadedOnce;
     /** The in-game toggles (ClientConfig) are taken from the file only once: afterwards the game owns them. */
@@ -79,6 +87,16 @@ public final class ClientPrefs {
     public static synchronized boolean emojiPickerEnabled() {
         refreshIfChanged();
         return emojiPickerEnabled;
+    }
+
+    /** Picks the phone size (vanilla or a percentage), saved right away and kept from then on. */
+    public static synchronized void setPhoneSizePercent(int percent) {
+        refreshIfChanged();
+        phoneSizePercent = clampPhoneSizePercent(percent);
+        phoneSizeChosen = true;
+        Path path = file();
+        if (path != null)
+            write(path);
     }
 
     public static synchronized boolean launchSplashShown() {
@@ -161,6 +179,7 @@ public final class ClientPrefs {
         int size = PHONE_SIZE_DEFAULT;
         boolean picker = true;
         boolean splashShown = false;
+        boolean sizeChosen = false;
         if (Files.size(path) <= MAX_FILE_BYTES) {
             Properties props = new Properties();
             try (InputStream in = Files.newInputStream(path);
@@ -170,6 +189,10 @@ public final class ClientPrefs {
             size = parseInt(props.getProperty(KEY_PHONE_SIZE), PHONE_SIZE_DEFAULT);
             picker = parseBoolean(props.getProperty(KEY_EMOJI_PICKER), true);
             splashShown = parseBoolean(props.getProperty(KEY_LAUNCH_SPLASH_SHOWN), false);
+            sizeChosen = parseBoolean(props.getProperty(KEY_PHONE_SIZE_CHOSEN), false);
+            // Written by an older version with its default size, never picked by the player: back to the new default.
+            if (!sizeChosen && size == PHONE_SIZE_BIG)
+                size = PHONE_SIZE_DEFAULT;
             if (!togglesApplied) {
                 ClientConfig.liveScreenOwnPhone = parseBoolean(props.getProperty(KEY_LIVE_SCREEN_OWN), true);
                 ClientConfig.liveScreenOtherPhones = parseBoolean(props.getProperty(KEY_LIVE_SCREEN_OTHERS), true);
@@ -177,7 +200,7 @@ public final class ClientPrefs {
             unknownKeys.clear();
             for (String key : props.stringPropertyNames()) {
                 if (!key.equals(KEY_PHONE_SIZE) && !key.equals(KEY_EMOJI_PICKER) && !key.equals(KEY_LIVE_SCREEN_OWN)
-                        && !key.equals(KEY_LIVE_SCREEN_OTHERS) && !key.equals(KEY_LAUNCH_SPLASH_SHOWN))
+                        && !key.equals(KEY_LIVE_SCREEN_OTHERS) && !key.equals(KEY_LAUNCH_SPLASH_SHOWN) && !key.equals(KEY_PHONE_SIZE_CHOSEN))
                     unknownKeys.put(key, props.getProperty(key));
             }
         } else {
@@ -187,6 +210,7 @@ public final class ClientPrefs {
         phoneSizePercent = clampPhoneSizePercent(size);
         emojiPickerEnabled = picker;
         launchSplashShown = splashShown;
+        phoneSizeChosen = sizeChosen;
     }
 
     private static int parseInt(String raw, int fallback) {
@@ -229,7 +253,10 @@ public final class ClientPrefs {
                 .append("# Height of the phone on screen, in percent of the window height (").append(PHONE_SIZE_MIN).append(" to ").append(PHONE_SIZE_MAX).append(").\n")
                 .append("# The phone snaps to whole pixel sizes so it stays crisp, never gets smaller than at your GUI scale\n")
                 .append("# and never overflows the window. 0 (or \"vanilla\") keeps the size given by the GUI scale alone.\n")
+                .append("# Bigger than the GUI scale, other mods that draw beside the phone's screens (JEI, REI, EMI...) may\n")
+                .append("# overlap it. The magnifier on the phone's home screen switches between 0 and 70.\n")
                 .append(KEY_PHONE_SIZE).append('=').append(size).append("\n")
+                .append(KEY_PHONE_SIZE_CHOSEN).append('=').append(phoneSizeChosen).append("\n")
                 .append("\n")
                 .append("# Emoji button next to the message field of a conversation.\n")
                 .append(KEY_EMOJI_PICKER).append('=').append(emojiPickerEnabled).append("\n")

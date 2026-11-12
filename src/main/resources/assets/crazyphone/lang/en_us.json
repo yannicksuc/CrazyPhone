@@ -357,5 +357,9 @@
   "gui.crazyphone.emoji_drawer.tab.symbols": "Symbols",
   "gui.crazyphone.emoji_drawer.tab.flags": "Flags",
   "gui.crazyphone.launch_splash.line1": "A Sandbox creation by LordFinn",
-  "gui.crazyphone.launch_splash.line2": "for Mastu"
+  "gui.crazyphone.launch_splash.line2": "for Mastu",
+  "gui.crazyphone.crazyphone_home_screen.size_normal": "Make the phone bigger",
+  "gui.crazyphone.crazyphone_home_screen.size_normal.lore": "The phone takes 70% of the window height. Mods that draw beside screens (JEI, REI, EMI...) may then overlap it.",
+  "gui.crazyphone.crazyphone_home_screen.size_big": "Back to the normal phone size",
+  "gui.crazyphone.crazyphone_home_screen.size_big.lore": "The phone goes back to the size given by the GUI scale."
 }
