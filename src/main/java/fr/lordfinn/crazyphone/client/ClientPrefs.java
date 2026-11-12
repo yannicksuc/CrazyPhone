@@ -49,6 +49,8 @@ public final class ClientPrefs {
     public static final String KEY_LAUNCH_SPLASH_SHOWN = "launchSplashShown";
     /** Set once the player picks a phone size themselves (the home screen's magnifier, or by hand). */
     public static final String KEY_PHONE_SIZE_CHOSEN = "phoneScreenHeightChosen";
+    /** The home screen's magnifier already pulsed once to show it is there. */
+    public static final String KEY_SIZE_HINT_SHOWN = "phoneSizeHintShown";
 
     /** 0 = keep the vanilla GUI scale size (the phone as it was before this option existed). */
     public static final int PHONE_SIZE_VANILLA = 0;
@@ -66,6 +68,7 @@ public final class ClientPrefs {
     /** The "Sandbox creation" splash is shown the first time the phone is opened on this game, then never again. */
     private static boolean launchSplashShown;
     private static boolean phoneSizeChosen;
+    private static boolean sizeHintShown;
 
     private static boolean loadedOnce;
     /** The in-game toggles (ClientConfig) are taken from the file only once: afterwards the game owns them. */
@@ -94,6 +97,22 @@ public final class ClientPrefs {
         refreshIfChanged();
         phoneSizePercent = clampPhoneSizePercent(percent);
         phoneSizeChosen = true;
+        Path path = file();
+        if (path != null)
+            write(path);
+    }
+
+    public static synchronized boolean sizeHintShown() {
+        refreshIfChanged();
+        return sizeHintShown;
+    }
+
+    /** Remembers that the magnifier's one-time pulse was seen, saved right away. */
+    public static synchronized void markSizeHintShown() {
+        refreshIfChanged();
+        if (sizeHintShown)
+            return;
+        sizeHintShown = true;
         Path path = file();
         if (path != null)
             write(path);
@@ -180,6 +199,7 @@ public final class ClientPrefs {
         boolean picker = true;
         boolean splashShown = false;
         boolean sizeChosen = false;
+        boolean hintShown = false;
         if (Files.size(path) <= MAX_FILE_BYTES) {
             Properties props = new Properties();
             try (InputStream in = Files.newInputStream(path);
@@ -190,6 +210,7 @@ public final class ClientPrefs {
             picker = parseBoolean(props.getProperty(KEY_EMOJI_PICKER), true);
             splashShown = parseBoolean(props.getProperty(KEY_LAUNCH_SPLASH_SHOWN), false);
             sizeChosen = parseBoolean(props.getProperty(KEY_PHONE_SIZE_CHOSEN), false);
+            hintShown = parseBoolean(props.getProperty(KEY_SIZE_HINT_SHOWN), false);
             // Written by an older version with its default size, never picked by the player: back to the new default.
             if (!sizeChosen && size == PHONE_SIZE_BIG)
                 size = PHONE_SIZE_DEFAULT;
@@ -200,7 +221,7 @@ public final class ClientPrefs {
             unknownKeys.clear();
             for (String key : props.stringPropertyNames()) {
                 if (!key.equals(KEY_PHONE_SIZE) && !key.equals(KEY_EMOJI_PICKER) && !key.equals(KEY_LIVE_SCREEN_OWN)
-                        && !key.equals(KEY_LIVE_SCREEN_OTHERS) && !key.equals(KEY_LAUNCH_SPLASH_SHOWN) && !key.equals(KEY_PHONE_SIZE_CHOSEN))
+                        && !key.equals(KEY_LIVE_SCREEN_OTHERS) && !key.equals(KEY_LAUNCH_SPLASH_SHOWN) && !key.equals(KEY_PHONE_SIZE_CHOSEN) && !key.equals(KEY_SIZE_HINT_SHOWN))
                     unknownKeys.put(key, props.getProperty(key));
             }
         } else {
@@ -211,6 +232,7 @@ public final class ClientPrefs {
         emojiPickerEnabled = picker;
         launchSplashShown = splashShown;
         phoneSizeChosen = sizeChosen;
+        sizeHintShown = hintShown;
     }
 
     private static int parseInt(String raw, int fallback) {
@@ -257,6 +279,7 @@ public final class ClientPrefs {
                 .append("# overlap it. The magnifier on the phone's home screen switches between 0 and 70.\n")
                 .append(KEY_PHONE_SIZE).append('=').append(size).append("\n")
                 .append(KEY_PHONE_SIZE_CHOSEN).append('=').append(phoneSizeChosen).append("\n")
+                .append(KEY_SIZE_HINT_SHOWN).append('=').append(sizeHintShown).append("\n")
                 .append("\n")
                 .append("# Emoji button next to the message field of a conversation.\n")
                 .append(KEY_EMOJI_PICKER).append('=').append(emojiPickerEnabled).append("\n")

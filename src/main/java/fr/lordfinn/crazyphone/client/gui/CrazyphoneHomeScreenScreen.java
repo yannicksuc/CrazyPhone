@@ -72,6 +72,11 @@ public class CrazyphoneHomeScreenScreen extends CrazyPhoneDefaultScreenScreen<Cr
         return fr.lordfinn.crazyphone.client.ClientPrefs.phoneSizePercent() != fr.lordfinn.crazyphone.client.ClientPrefs.PHONE_SIZE_VANILLA;
     }
 
+    /** The very first time the home screen opens, the magnifier pulses until it is hovered, the page changes
+     * or the phone closes (then never again). */
+    private boolean pulsing;
+    private long pulseStartMillis;
+
     private boolean isHoveringSizeToggle(double mouseX, double mouseY) {
         return !LaunchSplash.isActive() && isInHeaderSlot(mouseX, mouseY, headerSlotX(0));
     }
@@ -82,7 +87,36 @@ public class CrazyphoneHomeScreenScreen extends CrazyPhoneDefaultScreenScreen<Cr
         boolean hovered = isHoveringSizeToggle(mouseX, mouseY);
         if (hovered)
             fr.lordfinn.crazyphone.client.CursorEffects.requestPointerCursor();
-        drawHeaderGlyph(guiGraphics, bigPhone() ? ZOOM_OUT_ICON : ZOOM_IN_ICON, headerSlotX(0), 0xFFFFFFFF, hovered);
+        if (!pulsing && !hovered && !fr.lordfinn.crazyphone.client.ClientPrefs.sizeHintShown()) {
+            pulsing = true;
+            pulseStartMillis = System.currentTimeMillis();
+        }
+        if (pulsing && hovered)
+            endPulse();
+        // Very discreet until hovered: a setting, not something to reach for every day. While pulsing, the
+        // opacity goes gently between that and full, one breath every 1.6 s.
+        int alpha = 0x40;
+        if (hovered) {
+            alpha = 0xFF;
+        } else if (pulsing) {
+            double phase = ((System.currentTimeMillis() - pulseStartMillis) % 1600L) / 1600.0;
+            alpha = 0x40 + (int) Math.round((0xFF - 0x40) * (0.5 - 0.5 * Math.cos(phase * 2 * Math.PI)));
+        }
+        drawHeaderGlyph(guiGraphics, bigPhone() ? ZOOM_OUT_ICON : ZOOM_IN_ICON, headerSlotX(0), (alpha << 24) | 0xFFFFFF, hovered);
+    }
+
+    private void endPulse() {
+        if (!pulsing)
+            return;
+        pulsing = false;
+        fr.lordfinn.crazyphone.client.ClientPrefs.markSizeHintShown();
+    }
+
+    @Override
+    public void removed() {
+        // Page change or phone closed: the pulse was seen, it does not come back.
+        endPulse();
+        super.removed();
     }
 
     private java.util.List<Component> sizeToggleTooltip() {
