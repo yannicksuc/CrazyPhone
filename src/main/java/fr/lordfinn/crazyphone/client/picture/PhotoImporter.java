@@ -107,6 +107,11 @@ public final class PhotoImporter {
     }
     //?}
 
+    /** Dev only (/phoneui import, store screenshots): imports one file without the OS dialog. */
+    public static UUID devImport(Path path) {
+        return importOne(path);
+    }
+
     private static UUID importOne(Path path) {
         try {
             if (Files.size(path) > MAX_DOWNLOAD_BYTES)

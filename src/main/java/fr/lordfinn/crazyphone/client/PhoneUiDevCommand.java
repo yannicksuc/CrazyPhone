@@ -148,6 +148,19 @@ public final class PhoneUiDevCommand {
                                     return 1;
                                 })))
                 // Store screenshots: reloads the resource packs (F3+T), e.g. after swapping a test skin.
+                // Store screenshots: imports a picture file (PNG, JPG, animated GIF...) as "Import from PC" does.
+                .then(LiteralArgumentBuilder.<CommandSourceStack>literal("import")
+                        .then(RequiredArgumentBuilder.<CommandSourceStack, String>argument("path", StringArgumentType.greedyString())
+                                .executes(ctx -> {
+                                    java.nio.file.Path path = java.nio.file.Path.of(StringArgumentType.getString(ctx, "path"));
+                                    Minecraft mc = Minecraft.getInstance();
+                                    mc.execute(() -> {
+                                        java.util.UUID id = fr.lordfinn.crazyphone.client.picture.PhotoImporter.devImport(path);
+                                        if (mc.player != null)
+                                            mc.player.displayClientMessage(net.minecraft.network.chat.Component.literal("import " + id), false);
+                                    });
+                                    return 1;
+                                })))
                 .then(LiteralArgumentBuilder.<CommandSourceStack>literal("reloadpacks")
                         .executes(ctx -> {
                             Minecraft mc = Minecraft.getInstance();
