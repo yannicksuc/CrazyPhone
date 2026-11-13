@@ -189,6 +189,15 @@ public final class VoiceMessageRecorder {
         captureThread = null;
     }
 
+    /** Dev only (/phoneui record, store screenshots): shows a recording waveform without opening any
+     * microphone. */
+    public static void devFakeLevels() {
+        java.util.Random random = new java.util.Random(7);
+        for (int i = 0; i < LEVEL_HISTORY; i++)
+            pushLevel(0.25f + random.nextFloat() * 0.7f);
+        totalSamplesRead = SAMPLE_RATE * 6L;
+    }
+
     public static boolean isRecording() {
         return recording;
     }

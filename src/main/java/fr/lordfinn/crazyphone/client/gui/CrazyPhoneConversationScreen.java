@@ -1356,6 +1356,13 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
         return new int[]{headerSlotX(n) + HEADER_SLOT / 2, this.topPos + HEADER_SLOT_Y + HEADER_SLOT / 2};
     }
 
+    /** Dev only (/phoneui record): the recording row as during a recording, with a made-up waveform and no
+     * microphone opened. */
+    public void devFakeRecording() {
+        voiceRecordingState = VoiceRecordingState.RECORDING;
+        VoiceMessageRecorder.devFakeLevels();
+    }
+
     /** Dev only (/phoneui plus): opens or closes the + menu, like a click on the +. */
     public void devTogglePlus() {
         plusMenuOpen = !plusMenuOpen;

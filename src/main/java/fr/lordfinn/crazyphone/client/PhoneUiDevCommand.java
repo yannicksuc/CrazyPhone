@@ -161,6 +161,16 @@ public final class PhoneUiDevCommand {
                                     });
                                     return 1;
                                 })))
+                // Store screenshots: a voice message "being recorded" (fake waveform, no microphone opened).
+                .then(LiteralArgumentBuilder.<CommandSourceStack>literal("record")
+                        .executes(ctx -> {
+                            Minecraft mc = Minecraft.getInstance();
+                            mc.execute(() -> {
+                                if (mc.screen instanceof fr.lordfinn.crazyphone.client.gui.CrazyPhoneConversationScreen conversation)
+                                    conversation.devFakeRecording();
+                            });
+                            return 1;
+                        }))
                 .then(LiteralArgumentBuilder.<CommandSourceStack>literal("reloadpacks")
                         .executes(ctx -> {
                             Minecraft mc = Minecraft.getInstance();

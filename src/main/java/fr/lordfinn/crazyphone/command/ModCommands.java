@@ -218,6 +218,24 @@ public class ModCommands {
                                                             (int) (java.time.Instant.now().getEpochSecond() / 60));
                                                     return 1;
                                                 })))))
+                // Dev only too: a voice message of that many seconds (silent audio, made-up waveform).
+                .then(Commands.literal("devvoice").requires(source -> DEV_COMMANDS && permLevel(4).test(source))
+                        .then(Commands.argument("conversation", StringArgumentType.word())
+                                .then(Commands.argument("sender", StringArgumentType.word())
+                                        .then(Commands.argument("seconds", IntegerArgumentType.integer(1, 60))
+                                                .executes(arguments -> {
+                                                    int seconds = IntegerArgumentType.getInteger(arguments, "seconds");
+                                                    java.util.Random random = new java.util.Random();
+                                                    byte[] envelope = new byte[24];
+                                                    for (int i = 0; i < envelope.length; i++)
+                                                        envelope[i] = (byte) (40 + random.nextInt(200));
+                                                    fr.lordfinn.crazyphone.utils.CrazyPhoneHelper.addVoiceMessage(arguments.getSource().getLevel(),
+                                                            StringArgumentType.getString(arguments, "conversation"),
+                                                            StringArgumentType.getString(arguments, "sender"),
+                                                            java.util.UUID.randomUUID(), new byte[48000 * 2 * seconds], seconds * 20, envelope,
+                                                            (int) (java.time.Instant.now().getEpochSecond() / 60));
+                                                    return 1;
+                                                })))))
                 // Dev only too: a photo of the sender's gallery (by its index, 0 = newest) sent to a conversation.
                 .then(Commands.literal("devimg").requires(source -> DEV_COMMANDS && permLevel(4).test(source))
                         .then(Commands.argument("conversation", StringArgumentType.word())
