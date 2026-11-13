@@ -295,7 +295,7 @@ public class MessageWidget extends AbstractWidget {
         String speedLabel = "x" + (VOICE_SPEEDS[voiceSpeedIndex] == (int) VOICE_SPEEDS[voiceSpeedIndex]
                 ? String.valueOf((int) VOICE_SPEEDS[voiceSpeedIndex]) : String.valueOf(VOICE_SPEEDS[voiceSpeedIndex]));
         voiceSpeedLabelWidth = Math.round(font.width(speedLabel) * textScale);
-        voiceSpeedLabelX = bubbleX + bubbleW - voiceSpeedLabelWidth - 2;
+        voiceSpeedLabelX = bubbleX + bubbleW - voiceSpeedLabelWidth - 2; // moved next to the waveform below
         // The waveform's right edge is pinned to the WIDEST possible speed label ("x0.5"/"x1.5", 4 chars),
         // not this specific label's own (narrower, for "x1"/"x2") width - otherwise cycling speed shifts
         // where the waveform ends and the whole histogram visibly resizes/redraws on every click, which
@@ -306,6 +306,9 @@ public class MessageWidget extends AbstractWidget {
             maxSpeedLabelWidth = Math.max(maxSpeedLabelWidth, Math.round(font.width(label) * textScale));
         }
         int waveformRightBound = bubbleX + bubbleW - maxSpeedLabelWidth - 2;
+        // The label starts where its slot starts, 3 px after the waveform (the same gap as before it): the
+        // unused part of the slot for a short "x1" / "x2" is left at the bubble's end, not between the two.
+        voiceSpeedLabelX = waveformRightBound;
         boolean hoveringSpeed = mouseX >= voiceSpeedLabelX && mouseX < voiceSpeedLabelX + voiceSpeedLabelWidth
                 && mouseY >= voiceLabelY && mouseY < voiceLabelY + glyphHeight;
         if (hoveringSpeed)
@@ -331,9 +334,12 @@ public class MessageWidget extends AbstractWidget {
     private void renderVoiceWaveform(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int startX, int endX, int bubbleY, int bubbleH, boolean playing, int elapsedTicks, int accentColor) {
         if (voiceEnvelope.length == 0 || endX <= startX)
             return;
-        int barCount = voiceEnvelope.length;
+        int sourceCount = voiceEnvelope.length;
         int totalWidth = endX - startX;
-        int barWidth = Math.max(1, totalWidth / barCount);
+        // At least one empty pixel between two bars (all 24 bars in a narrow bubble used to touch and read as
+        // one blob): fewer bars, each the loudest of the envelope buckets it covers.
+        int barCount = Math.max(1, Math.min(sourceCount, (totalWidth + 1) / 2));
+        int barWidth = Math.max(2, totalWidth / barCount);
         int centerY = bubbleY + bubbleH / 2;
         int progressBar = playing && voiceDurationTicks > 0 ? (elapsedTicks * barCount) / voiceDurationTicks : barCount;
 
@@ -348,7 +354,9 @@ public class MessageWidget extends AbstractWidget {
         GuiCompat.scale(guiGraphics, 1f, 0.5f);
         int centerY2x = centerY * 2;
         for (int i = 0; i < barCount; i++) {
-            int level = voiceEnvelope[i] & 0xFF;
+            int level = 0;
+            for (int j = i * sourceCount / barCount; j < Math.max(i * sourceCount / barCount + 1, (i + 1) * sourceCount / barCount); j++)
+                level = Math.max(level, voiceEnvelope[j] & 0xFF);
             int barHeight = Math.max(1, level * (bubbleH - 4) / 255);
             int barX = startX + i * barWidth;
             int color = playing && i < progressBar ? CrazyPhoneColors.ACCENT_YELLOW : accentColor;

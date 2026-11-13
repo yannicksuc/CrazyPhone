@@ -196,7 +196,8 @@ public record CrazyPhoneNewMessageNotificationPacket(
             if (mc./*$ mc_get_screen {*/screen/*$}*/ instanceof CrazyPhoneConversationScreen screen) {
                 screen.addMessage(
                     messagePacket.senderName,
-                    message
+                    message,
+                    fr.lordfinn.crazyphone.utils.NbtCompat.getString(messagePacket.messageTag, "conversation")
                 );
             }
         }

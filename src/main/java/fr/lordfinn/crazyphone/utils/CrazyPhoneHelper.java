@@ -269,7 +269,7 @@ public class CrazyPhoneHelper {
             try {
                 PhoneTagAccess.updateTag(head, tag -> tag.putString("uuid", contact.getUuid()));
                 GameProfile profile = new GameProfile(UUID.fromString(contact.getUuid()), "CustomHead");
-                if (contact.getSkin() != null || !contact.getSkin().isEmpty()) {
+                if (contact.getSkin() != null && !contact.getSkin().isEmpty()) {
                     profile = GameProfileCompat.withTextureProperty(profile, contact.getSkin());
                 }
                 PhoneTagAccess.setSkullOwner(head, profile);
@@ -627,17 +627,31 @@ public class CrazyPhoneHelper {
         if (server == null)
             return;
         PhoneRegistrySavedData registry = PhoneRegistrySavedData.get(world);
+        java.util.Map<ServerPlayer, Boolean> receivers = new java.util.LinkedHashMap<>();
         for (String number : getGroupMembers(world, conversationId)) {
             Contact receiver = getContact(world, number);
             if (receiver == null || receiver.getUuid() == null)
                 continue;
             ServerPlayer receiverPlayer = server.getPlayerList().getPlayer(UUID.fromString(receiver.getUuid()));
-            if (receiverPlayer != null) {
-                boolean muted = isConversationMuted(world, number, conversationId);
-                NetworkAccess.sendToPlayer(receiverPlayer, new CrazyPhoneNewMessageNotificationPacket(messageTag, "", muted));
-            }
+            if (receiverPlayer != null)
+                receivers.merge(receiverPlayer, isConversationMuted(world, number, conversationId), Boolean::logicalAnd);
             addNotificationBadge(registry, number, conversationId, receiverPlayer);
         }
+        sendMessageNotifications(receivers, messageTag, "", conversationId);
+    }
+
+    /**
+     * One packet per player, not per phone: a player who owns several phones of the same conversation used to
+     * get the message once per phone, and an open conversation screen showed it that many times. Muted only
+     * when every phone of that player has the conversation muted. The conversation id rides in a copy of the
+     * message tag, so the client only adds it to the screen of that very conversation.
+     */
+    private static void sendMessageNotifications(java.util.Map<ServerPlayer, Boolean> receivers, CompoundTag messageTag,
+            String senderName, String conversationId) {
+        CompoundTag packetTag = messageTag.copy();
+        packetTag.putString("conversation", conversationId);
+        receivers.forEach((player, muted) ->
+                NetworkAccess.sendToPlayer(player, new CrazyPhoneNewMessageNotificationPacket(packetTag, senderName, muted)));
     }
 
     private static CompoundTag createMessageTag(String senderNumber, String message, int timestampInMinutes) {
@@ -694,6 +708,7 @@ public class CrazyPhoneHelper {
         createGroup(world, conversationId, numbers, senderNumber);
 
         PhoneRegistrySavedData registry = PhoneRegistrySavedData.get(world);
+        java.util.Map<ServerPlayer, Boolean> receivers = new java.util.LinkedHashMap<>();
         for (String receiverNumber : numbers) {
             if (receiverNumber.equals(senderNumber))
                 continue;
@@ -703,10 +718,8 @@ public class CrazyPhoneHelper {
                 continue;
 
             ServerPlayer receiverPlayer = server.getPlayerList().getPlayer(UUID.fromString(receiver.getUuid()));
-            if (receiverPlayer != null) {
-                boolean muted = isConversationMuted(world, receiverNumber, conversationId);
-                NetworkAccess.sendToPlayer(receiverPlayer, new CrazyPhoneNewMessageNotificationPacket(messageTag, sender.getName(), muted));
-            }
+            if (receiverPlayer != null)
+                receivers.merge(receiverPlayer, isConversationMuted(world, receiverNumber, conversationId), Boolean::logicalAnd);
 
             addNotificationBadge(registry, receiverNumber, conversationId, receiverPlayer);
 
@@ -723,6 +736,11 @@ public class CrazyPhoneHelper {
                 CrazyPhoneAddContactToPhoneProcedure.execute(world, senderNumber, receiverNumber);
             }
         }
+        // The sender's own player never gets a "new message" for what they just sent, even through another
+        // of their phones in the same conversation.
+        if (sender.getUuid() != null)
+            receivers.keySet().removeIf(player -> player.getStringUUID().equals(sender.getUuid()));
+        sendMessageNotifications(receivers, messageTag, sender.getName(), conversationId);
     }
 
     /** Adds {@code conversationId} to {@code receiverNumber}'s unread-notifications list if it isn't

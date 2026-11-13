@@ -238,6 +238,19 @@ public class CrazyPhoneInCallScreenScreen extends CrazyPhoneDefaultScreenScreen<
         if (faceSkins.containsKey(id) || name.isEmpty())
             return;
         Minecraft mc = Minecraft.getInstance();
+        // A participant is on this server: their face is the skin everyone sees on them in the world (signed by
+        // the server). The Mojang lookup below only comes after, for someone this client doesn't know: when it
+        // failed (rate limit, no such account) the tile fell back to the default skin of a stranger's UUID,
+        // which could even be another participant's face.
+        net.minecraft.client.multiplayer.PlayerInfo info = mc.getConnection() != null ? mc.getConnection().getPlayerInfo(id) : null;
+        if (info != null) {
+            //? if legacyforge {
+            /*faceSkins.put(id, info.getSkinLocation());
+            *///?} else {
+            faceSkins.put(id, info.getSkin());
+            //?}
+            return;
+        }
         MojangProfileLookup.lookup(name).thenAccept(realProfile -> {
             GameProfile profile = realProfile != null ? realProfile : new GameProfile(id, name);
             //? if (fabric || neoforge) && <1.21.10 {
