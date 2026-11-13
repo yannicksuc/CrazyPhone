@@ -28,8 +28,9 @@ here and only here, so it can't drift out of sync with the wiki), and pointers t
 *Full write-up of every feature, with screenshots and edge cases, on the wiki - linked per feature below.*
 
 - **Phone basics** - two-step registration + PIN sign-in, home screen launcher, lock screen. Craftable or
-  given via `/crazyphone give <number>`. The phone takes about 70% of the window height whatever your GUI
-  scale, snapped to whole pixel sizes so the pixel art stays crisp (adjustable, see below).
+  given via `/crazyphone give <number>`. The phone is drawn at your GUI scale by default; the magnifier on its
+  home screen makes it bigger (about 70% of the window height, snapped to whole pixel sizes so the pixel art
+  stays crisp). Mods that draw beside screens (JEI, REI, EMI...) may overlap the bigger phone.
 - **[Messaging](https://github.com/yannicksuc/CrazyPhone/wiki/Home)** - contacts, favorites, groups,
   real-time text, sending photos, read badges, and live-converting pixel-art emoji (paste a real emoji,
   type a `:shortcode:`, a classic `:)`/`<3` emoticon, or pick one from the emoji drawer next to the
@@ -141,8 +142,8 @@ ongoing port - see [PORTING-26x.md](PORTING-26x.md) for its detailed status and 
   [wiki § Configuration](https://github.com/yannicksuc/CrazyPhone/wiki/Configuration).
 - **Commands**: the full `/crazyphone` tree is on [wiki § Commands](https://github.com/yannicksuc/CrazyPhone/wiki/Commands).
 - **Player-side preferences** (`config/crazyphone-client.properties`, created on first use, no restart needed):
-  `phoneScreenHeightPercent` (phone height in % of the window, 40 to 95, default 70, `0` = plain GUI scale
-  size as before) and `emojiPickerEnabled` (the conversation emoji button, default `true`).
+  `phoneScreenHeightPercent` (phone height in % of the window, 40 to 95, default `0` = plain GUI scale size;
+  the home screen magnifier switches between 0 and 70) and `emojiPickerEnabled` (the conversation emoji button, default `true`).
 
 ---
 
