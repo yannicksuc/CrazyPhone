@@ -21,11 +21,31 @@ import java.util.function.Supplier;
  */
 public class PhoneIconButton extends PhoneButton {
     private final Supplier<Component> icon;
+    /** Optional white pixel art drawn instead of the emoji ('X' = pixel), for an icon that must stand out on
+     * its role colour (the grey trash emoji was hard to see on red). */
+    private String[] pixels;
 
     public PhoneIconButton(int x, int y, int size, Supplier<Component> icon, OnPress onPress, Style style) {
         super(x, y, size, size, Component.empty(), onPress, style);
         this.icon = icon;
     }
+
+    /** White pixel art, centered to the half pixel, drawn instead of the emoji. */
+    public PhoneIconButton withPixels(String... rows) {
+        this.pixels = rows;
+        return this;
+    }
+
+    /** A white trash can, 7 x 8. */
+    public static final String[] TRASH = {
+            "..XXX..",
+            "XXXXXXX",
+            ".......",
+            ".XXXXX.",
+            ".X.X.X.",
+            ".X.X.X.",
+            ".X.X.X.",
+            ".XXXXX."};
 
     @Override
     public Component getMessage() {
@@ -47,7 +67,25 @@ public class PhoneIconButton extends PhoneButton {
     }
     //?}
 
+    private void drawPixels(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics) {
+        int w = pixels[0].length(), h = pixels.length;
+        float x = getX() + (getWidth() - w) / 2f;
+        float y = getY() + (getHeight() - h) / 2f;
+        int color = this.active ? 0xFFFFFFFF : 0x99FFFFFF;
+        GuiCompat.pushPose(guiGraphics);
+        GuiCompat.translate(guiGraphics, x, y);
+        for (int row = 0; row < h; row++)
+            for (int col = 0; col < w; col++)
+                if (pixels[row].charAt(col) == 'X')
+                    guiGraphics.fill(col, row, col + 1, row + 1, color);
+        GuiCompat.popPose(guiGraphics);
+    }
+
     private void drawIcon(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics) {
+        if (pixels != null) {
+            drawPixels(guiGraphics);
+            return;
+        }
         Font font = Minecraft.getInstance().font;
         // Plain text of the icon: the emoji's own colours, whatever colour style the caller put on it.
         Component glyph = Component.literal(icon.get().getString());
@@ -56,7 +94,8 @@ public class PhoneIconButton extends PhoneButton {
         int y = getY() + (getHeight() - 8) / 2;
         int whole = (int) Math.floor(x);
         GuiCompat.pushPose(guiGraphics);
-        GuiCompat.translate(guiGraphics, x - whole, 0f);
+        // The emoji glyphs are 9 px tall and start a pixel above the line: half a pixel lower centres them.
+        GuiCompat.translate(guiGraphics, x - whole, 0.5f);
         guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(font, glyph, whole, y, this.active ? 0xFFFFFFFF : 0x99FFFFFF, false);
         GuiCompat.popPose(guiGraphics);
     }

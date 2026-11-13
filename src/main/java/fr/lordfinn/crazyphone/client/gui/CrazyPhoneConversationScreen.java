@@ -610,7 +610,9 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
         // Light-blue rectangle, deliberately distinct from the phone's own background texture. Even height
         // (12) so the white histogram bars inside it (see renderWaveformBars) center exactly, with no
         // rounding remainder from an odd height/2.
-        guiGraphics.fill(waveformX, rowY, waveformX + WAVEFORM_WIDTH, rowY + 14, 0xFF3FA9F5);
+        // Corners cut by a pixel, like the phone's buttons on both sides of it.
+        guiGraphics.fill(waveformX + 1, rowY, waveformX + WAVEFORM_WIDTH - 1, rowY + 14, 0xFF3FA9F5);
+        guiGraphics.fill(waveformX, rowY + 1, waveformX + WAVEFORM_WIDTH, rowY + 13, 0xFF3FA9F5);
         renderWaveformBars(guiGraphics, waveformX, rowY);
 
         if (voiceRecordingState == VoiceRecordingState.RECORDING)
@@ -628,7 +630,9 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
         // Light-blue rectangle, deliberately distinct from the phone's own background texture. Even height
         // (12) so the white histogram bars inside it (see renderWaveformBars) center exactly, with no
         // rounding remainder from an odd height/2.
-        guiGraphics.fill(waveformX, rowY, waveformX + WAVEFORM_WIDTH, rowY + 14, 0xFF3FA9F5);
+        // Corners cut by a pixel, like the phone's buttons on both sides of it.
+        guiGraphics.fill(waveformX + 1, rowY, waveformX + WAVEFORM_WIDTH - 1, rowY + 14, 0xFF3FA9F5);
+        guiGraphics.fill(waveformX, rowY + 1, waveformX + WAVEFORM_WIDTH, rowY + 13, 0xFF3FA9F5);
         renderWaveformBars(guiGraphics, waveformX, rowY);
 
         if (voiceRecordingState == VoiceRecordingState.RECORDING)
@@ -1235,9 +1239,10 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
         imagebutton_attachphoto = createGallerySendButton();
         if (VoicechatIntegration.isAvailable()) {
             imagebutton_crazyphonevoicemessage = createVoiceMessageButton();
-            button_voicetrash = createSquareIconButton(this.leftPos + TRASH_X, this.topPos + RECORDING_ROW_Y,
-                    Component.translatable("gui.crazyphone.crazy_phone_conversation.button_voice_trash"), PhoneButton.Style.DANGER,
-                    e -> onTrashClicked());
+            // White pixel trash: the grey trash emoji was hard to see on the red button.
+            button_voicetrash = new PhoneIconButton(this.leftPos + TRASH_X, this.topPos + RECORDING_ROW_Y, 14,
+                    () -> Component.translatable("gui.crazyphone.crazy_phone_conversation.button_voice_trash"),
+                    e -> onTrashClicked(), PhoneButton.Style.DANGER).withPixels(PhoneIconButton.TRASH);
             button_voicepause = createSquareIconButton(this.leftPos + PAUSE_SEND_X, this.topPos + RECORDING_ROW_Y,
                     Component.translatable("gui.crazyphone.crazy_phone_conversation.button_voice_pause"), PhoneButton.Style.NEUTRAL,
                     e -> onPauseSendClicked());

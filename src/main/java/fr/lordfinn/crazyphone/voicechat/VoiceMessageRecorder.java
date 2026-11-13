@@ -47,7 +47,8 @@ public final class VoiceMessageRecorder {
     private static long totalSamplesRead = 0;
 
     /** Rolling levels for the live waveform bars, most recent last. */
-    private static final int LEVEL_HISTORY = 24;
+    /** 35 bars, 1 px wide with a 1 px gap: they fill the 70 px inside the recording row. */
+    private static final int LEVEL_HISTORY = 35;
     private static final float[] recentLevels = new float[LEVEL_HISTORY];
     private static int levelWriteIndex = 0;
 
