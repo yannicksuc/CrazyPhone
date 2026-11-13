@@ -276,7 +276,9 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 		this.extractBackground(guiGraphics, mouseX, mouseY, partialTicks);
 		super.extractRenderState(guiGraphics, mouseX, mouseY, partialTicks);
 		if (LaunchSplash.isActive()) {
-			LaunchSplash.render(guiGraphics, this.leftPos, this.topPos);
+			// The launch screens draw their fields after this: they put the splash on top themselves.
+			if (!isLaunchScreen())
+				LaunchSplash.render(guiGraphics, this.leftPos, this.topPos);
 			return;
 		}
 		this.extractTooltip(guiGraphics, mouseX, mouseY);
@@ -288,7 +290,9 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 		this.renderBackground(guiGraphics, mouseX, mouseY, partialTicks);
 		super.render(guiGraphics, mouseX, mouseY, partialTicks);
 		if (LaunchSplash.isActive()) {
-			LaunchSplash.render(guiGraphics, this.leftPos, this.topPos);
+			// The launch screens draw their fields after this: they put the splash on top themselves.
+			if (!isLaunchScreen())
+				LaunchSplash.render(guiGraphics, this.leftPos, this.topPos);
 			return;
 		}
 		this.renderTooltip(guiGraphics, mouseX, mouseY);
@@ -305,7 +309,9 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 		guiGraphics.fill(0, 0, this.width, this.height, 0x50000000);
 		super.render(guiGraphics, mouseX, mouseY, partialTicks);
 		if (LaunchSplash.isActive()) {
-			LaunchSplash.render(guiGraphics, this.leftPos, this.topPos);
+			// The launch screens draw their fields after this: they put the splash on top themselves.
+			if (!isLaunchScreen())
+				LaunchSplash.render(guiGraphics, this.leftPos, this.topPos);
 			return;
 		}
 		this.renderTooltip(guiGraphics, mouseX, mouseY);
@@ -455,6 +461,20 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 		return false;
 	}
 
+	/** The registration screen of a phone that is not registered yet: it plays the splash for every new phone. */
+	protected boolean isNewPhoneScreen() {
+		return false;
+	}
+
+	/** Launch screens call this last in their render, after their own fields: the splash then covers them.
+	 * True while the splash is up (no tooltip then). */
+	protected boolean renderLaunchSplashOnTop(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics) {
+		if (!LaunchSplash.isActive())
+			return false;
+		LaunchSplash.render(guiGraphics, this.leftPos, this.topPos);
+		return true;
+	}
+
 	//? if >=26 {
 	/*@Override
 	protected void extractLabels(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
@@ -512,8 +532,12 @@ public abstract class CrazyPhoneDefaultScreenScreen<T extends CrazyPhoneDefaultS
 		phoneScale = PhoneScale.computeScale(this.imageWidth, Math.max(this.imageHeight, PhoneScale.PHONE_HEIGHT), 0, 0);
 		PhoneScale.applyVirtualSize(this, phoneScale);
 		super.init();
-		if (isLaunchScreen())
+		if (isNewPhoneScreen()) {
+			LaunchSplash.startForNewPhone();
+		} else if (isLaunchScreen()) {
+			LaunchSplash.phoneRegistered();
 			LaunchSplash.startIfFirstLaunch();
+		}
 		HashMap<String, Object> guistate = getWidgets();
 		//? if legacyforge {
 		/*ResourceLocation backNormal = Crazyphone.parseId("crazyphone:textures/screens/crazyphone-back.png");

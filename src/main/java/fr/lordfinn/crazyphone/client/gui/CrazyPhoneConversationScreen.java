@@ -1865,7 +1865,10 @@ public class CrazyPhoneConversationScreen extends CrazyPhoneDefaultScreenScreen<
      * this screen is the currently open screen and a new message arrives for this conversation - same
      * contract as the old code's addMessage method.
      */
-    public void addMessage(String senderName, MessageData newMessageData) {
+    public void addMessage(String senderName, MessageData newMessageData, String conversationId) {
+        // Only the conversation shown here (empty from an older server: no check then).
+        if (conversationId != null && !conversationId.isEmpty() && !conversationId.equals(this.menu.getConversationId()))
+            return;
         String ownerNumber = GetCrazyPhoneNumberFromMainHandProcedure.execute(this.menu.entity, null);
 
         // Skip if the message is from the owner (system events have no real sender, never skipped here)

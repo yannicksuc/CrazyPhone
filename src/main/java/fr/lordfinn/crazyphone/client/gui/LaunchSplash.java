@@ -11,11 +11,12 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/;
 
 /**
- * Splash shown over the phone's display the very first time the phone is opened on this game: LordFinn and
+ * Splash shown over the phone's display the very first time the phone is opened on this game, and again
+ * whenever a new phone (not registered yet) opens its registration screen: LordFinn and
  * Mastu (a render made with the lordfinn.fr scene editor) above "A Sandbox creation by LordFinn / for Mastu".
  * It fades in, stays a few seconds and fades out; a click or a key skips it. While it is visible the phone
  * underneath gets no input (see CrazyPhoneDefaultScreenScreen). Remembered in
- * config/crazyphone-client.properties (launchSplashShown), so it never comes back after that.
+ * config/crazyphone-client.properties (launchSplashShown), so after that only a new phone brings it back.
  *
  * Only the launch screens (sign in, password, home) start it, never a call or photo screen that opens by
  * itself. One instance for the whole game: it keeps running across the screen changes of the same launch.
@@ -34,7 +35,8 @@ public final class LaunchSplash {
     private static final int TEXT = 0x3C3C3C;
 
     private static final long FADE_IN_MS = 250;
-    private static final long HOLD_UNTIL_MS = 3500;
+    /** 3 s in all: 250 ms fade in, held, 600 ms fade out. */
+    private static final long HOLD_UNTIL_MS = 2400;
     private static final long FADE_OUT_MS = 600;
 
     /** 0 = not started (or not needed), otherwise when it started. */
@@ -57,6 +59,28 @@ public final class LaunchSplash {
         startMillis = System.currentTimeMillis();
         // Saved as soon as it shows: a crash or a closed phone never brings it back.
         ClientPrefs.markLaunchSplashShown();
+    }
+
+    /** Already played for the phone being registered: closing and reopening that same phone, or a resize
+     * (init() runs again), must not replay it. Cleared when a registered phone opens (see phoneRegistered). */
+    private static boolean playedForNewPhone;
+
+    /** Called when the registration screen of a new phone opens: plays the splash again for that phone. */
+    public static void startForNewPhone() {
+        if (playedForNewPhone)
+            return;
+        playedForNewPhone = true;
+        if (isActive())
+            return;
+        finished = false;
+        skipMillis = 0;
+        startMillis = System.currentTimeMillis();
+        ClientPrefs.markLaunchSplashShown();
+    }
+
+    /** A registered phone opened (sign in or home screen): the next new phone gets the splash again. */
+    public static void phoneRegistered() {
+        playedForNewPhone = false;
     }
 
     /** True while the splash covers the display (the phone underneath must ignore input). */

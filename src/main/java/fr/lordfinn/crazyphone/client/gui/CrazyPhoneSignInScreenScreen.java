@@ -59,6 +59,8 @@ public class CrazyPhoneSignInScreenScreen extends CrazyPhoneDefaultScreenScreen<
 				Component.translatable("gui.crazyphone.crazy_phone_sign_in_screen.label_connexion"), AUTO_LOCK_ICON_X - 2);
 		renderAutoLockIcon(guiGraphics, mouseX, mouseY);
 		password.extractRenderState(guiGraphics, mouseX, mouseY, partialTicks);
+		if (renderLaunchSplashOnTop(guiGraphics))
+			return;
 		if (isHoveringAutoLockIcon(mouseX, mouseY))
 			guiGraphics.setComponentTooltipForNextFrame(this.font, fr.lordfinn.crazyphone.client.gui.PhoneTooltips.wrap(this.font, autoLockIconTooltip()), mouseX, mouseY);
 		this.extractTooltip(guiGraphics, mouseX, mouseY);
@@ -71,6 +73,8 @@ public class CrazyPhoneSignInScreenScreen extends CrazyPhoneDefaultScreenScreen<
 				Component.translatable("gui.crazyphone.crazy_phone_sign_in_screen.label_connexion"), AUTO_LOCK_ICON_X - 2);
 		renderAutoLockIcon(guiGraphics, mouseX, mouseY);
 		password.render(guiGraphics, mouseX, mouseY, partialTicks);
+		if (renderLaunchSplashOnTop(guiGraphics))
+			return;
 		if (isHoveringAutoLockIcon(mouseX, mouseY))
 			guiGraphics./*$ gui_render_component_tooltip {*/renderComponentTooltip/*$}*/(this.font, fr.lordfinn.crazyphone.client.gui.PhoneTooltips.wrap(this.font, autoLockIconTooltip()), mouseX, mouseY);
 		this.renderTooltip(guiGraphics, mouseX, mouseY);

@@ -143,6 +143,8 @@ public class CrazyphoneHomeScreenScreen extends CrazyPhoneDefaultScreenScreen<Cr
     public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTicks) {
         super.extractRenderState(guiGraphics, mouseX, mouseY, partialTicks);
         renderSizeToggle(guiGraphics, mouseX, mouseY);
+        if (renderLaunchSplashOnTop(guiGraphics))
+            return;
         if (isHoveringSizeToggle(mouseX, mouseY))
             guiGraphics.setComponentTooltipForNextFrame(this.font, fr.lordfinn.crazyphone.client.gui.PhoneTooltips.wrap(this.font, sizeToggleTooltip()), mouseX, mouseY);
     }
@@ -151,6 +153,8 @@ public class CrazyphoneHomeScreenScreen extends CrazyPhoneDefaultScreenScreen<Cr
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
         super.render(guiGraphics, mouseX, mouseY, partialTicks);
         renderSizeToggle(guiGraphics, mouseX, mouseY);
+        if (renderLaunchSplashOnTop(guiGraphics))
+            return;
         if (isHoveringSizeToggle(mouseX, mouseY))
             guiGraphics./*$ gui_render_component_tooltip {*/renderComponentTooltip/*$}*/(this.font, fr.lordfinn.crazyphone.client.gui.PhoneTooltips.wrap(this.font, sizeToggleTooltip()), mouseX, mouseY);
     }

@@ -105,6 +105,8 @@ public class CrazyPhonePasswordScreenScreen extends CrazyPhoneDefaultScreenScree
         } else {
             password.extractRenderState(guiGraphics, mouseX, mouseY, partialTicks);
         }
+        if (renderLaunchSplashOnTop(guiGraphics))
+            return;
         extractTooltip(guiGraphics, mouseX, mouseY);
     }
     *///? } else {
@@ -123,6 +125,8 @@ public class CrazyPhonePasswordScreenScreen extends CrazyPhoneDefaultScreenScree
         } else {
             password.render(guiGraphics, mouseX, mouseY, partialTicks);
         }
+        if (renderLaunchSplashOnTop(guiGraphics))
+            return;
         renderTooltip(guiGraphics, mouseX, mouseY);
     }
     //?}
@@ -143,6 +147,8 @@ public class CrazyPhonePasswordScreenScreen extends CrazyPhoneDefaultScreenScree
         } else {
             password.render(guiGraphics, mouseX, mouseY, partialTicks);
         }
+        if (renderLaunchSplashOnTop(guiGraphics))
+            return;
         renderTooltip(guiGraphics, mouseX, mouseY);
     }
     *///?}
@@ -450,6 +456,12 @@ public class CrazyPhonePasswordScreenScreen extends CrazyPhoneDefaultScreenScree
 
 	@Override
 	protected boolean isLaunchScreen() {
+		return true;
+	}
+
+	/** Only a phone that is not registered yet lands here: every new phone plays the splash again. */
+	@Override
+	protected boolean isNewPhoneScreen() {
 		return true;
 	}
 }
