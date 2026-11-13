@@ -122,6 +122,31 @@ public final class PhoneUiDevCommand {
                             });
                             return 1;
                         }))
+                // Store screenshots: the capture mode without a key press (enter, view = F5 cycle, shoot, exit).
+                .then(LiteralArgumentBuilder.<CommandSourceStack>literal("capture")
+                        .then(RequiredArgumentBuilder.<CommandSourceStack, String>argument("step", StringArgumentType.word())
+                                .executes(ctx -> {
+                                    String step = StringArgumentType.getString(ctx, "step");
+                                    Minecraft mc = Minecraft.getInstance();
+                                    mc.execute(() -> {
+                                        switch (step) {
+                                            case "enter" -> fr.lordfinn.crazyphone.client.CrazyPhoneCaptureMode.enter("");
+                                            case "view" -> fr.lordfinn.crazyphone.client.CrazyPhoneCaptureMode.cycleView();
+                                            case "shoot" -> fr.lordfinn.crazyphone.client.CrazyPhoneCaptureMode.triggerCapture();
+                                            default -> fr.lordfinn.crazyphone.client.CrazyPhoneCaptureMode.exit();
+                                        }
+                                    });
+                                    return 1;
+                                })))
+                // Store screenshots: F1 without a key press (/phoneui hud off hides the HUD and the hand).
+                .then(LiteralArgumentBuilder.<CommandSourceStack>literal("hud")
+                        .then(RequiredArgumentBuilder.<CommandSourceStack, String>argument("state", StringArgumentType.word())
+                                .executes(ctx -> {
+                                    boolean hide = "off".equals(StringArgumentType.getString(ctx, "state"));
+                                    Minecraft mc = Minecraft.getInstance();
+                                    mc.execute(() -> mc.options.hideGui = hide);
+                                    return 1;
+                                })))
                 .then(LiteralArgumentBuilder.<CommandSourceStack>literal("close")
                         .executes(ctx -> {
                             Minecraft mc = Minecraft.getInstance();

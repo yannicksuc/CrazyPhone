@@ -205,6 +205,76 @@ public class ModCommands {
                 .then(Commands.literal("group").requires(source -> DEV_COMMANDS && permLevel(4).test(source))
                         .then(Commands.argument("numbers", StringArgumentType.greedyString())
                                 .executes(ModCommands::devGroup)))
+                // Dev only too: a text message from any number to a conversation.
+                .then(Commands.literal("devmsg").requires(source -> DEV_COMMANDS && permLevel(4).test(source))
+                        .then(Commands.argument("conversation", StringArgumentType.word())
+                                .then(Commands.argument("sender", StringArgumentType.word())
+                                        .then(Commands.argument("text", StringArgumentType.greedyString())
+                                                .executes(arguments -> {
+                                                    fr.lordfinn.crazyphone.utils.CrazyPhoneHelper.addMessage(arguments.getSource().getLevel(),
+                                                            StringArgumentType.getString(arguments, "conversation"),
+                                                            StringArgumentType.getString(arguments, "sender"),
+                                                            StringArgumentType.getString(arguments, "text"),
+                                                            (int) (java.time.Instant.now().getEpochSecond() / 60));
+                                                    return 1;
+                                                })))))
+                // Dev only too: a photo of the sender's gallery (by its index, 0 = newest) sent to a conversation.
+                .then(Commands.literal("devimg").requires(source -> DEV_COMMANDS && permLevel(4).test(source))
+                        .then(Commands.argument("conversation", StringArgumentType.word())
+                                .then(Commands.argument("sender", StringArgumentType.word())
+                                        .then(Commands.argument("index", IntegerArgumentType.integer(0))
+                                                .executes(arguments -> {
+                                                    String sender = StringArgumentType.getString(arguments, "sender");
+                                                    java.util.List<java.util.UUID> gallery = fr.lordfinn.crazyphone.data.PhotoSavedData
+                                                            .get(arguments.getSource().getLevel()).getPhotoIdsForOwner(sender);
+                                                    int index = IntegerArgumentType.getInteger(arguments, "index");
+                                                    if (index >= gallery.size())
+                                                        return 0;
+                                                    fr.lordfinn.crazyphone.utils.CrazyPhoneHelper.addImageMessage(arguments.getSource().getLevel(),
+                                                            StringArgumentType.getString(arguments, "conversation"), sender, gallery.get(index),
+                                                            (int) (java.time.Instant.now().getEpochSecond() / 60));
+                                                    return 1;
+                                                })))))
+                // Dev only too: lists a number's photos (index = id), or deletes some by index.
+                .then(Commands.literal("devphotos").requires(source -> DEV_COMMANDS && permLevel(4).test(source))
+                        .then(Commands.argument("owner", StringArgumentType.word())
+                                .executes(arguments -> {
+                                    java.util.List<java.util.UUID> gallery = fr.lordfinn.crazyphone.data.PhotoSavedData
+                                            .get(arguments.getSource().getLevel()).getPhotoIdsForOwner(StringArgumentType.getString(arguments, "owner"));
+                                    for (int i = 0; i < gallery.size(); i++) {
+                                        String line = i + " = " + gallery.get(i);
+                                        arguments.getSource().sendSuccess(() -> Component.literal(line), false);
+                                    }
+                                    return gallery.size();
+                                })
+                                .then(Commands.argument("deleteIndexes", StringArgumentType.greedyString())
+                                        .executes(arguments -> {
+                                            String owner = StringArgumentType.getString(arguments, "owner");
+                                            fr.lordfinn.crazyphone.data.PhotoSavedData data = fr.lordfinn.crazyphone.data.PhotoSavedData.get(arguments.getSource().getLevel());
+                                            java.util.List<java.util.UUID> gallery = data.getPhotoIdsForOwner(owner);
+                                            java.util.Set<java.util.UUID> doomed = new java.util.HashSet<>();
+                                            for (String token : StringArgumentType.getString(arguments, "deleteIndexes").trim().split("\\s+")) {
+                                                int i = Integer.parseInt(token);
+                                                if (i >= 0 && i < gallery.size())
+                                                    doomed.add(gallery.get(i));
+                                            }
+                                            data.deletePhotos(owner, doomed);
+                                            return doomed.size();
+                                        }))))
+                // Dev only too: names a group, and gives it the off-hand item as its icon when there is one.
+                .then(Commands.literal("groupname").requires(source -> DEV_COMMANDS && permLevel(4).test(source))
+                        .then(Commands.argument("conversation", StringArgumentType.word())
+                                .then(Commands.argument("name", StringArgumentType.greedyString())
+                                        .executes(arguments -> {
+                                            net.minecraft.server.level.ServerPlayer player = arguments.getSource().getPlayerOrException();
+                                            String conversation = StringArgumentType.getString(arguments, "conversation");
+                                            fr.lordfinn.crazyphone.utils.CrazyPhoneHelper.renameGroup(player.level(), conversation,
+                                                    StringArgumentType.getString(arguments, "name"));
+                                            if (!player.getOffhandItem().isEmpty())
+                                                fr.lordfinn.crazyphone.utils.CrazyPhoneHelper.setGroupIcon(player.level(), conversation,
+                                                        player.getOffhandItem().copyWithCount(1));
+                                            return 1;
+                                        }))))
                 .then(Commands.literal("seed").requires(source -> DEV_COMMANDS && permLevel(4).test(source))
                         .executes(ModCommands::devSeed))
                 .then(Commands.literal("cache").requires(permLevel(4))
