@@ -12,8 +12,9 @@ import net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/;
 
 /**
  * Splash shown over the phone's display the very first time the phone is opened on this game, and again
- * whenever a new phone (not registered yet) opens its registration screen: LordFinn and
- * Mastu (a render made with the lordfinn.fr scene editor) above "A Sandbox creation by LordFinn / for Mastu".
+ * whenever a new phone (not registered yet) opens its registration screen: "A Sandbox creation by LordFinn /
+ * for Mastu" at the top, LordFinn and Mastu (a render made with the lordfinn.fr scene editor) below, standing
+ * on the bottom edge of the display.
  * It fades in, stays a few seconds and fades out; a click or a key skips it. While it is visible the phone
  * underneath gets no input (see CrazyPhoneDefaultScreenScreen). Remembered in
  * config/crazyphone-client.properties (launchSplashShown), so after that only a new phone brings it back.
@@ -23,16 +24,20 @@ import net.minecraft.resources./*$ res_loc {*/ResourceLocation/*$}*/;
  */
 public final class LaunchSplash {
     private static final /*$ res_loc {*/ResourceLocation/*$}*/ IMAGE = Crazyphone.parseId("crazyphone:textures/screens/crazyphone-splash.png");
+    /** The phone's own blue display (cut out of phone-background.png, rounded corners kept): it hides the screen
+     * underneath without changing the phone's look. */
+    private static final /*$ res_loc {*/ResourceLocation/*$}*/ SCREEN = Crazyphone.parseId("crazyphone:textures/screens/crazyphone-splash-screen.png");
 
     /** The phone's display inside phone-background.png, relative to leftPos / topPos. */
-    private static final int DISPLAY_X0 = 4, DISPLAY_Y0 = 9, DISPLAY_X1 = 118, DISPLAY_Y1 = 175;
-    /** Drawn size of the 471 x 420 render. */
-    private static final int IMAGE_W = 104, IMAGE_H = 93;
+    private static final int DISPLAY_X0 = 4, DISPLAY_Y0 = 9, DISPLAY_X1 = 118, DISPLAY_Y1 = 176;
+    /** Drawn size of the 471 x 420 render: the whole display width, its cut (the legs) resting on the bottom
+     * edge of the display. */
+    private static final int IMAGE_W = DISPLAY_X1 - DISPLAY_X0, IMAGE_H = Math.round(IMAGE_W * 420f / 471f);
+
     private static final int TEXT_MAX_W = 106;
     private static final int LINE_GAP = 3;
 
-    private static final int BACKGROUND = 0xF4EFE3;
-    private static final int TEXT = 0x3C3C3C;
+    private static final int TEXT = 0x123A63;
 
     private static final long FADE_IN_MS = 250;
     /** 3 s in all: 250 ms fade in, held, 600 ms fade out. */
@@ -137,26 +142,29 @@ public final class LaunchSplash {
         /*guiGraphics.nextStratum();
         *///?}
         try {
-            guiGraphics.fill(left + DISPLAY_X0, top + DISPLAY_Y0, left + DISPLAY_X1, top + DISPLAY_Y1, (alphaByte << 24) | BACKGROUND);
+            GuiCompat.blit(guiGraphics, SCREEN, left + DISPLAY_X0, top + DISPLAY_Y0, 0, DISPLAY_X1 - DISPLAY_X0, DISPLAY_Y1 - DISPLAY_Y0, a);
 
-            Component line1 = Component.translatable("gui.crazyphone.launch_splash.line1");
-            Component line2 = Component.translatable("gui.crazyphone.launch_splash.line2");
-            int widest = Math.max(font.width(line1), font.width(line2));
-            float textScale = Math.min(1f, TEXT_MAX_W / (float) Math.max(1, widest));
-            int lineH = Math.round(font.lineHeight * textScale);
-            int contentH = IMAGE_H + 8 + lineH * 2 + LINE_GAP;
-            int displayH = DISPLAY_Y1 - DISPLAY_Y0;
-            int y = top + DISPLAY_Y0 + (displayH - contentH) / 2;
+            Component line1 = Component.translatable("gui.crazyphone.launch_splash.line1").withStyle(net.minecraft.ChatFormatting.BOLD);
+            Component line2 = Component.translatable("gui.crazyphone.launch_splash.line2").withStyle(net.minecraft.ChatFormatting.BOLD);
+            // Full size, wrapped to the display width (shrinking the bold text to fit one line made it hard to read).
+            java.util.List<net.minecraft.util.FormattedCharSequence> lines = new java.util.ArrayList<>(font.split(line1, TEXT_MAX_W));
+            lines.addAll(font.split(line2, TEXT_MAX_W));
+            int lineH = font.lineHeight + LINE_GAP;
             int centerX = left + (DISPLAY_X0 + DISPLAY_X1) / 2;
 
-            GuiCompat.blit(guiGraphics, IMAGE, centerX - IMAGE_W / 2, y, 0, IMAGE_W, IMAGE_H, a);
-            y += IMAGE_H + 8;
+            int imageTop = top + DISPLAY_Y1 - IMAGE_H;
+            GuiCompat.blit(guiGraphics, IMAGE, left + DISPLAY_X0, imageTop, 0, IMAGE_W, IMAGE_H, a);
+            // Centered in the space left above the characters.
+            int textH = lineH * lines.size() - LINE_GAP;
+            int y = top + DISPLAY_Y0 + (imageTop - (top + DISPLAY_Y0) - textH) / 2;
 
             // Font treats an alpha under 4 as fully opaque: the text simply stops at the very end of the fade.
             if (alphaByte >= 8) {
                 int color = (alphaByte << 24) | TEXT;
-                drawCentered(guiGraphics, font, line1, centerX, y, textScale, color);
-                drawCentered(guiGraphics, font, line2, centerX, y + lineH + LINE_GAP, textScale, color);
+                for (net.minecraft.util.FormattedCharSequence line : lines) {
+                    guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(font, line, centerX - font.width(line) / 2, y, color, false);
+                    y += lineH;
+                }
             }
         } finally {
             //? if <1.21.10 {
@@ -165,13 +173,5 @@ public final class LaunchSplash {
             guiGraphics.pose().popPose();
             //?}
         }
-    }
-
-    private static void drawCentered(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, Font font, Component text, int centerX, int y, float scale, int color) {
-        GuiCompat.pushPose(guiGraphics);
-        GuiCompat.translate(guiGraphics, centerX, y);
-        GuiCompat.scale(guiGraphics, scale, scale);
-        guiGraphics./*$ gui_draw_string {*/drawString/*$}*/(font, text, -font.width(text) / 2, 0, color, false);
-        GuiCompat.popPose(guiGraphics);
     }
 }
