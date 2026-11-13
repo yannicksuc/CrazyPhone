@@ -147,6 +147,13 @@ public final class PhoneUiDevCommand {
                                     mc.execute(() -> mc.options.hideGui = hide);
                                     return 1;
                                 })))
+                // Store screenshots: reloads the resource packs (F3+T), e.g. after swapping a test skin.
+                .then(LiteralArgumentBuilder.<CommandSourceStack>literal("reloadpacks")
+                        .executes(ctx -> {
+                            Minecraft mc = Minecraft.getInstance();
+                            mc.execute(mc::reloadResourcePacks);
+                            return 1;
+                        }))
                 .then(LiteralArgumentBuilder.<CommandSourceStack>literal("close")
                         .executes(ctx -> {
                             Minecraft mc = Minecraft.getInstance();

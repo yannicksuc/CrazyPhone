@@ -261,6 +261,48 @@ public class ModCommands {
                                             data.deletePhotos(owner, doomed);
                                             return doomed.size();
                                         }))))
+                // Dev only too: adds a contact to a phone (devcontact <owner> <number>), or toggles it as a favorite.
+                .then(Commands.literal("devcontact").requires(source -> DEV_COMMANDS && permLevel(4).test(source))
+                        .then(Commands.argument("owner", StringArgumentType.word())
+                                .then(Commands.argument("number", StringArgumentType.word())
+                                        .executes(arguments -> {
+                                            fr.lordfinn.crazyphone.procedures.CrazyPhoneAddContactToPhoneProcedure.execute(arguments.getSource().getLevel(),
+                                                    StringArgumentType.getString(arguments, "number"), StringArgumentType.getString(arguments, "owner"));
+                                            return 1;
+                                        }))))
+                // Dev only too: the player UUID a phone shows as its contact head (test contacts get a face).
+                .then(Commands.literal("devuuid").requires(source -> DEV_COMMANDS && permLevel(4).test(source))
+                        .then(Commands.argument("number", StringArgumentType.word())
+                                .then(Commands.argument("uuid", StringArgumentType.word())
+                                        .executes(arguments -> {
+                                            fr.lordfinn.crazyphone.data.PhoneRegistrySavedData registry =
+                                                    fr.lordfinn.crazyphone.data.PhoneRegistrySavedData.get(arguments.getSource().getLevel());
+                                            if (!(registry.phones.get(StringArgumentType.getString(arguments, "number")) instanceof net.minecraft.nbt.CompoundTag phone))
+                                                return 0;
+                                            phone.putString("uuid", StringArgumentType.getString(arguments, "uuid"));
+                                            registry.setDirty();
+                                            return 1;
+                                        }))))
+                // Dev only too: opens the resize screen of the nearest photo frame, as a right-click on it would.
+                .then(Commands.literal("devframe").requires(source -> DEV_COMMANDS && permLevel(4).test(source))
+                        .executes(arguments -> {
+                            net.minecraft.server.level.ServerPlayer player = arguments.getSource().getPlayerOrException();
+                            var frames = player.level().getEntitiesOfClass(fr.lordfinn.crazyphone.entity.CrazyPhonePhotoFrameEntity.class,
+                                    player.getBoundingBox().inflate(8));
+                            frames.sort(java.util.Comparator.comparingDouble(player::distanceToSqr));
+                            if (frames.isEmpty())
+                                return 0;
+                            fr.lordfinn.crazyphone.utils.ScreenMenuUtils.openPhotoFrameResizeMenu(player, frames.get(0));
+                            return 1;
+                        }))
+                .then(Commands.literal("devfav").requires(source -> DEV_COMMANDS && permLevel(4).test(source))
+                        .then(Commands.argument("owner", StringArgumentType.word())
+                                .then(Commands.argument("number", StringArgumentType.word())
+                                        .executes(arguments -> {
+                                            fr.lordfinn.crazyphone.utils.CrazyPhoneHelper.toggleFavorite(arguments.getSource().getLevel(),
+                                                    StringArgumentType.getString(arguments, "owner"), StringArgumentType.getString(arguments, "number"));
+                                            return 1;
+                                        }))))
                 // Dev only too: names a group, and gives it the off-hand item as its icon when there is one.
                 .then(Commands.literal("groupname").requires(source -> DEV_COMMANDS && permLevel(4).test(source))
                         .then(Commands.argument("conversation", StringArgumentType.word())
@@ -276,7 +318,11 @@ public class ModCommands {
                                             return 1;
                                         }))))
                 .then(Commands.literal("seed").requires(source -> DEV_COMMANDS && permLevel(4).test(source))
-                        .executes(ModCommands::devSeed))
+                        .executes(ModCommands::devSeed)
+                        // Names of the two test contacts (201 and 202), Mastu and Zafeel by default.
+                        .then(Commands.argument("first", StringArgumentType.word())
+                                .then(Commands.argument("second", StringArgumentType.word())
+                                        .executes(ModCommands::devSeed))))
                 .then(Commands.literal("cache").requires(permLevel(4))
                         .then(Commands.literal("clear")
                                 .executes(ModCommands::cacheClearSelf)
@@ -373,7 +419,13 @@ public class ModCommands {
             arguments.getSource().sendFailure(Component.literal("Hold a registered phone first (/crazyphone register ...)"));
             return 0;
         }
-        String[][] others = {{"201", "Mastu"}, {"202", "Zafeel"}};
+        String first = "Mastu", second = "Zafeel";
+        try {
+            first = StringArgumentType.getString(arguments, "first");
+            second = StringArgumentType.getString(arguments, "second");
+        } catch (IllegalArgumentException defaultNames) {
+        }
+        String[][] others = {{"201", first}, {"202", second}};
         for (String[] other : others) {
             java.util.HashMap<String, String> form = new java.util.HashMap<>();
             form.put("textin:number", other[0]);
