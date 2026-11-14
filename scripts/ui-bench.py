@@ -338,7 +338,7 @@ def bench_node(node):
     lines = open(report, encoding='utf-8').read().splitlines() if os.path.exists(report) else []
     missing = [s for s in STEPS if not os.path.exists(os.path.join(OUT, node, 'bench_%s.png' % s))]
     block = ['== %s: %s (%ds)' % (node, status, time.time() - started)]
-    block += ['  ' + l for l in lines if 'FAILED' in l or 'DID NOT RUN' in l]
+    block += ['  ' + l for l in lines if 'FAILED' in l or 'DID NOT RUN' in l or 'NOT CREATED' in l]
     if missing:
         block.append('  missing screenshots: ' + ', '.join(missing))
     print('\n'.join(block), flush=True)

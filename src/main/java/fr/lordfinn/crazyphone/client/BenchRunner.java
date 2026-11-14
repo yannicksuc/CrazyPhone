@@ -121,6 +121,8 @@ public final class BenchRunner {
             c.devSendMessage();
         }), "drawer_flags");
         add("header_hover", () -> conversation(c -> hover(c.devHeaderSlotCenter(0))), "conversation_sent");
+        // The magnifier cursor shown over pictures: building it crashed 26.3 (SDL, issue #2).
+        add("zoom_cursor", () -> conversation(c -> CursorEffects.requestZoomCursor()), null);
         add("chat", () -> {
             hoverOff();
             Minecraft.getInstance()./*$ mc_set_screen {*/setScreen/*$}*/(null);
@@ -186,6 +188,7 @@ public final class BenchRunner {
         /*REPORT.add("hook gui item icon: not used on this version (item models get the display context)");
         *///?}
         REPORT.add("hook fake mouse: " + (devMouseHookRan ? "ran" : "DID NOT RUN"));
+        REPORT.add("zoom cursor: " + (CursorEffects.devZoomCursorCreated() ? "created" : "NOT CREATED"));
         REPORT.add("done");
         try {
             Path dir = mc.gameDirectory.toPath().resolve("screenshots");

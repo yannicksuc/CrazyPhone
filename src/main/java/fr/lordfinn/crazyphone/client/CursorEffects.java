@@ -49,6 +49,11 @@ public final class CursorEffects {
             requestedThisFrame = Cursor.RESIZE;
     }
 
+    /** Dev only (UI test bench): whether the custom magnifier cursor could be built on this platform. */
+    public static boolean devZoomCursorCreated() {
+        return zoomCursor != 0L;
+    }
+
     public static void requestZoomCursor() {
         requestedThisFrame = Cursor.ZOOM;
     }
@@ -147,7 +152,10 @@ public final class CursorEffects {
                     }
                 }
             }
-            pixels.flip();
+            // No flip(): the pixels above are written with absolute put(index, ...), which never moves the
+            // position, so flip() left a buffer with 0 bytes remaining. GLFW didn't check it, but SDL (26.3)
+            // refused it with "Number of remaining elements is 0" and crashed the game (issue #2).
+            pixels.clear();
 
             // Hotspot at the lens center, matching where a real click would land on the image.
             return createImageCursor(pixels, size, (int) cx, (int) cy);
@@ -176,6 +184,16 @@ public final class CursorEffects {
 
     // pixels: size x size, RGBA, one byte per channel.
     private static long createImageCursor(ByteBuffer pixels, int size, int hotX, int hotY) {
+        // A custom cursor is only decoration: if the platform refuses it, keep the default one, never crash.
+        try {
+            return createImageCursorUnchecked(pixels, size, hotX, hotY);
+        } catch (RuntimeException e) {
+            org.slf4j.LoggerFactory.getLogger("crazyphone").warn("Could not create the custom cursor", e);
+            return 0L;
+        }
+    }
+
+    private static long createImageCursorUnchecked(ByteBuffer pixels, int size, int hotX, int hotY) {
         //? if >=26.3 {
         /*org.lwjgl.sdl.SDL_Surface surface = org.lwjgl.sdl.SDLSurface.SDL_CreateSurfaceFrom(size, size,
                 org.lwjgl.sdl.SDLPixels.SDL_PIXELFORMAT_RGBA32, pixels, size * 4);
