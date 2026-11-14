@@ -510,7 +510,8 @@ public class MessageWidget extends AbstractWidget {
                 fr.lordfinn.crazyphone.client.picture.FabricPictureCache.getOrRequest(fabricImageId,
                         fr.lordfinn.crazyphone.ClientConfig.phonePhotoListPixelated ? fr.lordfinn.crazyphone.utils.PhotoResolution.THUMBNAIL : fr.lordfinn.crazyphone.utils.PhotoResolution.FULL);
         if (texture == null) {
-            PhotoLoadingPlaceholder.draw(guiGraphics, wrappedText.getX(), wrappedText.getY(), imageWidth, imageHeight);
+            PhotoLoadingPlaceholder.draw(guiGraphics, wrappedText.getX(), wrappedText.getY(), imageWidth, imageHeight,
+                    wrappedText.isCutTop(), wrappedText.isCutBottom());
             return;
         }
 
@@ -521,7 +522,14 @@ public class MessageWidget extends AbstractWidget {
         int drawWidth = imageWidth;
         int drawHeight = imageHeight;
 
+        // Corners cut like the bubble it sits in (every other box of the phone does it): only the top ones when
+        // a message of the same person is stuck right below (a caption), only the bottom ones when one is stuck
+        // right above. Grown on hover, the picture pops out of the run, so all four are cut then.
+        boolean cutTop = wrappedText.isCutTop();
+        boolean cutBottom = wrappedText.isCutBottom();
         if (isImageHovered(mouseX, mouseY)) {
+            cutTop = true;
+            cutBottom = true;
             CursorEffects.requestZoomCursor();
             drawWidth = Math.round(imageWidth * HOVER_GROW_SCALE);
             drawHeight = Math.round(imageHeight * HOVER_GROW_SCALE);
@@ -530,7 +538,7 @@ public class MessageWidget extends AbstractWidget {
             guiGraphics.fill(drawX + 1, drawY + 1, drawX + drawWidth + 1, drawY + drawHeight + 1, 0x66000000);
         }
 
-        GuiCompat.blit(guiGraphics, texture.location(), drawX, drawY, 300, drawWidth, drawHeight);
+        GuiCompat.blitCutCorners(guiGraphics, texture.location(), drawX, drawY, 300, drawWidth, drawHeight, cutTop, cutBottom);
     }
 
     // Set once the real aspect ratio (not the placeholder guess below) has actually been applied - the

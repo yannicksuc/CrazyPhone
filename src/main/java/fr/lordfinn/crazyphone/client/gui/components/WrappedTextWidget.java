@@ -83,6 +83,14 @@ public class WrappedTextWidget extends AbstractWidget {
         this.cutBottom = bottom;
     }
 
+    public boolean isCutTop() {
+        return cutTop;
+    }
+
+    public boolean isCutBottom() {
+        return cutBottom;
+    }
+
     public void setMinHeight(int minHeight) {
         this.minHeight = minHeight;
         this.height = calculateHeight();

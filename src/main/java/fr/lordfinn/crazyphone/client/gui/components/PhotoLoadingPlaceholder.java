@@ -37,7 +37,16 @@ public final class PhotoLoadingPlaceholder {
      * padding proportional to the box size. Safe to call every frame - which frame of the spritesheet to
      * show is derived fresh from the system clock each time, not tracked as state on any caller. */
     public static void draw(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int x, int y, int width, int height) {
-        guiGraphics.fill(x, y, x + width, y + height, BACKGROUND_COLOR);
+        draw(guiGraphics, x, y, width, height, false, false);
+    }
+
+    /** Same, with the background's corners cut by 1 px (top ones when {@code cutTop}, bottom ones when
+     * {@code cutBottom}), for a chat bubble that cuts its own corners the same way. */
+    public static void draw(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, int x, int y, int width, int height, boolean cutTop, boolean cutBottom) {
+        int top = cutTop ? 1 : 0, bottom = cutBottom ? 1 : 0;
+        guiGraphics.fill(x + 1, y, x + width - 1, y + height, BACKGROUND_COLOR);
+        guiGraphics.fill(x, y + top, x + 1, y + height - bottom, BACKGROUND_COLOR);
+        guiGraphics.fill(x + width - 1, y + top, x + width, y + height - bottom, BACKGROUND_COLOR);
 
         int padding = Math.max(2, Math.min(width, height) / 8);
         int available = Math.min(width, height) - padding * 2;

@@ -332,6 +332,13 @@ public class ModCommands {
             javax.imageio.ImageIO.write(image, "png", png);
             byte[] bytes = png.toByteArray();
             photoId = fr.lordfinn.crazyphone.data.PhotoSavedData.get(world).storePhoto(owner, "", null, bytes, bytes, 0);
+            // A picture from Mastu with a caption stuck right below it, in the conversation the UI bench opens:
+            // the picture must then cut only its top corners, like the bubbles around it.
+            String conversation = fr.lordfinn.crazyphone.utils.CrazyPhoneHelper.getConversationNumber("201", owner);
+            int now = (int) (java.time.Instant.now().getEpochSecond() / 60);
+            java.util.UUID sentId = fr.lordfinn.crazyphone.data.PhotoSavedData.get(world).storePhoto("201", conversation, null, bytes, bytes, now);
+            fr.lordfinn.crazyphone.utils.CrazyPhoneHelper.addImageMessage(world, conversation, "201", sentId, now);
+            fr.lordfinn.crazyphone.utils.CrazyPhoneHelper.addMessage(world, conversation, "201", "Golden hour selfie", now);
         } catch (java.io.IOException e) {
             arguments.getSource().sendFailure(Component.literal("Could not make the test photo: " + e));
             return 0;

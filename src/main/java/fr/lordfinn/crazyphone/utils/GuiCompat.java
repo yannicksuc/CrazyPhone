@@ -87,6 +87,33 @@ public final class GuiCompat {
         *///?}
     }
 
+    /** Like {@link #blit(GuiGraphics, ResourceLocation, int, int, int, int, int)} (the whole texture stretched
+     *  to a {@code textureWidth x textureHeight} box), but only draws the {@code (u,v,width,height)} part of
+     *  that box, at (x,y). Used to leave out single pixels of a stretched picture (cut corners). */
+    public static void blitRegion(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, /*$ res_loc {*/ResourceLocation/*$}*/ texture, int x, int y, int blitOffset, int u, int v, int width, int height, int textureWidth, int textureHeight) {
+        if (width <= 0 || height <= 0) return;
+        //? if <1.21.10 {
+        guiGraphics.blit(texture, x, y, blitOffset, u, v, width, height, textureWidth, textureHeight);
+        //? } else {
+        /*guiGraphics.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, texture, x, y, (float) u, (float) v, width, height, textureWidth, textureHeight);
+        *///?}
+    }
+
+    /** Draws the whole texture stretched to {@code width x height} at (x,y) with its corners cut by 1 px, like
+     *  every other box of the phone: the top ones when {@code cutTop}, the bottom ones when {@code cutBottom}. */
+    public static void blitCutCorners(/*$ gui_graphics_type {*/GuiGraphics/*$}*/ guiGraphics, /*$ res_loc {*/ResourceLocation/*$}*/ texture, int x, int y, int blitOffset, int width, int height, boolean cutTop, boolean cutBottom) {
+        if (width < 3 || height < 3 || (!cutTop && !cutBottom)) {
+            blit(guiGraphics, texture, x, y, blitOffset, width, height);
+            return;
+        }
+        int top = cutTop ? 1 : 0, bottom = cutBottom ? 1 : 0;
+        if (cutTop)
+            blitRegion(guiGraphics, texture, x + 1, y, blitOffset, 1, 0, width - 2, 1, width, height);
+        blitRegion(guiGraphics, texture, x, y + top, blitOffset, 0, top, width, height - top - bottom, width, height);
+        if (cutBottom)
+            blitRegion(guiGraphics, texture, x + 1, y + height - 1, blitOffset, 1, height - 1, width - 2, 1, width, height);
+    }
+
     /** {@link #blit(GuiGraphics, ResourceLocation, int, int, int, int, int)}, alpha-tinted (used for a
      *  disabled/faded icon state). Pre-1.21.10 this is a plain {@code RenderSystem.setShaderColor} bracketing
      *  the same call as above; 1.21.10 has no shader-color state to set, so the alpha is folded into the
